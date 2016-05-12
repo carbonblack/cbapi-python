@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 from __future__ import absolute_import
+
+import six
+
 from .errors import ApiError, MoreThanOneResultError
 from six import iteritems
 from six.moves import range
@@ -58,6 +61,8 @@ class SimpleQuery(BaseQuery):
 
     def _match_query(self, i):
         for k, v in iteritems(self.query):
+            if isinstance(v, six.string_types):
+                v = v.lower()
             target = getattr(i, k, None)
             if target is None:
                 return False

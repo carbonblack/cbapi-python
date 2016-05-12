@@ -307,10 +307,13 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
     def _query_implementation(cls, cb):
         return SimpleQuery(cls, cb)
 
-    def __init__(self, cb, watchlist_id, initial_data=None):
-        watchlist_id = int(watchlist_id)
-        super(Watchlist, self).__init__(cb, watchlist_id, initial_data)
-        self._query = urllib.parse.parse_qs(getattr(self, "search_query"), "")
+    def __init__(self, *args, **kwargs):
+        super(Watchlist, self).__init__(*args, **kwargs)
+        sq = getattr(self, "search_query", None)
+        self._query = {"cb.urlver": 1}
+
+        if sq is not None:
+            self._query = urllib.parse.parse_qs(sq, "")
 
     @property
     def query(self):
@@ -321,6 +324,19 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
             if k.startswith("cb.q."):
                 queryparts.extend(v)
         return " ".join(queryparts)
+
+    def _reset_query(self):
+        if "q" in self._query:
+            del self._query["q"]
+        additional_query_parameters = [q for q in self._query if q.startswith("cb.q.")]
+        for k in additional_query_parameters:
+            del self._query[k]
+
+    @query.setter
+    def query(self, new_query):
+        self._reset_query()
+        self._query["q"] = new_query
+        self.search_query = urllib.parse.urlencode(self._query)
 
     @property
     def facets(self):

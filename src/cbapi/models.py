@@ -283,6 +283,12 @@ class MutableBaseModel(NewBaseModel):
     _change_object_http_method = "PUT"
 
     def __setattr__(self, attrname, val):
+        # allow subclasses to define their own property setters
+        propobj = getattr(self.__class__, attrname, None)
+        if isinstance(propobj, property) and propobj.fset:
+            propobj.fset(self, val)
+            return
+
         if not attrname.startswith("_") and attrname not in self.__class__._valid_fields:
             if attrname in self._info:
                 log.warning("Changing field not included in Swagger definition: {0:s}".format(attrname))
@@ -320,13 +326,15 @@ class MutableBaseModel(NewBaseModel):
 
     def _update_object(self):
         if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
-            log.debug("new object")
+            log.debug("Creating a new {0:s} object".format(self.__class__.__name__))
             ret = self._cb.http_request(self.__class__._new_object_http_method, self.__class__.urlobject,
                                         data=self._info)
         else:
-            log.debug("unique_id=%s" % self._model_unique_id)
+            log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, self._model_unique_id))
             ret = self._cb.http_request(self.__class__._change_object_http_method,
                                         self._build_api_request_uri(), data=self._info)
+
+        refresh_required = False
 
         if ret.status_code not in range(200, 300):
             try:
@@ -347,14 +355,21 @@ class MutableBaseModel(NewBaseModel):
                         raise ServerError(ret.status_code, post_result,
                                           result="Did not update {0:s} record.".format(self.__class__.__name__))
                     else:
-                        self.refresh()
+                        refresh_required = True
                 else:
                     self._info = json.loads(ret.content)
-                    self._full_init = True
+                    if message.keys() == ["id"]:
+                        # if all we got back was an ID, try refreshing to get the entire record.
+                        log.debug("Only received an ID back from the server, forcing a refresh")
+                        refresh_required = True
+                    else:
+                        self._full_init = True
             except:
-                self.refresh()
+                refresh_required = True
 
         self._dirty_attributes = {}
+        if refresh_required:
+            self.refresh()
         return self._model_unique_id
 
     def save(self):

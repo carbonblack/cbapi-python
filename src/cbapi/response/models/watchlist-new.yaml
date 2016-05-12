@@ -1,4 +1,8 @@
 type: "object"
+required:
+  - name
+  - search_query
+  - index_type
 properties:
   last_hit_count:
     type: "integer"
@@ -7,6 +11,7 @@ properties:
     type: "string"
   search_query:
     type: "string"
+    description: "URL encoded search query associated with this watchlist."
   enabled:
     type: "boolean"
   search_timestamp:
@@ -14,6 +19,7 @@ properties:
     format: "date-time"
   index_type:
     type: "string"
+    description: "Index to search for this watchlist. Must be either 'events' (Processes) or 'modules' (Binaries)"
   readonly:
     type: "boolean"
   alliance_id:
