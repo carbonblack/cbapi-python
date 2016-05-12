@@ -15,9 +15,6 @@ to do the easy stuff and handling all of the "sharp corners" behind the scenes f
     >>> from cbapi.response import CbEnterpriseResponseAPI, Process, Binary, Sensor
     >>> c=CbEnterpriseResponseAPI()
     >>> # take the first process that ran notepad.exe, download the binary and read the first two bytes
-    >>> c.select(Process).where('process_name:notepad.exe').first().binary.file.read(2)response import CbEnterpriseResponseAPI, Process, Binary, Sensor
-    >>> c=CbEnterpriseResponseAPI()
-    >>> # take the first process that ran notepad.exe, download the binary and read the first two bytes
     >>> c.select(Process).where('process_name:notepad.exe').first().binary.file.read(2)
     'MZ'
     >>> # if you want a specific ID, you can put it straight into the .select() call:
