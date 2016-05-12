@@ -1,4 +1,4 @@
-.. _api:
+.. _response_api:
 
 Carbon Black Response REST API
 ==============================
@@ -24,13 +24,6 @@ Queries
 
 .. autoclass:: cbapi.response.rest_api.Query
     :members:
-
-Exceptions
-----------
-
-.. autoexception:: cbapi.errors.ApiError
-.. autoexecption:: cbapi.errors.CredentialError
-
 
 Models
 ------

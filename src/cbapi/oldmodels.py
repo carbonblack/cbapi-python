@@ -238,7 +238,7 @@ class MutableModel(BaseModel):
             super(MutableModel, self).__setattr__(attrname, val)
 
     def is_dirty(self):
-        """Returns True if this object has unsaved changes. Use :method:`MutableModel.save` to upload the changes to
+        """Returns True if this object has unsaved changes. Use :py:meth:`MutableModel.save` to upload the changes to
         the Carbon Black server."""
         return len(self._dirty_attributes) > 0
 

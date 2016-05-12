@@ -11,6 +11,8 @@ class ApiError(Exception):
 
 
 class ServerError(ApiError):
+    """A ServerError is raised when an HTTP error code is returned from the Carbon Black server."""
+
     def __init__(self, error_code, message, result=None, original_exception=None):
         super(ServerError, self).__init__(message=message, original_exception=original_exception)
 
@@ -30,6 +32,8 @@ class ServerError(ApiError):
 
 
 class ObjectNotFoundError(ApiError):
+    """The requested object could not be found in the Carbon Black datastore."""
+
     def __init__(self, uri, message=None, original_exception=None):
         super(ObjectNotFoundError, self).__init__(message=message, original_exception=original_exception)
         self.uri = uri
@@ -84,5 +88,6 @@ class InvalidHashError(Exception):
 
 
 class MoreThanOneResultError(ApiError):
+    """Only one object was requested, but multiple matches were found in the Carbon Black datastore."""
     pass
 
