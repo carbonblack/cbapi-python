@@ -42,7 +42,7 @@ class Computer(MutableModel):
 
     @property
     def fileInstances(self):
-        return self._cb.select(FileInstance).where("computerId:{0:s}".format(self.id))
+        return self._cb.select(FileInstance).where("computerId:{0:d}".format(self.id))
 
 
 class Connector(MutableBaseModel, CreatableModelMixin):
