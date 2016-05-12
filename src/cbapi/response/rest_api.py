@@ -8,7 +8,7 @@ from six.moves import urllib
 
 from distutils.version import LooseVersion
 from ..connection import BaseAPI
-from .models import Process, Binary
+from .models import Process, Binary, Watchlist
 from ..errors import UnauthorizedError, ApiError, MoreThanOneResultError
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
@@ -24,10 +24,10 @@ log = logging.getLogger(__name__)
 def get_api_token(base_url, username, password, **kwargs):
     """Retrieve the API token for a user given the URL of the server, username, and password.
 
-    :param str: base_url: The URL of the server (for example, ``https://carbonblack.server.com``)
-    :param str: username: The user's username
-    :param str: password: The user's password
-    :param bool: verify: (optional) When set to False, turn off SSL certificate verification
+    :param str base_url: The URL of the server (for example, ``https://carbonblack.server.com``)
+    :param str username: The user's username
+    :param str password: The user's password
+    :param bool verify: (optional) When set to False, turn off SSL certificate verification
 
     :return: The user's API token
     :rtype: str
@@ -178,6 +178,35 @@ class Query(PaginatedQuery):
 
         self.sort_by = getattr(self.doc_class, 'default_sort', None)
         self._default_args = {"cb.urlver": 1, 'facet': 'false'}
+
+    def create_watchlist(self, watchlist_name):
+        """Create a watchlist based on this query.
+
+        :param str watchlist_name: name of the new watchlist
+        :return: new Watchlist object
+        :rtype: :py:class:`Watchlist`
+        """
+        if self.raw_query:
+            args = self.raw_query.copy()
+        else:
+            args = self._default_args.copy()
+
+            if self.query:
+                args['q'] = self.query
+            else:
+                args['q'] = ''
+
+        if self.sort_by:
+            args['sort'] = self.sort_by
+
+        new_watchlist = self.cb.create(Watchlist, data={"name": watchlist_name})
+        new_watchlist.search_query = urllib.parse.urlencode(args)
+        if self.doc_class == Binary:
+            new_watchlist.index_type = "modules"
+        else:
+            new_watchlist.index_type = "events"
+
+        return new_watchlist.save()
 
     def sort(self, new_sort):
         """Set the sort order for this query.
