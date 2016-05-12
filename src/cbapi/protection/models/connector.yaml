@@ -1,0 +1,36 @@
+type: "object"
+required:
+  - name
+  - analysisName
+  - connectorVersion
+  - canAnalyze
+  - enabled
+  - analysisEnabled
+properties:
+  id:
+    type: "integer"
+    description: "Unique connector Id"
+  name:
+    type: "string"
+    description: "Name of the connector. Note that only non-internal connectors can be renamed"
+  analysisName:
+    type: "string"
+    description: "Name for analysis component of the connector (can be same as the name field)"
+  connectorVersion:
+    type: "string"
+    description: "Version of this connector"
+  canAnalyze:
+    type: "boolean"
+    description: "True if this connector can analyze files"
+  enabled:
+    type: "boolean"
+    description: "True if connector is enabled"
+  analysisEnabled:
+    type: "boolean"
+    description: "True if analysis component of this connector is enabled"
+  isInternal:
+    type: "boolean"
+    description: "True if this is internal connector"
+  analysisTargets:
+    type: "array"
+    description: "Array of possible analysis targets. Analysis targets are required when creating new fileAnalysis. They usualy represent different OS and configurations and are available only for some internal connectors."

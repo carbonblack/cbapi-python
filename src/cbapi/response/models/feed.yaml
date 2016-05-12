@@ -1,0 +1,54 @@
+type: "object"
+required:
+- feed_url
+properties:
+  provider_url:
+    type: "string"
+  ssl_client_crt:
+    type: "string"
+  local_rating:
+    type: "integer"
+  requires_who:
+    type: "string"
+  icon_small:
+    type: "byte"
+  id:
+    type: "integer"
+  category:
+    type: "string"
+  display_name:
+    type: "string"
+  use_proxy:
+    type: "boolean"
+  feed_url:
+    type: "string"
+  username:
+    type: "string"
+  validate_server_cert:
+    type: "string"
+  ssl_client_key:
+    type: "string"
+  manually_added:
+    type: "boolean"
+  password:
+    type: "string"
+  icon:
+    type: "byte"
+  provider_rating:
+    type: "number"
+    format: "float"
+  name:
+    type: "string"
+  tech_data:
+    type: "string"
+  requires:
+    type: "string"
+  enabled:
+    type: "boolean"
+  summary:
+    type: "string"
+  requires_what:
+    type: "string"
+  order:
+    type: "integer"
+    format: "int32"

@@ -1,0 +1,141 @@
+type: object
+required:
+  - alliance_score_virustotal
+  - company_name
+  - copied_mod_len
+  - digsig_issuer
+  - digsig_prog_name
+  - digsig_publisher
+  - digsig_result
+  - digsig_result_code
+  - digsig_sign_time
+  - digsig_subject
+  - file_Version
+  - file_desc
+  - host_count
+  - internal_name
+  - is_64bit
+  - is_executable_image
+  - legal_copyright
+  - legal_trademark
+  - md5
+  - observed_filename
+  - orig_mod_len
+  - original_filename
+  - os_type
+  - private_build
+  - product_name
+  - product_version
+  - server_added_timestamp
+  - signed
+  - special_build
+properties:
+  digsig_prog_name:
+    type: string
+    description: 'If signed and present, the program name'
+  digsig_issuer:
+    type: string
+    description: 'If signed and present, the issuer name'
+  product_name:
+    type: string
+    description: 'If present, Product name from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  is_executable_image:
+    type: boolean
+    description: true or false - true if an EXE
+  digsig_result:
+    type: string
+    description: 'Digital signature status. One of Signed, Unsigned, Expired, Bad Signature, Invalid Signature, Invalid Chain, Untrusted Root, Explicit Distrust'
+  digsig_subject:
+    type: string
+    description: 'If signed and present, the subject'
+  observed_filename:
+    type: array
+    description: The set of unique filenames this binary has been seen as
+    items:
+      type: string
+  os_type:
+    type: string
+    enum: [ "Windows",
+            "OSX",
+            "Linux" ]
+    description: 'operating system type of this binary; one of windows, linux, osx'
+  orig_mod_len:
+    type: integer
+    description: Filesize in bytes
+  special_build:
+    type: string
+    description: 'If present, Special build from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  company_name:
+    type: string
+    description: 'If present, Company name from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  alliance_score_virustotal:
+    type: string
+    description: 'If enabled and the hit count > 1, the number of [VirusTotal](http://virustotal.com) hits for this md5'
+  server_added_timestamp:
+    type: string
+    format: date-time
+    description: the first time this binary was received on the server in the server GMT time
+  private_build:
+    type: string
+    description: 'If present, Private build from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  internal_name:
+    type: string
+    description: 'If present, Internal name from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  copied_mod_len:
+    type: integer
+    description: 'Bytes copied from remote host, if file is > 25MB this will be less than orig_mod_len'
+  file_Version:
+    type: string
+    description: 'If present, File version from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  product_version:
+    type: string
+    description: 'If present, Product version from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  signed:
+    type: string
+    description: 'Digital signature status. One of Signed, Unsigned, Expired, Bad Signature, Invalid Signature, Invalid Chain, Untrusted Root, Explicit Distrust'
+  digsig_sign_time:
+    type: string
+    description: 'If signed, the timestamp of the signature in GMT'
+  file_desc:
+    type: string
+    description: 'If present, File description from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  legal_trademark:
+    type: string
+    description: 'If present, Legal trademark from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  digsig_result_code:
+    type: string
+    description: 'HRESULT_FROM_WIN32 for the result of the digital signature operation via [WinVerifyTrust](http://msdn.microsoft.com/en-us/library/windows/desktop/aa388208)'
+  original_filename:
+    type: string
+    description: 'If present, Original filename from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  legal_copyright:
+    type: string
+    description: 'If present, Legal copyright from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
+  host_count:
+    type: integer
+    description: count of unique endpoints which have ever reported this binary
+  is_64bit:
+    type: boolean
+    description: true or false - true if x64
+  md5:
+    type: string
+    description: the md5 hash of this binary
+  digsig_publisher:
+    type: string
+    description: 'If signed and present, the publisher name'
+  endpoint:
+    type: array
+    items:
+      type: string
+  group:
+    type: array
+    items:
+      type: string
+  timestamp:
+    type: string
+    format: date-time
+  cb_version:
+    type: integer
+  last_seen:
+    type: string
+    format: date-time

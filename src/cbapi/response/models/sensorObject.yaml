@@ -1,0 +1,108 @@
+type: object
+properties:
+  "systemvolume_total_size":
+    type: string
+  "emet_telemetry_path":
+    type: object
+  "os_environment_display_string":
+    type: object
+  "emet_version":
+    type: object
+  "emet_dump_flags":
+    type: object
+  "clock_delta":
+    type: integer
+  "supports_cblr":
+    type: boolean
+  "sensor_uptime":
+    type: object
+  "last_update":
+    type: string
+  "physical_memory_size":
+    type: integer
+  "build_id":
+    type: integer
+  "uptime":
+    type: integer
+  "is_isolating":
+    type: boolean
+  "event_log_flush_time":
+    type: string
+    format: "date-time"
+  "computer_dns_name":
+    type: string
+  "emet_report_setting":
+    type: object
+  "id":
+    type: integer
+  "emet_process_count":
+    type: integer
+  "emet_is_gpo":
+    type: boolean
+  "power_state":
+    type: integer
+  "network_isolation_enabled":
+    type: boolean
+  "uninstalled":
+    type: object
+  "systemvolume_free_size":
+    type: string
+  "status":
+    type: string
+  "num_eventlog_bytes":
+    type: string
+  "sensor_health_message":
+    type: string
+  "build_version_string":
+    type: string
+  "computer_sid":
+    type: string
+  "next_checkin_time":
+    type: string
+    format: "date-time"
+  "node_id":
+    type: integer
+  "cookie":
+    type: integer
+  "emet_exploit_action":
+    type: object
+  "computer_name":
+    type: string
+  "license_expiration":
+    type: string
+  "supports_isolation":
+    type: boolean
+  "parity_host_id":
+    type: string
+  "supports_2nd_gen_modloads":
+    type: boolean
+  "network_adapters":
+    type: string
+  "sensor_health_status":
+    type: integer
+  "registration_time":
+    type: string
+    format: "date-time"
+  "restart_queued":
+    type: boolean
+  "notes":
+    type: integer
+  "num_storefiles_bytes":
+    type: string
+  "os_environment_id":
+    type: integer
+  "shard_id":
+    type: integer
+  "boot_id":
+    type: string
+  "last_checkin_time":
+    type: string
+    format: "date-time"
+  "os_type":
+    type: integer
+  "group_id":
+    type: integer
+  "display":
+    type: boolean
+  "uninstall":
+    type: boolean

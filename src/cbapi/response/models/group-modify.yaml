@@ -1,0 +1,147 @@
+type: "object"
+properties:
+  id:
+    type: "integer"
+    format: "int32"
+    description: "ID of group, returned by server when a new group is added"
+  name:
+    type: "string"
+    description: "Name of group"
+  sensorbackend_server:
+    type: "string"
+    description: "URL of the server"
+  sensor_exe_name:
+    type: string
+    description: "Name of the sensor process to add to group"
+    default: ""
+  site_id:
+    type: "integer"
+    description: "Site id to add group to"
+    default: "1"
+  team_access:
+    type: "array"
+    description: "Team access array"
+    items:
+      title: "modAccessTeam"
+      type: "object"
+      properties:
+        team_id:
+          type: "integer"
+          description: "ID of team to add"
+          default: "1"
+        team_name:
+          type: "string"
+          description: "Team Name"
+          default: "Administrators"
+        access_category:
+          type: "string"
+          description: "Access Category"
+          default: "Administrator"
+  alert_criticality:
+    type: "integer"
+    format: "int32"
+    description: "Alert level, default 3"
+    default: "3"
+  tamper_level:
+    type: "integer"
+    format: "int32"
+    description: "Set the tamper level, default 0"
+    default: "0"
+  sensor_version:
+    type: "string"
+    description: "The version of the sensor in this group, default Manual"
+    default: "Manual"
+  datastore_server:
+    type: "string"
+    description: "Datastore server address if different from sensorbackend server, default null"
+    default: ""
+  max_licenses:
+    type: "integer"
+    format: "int32"
+    description: "Maximum licenses, default -1"
+    default: "-1"
+  banning_enabled:
+    type: "boolean"
+    description: "Enable/Disable banning, default true"
+    default: "true"
+  collect_emet_events:
+    type: "boolean"
+    description: "Enable/Disable emet events collection, default true"
+    default: "true"
+  collect_filemods:
+    type: "boolean"
+    description: "Enable/Disable filemods collection, default true"
+    default: "true"
+  collect_filewritemd5s:
+    type: "boolean"
+    description: "Enable/Disable filewritemd5s collection, default true"
+    default: "true"
+  collect_cross_procs:
+    type: "boolean"
+    description: "Enable/Disable Cross Procs collection, default true"
+    default: "true"
+  collect_moduleinfo:
+    type: "boolean"
+    description: "Enable/Disable moduleinfo collection, default true"
+    default: "true"
+  collect_moduleloads:
+    type: "boolean"
+    description: "Enable/Disable moduleloads collection, default true"
+    default: "true"
+  collect_netconns:
+    type: "boolean"
+    description: "Enable/Disable netconns collection, default true"
+    default: "true"
+  collect_nonbinary_filewrites:
+    type: "boolean"
+    description: "Enable/Disable nonbinary filewrites collection, default true"
+    default: "true"
+  collect_processes:
+    type: "boolean"
+    description: "Enable/Disable processes collection, default true"
+    default: "true"
+  collect_regmods:
+    type: "boolean"
+    description: "Enable/Disable regmods collection, default true"
+    default: "true"
+  collect_storefiles:
+    type: "boolean"
+    description: "Enable/Disable storefiles collection, default true"
+    default: "true"
+  collect_usercontext:
+    type: "boolean"
+    description: "Enable/Disable usercontext collection, default true"
+    default: "true"
+  filter_known_dlls:
+    type: "boolean"
+    description: "Enable/Disable filter known dll, default false"
+    default: "false"
+  process_filter_level:
+    type: "integer"
+    format: "int32"
+    description: "Process filter level, default 0"
+    default: "0"
+  quota_eventlog_bytes:
+    type: "integer"
+    format: "int32"
+    default: "1073741824"
+    description: "Size of eventlog in bytes default 1073741824"
+  quota_eventlog_percent:
+    type: "integer"
+    format: "int32"
+    description: "Percent of the eventlog, default 1"
+    default: "1"
+  quota_storefile_bytes:
+    type: "integer"
+    format: "int32"
+    description: "Size of storefile in bytes default 1073741824"
+    default: "1073741824"
+  quota_storefile_percent:
+    type: "integer"
+    format: "int32"
+    description: "Percent of the storefile, default 1"
+    default: "1"
+  vdi_enabled:
+    type: "boolean"
+    description: "Enable/Disable vdi, default false"
+    default: "false"

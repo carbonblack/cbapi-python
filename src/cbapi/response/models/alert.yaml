@@ -1,0 +1,40 @@
+type: "object"
+properties:
+  alert_severity:
+    type: number
+    format: double
+  sensor_criticality:
+    type: number
+    format: double
+  hostname:
+    type: "string"
+  report_score:
+    type: "integer"
+    format: "int32"
+  feed_name:
+    type: "string"
+  created_time:
+    type: "integer"
+    format: "date-time"
+  os_type:
+    type: "string"
+  feed_rating:
+    type: number
+    format: double
+  ioc_confidence:
+    type: "integer"
+    format: "double"
+  unique_id:
+    type: "string"
+  md5:
+    type: "string"
+  sensor_id:
+    type: integer
+  feed_id:
+    type: integer
+  ioc_attr:
+    type: object
+  status:
+    type: "string"
+  alert_type:
+    type: "string"

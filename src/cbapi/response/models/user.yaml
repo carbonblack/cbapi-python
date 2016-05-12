@@ -1,0 +1,36 @@
+type: object
+properties:
+  id:
+    type: string
+    description: ''
+  username:
+    type: string
+    description: ''
+  first_name:
+    type: string
+    description: ''
+  last_name:
+    type: string
+    description: ''
+  global_admin:
+    type: boolean
+    description: ''
+  teams:
+    type: array
+    description: ''
+    items:
+      title: userTeam
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ''
+        name:
+          type: string
+          description: ''
+  password:
+    type: string
+    description: ''
+  email:
+    type: string
+    description: ''

@@ -1,0 +1,87 @@
+type: object
+properties:
+  mod_load:
+    type: integer
+    format: int32
+  sensor_id:
+    type: integer
+    format: int32
+  uid:
+    type: string
+  filtering_known_dls:
+    type: boolean
+  process_md5:
+    type: string
+  parent_unique_id:
+    type: string
+  cmdline:
+    type: string
+  path:
+    type: string
+  filemod_count:
+    type: integer
+    format: int32
+  id:
+    type: string
+  parent_name:
+    type: string
+  crossproc_count:
+    type: integer
+    format: int32
+  parent_pid:
+    type: integer
+    format: int32
+  hostname:
+    type: string
+  last_update:
+    type: string
+  start:
+    type: string
+  comms_ip:
+    type: string
+  regmod_count:
+    type: integer
+    format: int32
+  interface_ip:
+    type: string
+  process_pid:
+    type: integer
+    format: int32
+  username:
+    type: string
+  terminated:
+    type: string
+  process_name:
+    type: string
+  emet_count:
+    type: integer
+    format: int32
+  group:
+    type: string
+    type: string
+  netconn_count:
+    type: integer
+    format: int32
+  segment_id:
+    type: integer
+    format: int32
+  host_type:
+    type: string
+  processblock_count:
+    type: integer
+    format: int32
+  filemod_complete:
+    type: array
+    description: ''
+    items:
+      type: string
+      description: ''
+  os_type:
+    type: string
+  binaries:
+    type: object
+  childproc_count:
+    type: integer
+    format: int32
+  unique_id:
+    type: string

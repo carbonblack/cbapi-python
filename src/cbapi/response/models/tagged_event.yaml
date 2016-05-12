@@ -1,0 +1,37 @@
+type: object
+properties:
+  id:
+    type: int
+    description: "Unique ID associated with this tagged event"
+  event_id:
+    type: int
+    description: ""
+  event_type:
+    type: string
+    description: "Type of the event (filemod, regmod, procstart, etc.)"
+  date_tagged:
+    type: string
+    format: "date-time"
+    description: "Date when the event was tagged as part of an investigation"
+  start_date:
+    type: string
+    format: "date-time"
+    description: "Date when process associated with tagged event was started"
+  unique_id:
+    type: string
+    description: "Cb Process Unique ID associated with the tagged event"
+  process_id:
+    type: int
+    description: ''
+  segment_id:
+    type: int
+    description: "Cb Process Segment ID associated with the tagged event"
+  event_data:
+    type: object
+    description: "Event data"
+  tagged_by_user_id:
+    type: string
+    description: "User who created this tagged event, or empty if this is system-created"
+  notes:
+    type: string
+    description: ''

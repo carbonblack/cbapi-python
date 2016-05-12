@@ -1,0 +1,117 @@
+type: "object"
+required:
+  - analysisResult
+  - fileAnalysisId
+properties:
+  connectorId:
+    type: "integer"
+    description: "Id of connector object that sent the notification"
+  time:
+    type: "string"
+    format: "date-time"
+    description: "Date/time of the notification (UTC)"
+  analysisResult:
+    type: "integer"
+    description: "Analysis result. Can be one of: 0 = Unknown, 1 = Not malicious, 2 = Potential risk, 3 = Malicious"
+  fileAnalysisId:
+    type: "integer"
+    description: "Id of fileAnalysis object associated with the notification. This should be available if notification came as a result of the file analysis"
+  fileName:
+    type: "string"
+  md5:
+    type: "string"
+  sha1:
+    type: "string"
+  sha256:
+    type: "string"
+  malwareName:
+    type: "string"
+  malwareType:
+    type: "string"
+  externalUrl:
+    type: "string"
+  externalId:
+    type: "string"
+  severity:
+    type: "string"
+  type:
+    type: "string"
+  appliance:
+    type: "string"
+  product:
+    type: "string"
+  version:
+    type: "string"
+  srcIp:
+    type: "string"
+  srcHost:
+    type: "string"
+  destIp:
+    type: "string"
+  msgFormat:
+    type: "string"
+  anomaly:
+    type: "string"
+  targetApp:
+    type: "string"
+  targetOS:
+    type: "string"
+  httpHeader:
+    type: "string"
+  status:
+    type: "string"
+  srcUsername:
+    type: "string"
+  destUsername:
+    type: "string"
+  flags:
+    type: "integer"
+  files:
+    type: "array"
+  files:
+    type: "array"
+    items:
+      type: "object"
+      properties:
+        md5:
+          type: "string"
+        sha1:
+          type: "string"
+        sha256:
+          type: "string"
+        fileSize:
+          type: "integer"
+        fileName:
+          type: "string"
+        filePath:
+          type: "string"
+        processName:
+          type: "string"
+        processPath:
+          type: "string"
+        operation:
+          type: "string"
+        topLevel:
+          type: "boolean"
+  regKeys:
+    type: "array"
+    items:
+      type: "object"
+      properties:
+        regKey:
+          type: "string"
+        regName:
+          type: "string"
+        regValue:
+          type: "string"
+        processMd5:
+          type: "string"
+        Operation:
+          type: "string"
+  directories:
+    type: "array"
+    items:
+      type: "object"
+      properties:
+        dirPath:
+          type: "string"

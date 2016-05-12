@@ -1,0 +1,22 @@
+type: object
+properties:
+  id:
+    type: int
+    description: "Unique ID associated with this investigation"
+  created_by_user_id:
+    type: string
+    description: "User who created this investigation, or empty if this is a system-created investigation"
+  date_started:
+    type: string
+    format: "date-time"
+    description: "Date the investigation started"
+  last_updated:
+    type: string
+    format: "date-time"
+    description: "Last event update time for this investigation"
+  name:
+    type: string
+    description: ''
+  notes:
+    type: string
+    description: ''

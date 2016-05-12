@@ -1,0 +1,38 @@
+type: "object"
+properties:
+  last_hit_count:
+    type: "integer"
+    format: "int32"
+  name:
+    type: "string"
+  search_query:
+    type: "string"
+  enabled:
+    type: "boolean"
+  search_timestamp:
+    type: "string"
+    format: "date-time"
+  index_type:
+    type: "string"
+  readonly:
+    type: "boolean"
+  alliance_id:
+    type: "integer"
+    format: "int32"
+  total_hits:
+    type: "integer"
+    format: "int32"
+  date_added:
+    type: "string"
+    format: "date-time"
+  group_id:
+    type: "integer"
+    format: "int32"
+  total_tags:
+    type: "integer"
+    format: "int32"
+  last_hit:
+    type: "string"
+    format: "date-time"
+  from_alliance:
+    type: "boolean"

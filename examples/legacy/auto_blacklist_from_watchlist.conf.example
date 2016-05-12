@@ -1,0 +1,32 @@
+[settings]
+
+#
+# Warning: Please check permissions of this file prior to saving usernames/passwords
+#
+
+#
+# RabbitMQ Password; see /etc/cb/cb.conf
+#
+rabbitmqpassword = ooClhMhcH81tuA9h
+
+#
+# RabbitMQ Username; see /etc/cb/cb.conf
+#
+rabbitmqusername = cb
+
+#
+# Carbon Black Server IP
+#
+#cbserverip = localhost
+cbserverip = 192.168.214.136
+
+#
+# Carbon Black Server API token
+#
+cbtoken = cb934d264bf31e734ace670e5c83cee45e55f788
+
+#
+# Comma separated list of watchlist names that will trigger auto-blacklisting
+# Note: The names must be exactly the same as they are in the Carbon Black Server UI
+#
+watchlists = VirusTotal, Notepad Spawn
