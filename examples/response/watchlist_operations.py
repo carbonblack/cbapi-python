@@ -78,7 +78,7 @@ def main():
     del_watchlist_specifier = del_command.add_mutually_exclusive_group(required=True)
     del_watchlist_specifier.add_argument("-i", "--id", type=int, help="ID of watchlist to delete")
     del_watchlist_specifier.add_argument("-N", "--name", help="Name of watchlist to delete. Specify --force to delete"
-                                    " multiple watchlists that have the same name")
+                                         " multiple watchlists that have the same name")
     del_command.add_argument("--force", help="If NAME matches multiple watchlists, delete all matching watchlists",
                              action="store_true", default=False)
 

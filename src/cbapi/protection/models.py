@@ -40,6 +40,10 @@ class Computer(MutableModel):
     def policy(self, new_policy_id):
         self.policyId = new_policy_id
 
+    @property
+    def fileInstances(self):
+        return self._cb.select(FileInstance).where("computerId:{0:s}".format(self.id))
+
 
 class Connector(MutableBaseModel, CreatableModelMixin):
     urlobject = "/api/bit9platform/v1/connector"
@@ -98,6 +102,10 @@ class FileInstance(MutableModel):
     @property
     def computer(self):
         return self._cb.select(Computer, self.computerId)
+
+    @property
+    def fileCatalog(self):
+        return self._cb.select(FileCatalog, self.fileCatalogId)
 
 
 @immutable

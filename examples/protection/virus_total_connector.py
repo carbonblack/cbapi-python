@@ -25,9 +25,9 @@ class VirusTotalConnector(object):
         """VirusTotal connector main object.
 
         :param cbapi.protection.CbEnterpriseResponseAPI: api: API object
-        :param str: vt_token: API token provided by VirusTotal
-        :param str: connector_name: name of the connector. Defaults to 'VirusTotal'
-        :param bool: allow_uploads: True to allow uploads of binaries to the VirusTotal servers. If set to False,
+        :param str vt_token: API token provided by VirusTotal
+        :param str connector_name: name of the connector. Defaults to 'VirusTotal'
+        :param bool allow_uploads: True to allow uploads of binaries to the VirusTotal servers. If set to False,
             only hash lookups will be done to te virusTotal.
             Note: In case when allow_uploads is set to False  AND VirusTotal does not recognize the hash,
             associated Cb Protection file analysis request will be cancelled
