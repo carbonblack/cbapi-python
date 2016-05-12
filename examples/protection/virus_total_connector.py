@@ -1,4 +1,5 @@
 #!/usr/bin/python
+
 from six import iteritems
 from six.moves.configparser import RawConfigParser
 from cbapi.protection import Connector, Notification, PendingAnalysis
@@ -11,21 +12,25 @@ import logging
 import time
 import sys
 
+# logging
+logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG)
 
 
 class VirusTotalConnector(object):
     def __init__(self, api, vt_token=None, connector_name='VirusTotal', allow_uploads=True):
-        """ Description of parameters:
-                bit9 - bit9api object
-                vt_token - API token provided by VirusTotal
-                connector_name - name of the connector. Defaults to 'VirusTotal'
-                allow_uploads - True to allow uploads of binaries to the VirusTotal servers. If set to False,
-                    only hash lookups will be done to te virusTotal
-                    Note: In case when allow_uploads is set to False  AND VirusTotal does not recognize the hash,
-                    associated Bit9 file analysis request will be cancelled
+        """VirusTotal connector main object.
+
+        :param cbapi.protection.CbEnterpriseResponseAPI: api: API object
+        :param str: vt_token: API token provided by VirusTotal
+        :param str: connector_name: name of the connector. Defaults to 'VirusTotal'
+        :param bool: allow_uploads: True to allow uploads of binaries to the VirusTotal servers. If set to False,
+            only hash lookups will be done to te virusTotal.
+            Note: In case when allow_uploads is set to False  AND VirusTotal does not recognize the hash,
+            associated Cb Protection file analysis request will be cancelled
         """
 
         if vt_token is None:
@@ -37,7 +42,7 @@ class VirusTotalConnector(object):
         # Global dictionary to track our VT scheduled scans. We need this since it takes VT a while to process results
         # and we don't want to keep polling VT too often
         # Any pending results will be kept here, together with next polling time
-        self.scheduledScans = {}
+        self.awaiting_results = {}
 
         self.allow_uploads = allow_uploads
 
@@ -49,7 +54,6 @@ class VirusTotalConnector(object):
         log.info("Connector: {0:s}".format(str(self.connector)))
 
     def run(self):
-        log.info("Starting processing loop")
         while True:
             for binary in self.connector.pendingAnalyses:
                 self.process_request(binary)
@@ -69,15 +73,16 @@ class VirusTotalConnector(object):
         if "positives" in scanResults:
             self.report_result(binary, scanResults)
         elif "scanId" in scanResults:
-            self.schedule_scan(binary, scanResults["scanId"])
+            self.schedule_check(binary, scanResults["scanId"])
         elif self.allow_uploads:
             self.upload_to_vt(binary)
+            self.schedule_check(binary, binary.fileHash)
         else:
             binary.analysisStatus = PendingAnalysis.StatusCancelled
             log.info("%s: VirusTotal has no information and we aren't allowed to upload it. Cancelling the analysis request." % binary.fileHash)
 
     def report_result(self, binary, scanResults):
-        # We have results. Create our Bit9 notification
+        # We have results. Create our notification
         n = binary.create_notification(data={"product": "VirusTotal", "malwareName": "", "malwareType": ""})
 
         # Let's see if it is malicious. Use some fancy heuristics...
@@ -98,7 +103,7 @@ class VirusTotalConnector(object):
         n.externalUrl = scanResults.get('permalink')
 
         # Enumerate scan results that have detected the issue and build our
-        # 'malwareName' string for the Bit9 notification
+        # 'malwareName' string for the notification
         scans = scanResults.get("scans", {})
         malware_type = [k + ":" + v["result"] for k, v in iteritems(scans) if v["detected"]]
         malware_name = [v["result"] for k, v in iteritems(scans) if v["detected"]]
@@ -112,6 +117,10 @@ class VirusTotalConnector(object):
 
         # Send notification
         n.save()
+
+        if binary.fileHash in self.awaiting_results:
+            del self.awaiting_results[binary.fileHash]
+
         log.info("VT analysis for %s completed. VT result is %d%% malware (%s). Reporting status: %s"
                  % (binary.fileHash, positivesPerc, n.malwareName, n.type))
 
@@ -143,17 +152,17 @@ class VirusTotalConnector(object):
 
             binary.save()
         else:
-            log.info("%s: VirusTotal has no information on this hash. Waiting for Bit9 agent to upload it." % binary.fileHash)
+            log.info("%s: VirusTotal has no information on this hash. Waiting for agent to upload it." % binary.fileHash)
 
-    def schedule_scan(self, binary, scanId):
+    def schedule_check(self, binary, scanId):
         next_check = datetime.datetime.now() + datetime.timedelta(0, 3600)
-        self.scheduledScans[binary.fileHash] = {'scanId': scanId, 'nextCheck': next_check}
+        self.awaiting_results[binary.fileHash] = {'scanId': scanId, 'nextCheck': next_check}
         log.info("%s: Waiting for analysis to complete. Will check back after %s." % (binary.fileHash,
                                                                                       next_check.strftime("%Y-%m-%d %H:%M:%S")))
 
     def process_request(self, binary):
-        if binary.fileHash in self.scheduledScans:
-            lastAttempt = self.scheduledScans[binary.fileHash]
+        if binary.fileHash in self.awaiting_results:
+            lastAttempt = self.awaiting_results[binary.fileHash]
             if lastAttempt["nextCheck"] > datetime.datetime.now():
                 return
 
@@ -168,11 +177,6 @@ class VirusTotalConnector(object):
         scanResults = r.json()
 
         self.process_response(binary, scanResults)
-
-# logging
-logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', level=logging.DEBUG)
-logging.getLogger("requests").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
 def main():
@@ -208,7 +212,7 @@ def main():
         return 1
 
     log.info("Configuration:")
-    for k,v in config.iteritems():
+    for k, v in iteritems(config):
         log.info("    %-20s: %s" % (k,v))
 
     api = get_cb_protection_object(args)
