@@ -1,4 +1,3 @@
-from six import iteritems
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
 

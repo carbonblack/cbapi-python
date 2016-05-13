@@ -29,6 +29,6 @@ Queries
 Models
 ------
 
-.. autoclass:: cbapi.protection.models.Computer
+.. automodule:: cbapi.protection.models
     :members:
-    :inherited-members:
+    :undoc-members:

@@ -580,6 +580,7 @@ class Binary(TaggedModel):
     def _build_api_request_uri(self):
         return Binary.urlobject + "/{0:s}/summary".format(self.md5sum)
 
+    @property
     def webui_link(self):
         return '{0:s}/#binary/{1:s}'.format(self._cb.url, self.md5sum)
 
@@ -966,6 +967,7 @@ class Process(TaggedModel):
 
     @property
     def modloads(self):
+        """Generator that returns `:py:class:CbModLoadEvent` associated with this process"""
         i = 0
         for raw_modload in self._attribute('modload_complete', []):
             yield self._event_parser.parse_modload(i, raw_modload)
@@ -977,6 +979,7 @@ class Process(TaggedModel):
 
     @property
     def filemods(self):
+        """Generator that returns :py:class:`CbFileModEvent` objects associated with this process"""
         i = 0
         for raw_filemod in self._attribute('filemod_complete', []):
             yield self._event_parser.parse_filemod(i, raw_filemod)
@@ -984,6 +987,7 @@ class Process(TaggedModel):
 
     @property
     def netconns(self):
+        """Generator that returns :py:class:`CbNetConnEvent` objects associated with this process"""
         i = 0
         for raw_netconn in self._attribute('netconn_complete', []):
             yield self._event_parser.parse_netconn(i, raw_netconn)
@@ -991,6 +995,7 @@ class Process(TaggedModel):
 
     @property
     def regmods(self):
+        """Generator that returns :py:class:`CbRegModEvent` objects associated with this process"""
         i = 0
         for raw_regmod in self._attribute('regmod_complete', []):
             yield self._event_parser.parse_regmod(i, raw_regmod)
@@ -998,6 +1003,7 @@ class Process(TaggedModel):
 
     @property
     def crossprocs(self):
+        """Generator that returns :py:class:`CbCrossProcEvent` objects associated with this process"""
         i = 0
         for raw_crossproc in self._attribute('crossproc_complete', []):
             yield self._event_parser.parse_crossproc(i, raw_crossproc)
@@ -1005,6 +1011,7 @@ class Process(TaggedModel):
 
     @property
     def children(self):
+        """Generator that returns :py:class:`CbChildProcEvent` objects associated with this process"""
         i = 0
         for raw_childproc in self._attribute('childproc_complete', []):
             yield self._event_parser.parse_childproc(i, raw_childproc)
@@ -1012,6 +1019,7 @@ class Process(TaggedModel):
 
     @property
     def all_events(self):
+        """Returns a list of all events associated with this process, sorted by timestamp"""
         return sorted(list(self.modloads) + list(self.netconns) + list(self.filemods) + \
                       list(self.children) + list(self.regmods) + list(self.crossprocs))
 
@@ -1055,6 +1063,7 @@ class Process(TaggedModel):
     def sensor(self):
         return self._cb.select(Sensor, int(self._attribute('sensor_id', 0)))
 
+    @property
     def webui_link(self):
         return '%s/#analyze/%s/%s' % (self._cb.url, self.id, self.segment)
 
@@ -1072,7 +1081,6 @@ class Process(TaggedModel):
 
 
 def get_constants(prefix):
-    """Create a dictionary mapping socket module constants to their names."""
     return dict((getattr(socket, n), n)
                 for n in dir(socket)
                 if n.startswith(prefix)

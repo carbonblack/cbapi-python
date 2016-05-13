@@ -27,16 +27,7 @@ Queries
 
 Models
 ------
-.. autoclass:: cbapi.response.models.Feed
-
-.. autoclass:: cbapi.response.models.Binary
+.. automodule:: cbapi.response.models
     :members:
     :inherited-members:
-
-.. autoclass:: cbapi.response.models.SensorGroup
-
-Utility Functions
------------------
-
-.. automodule:: cbapi
-    :members:
+    :undoc-members:

@@ -102,6 +102,7 @@ class BaseModel(object):
         else:
             return baseuri
 
+    @property
     def webui_link(self):
         """Returns a link associated with this object in the Carbon Black user interface.
 
