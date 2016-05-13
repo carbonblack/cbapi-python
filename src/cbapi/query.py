@@ -13,10 +13,10 @@ log = logging.getLogger(__name__)
 
 class BaseQuery(object):
     def __init__(self, query=None):
-        self.query = query
+        self._query = query
 
     def all(self):
-        return self._query()
+        return self._perform_query()
 
     def first(self):
         res = self[:1]
@@ -27,12 +27,12 @@ class BaseQuery(object):
     def one(self):
         res = self[:2]
         if len(res) == 0:
-            raise MoreThanOneResultError(message="0 results for query {0:s}".format(self.query))
+            raise MoreThanOneResultError(message="0 results for query {0:s}".format(self._query))
         if len(res) > 1:
-            raise MoreThanOneResultError(message="{0:d} results found for query {1:s}".format(len(self), self.query))
+            raise MoreThanOneResultError(message="{0:d} results found for query {1:s}".format(len(self), self._query))
         return res[0]
 
-    def _query(self):
+    def _perform_query(self):
         return None
 
     def __len__(self):
@@ -42,25 +42,25 @@ class BaseQuery(object):
         return None
 
     def __iter__(self):
-        return self._query()
+        return self._perform_query()
 
 
 class SimpleQuery(BaseQuery):
     def __init__(self, cls, cb, urlobject=None):
         super(SimpleQuery, self).__init__()
 
-        self.doc_class = cls
+        self._doc_class = cls
         if not urlobject:
-            self.urlobject = cls.urlobject
+            self._urlobject = cls.urlobject
         else:
-            self.urlobject = urlobject
-        self.cb = cb
+            self._urlobject = urlobject
+        self._cb = cb
         self._full_init = False
         self._results = []
-        self.query = {}
+        self._query = {}
 
     def _match_query(self, i):
-        for k, v in iteritems(self.query):
+        for k, v in iteritems(self._query):
             if isinstance(v, six.string_types):
                 v = v.lower()
             target = getattr(i, k, None)
@@ -74,8 +74,8 @@ class SimpleQuery(BaseQuery):
     def results(self):
         if not self._full_init:
             self._results = []
-            for item in self.cb.get_object(self.urlobject):
-                t = self.doc_class.new_object(self.cb, item)
+            for item in self._cb.get_object(self._urlobject):
+                t = self._doc_class.new_object(self._cb, item)
                 if self._match_query(t):
                     self._results.append(t)
             self._full_init = True
@@ -93,16 +93,16 @@ class SimpleQuery(BaseQuery):
             raise TypeError("Invalid argument type")
 
     def where(self, new_query):
-        if self.query:
+        if self._query:
             raise ApiError("Cannot have multiple 'where' clauses")
 
         field, value = new_query.split(':')
-        self.query[field] = value
+        self._query[field] = value
 
         self._full_init = False
         return self
 
-    def _query(self):
+    def _perform_query(self):
         for item in self.results:
             yield item
 
@@ -110,15 +110,15 @@ class SimpleQuery(BaseQuery):
 class PaginatedQuery(BaseQuery):
     def __init__(self, cls, cb, query=None):
         super(PaginatedQuery, self).__init__(query)
-        self.doc_class = cls
-        self.cb = cb
+        self._doc_class = cls
+        self._cb = cb
         # TODO: this should be subject to a TTL
-        self.total_results = 0
-        self.count_valid = False
+        self._total_results = 0
+        self._count_valid = False
 
     def __len__(self):
-        if self.count_valid:
-            return self.total_results
+        if self._count_valid:
+            return self._total_results
         return self._count()
 
     def __getitem__(self, item):
@@ -153,7 +153,7 @@ class PaginatedQuery(BaseQuery):
                 start, numrows = item_range[0], len(item_range)
 
             try:
-                return list(self._query(start, numrows))
+                return list(self._perform_query(start, numrows))
             except StopIteration:
                 return []
         elif isinstance(item, int):
@@ -163,13 +163,13 @@ class PaginatedQuery(BaseQuery):
                 return None
 
             try:
-                return next(self._query(item, 1))
+                return next(self._perform_query(item, 1))
             except StopIteration:
                 return None
         else:
             raise TypeError("invalid type")
 
-    def _query(self, start=0, numrows=0):
+    def _perform_query(self, start=0, numrows=0):
         for item in self._search(start=start, rows=numrows):
-            yield self.doc_class.new_object(self.cb, item)
+            yield self._doc_class.new_object(self._cb, item)
 

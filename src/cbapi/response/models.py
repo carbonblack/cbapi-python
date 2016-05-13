@@ -261,9 +261,9 @@ class SensorQuery(SimpleQuery):
 
     def where(self, new_query):
         super(SensorQuery, self).where(new_query)
-        for k, v in iteritems(self.query):
+        for k, v in iteritems(self._query):
             if k not in SensorQuery.valid_field_names:
-                self.query = {}
+                self._query = {}
                 raise ValueError("Field name must be one of: {0:s}".format(", ".join(SensorQuery.valid_field_names)))
 
         return self
@@ -271,11 +271,11 @@ class SensorQuery(SimpleQuery):
     @property
     def results(self):
         if not self._full_init:
-            full_results = self.cb.get_object(self.urlobject, query_parameters=self.query)
+            full_results = self._cb.get_object(self._urlobject, query_parameters=self._query)
             if not full_results:
                 self._results = []
             else:
-                self._results = [self.doc_class.new_object(self.cb, it) for it in full_results]
+                self._results = [self._doc_class.new_object(self._cb, it) for it in full_results]
             self._full_init = True
         return self._results
 
@@ -369,24 +369,24 @@ class ArrayQuery(SimpleQuery):
 
     def where(self, new_query):
         super(ArrayQuery, self).where(new_query)
-        for k, v in iteritems(self.query):
+        for k, v in iteritems(self._query):
             if k != self.valid_field_name:
-                self.query = {}
+                self._query = {}
                 raise ValueError("Field name must be: {0:s}".format(self.valid_field_name))
 
         return self
 
     def _build_object(self, item):
-        return self.doc_class.new_object(self.cb, item)
+        return self._doc_class.new_object(self._cb, item)
 
     @property
     def results(self):
-        if not self.query.get(self.valid_field_name, None):
+        if not self._query.get(self.valid_field_name, None):
             raise ApiError("Must use a search parameter: .where('{0:s}:<id>')".format(self.valid_field_name))
-        if self._results_last_id != self.query[self.valid_field_name]:
-            self._results_last_id = self.query[self.valid_field_name]
-            self._results_last_query = [self._build_object(it) for it in self.cb.get_object(
-                    self.urlbuilder(self.query[self.valid_field_name]))]
+        if self._results_last_id != self._query[self.valid_field_name]:
+            self._results_last_id = self._query[self.valid_field_name]
+            self._results_last_query = [self._build_object(it) for it in self._cb.get_object(
+                    self.urlbuilder(self._query[self.valid_field_name]))]
 
         return self._results_last_query
 
@@ -406,7 +406,7 @@ class TaggedEvent(MutableBaseModel, CreatableModelMixin):
 
     @property
     def investigation(self):
-        return self._cb.select(Investigation, self.investigation_id)
+        return self.select(Investigation).where("id:{0:d}".format(self.investigation_id))
 
     @property
     def process(self):
@@ -495,6 +495,14 @@ class ThreatReport(MutableModel):
         return "/api/v1/feed/{0:s}/report/{1:s}".format(str(self.feed_id), self.id)
 
     def __init__(self, cb, full_id, initial_data=None):
+        if not initial_data:
+            try:
+                # fill in feed_id and id
+                (feed_id, report_id) = full_id.split(":")
+                initial_data = { "feed_id": feed_id, "id": report_id }
+            except:
+                raise ApiError("ThreatReport ID must be in form '<feed_id>:<report_id>'")
+
         super(ThreatReport, self).__init__(cb, full_id, initial_data)
 
     @property
@@ -503,6 +511,7 @@ class ThreatReport(MutableModel):
 
     def _set_model_unique_id(self):
         self._model_unique_id = "%s:%s" % (self.feed_id, self.id)
+
     def _update_object(self):
         update_content = { "ids": { str(self.feed_id): [str(self.id)] }, "updates": {}}
         for k in self._dirty_attributes.keys():

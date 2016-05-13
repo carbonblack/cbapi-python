@@ -8,7 +8,7 @@ from six.moves import urllib
 
 from distutils.version import LooseVersion
 from ..connection import BaseAPI
-from .models import Process, Binary, Watchlist
+from .models import Process, Binary, Watchlist, Investigation, Alert, ThreatReport
 from ..errors import UnauthorizedError, ApiError, MoreThanOneResultError
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
@@ -123,12 +123,37 @@ class CbEnterpriseResponseAPI(BaseAPI):
             raise ApiError("Invalid URL provided")
 
         frag = o.fragment.lstrip('/')
+        parts = frag.split('/')
+        if len(parts) < 2:
+            raise ApiError("URL endpoint does not include a unique ID: %s" % uri)
+
         if frag.startswith('analyze'):
-            (analyze, procid, segment) = frag.split('/')[:3]
+            (analyze, procid, segment) = parts[:3]
             return self.select(Process, procid, int(segment))
         elif frag.startswith('binary'):
-            (binary, md5) = frag.split('/')[:2]
+            (binary, md5) = parts[:2]
             return self.select(Binary, md5)
+        elif frag.startswith('watchlist'):
+            (watchlist, watchlist_id) = parts[:2]
+            return self.select(Watchlist, watchlist_id)
+        elif frag.startswith('search'):
+            (search, raw_query) = parts[:2]
+            return Query(Process, self, raw_query=raw_query)
+        elif frag.startswith('binaries'):
+            (binaries, raw_query) = parts[:2]
+            return Query(Binary, self, raw_query=raw_query)
+        elif frag.startswith('investigation'):
+            (investigation, investigation_id) = parts[:2]
+            return self.select(Investigation).where("id:{0:s}".format(investigation_id)).one()
+        elif frag.startswith('alerts'):
+            (alerts, raw_query) = parts[:2]
+            return Query(Alert, self, raw_query=raw_query)
+        elif frag.startswith('threats'):
+            (threats, raw_query) = parts[:2]
+            return Query(ThreatReport, self, raw_query=raw_query)
+        elif frag.startswith('threat-details'):
+            (threatdetails, feed_id, feed_title) = parts[:3]
+            return self.select(ThreatReport, "%s:%s" % (feed_id, feed_title))
         elif frag.startswith('login') or not o.fragment:
             return self
         else:
@@ -159,8 +184,8 @@ class Query(PaginatedQuery):
     >>> query = query.sort("last_update desc")          # sort by last update time, most recent first
     >>> for proc in query:                              # uses the iterator to retrieve all results
     >>>     print proc.username, proc.hostname
-    >>> processes = proc[:10]                           # retrieve the first ten results
-    >>> len(processes)                                  # retrieve the total count
+    >>> processes = query[:10]                          # retrieve the first ten results
+    >>> len(query)                                      # retrieve the total count
 
     Notes:
         - The slicing operator only supports start and end parameters, but not step. ``[1:-1]`` is legal, but
@@ -172,11 +197,11 @@ class Query(PaginatedQuery):
         super(Query, self).__init__(doc_class, cb, query=query)
 
         if raw_query:
-            self.raw_query = urllib.parse.parse_qs(raw_query)
+            self._raw_query = urllib.parse.parse_qs(raw_query)
         else:
-            self.raw_query = None
+            self._raw_query = None
 
-        self.sort_by = getattr(self.doc_class, 'default_sort', None)
+        self._sort_by = getattr(self._doc_class, 'default_sort', None)
         self._default_args = {"cb.urlver": 1, 'facet': 'false'}
 
     def create_watchlist(self, watchlist_name):
@@ -186,22 +211,22 @@ class Query(PaginatedQuery):
         :return: new Watchlist object
         :rtype: :py:class:`Watchlist`
         """
-        if self.raw_query:
-            args = self.raw_query.copy()
+        if self._raw_query:
+            args = self._raw_query.copy()
         else:
             args = self._default_args.copy()
 
-            if self.query:
-                args['q'] = self.query
+            if self._query:
+                args['q'] = self._query
             else:
                 args['q'] = ''
 
-        if self.sort_by:
-            args['sort'] = self.sort_by
+        if self._sort_by:
+            args['sort'] = self._sort_by
 
-        new_watchlist = self.cb.create(Watchlist, data={"name": watchlist_name})
+        new_watchlist = self._cb.create(Watchlist, data={"name": watchlist_name})
         new_watchlist.search_query = urllib.parse.urlencode(args)
-        if self.doc_class == Binary:
+        if self._doc_class == Binary:
             new_watchlist.index_type = "modules"
         else:
             new_watchlist.index_type = "events"
@@ -217,9 +242,9 @@ class Query(PaginatedQuery):
         """
         new_sort = new_sort.strip()
         if len(new_sort) == 0:
-            self.sort_by = None
+            self._sort_by = None
         else:
-            self.sort_by = new_sort
+            self._sort_by = new_sort
         return self
 
     def and_(self, new_query):
@@ -238,13 +263,13 @@ class Query(PaginatedQuery):
         :return: Query object
         :rtype: :py:class:`Query`
         """
-        if self.raw_query:
+        if self._raw_query:
             raise ApiError("Cannot call .where() on a raw query")
 
-        if self.query and len(self.query) > 0:
-            self.query = "{0:s} {1:s}".format(self.query, new_query)
+        if self._query and len(self._query) > 0:
+            self._query = "{0:s} {1:s}".format(self._query, new_query)
         else:
-            self.query = new_query
+            self._query = new_query
 
         return self
 
@@ -262,49 +287,49 @@ class Query(PaginatedQuery):
         qargs['rows'] = 0
         qargs['facet.field'] = list(args)
 
-        if self.query:
-            qargs['q'] = self.query
+        if self._query:
+            qargs['q'] = self._query
 
         query_params = convert_query_params(qargs)
-        return self.cb.get_object(self.doc_class.urlobject, query_parameters=query_params).get('facets', {})
+        return self._cb.get_object(self._doc_class.urlobject, query_parameters=query_params).get('facets', {})
 
     def _count(self):
-        if self.count_valid:
-            return self.total_results
+        if self._count_valid:
+            return self._total_results
 
-        if self.raw_query:
-            args = self.raw_query.copy()
+        if self._raw_query:
+            args = self._raw_query.copy()
         else:
             args = self._default_args.copy()
-            if self.query:
-                args['q'] = self.query
+            if self._query:
+                args['q'] = self._query
 
         args['start'] = 0
         args['rows'] = 0
 
         qargs = convert_query_params(args)
 
-        self.total_results = self.cb.get_object(self.doc_class.urlobject, query_parameters=qargs).get('total_results', 0)
+        self._total_results = self._cb.get_object(self._doc_class.urlobject, query_parameters=qargs).get('total_results', 0)
 
-        self.count_valid = True
-        return self.total_results
+        self._count_valid = True
+        return self._total_results
 
     def _search(self, start=0, rows=0, perpage=100):
         # iterate over total result set, 100 at a time
 
-        if self.raw_query:
-            args = self.raw_query.copy()
+        if self._raw_query:
+            args = self._raw_query.copy()
         else:
             args = self._default_args.copy()
             args['start'] = start
 
-            if self.query:
-                args['q'] = self.query
+            if self._query:
+                args['q'] = self._query
             else:
                 args['q'] = ''
 
-        if self.sort_by:
-            args['sort'] = self.sort_by
+        if self._sort_by:
+            args['sort'] = self._sort_by
         if rows:
             args['rows'] = min(rows, perpage)
         else:
@@ -316,10 +341,10 @@ class Query(PaginatedQuery):
 
         while still_querying:
             qargs = convert_query_params(args)
-            result = self.cb.get_object(self.doc_class.urlobject, query_parameters=qargs)
+            result = self._cb.get_object(self._doc_class.urlobject, query_parameters=qargs)
 
-            self.total_results = result.get('total_results')
-            self.count_valid = True
+            self._total_results = result.get('total_results')
+            self._count_valid = True
 
             for item in result.get('results'):
                 yield item
@@ -331,5 +356,5 @@ class Query(PaginatedQuery):
 
             args['start'] = current
 
-            if current >= self.total_results:
+            if current >= self._total_results:
                 break
