@@ -294,6 +294,14 @@ class CbApi(object):
         r.raise_for_status()
         return r.json()
 
+    def sensor_resourcestatus(self, sensor_id):
+        """
+        get resourve utilization for a single sensor, as specified by sensor id
+        """
+        r = self.cbapi_get("%s/api/v1/sensor/%s/resourcestatus" % (self.server, sensor_id))
+        r.raise_for_status()
+        return r.text
+
     def sensors(self, query_parameters={}):
         """
         get sensors, optionally specifying search criteria
