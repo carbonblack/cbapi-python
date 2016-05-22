@@ -296,7 +296,7 @@ class CbApi(object):
 
     def sensor_resourcestatus(self, sensor_id):
         """
-        get resourve utilization for a single sensor, as specified by sensor id
+        get resource utilization for a single sensor, as specified by sensor id
         """
         r = self.cbapi_get("%s/api/v1/sensor/%s/resourcestatus" % (self.server, sensor_id))
         r.raise_for_status()
