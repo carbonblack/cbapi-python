@@ -95,7 +95,7 @@ class CbEnterpriseResponseAPI(BaseAPI):
         :param str license_block: Licence block provided by Carbon Black support
         :raises ServerError: if the license is not accepted by the Carbon Black server
         """
-        r = self.session.post("/api/license", data=json.dumps({"license": license_block}))
+        r = self.post_object("/api/license", {"license": license_block})
         self.raise_unless_json(r, {"status": "success"})
 
     def _perform_query(self, cls, **kwargs):

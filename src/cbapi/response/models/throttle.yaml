@@ -1,0 +1,20 @@
+type: object
+properties:
+  from:
+    type: integer
+    description: ''
+  site_id:
+    type: integer
+    description: ''
+  day_of_week:
+    type: integer
+    description: ''
+  bytes_per_second:
+    type: number
+    format: double
+  to:
+    type: integer
+    description: ''
+  id:
+    type: integer
+    description: ''

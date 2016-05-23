@@ -65,6 +65,44 @@ import socket
 #     urlobject = '/api/v1/binary'
 
 
+class Site(MutableBaseModel, CreatableModelMixin):
+    urlobject = "/api/site"
+    swagger_meta_file = "response/models/site.yaml"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return SimpleQuery(cls, cb)
+
+    def _parse(self, info):
+        if len(info) != 1:
+            raise ApiError("Expecting Site response to be array of size 1")
+        return info[0]
+
+    @property
+    def throttle_rules(self):
+        return self._cb.select(ThrottleRule).where("site_id:{0}".format(self.id))
+
+    def __init__(self, cb, site_id=None, initial_data=None):
+        super(Site, self).__init__(cb, site_id, initial_data)
+
+        if initial_data:
+            self._full_init = True
+
+
+# TODO: we cannot modify/create Throttle rules until the semantics around the POST/PUT handler are fixed
+class ThrottleRule(NewBaseModel):
+    urlobject = "/api/throttle"
+    swagger_meta_file = "response/models/throttle.yaml"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return SimpleQuery(cls, cb)
+
+    @property
+    def site(self):
+        return self._join(Site, "site_id")
+
+
 class Alert(MutableBaseModel):
     urlobject = "/api/v1/alert"
     swagger_meta_file = "response/models/alert.yaml"
@@ -86,15 +124,15 @@ class Alert(MutableBaseModel):
 
     @property
     def binary(self):
-        return self._cb.select(Binary, self.md5)
+        return self._join(Binary, "md5")
 
     @property
     def sensor(self):
-        return self._cb.select(Sensor, self.sensor_id)
+        return self._join(Sensor, "sensor_id")
 
     @property
     def feed(self):
-        return self._cb.select(Feed, self.feed_id)
+        return self._join(Feed, "feed_id")
 
     @property
     def trigger_ioc(self):
@@ -167,7 +205,7 @@ class FeedAction(MutableModel):
 
     @property
     def feed(self):
-        return self._cb.select(Feed, self.feed_id)
+        return self._join(Feed, "feed_id")
 
 
 class Sensor(MutableBaseModel):
@@ -181,7 +219,7 @@ class Sensor(MutableBaseModel):
 
     @property
     def group(self):
-        return self._cb.select(SensorGroup, self.group_id)
+        return self._join(SensorGroup, "group_id")
 
     @group.setter
     def group(self, new_group):
@@ -189,11 +227,11 @@ class Sensor(MutableBaseModel):
 
     @property
     def dns_name(self):
-        return self.computer_dns_name
+        return getattr(self, 'computer_dns_name', None)
 
     @property
     def hostname(self):
-        return self.computer_name
+        return getattr(self, 'computer_name', None)
 
     @property
     def network_adapters(self):
@@ -207,7 +245,7 @@ class Sensor(MutableBaseModel):
 
     @property
     def os(self):
-        return getattr(self, 'os_environment_display_string')
+        return getattr(self, 'os_environment_display_string', None)
 
     @property
     def registration_time(self):
@@ -224,11 +262,15 @@ class Sensor(MutableBaseModel):
     # TODO: properly handle the stats api routes
     @property
     def queued_stats(self):
-        return self._cb.get_object('%s/%d/queued' % (Sensor.urlobject, self.id))
+        return self._cb.get_object("{0}/queued".format(self._build_api_request_uri()), default=[])
 
     @property
     def activity_stats(self):
-        return self._cb.get_object('%s/%d/activity' % (Sensor.urlobject, self.id))
+        return self._cb.get_object("{0}/activity".format(self._build_api_request_uri()), default=[])
+
+    @property
+    def resource_status(self):
+        return self._cb.get_object("{0}/resourcestatus".format(self._build_api_request_uri()), default=[])
 
 
 class SensorGroup(MutableBaseModel):
@@ -507,7 +549,7 @@ class ThreatReport(MutableModel):
 
     @property
     def feed(self):
-        return self._cb.select(Feed, self.feed_id)
+        return self._join(Feed, "feed_id")
 
     def _set_model_unique_id(self):
         self._model_unique_id = "%s:%s" % (self.feed_id, self.id)
@@ -924,7 +966,7 @@ class Process(TaggedModel):
 
     def _build_api_request_uri(self):
         # TODO: how do we handle process segments?
-        return "/api/{0:s}/process/{1:s}/{2:d}/event".format(self._process_event_api, self.id, self.segment)
+        return "/api/{0:s}/process/{1}/{2:d}/event".format(self._process_event_api, self.id, self.segment)
 
     def _parse(self, obj):
         self._info = obj.get('process', {})

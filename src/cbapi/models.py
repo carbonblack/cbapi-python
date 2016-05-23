@@ -195,13 +195,23 @@ class NewBaseModel(object):
 
     def __getattr__(self, item):
         try:
-            return super(NewBaseModel, self).__getattribute__(item)
+            val = super(NewBaseModel, self).__getattribute__(item)
         except AttributeError:
-            # try looking up via self._info
-            if item in self._info:
-                return self._info[item]
-            else:
-                raise
+            pass         # fall through to the rest of the logic...
+
+        # try looking up via self._info, if we already have it.
+        if item in self._info:
+            return self._info[item]
+
+        # if we're still here, let's load the object if we haven't done so already.
+        if not self._full_init:
+            self._refresh()
+
+        # try one more time.
+        if item in self._info:
+            return self._info[item]
+        else:
+            raise
 
     def __setattr__(self, attrname, val):
         if attrname.startswith("_"):
@@ -277,6 +287,17 @@ class NewBaseModel(object):
 
         return "\n".join(lines)
 
+    def _join(self, join_cls, field_name):
+        try:
+            field_value = getattr(self, field_name)
+        except AttributeError:
+            return None
+
+        if not field_value:             # NOTE THAT this is assuming no legitimate object has an ID of 0 (zero)
+            return None                 # - passing 0 to .select() for the field_value will return a Query object
+
+        return self._cb.select(join_cls, field_value)
+
 
 class MutableBaseModel(NewBaseModel):
     _new_object_http_method = "POST"
@@ -286,8 +307,7 @@ class MutableBaseModel(NewBaseModel):
         # allow subclasses to define their own property setters
         propobj = getattr(self.__class__, attrname, None)
         if isinstance(propobj, property) and propobj.fset:
-            propobj.fset(self, val)
-            return
+            return propobj.fset(self, val)
 
         if not attrname.startswith("_") and attrname not in self.__class__._valid_fields:
             if attrname in self._info:
@@ -302,6 +322,10 @@ class MutableBaseModel(NewBaseModel):
         # ensure that we are operating on the full object first
         if not self._full_init and self._model_unique_id is not None:
             self.refresh()
+
+        # extract unique ID if we're updating a "joined" field
+        if isinstance(new_value, NewBaseModel):
+            new_value = new_value._model_unique_id
 
         # early exit if we attempt to set the field to its own value
         if new_value == self._info.get(attrname, None):
@@ -327,12 +351,12 @@ class MutableBaseModel(NewBaseModel):
     def _update_object(self):
         if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
             log.debug("Creating a new {0:s} object".format(self.__class__.__name__))
-            ret = self._cb.http_request(self.__class__._new_object_http_method, self.__class__.urlobject,
-                                        data=self._info)
+            ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.__class__.urlobject,
+                                            data=self._info)
         else:
-            log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, self._model_unique_id))
-            ret = self._cb.http_request(self.__class__._change_object_http_method,
-                                        self._build_api_request_uri(), data=self._info)
+            log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
+            ret = self._cb.api_json_request(self.__class__._change_object_http_method,
+                                            self._build_api_request_uri(), data=self._info)
 
         refresh_required = False
 
@@ -421,5 +445,4 @@ class MutableBaseModel(NewBaseModel):
         if self.is_dirty():
             r += " (*)"
         return r
-
 

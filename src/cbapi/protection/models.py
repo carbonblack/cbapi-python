@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from ..oldmodels import BaseModel, immutable, MutableModel
-from ..models import MutableBaseModel, CreatableModelMixin
+from ..models import MutableBaseModel, CreatableModelMixin, NewBaseModel
 from contextlib import closing
 
 from zipfile import ZipFile
@@ -12,21 +12,74 @@ else:
     from cStringIO import StringIO
 
 
+class EnforcementLevel:
+    LevelHigh = 20
+    LevelMedium = 30
+    LevelLow = 40
+    LevelNone = 80
+
+
 class ApprovalRequest(MutableModel):
     urlobject = "/api/bit9platform/v1/approvalRequest"
 
+    ResolutionNotResolved = 0
+    ResolutionRejected = 1
+    ResolutionApproved = 2
+    ResolutionRuleChange = 3
+    ResolutionInstaller = 4
+    ResolutionUpdater = 5
+    ResolutionPublisher = 6
+    ResolutionOther = 7
+
+    StatusSubmitted = 1
+    StatusOpen = 2
+    StatusClosed = 3
+
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(ApprovalRequest, self).__init__(cb, model_unique_id, initial_data)
+
+    @property
+    def fileCatalog(self):
+        return self._join(FileCatalog, "fileCatalogId")
+
+    @property
+    def installerFileCatalog(self):
+        return self._join(FileCatalog, "installerFileCatalogId")
+
+    @property
+    def processFileCatalog(self):
+        return self._join(FileCatalog, "processFileCatalogId")
+
+    @property
+    def computer(self):
+        return self._join(Computer, "computerId")
 
 
 class Certificate(MutableModel):
     urlobject = "/api/bit9platform/v1/certificate"
 
+    StateUnapproved = 1
+    StateApproved = 2
+    StateBanned = 3
+    StateMixed = 4
+
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(Certificate, self).__init__(cb, model_unique_id, initial_data)
 
+    @property
+    def parent(self):
+        return self._join(Certificate, "parentCertificateId")
 
-class Computer(MutableModel):
+    @property
+    def publisher(self):
+        return self._join(Publisher, "publisherId")
+
+    @property
+    def firstSeenComputer(self):
+        return self._join(Computer, "firstSeenComputerId")
+
+
+class Computer(MutableBaseModel):
     urlobject = "/api/bit9platform/v1/computer"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
@@ -34,7 +87,7 @@ class Computer(MutableModel):
 
     @property
     def policy(self):
-        return self._cb.select(Policy, self.policyId)
+        return self._join(Policy, "policyId")
 
     @policy.setter
     def policy(self, new_policy_id):
@@ -43,6 +96,10 @@ class Computer(MutableModel):
     @property
     def fileInstances(self):
         return self._cb.select(FileInstance).where("computerId:{0:d}".format(self.id))
+
+    @property
+    def template(self):
+        return self._join(Computer, "templateComputerId")
 
 
 class Connector(MutableBaseModel, CreatableModelMixin):
@@ -220,12 +277,8 @@ class PendingAnalysis(MutableModel):
         return getattr(self, "md5", None) or getattr(self, "sha1", None) or getattr(self, "sha256", None)
 
 
-@immutable
-class Policy(BaseModel):
+class Policy(NewBaseModel):
     urlobject = "/api/bit9platform/v1/policy"
-
-    def __init__(self, cb, model_unique_id, initial_data=None):
-        super(Policy, self).__init__(cb, model_unique_id, initial_data)
 
 
 class Publisher(MutableModel):

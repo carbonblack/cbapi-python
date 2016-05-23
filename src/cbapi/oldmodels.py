@@ -319,3 +319,14 @@ class MutableModel(BaseModel):
     # TODO: How do we delete this object from our LRU cache?
     def delete(self):
         return self._delete_object()
+
+    def _join(self, join_cls, field_name):
+        try:
+            field_value = getattr(self, field_name)
+        except AttributeError:
+            return None
+
+        if field_value is None:
+            return None
+
+        return self._cb.select(join_cls, field_value)
