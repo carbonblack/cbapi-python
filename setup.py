@@ -18,7 +18,7 @@ install_requires=[
     'pyyaml'
 ]
 if sys.version_info < (2, 7):
-    install_requires.extend(['simplejson', 'total-ordering'])
+    install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])
 
 setup(
     name='cbapi',
