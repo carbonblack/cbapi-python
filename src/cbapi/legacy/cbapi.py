@@ -81,6 +81,12 @@ class CbApi(object):
             if use_https_proxy:
                 self.proxies['https'] = use_https_proxy
 
+    def decode_json_response(self, r, default=None):
+        if r.status_code == 204:
+            return default
+        else:
+            return json.loads(r.content)
+
     def info(self):
         """ Provide high-level information about the Carbon Black Enterprise Server.
 
@@ -300,7 +306,7 @@ class CbApi(object):
         """
         r = self.cbapi_get("%s/api/v1/sensor/%s/resourcestatus" % (self.server, sensor_id))
         r.raise_for_status()
-        return r.text
+        return self.decode_json_response(r, [])
 
     def sensors(self, query_parameters={}):
         """
