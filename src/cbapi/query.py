@@ -75,7 +75,7 @@ class SimpleQuery(BaseQuery):
         if not self._full_init:
             self._results = []
             for item in self._cb.get_object(self._urlobject, default=[]):
-                t = self._doc_class.new_object(self._cb, item)
+                t = self._doc_class.new_object(self._cb, item, full_doc=True)
                 if self._match_query(t):
                     self._results.append(t)
             self._full_init = True

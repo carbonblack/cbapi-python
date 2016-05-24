@@ -168,7 +168,7 @@ class BinaryFieldDescriptor(FieldDescriptor):
 class NewBaseModel(object):
     primary_key = "id"
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=False):
         self._cb = cb
         self._last_refresh_time = 0
 
@@ -180,7 +180,7 @@ class NewBaseModel(object):
         self._info[self.__class__.primary_key] = model_unique_id
 
         self._dirty_attributes = {}
-        self._full_init = False
+        self._full_init = full_doc
 
         if force_init:
             self.refresh()
@@ -190,8 +190,8 @@ class NewBaseModel(object):
         return self._info.get(self.__class__.primary_key, None)
 
     @classmethod
-    def new_object(cls, cb, item):
-        return cb.select(cls, item[cls.primary_key], initial_data=item)
+    def new_object(cls, cb, item, **kwargs):
+        return cb.select(cls, item[cls.primary_key], initial_data=item, **kwargs)
 
     def __getattr__(self, item):
         try:
