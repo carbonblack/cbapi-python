@@ -16,6 +16,11 @@ default_profile = {
 
     "proxy": None,
     "ignore_system_proxy": "False",
+
+    "rabbitmq_user": "cb",
+    "rabbitmq_pass": None,
+    "rabbitmq_host": "localhost",
+    "rabbitmq_port": 5004
 }
 
 _boolean_states = {'1': True, 'yes': True, 'true': True, 'on': True,
