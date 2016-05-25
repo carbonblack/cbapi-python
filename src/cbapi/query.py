@@ -71,6 +71,12 @@ class SimpleQuery(BaseQuery):
                 return False
         return True
 
+    def _sort(self, result_set):
+        if self._sort_by is not None:
+            return sorted(result_set, key=lambda x: getattr(x, self._sort_by, 0), reverse=True)
+        else:
+            return result_set
+
     @property
     def results(self):
         if not self._full_init:
@@ -79,10 +85,8 @@ class SimpleQuery(BaseQuery):
                 t = self._doc_class.new_object(self._cb, item, full_doc=True)
                 if self._match_query(t):
                     self._results.append(t)
+            self._results = self._sort(self._results)
             self._full_init = True
-
-        if self._sort_by is not None:
-            self._results = sorted(self._results, key=lambda x: getattr(x, self._sort_by, 0), reverse=True)
 
         return self._results
 

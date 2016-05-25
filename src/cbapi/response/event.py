@@ -12,6 +12,9 @@ import logging
 log = logging.getLogger(__name__)
 
 
+# This class is based on the pika asynchronous consumer example at
+# http://pika.readthedocs.io/en/0.10.0/examples/asynchronous_consumer_example.html
+
 class RabbitMQEventSource(threading.Thread):
     def __init__(self, cb):
         super(RabbitMQEventSource, self).__init__()

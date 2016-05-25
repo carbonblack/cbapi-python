@@ -317,7 +317,9 @@ class SensorQuery(SimpleQuery):
                 self._results = []
             else:
                 self._results = [self._doc_class.new_object(self._cb, it) for it in full_results]
+            self._results = self._sort(self._results)
             self._full_init = True
+
         return self._results
 
 
