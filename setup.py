@@ -23,7 +23,7 @@ if sys.version_info < (2, 7):
 
 setup(
     name='cbapi',
-    version='0.9.1',
+    version='0.9.2',
     url='https://github.com/carbonblack/cbapi-python',
     license='MIT',
     author='Carbon Black',
