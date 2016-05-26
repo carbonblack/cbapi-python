@@ -12,14 +12,10 @@ from contextlib import closing
 import struct
 from six.moves import urllib
 import six
-
-import yaml
+import logging
 
 from ..errors import InvalidObjectError, ApiError
 from ..oldmodels import BaseModel, MutableModel, immutable
-
-# TODO: do we really need to cast to long() in python 2?
-import sys
 
 if six.PY3:
     long = int
@@ -42,6 +38,9 @@ from six import python_2_unicode_compatible, iteritems
 
 # Get constants for decoding the Netconn events
 import socket
+
+
+log = logging.getLogger(__name__)
 
 
 # class Process(NewBaseModel):
@@ -178,18 +177,18 @@ class Feed(MutableBaseModel, CreatableModelMixin):
 
     @property
     def actions(self):
-        return self._cb.select(FeedAction).where("feed_id:{0:d}".format(int(self._model_unique_id)))
+        return self._cb.select(FeedAction).where("feed_id:{0}".format(int(self._model_unique_id)))
 
     @property
     def reports(self):
-        return self._cb.select(ThreatReport).where("feed_id:{0:d}".format(int(self._model_unique_id)))
+        return self._cb.select(ThreatReport).where("feed_id:{0}".format(int(self._model_unique_id)))
 
 
 class FeedAction(MutableModel):
     urlobject = None
 
     def _build_api_request_uri(self):
-        return "/api/v1/feed/{0:d}/action".format(self.feed_id)
+        return "/api/v1/feed/{0}/action".format(self.feed_id)
 
     def _retrieve_cb_info(self):
         # Can't "get" a feedaction
@@ -197,7 +196,7 @@ class FeedAction(MutableModel):
 
     @classmethod
     def _query_implementation(cls, cb):
-        return ArrayQuery(cls, cb, "feed_id", urlbuilder=lambda x: "/api/v1/feed/{0:d}/action".format(int(x)))
+        return ArrayQuery(cls, cb, "feed_id", urlbuilder=lambda x: "/api/v1/feed/{0}/action".format(int(x)))
 
     @property
     def feed_id(self):
@@ -290,7 +289,7 @@ class SensorGroup(MutableBaseModel):
         return self._cb.select(Sensor).where("groupid:{0:s}".format(str(self._model_unique_id)))
 
     def get_installer(self, osname="windows/exe"):
-        target_url = "/api/v1/group/{0:d}/installer/{1:s}".format(self._model_unique_id, osname)
+        target_url = "/api/v1/group/{0}/installer/{1:s}".format(self._model_unique_id, osname)
         with closing(self._cb.session.get(target_url, stream=True)) as r:
             return r.content
 
@@ -318,7 +317,9 @@ class SensorQuery(SimpleQuery):
                 self._results = []
             else:
                 self._results = [self._doc_class.new_object(self._cb, it) for it in full_results]
+            self._results = self._sort(self._results)
             self._full_init = True
+
         return self._results
 
 
@@ -350,40 +351,52 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
         return SimpleQuery(cls, cb)
 
     def __init__(self, *args, **kwargs):
+        self._query_template = {"cb.urlver": 1}
         super(Watchlist, self).__init__(*args, **kwargs)
-        sq = getattr(self, "search_query", None)
-        self._query = {"cb.urlver": 1}
 
+    @property
+    def _query(self):
+        sq = getattr(self, "search_query", None)
         if sq is not None:
-            self._query = urllib.parse.parse_qs(sq, "")
+            return urllib.parse.parse_qsl(getattr(self, "search_query", ""))
+        else:
+            return []
 
     @property
     def query(self):
-        queryparts = []
-        if 'q' in self._query:
-            queryparts.extend(self._query["q"])
-        for k, v in iteritems(self._query):
-            if k.startswith("cb.q."):
-                queryparts.extend(v)
+        queryparts = [v for k, v in self._query if k == "q" or k.startswith("cb.q.")]
         return " ".join(queryparts)
 
     def _reset_query(self):
-        if "q" in self._query:
-            del self._query["q"]
-        additional_query_parameters = [q for q in self._query if q.startswith("cb.q.")]
-        for k in additional_query_parameters:
-            del self._query[k]
+        qt = list(self._query)
+        new_q = []
+        template_items = self._query_template.copy()
+
+        for k, v in qt:
+            if k == "q" or k.startswith("cb.q."):
+                pass
+            else:
+                new_q.append((k, v))
+
+            if k in template_items:
+                del template_items[k]
+
+        for k, v in iteritems(template_items):
+            new_q.append((k, v))
+
+        self.search_query = urllib.parse.urlencode(new_q)
 
     @query.setter
     def query(self, new_query):
         self._reset_query()
-        self._query["q"] = new_query
-        self.search_query = urllib.parse.urlencode(self._query)
+        qt = list(self._query)
+        qt.append(("q", new_query))
+        self.search_query = urllib.parse.urlencode(qt)
 
     @property
     def facets(self):
         facets = {}
-        for k, v in iteritems(self._query):
+        for k, v in self._query:
             if k.startswith("cb.fq."):
                 facets[k[6:]] = v
 
@@ -448,7 +461,7 @@ class TaggedEvent(MutableBaseModel, CreatableModelMixin):
 
     @property
     def investigation(self):
-        return self.select(Investigation).where("id:{0:d}".format(self.investigation_id))
+        return self.select(Investigation).where("id:{0}".format(self.investigation_id))
 
     @property
     def process(self):
@@ -474,7 +487,7 @@ class Investigation(MutableBaseModel):
 
     @property
     def events(self):
-        return self._cb.select(TaggedEvent).where("investigation_id:{0:d}".format(self._model_unique_id))
+        return self._cb.select(TaggedEvent).where("investigation_id:{0}".format(self._model_unique_id))
 
 
 class TaggedModel(BaseModel):
@@ -966,7 +979,7 @@ class Process(TaggedModel):
 
     def _build_api_request_uri(self):
         # TODO: how do we handle process segments?
-        return "/api/{0:s}/process/{1}/{2:d}/event".format(self._process_event_api, self.id, self.segment)
+        return "/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id, self.segment)
 
     def _parse(self, obj):
         self._info = obj.get('process', {})

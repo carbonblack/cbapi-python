@@ -163,12 +163,13 @@ class BaseAPI(object):
             for k in ("ssl_verify",):
                 if k in kwargs:
                     credentials[k] = kwargs.pop(k)
-            credentials = Credentials(credentials)
+            self.credentials = Credentials(credentials)
+            self.credential_profile_name = None
         else:
-            profile_name = kwargs.pop("profile", None)
-            credentials = self.credential_store.get_credentials(profile_name)
+            self.credential_profile_name = kwargs.pop("profile", None)
+            self.credentials = self.credential_store.get_credentials(self.credential_profile_name)
 
-        self.session = Connection(credentials)
+        self.session = Connection(self.credentials)
 
     def raise_unless_json(self, ret, expected):
         if ret.status_code == 200:

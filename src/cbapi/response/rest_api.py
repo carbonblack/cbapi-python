@@ -2,14 +2,12 @@
 
 from __future__ import absolute_import
 
-import json
-
 from six.moves import urllib
 
 from distutils.version import LooseVersion
 from ..connection import BaseAPI
 from .models import Process, Binary, Watchlist, Investigation, Alert, ThreatReport
-from ..errors import UnauthorizedError, ApiError, MoreThanOneResultError
+from ..errors import UnauthorizedError, ApiError
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
 from ..errors import CredentialError

@@ -58,6 +58,7 @@ class SimpleQuery(BaseQuery):
         self._full_init = False
         self._results = []
         self._query = {}
+        self._sort_by = None
 
     def _match_query(self, i):
         for k, v in iteritems(self._query):
@@ -70,15 +71,23 @@ class SimpleQuery(BaseQuery):
                 return False
         return True
 
+    def _sort(self, result_set):
+        if self._sort_by is not None:
+            return sorted(result_set, key=lambda x: getattr(x, self._sort_by, 0), reverse=True)
+        else:
+            return result_set
+
     @property
     def results(self):
         if not self._full_init:
             self._results = []
             for item in self._cb.get_object(self._urlobject, default=[]):
-                t = self._doc_class.new_object(self._cb, item)
+                t = self._doc_class.new_object(self._cb, item, full_doc=True)
                 if self._match_query(t):
                     self._results.append(t)
+            self._results = self._sort(self._results)
             self._full_init = True
+
         return self._results
 
     def __len__(self):
@@ -105,6 +114,10 @@ class SimpleQuery(BaseQuery):
     def _perform_query(self):
         for item in self.results:
             yield item
+
+    def sort(self, new_sort):
+        self._sort_by = new_sort
+        return self
 
 
 class PaginatedQuery(BaseQuery):

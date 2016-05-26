@@ -15,7 +15,8 @@ install_requires=[
     'attrdict',
     'cachetools',
     'six',
-    'pyyaml'
+    'pyyaml',
+    'pika'
 ]
 if sys.version_info < (2, 7):
     install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])
