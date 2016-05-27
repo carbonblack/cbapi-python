@@ -1060,7 +1060,7 @@ class CbApi(object):
             data['action_data'] = action_data
             data['watchlist_id'] = watchlist_id
 
-        url = "%s/util/v1/watchlist/%d/action" % (self.server, watchlist_id)
+        url = "%s/api/v1/watchlist/%d/action" % (self.server, watchlist_id)
         r = self.cbapi_post(url, data=json.dumps(data), timeout=120)
         r.raise_for_status()
 
