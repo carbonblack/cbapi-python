@@ -40,6 +40,7 @@ class EventRegistry(threading.Thread):
         with self._registry_lock:
             self._registry = defaultdict(list)
 
+    # TODO: evaluate concurrent.futures.ThreadPoolExecutor for this
     def run(self):
         log.debug("starting event registry thread")
         while True:

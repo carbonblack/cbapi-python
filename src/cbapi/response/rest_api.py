@@ -11,11 +11,11 @@ from ..errors import UnauthorizedError, ApiError
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
 from ..errors import CredentialError
+from .live_response_api import LiveResponseScheduler
 
 import requests
 
 import logging
-
 log = logging.getLogger(__name__)
 
 
@@ -60,14 +60,16 @@ class CbEnterpriseResponseAPI(BaseAPI):
 
         self._parsed_url = urllib.parse.urlparse(self.url)
         try:
-            server_info = self.info()
+            self.server_info = self.info()
         except UnauthorizedError:
             raise UnauthorizedError(uri=self.url, message="Invalid API token for server {0:s}.".format(self.url))
 
-        log.debug('Connected to Cb server version %s at %s' % (server_info['version'], self.session.server))
-        self.cb_server_version = LooseVersion(server_info['version'])
+        log.debug('Connected to Cb server version %s at %s' % (self.server_info['version'], self.session.server))
+        self.cb_server_version = LooseVersion(self.server_info['version'])
         if self.cb_server_version < LooseVersion('5.0'):
             raise ApiError("CbEnterpriseResponseAPI only supports Cb servers version >= 5.0.0")
+
+        self._lr_scheduler = None
 
     def info(self):
         """Retrieve basic version information from the Carbon Black Enterprise Response server.
@@ -156,6 +158,20 @@ class CbEnterpriseResponseAPI(BaseAPI):
             return self
         else:
             raise ApiError("Unknown URL endpoint: %s" % uri)
+
+    def _request_lr_session(self, sensor_id):
+        if self._lr_scheduler is None:
+            if not self.server_info.get("cblrEnabled", False):
+                raise ApiError("Cb server does not support Live Response")
+            self._lr_scheduler = LiveResponseScheduler(self)
+
+        return self._lr_scheduler.request_session(sensor_id)
+
+    def _close_lr_session(self, sensor_id):
+        if self._lr_scheduler is None:
+            raise ApiError("Live Response scheduler is not running")
+
+        return self._lr_scheduler.close_session(sensor_id)
 
 
 class Query(PaginatedQuery):
