@@ -40,11 +40,11 @@ class LiveResponseSession(object):
     def get_file(self, file_name):
         data = {"name": "get file", "object": file_name}
 
-        resp = self.lr_post_command(data).json()
+        resp = self._lr_post_command(data).json()
         file_id = resp.get('file_id', None)
         command_id = resp.get('id', None)
 
-        self.poll_command(command_id)
+        self._poll_command(command_id)
         file_content = self.cb.session.get("/api/v1/cblr/session/{0}/file/{1}/content".format(self.session_id,
                                                                                                  file_id)).content
 
@@ -52,11 +52,11 @@ class LiveResponseSession(object):
 
     def kill_process(self, pid):
         data = {"name": "kill", "object": pid}
-        resp = self.lr_post_command(data).json()
+        resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
 
         try:
-            self.poll_command(command_id, timeout=10, delay=0.1)
+            self._poll_command(command_id, timeout=10, delay=0.1)
         except TimeoutError:
             return False
 
@@ -79,51 +79,38 @@ class LiveResponseSession(object):
             data["working_directory"] = workdir
             data["output_file"] = randfilename
 
-        resp = self.lr_post_command(data).json()
+        resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
 
         if wait_for_output:
-            self.poll_command(command_id, timeout=wait_timeout)
+            self._poll_command(command_id, timeout=wait_timeout)
 
             # now the file is ready to be read
 
             file_content = self.get_file(randfilename)
             # delete the file
-            self.lr_post_command({"name": "delete file", "object": randfilename})
+            self._lr_post_command({"name": "delete file", "object": randfilename})
 
             return file_content
 
     def get_processes(self):
         data = {"name": "process list"}
-        resp = self.lr_post_command(data).json()
+        resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
 
-        return self.poll_command(command_id).get("processes")
+        return self._poll_command(command_id).get("processes")
 
-    def poll_command(self, command_id, **kwargs):
+    def _poll_command(self, command_id, **kwargs):
         return poll_status(self.cb, "/api/v1/cblr/session/{0}/command/{1}".format(self.session_id, command_id),
                            **kwargs)
 
-    def lr_post_command(self, data):
+    def _lr_post_command(self, data):
         retries = 5
 
         while retries:
             try:
                 data["session_id"] = self.session_id
                 resp = self.cb.post_object("/api/v1/cblr/session/{0}/command".format(self.session_id), data)
-            except ObjectNotFoundError:
-                self.session_id = self.lr_scheduler.request_session(self.session_id, force_new_session=True)
-                retries -= 1
-                continue
-            else:
-                return resp
-
-    def lr_get(self, path):
-        retries = 5
-
-        while retries:
-            try:
-                resp = self.cb.session.get("/api/v1/cblr/session/{0}{1}".format(self.session_id, path))
             except ObjectNotFoundError:
                 self.session_id = self.lr_scheduler.request_session(self.session_id, force_new_session=True)
                 retries -= 1
