@@ -80,6 +80,7 @@ class VirusTotalConnector(object):
         else:
             binary.analysisStatus = PendingAnalysis.StatusCancelled
             log.info("%s: VirusTotal has no information and we aren't allowed to upload it. Cancelling the analysis request." % binary.fileHash)
+            binary.save()
 
     def report_result(self, binary, scanResults):
         # We have results. Create our notification
