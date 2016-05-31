@@ -12,20 +12,39 @@ from collections import defaultdict
 from cbapi.errors import TimeoutError, ObjectNotFoundError
 from six import itervalues
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
-from cbapi.response.models import Sensor
+from cbapi import winerror
 
 
 log = logging.getLogger(__name__)
 
 
-# TODO: find a more user-friendly way to represent exceptions. The "details" look like:
-# {u'status': u'error', u'username': u'admin', u'sensor_id': 9, u'name': u'kill', u'completion': 1464319733.190924, u'object': 1660, u'session_id': 7, u'result_type': u'WinHresult', u'create_time': 1464319733.171967, u'result_desc': u'', u'id': 22, u'result_code': 2147942487}
-# Can we decode HRESULT, for example?
 class LiveResponseError(Exception):
     def __init__(self, message, details):
-        self.message = message
+        message_list = [message]
         self.details = details
+        # Details object:
+        # {u'status': u'error', u'username': u'admin', u'sensor_id': 9, u'name': u'kill', u'completion': 1464319733.190924,
+        # u'object': 1660, u'session_id': 7, u'result_type': u'WinHresult', u'create_time': 1464319733.171967,
+        # u'result_desc': u'', u'id': 22, u'result_code': 2147942487}
+
+        if self.details.get("status") == "error" and self.details.get("result_type") == "WinHresult":
+            # attempt to decode the win32 error
+            win32_error_text = "Unknown Win32 error code"
+            try:
+                hresult = int(self.details.get("result_code"))
+                win32_error_text = "Win32 error code 0x%08X" % (hresult, )
+                error_info = winerror.decode_hresult(hresult)
+                if error_info:
+                    win32_error_text += " ({0})".format(error_info)
+            except:
+                pass
+            finally:
+                message_list.append(win32_error_text)
+        
+        self.message = ": ".join(message_list)
+
+    def __str__(self):
+        return self.message
 
 
 class LiveResponseSession(object):
@@ -131,7 +150,7 @@ class LiveResponseScheduler(object):
         self._sessions = {}
         self._session_lock = threading.RLock()
 
-        self._cleanup_thread = threading.Thread(target=self._cleanup_thread_task)
+        self._cleanup_thread = threading.Thread(target=self._session_keepalive_thread)
         self._cleanup_thread.daemon = True
         self._cleanup_thread.start()
 
@@ -145,7 +164,7 @@ class LiveResponseScheduler(object):
     def job_results(self, tag):
         return as_completed(self._jobs[tag])
 
-    def _cleanup_thread_task(self):
+    def _session_keepalive_thread(self):
         log.debug("Starting Live Response scheduler cleanup task")
         while True:
             time.sleep(self._timeout)
@@ -176,9 +195,9 @@ class LiveResponseScheduler(object):
         with self._session_lock:
             self._sessions[sensor_id].refcount -= 1
 
-    def _send_keepalive(self, sensor_id):
-        log.debug("Sending keepalive message for sensor id {0}".format(sensor_id))
-        self._cb.get_object("/api/v1/cblr/session/{0}/keepalive".format(sensor_id))
+    def _send_keepalive(self, session_id):
+        log.debug("Sending keepalive message for session id {0}".format(session_id))
+        self._cb.get_object("/api/v1/cblr/session/{0}/keepalive".format(session_id))
 
     def _get_or_create_session(self, sensor_id):
         sensor_sessions = [s for s in self._cb.get_object("/api/v1/cblr/session")
