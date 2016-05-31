@@ -22,10 +22,10 @@ def main():
             if "{53f56307-b6bf-11d0-94f2-00a0c91efb8b}" in rm.path:
                 pieces = rm.path.split("usbstor#disk&")
                 if len(pieces) < 2:
-                    print "WARN::::", pieces
+                    print("WARN:::: {0}".format(str(pieces)))
                 else:
                     device_info = pieces[1] #.split('{53f56307-b6bf-11d0-94f2-00a0c91efb8b}')[0]
-                    print device_info
+                    print(device_info)
 
 
 if __name__ == "__main__":

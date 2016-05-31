@@ -257,5 +257,5 @@ if __name__ == "__main__":
 
     c._lr_scheduler.submit_job("test", j.run, [9,])
     for x in c._lr_scheduler.job_results("test"):
-        print x.result()
+        print(x.result())
 

@@ -197,7 +197,7 @@ class Query(PaginatedQuery):
     >>> query = query.where("process_name:notepad.exe") # add a filter to this Query
     >>> query = query.sort("last_update desc")          # sort by last update time, most recent first
     >>> for proc in query:                              # uses the iterator to retrieve all results
-    >>>     print proc.username, proc.hostname
+    >>>     print("{0} {1}".format(proc.username, proc.hostname))
     >>> processes = query[:10]                          # retrieve the first ten results
     >>> len(query)                                      # retrieve the total count
 
