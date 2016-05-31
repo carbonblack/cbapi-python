@@ -58,7 +58,10 @@ class LiveResponseSession(object):
         # TODO: refcount should be in a different object in the scheduler
         self.refcount = 1
 
-    def get_file(self, file_name):
+    def get_session_archive(self):
+        return self.cb.session.get("/api/v1/cblr/session/{0}/archive".format(self.session_id)).content
+
+    def get_raw_file(self, file_name):
         data = {"name": "get file", "object": file_name}
 
         resp = self._lr_post_command(data).json()
@@ -66,10 +69,17 @@ class LiveResponseSession(object):
         command_id = resp.get('id', None)
 
         self._poll_command(command_id)
-        file_content = self.cb.session.get("/api/v1/cblr/session/{0}/file/{1}/content".format(self.session_id,
-                                                                                                 file_id)).content
+        response = self.cb.session.get("/api/v1/cblr/session/{0}/file/{1}/content".format(self.session_id,
+                                                                                          file_id), stream=True)
+        response.raw.decode_content = True
+        return response.raw
 
-        return file_content
+    def get_file(self, file_name):
+        fp = self.get_raw_file(file_name)
+        content = fp.read()
+        fp.close()
+
+        return content
 
     def kill_process(self, pid):
         data = {"name": "kill", "object": pid}
@@ -121,9 +131,57 @@ class LiveResponseSession(object):
 
         return self._poll_command(command_id).get("processes")
 
+    def list_registry_keys(self, regkey):
+        data = {"name": "reg enum key", "object": regkey}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+
+        return self._poll_command(command_id).get("values")
+
+    def get_registry_key(self, regkey):
+        data = {"name": "reg query value", "object": regkey}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+
+        return self._poll_command(command_id).get("value")
+
+    def set_registry_key(self, regkey, value, overwrite=True, value_type=None):
+        if value_type is None:
+            if type(value) == int:
+                value_type = "REG_DWORD"
+            elif type(value) == list:
+                value_type = "REG_MULTI_SZ"
+            elif type(value) == bytes:
+                value_type = "REG_BYTES"
+            else:
+                value_type = "REG_SZ"
+                value = str(value)
+
+        data = {"name": "reg set value", "object": regkey, "overwrite": overwrite, "value_type": value_type,
+                "value_data": value}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+
+    def delete_file(self, filename):
+        data = {"name": "delete file", "object": filename}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+
+    def put_file(self, infp, remote_filename):
+        data = {"name": "put file", "object": remote_filename}
+        file_id = self._upload_file(infp)
+        data["file_id"] = file_id
+
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+
     def _poll_command(self, command_id, **kwargs):
         return poll_status(self.cb, "/api/v1/cblr/session/{0}/command/{1}".format(self.session_id, command_id),
                            **kwargs)
+
+    def _upload_file(self, fp):
+        resp = self.cb.session.post("/api/v1/cblr/session/{0}/file".format(self.session_id), files={"file": fp}).json()
+        return resp.get('id')
 
     def _lr_post_command(self, data):
         retries = 5
@@ -189,7 +247,15 @@ class LiveResponseScheduler(object):
                             delete_list.append(session.sensor_id)
 
                 for sensor_id in delete_list:
-                    del self._sessions[sensor_id]
+                    try:
+                        session_data = self._cb.get_object("/api/v1/cblr/session/{0}"
+                                                           .format(self._sessions[sensor_id].session_id))
+                        session_data["status"] = "close"
+                        self._cb.post_object("/api/v1/cblr/session/{0}", session_data)
+                    except:
+                        pass
+                    finally:
+                        del self._sessions[sensor_id]
 
     def request_session(self, sensor_id, force_new_session=False):
         with self._session_lock:
@@ -271,7 +337,7 @@ if __name__ == "__main__":
     with c.select(Sensor, 9).lr_session() as lr_session:
         file_contents = lr_session.get_file(r"c:\test.txt")
 
-    c._lr_scheduler.submit_job("test", j.run, [9,])
-    for x in c._lr_scheduler.job_results("test"):
+    c.live_response.submit_job("test", j.run, [9, ])
+    for x in c.live_response.job_results("test"):
         print(x.result())
 

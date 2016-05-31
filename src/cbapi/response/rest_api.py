@@ -71,6 +71,15 @@ class CbEnterpriseResponseAPI(BaseAPI):
 
         self._lr_scheduler = None
 
+    @property
+    def live_response(self):
+        if self._lr_scheduler is None:
+            if not self.server_info.get("cblrEnabled", False):
+                raise ApiError("Cb server does not support Live Response")
+            self._lr_scheduler = LiveResponseScheduler(self)
+
+        return self._lr_scheduler
+
     def info(self):
         """Retrieve basic version information from the Carbon Black Enterprise Response server.
 
@@ -160,18 +169,10 @@ class CbEnterpriseResponseAPI(BaseAPI):
             raise ApiError("Unknown URL endpoint: %s" % uri)
 
     def _request_lr_session(self, sensor_id):
-        if self._lr_scheduler is None:
-            if not self.server_info.get("cblrEnabled", False):
-                raise ApiError("Cb server does not support Live Response")
-            self._lr_scheduler = LiveResponseScheduler(self)
-
-        return self._lr_scheduler.request_session(sensor_id)
+        return self.live_response.request_session(sensor_id)
 
     def _close_lr_session(self, sensor_id):
-        if self._lr_scheduler is None:
-            raise ApiError("Live Response scheduler is not running")
-
-        return self._lr_scheduler.close_session(sensor_id)
+        return self.live_response.close_session(sensor_id)
 
 
 class Query(PaginatedQuery):

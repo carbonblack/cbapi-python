@@ -207,11 +207,11 @@ class BaseAPI(object):
 
         return self.session.http_request(method, uri, headers=headers, data=raw_data, **kwargs)
 
-    def post_object(self, uri, body):
-        return self.api_json_request("POST", uri, data=body)
+    def post_object(self, uri, body, **kwargs):
+        return self.api_json_request("POST", uri, data=body, **kwargs)
 
-    def put_object(self, uri, body):
-        return self.api_json_request("PUT", uri, data=body)
+    def put_object(self, uri, body, **kwargs):
+        return self.api_json_request("PUT", uri, data=body, **kwargs)
 
     def delete_object(self, uri):
         return self.api_json_request("DELETE", uri)
