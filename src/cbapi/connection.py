@@ -4,7 +4,6 @@ from __future__ import absolute_import
 
 import requests
 import sys
-import os
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3 import Retry
 from requests.packages.urllib3.poolmanager import PoolManager
@@ -18,7 +17,7 @@ from .auth import CredentialStore, Credentials
 from .errors import ServerError, TimeoutError, ApiError, ObjectNotFoundError, UnauthorizedError, CredentialError
 from . import __version__
 
-from lru import lru_cache_function
+from .cache.lru import lru_cache_function
 from .models import CreatableModelMixin
 
 

@@ -10,7 +10,6 @@ if sys.version_info < (3, 0):
     packages.extend(['cbapi.legacy', 'cbapi.legacy.util'])
 
 install_requires=[
-    'py-lru-cache',
     'requests',
     'attrdict',
     'cachetools',
