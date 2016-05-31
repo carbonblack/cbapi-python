@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import
 
+import contextlib
 import json
 from distutils.version import LooseVersion
 from collections import namedtuple, defaultdict
@@ -212,6 +213,9 @@ class Sensor(MutableBaseModel):
     urlobject = '/api/v1/sensor'
     NetworkAdapter = namedtuple('NetworkAdapter', ['macaddr', 'ipaddr'])
 
+    def __init__(self, *args, **kwargs):
+        super(Sensor, self).__init__(*args, **kwargs)
+
     @classmethod
     def _query_implementation(cls, cb):
         return SensorQuery(cls, cb)
@@ -270,6 +274,15 @@ class Sensor(MutableBaseModel):
     @property
     def resource_status(self):
         return self._cb.get_object("{0}/resourcestatus".format(self._build_api_request_uri()), default=[])
+
+    @contextlib.contextmanager
+    def lr_session(self):
+        if not getattr(self, "supports_cblr", False):
+            raise ApiError("Sensor does not support Cb Live Response")
+
+        yield self._cb._request_lr_session(self._model_unique_id)
+
+        self._cb._close_lr_session(self._model_unique_id)
 
 
 class SensorGroup(MutableBaseModel):
