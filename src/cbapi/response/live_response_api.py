@@ -14,6 +14,8 @@ from six import itervalues
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from cbapi import winerror
 
+from cbapi.response.models import Sensor
+
 
 log = logging.getLogger(__name__)
 
@@ -171,11 +173,20 @@ class LiveResponseScheduler(object):
 
             delete_list = []
             with self._session_lock:
-                for sensor in itervalues(self._sessions):
-                    if sensor.refcount == 0:
-                        delete_list.append(sensor.sensor_id)
+                for session in itervalues(self._sessions):
+                    if session.refcount == 0:
+                        delete_list.append(session.sensor_id)
                     else:
-                        self._send_keepalive(sensor.session_id)
+                        try:
+                            self._send_keepalive(session.session_id)
+                        except ObjectNotFoundError:
+                            log.debug("Session {0} for sensor {1} not valid any longer, removing from cache"
+                                      .format(session.session_id, session.sensor_id))
+                            delete_list.append(session.sensor_id)
+                        except:
+                            log.debug("Keepalive on session {0} (sensor {1}) failed with unknown error, removing from cache"
+                                      .format(session.session_id, session.sensor_id))
+                            delete_list.append(session.sensor_id)
 
                 for sensor_id in delete_list:
                     del self._sessions[sensor_id]
@@ -208,7 +219,12 @@ class LiveResponseScheduler(object):
         else:
             session = self._create_session(sensor_id)
 
-        poll_status(self._cb, "/api/v1/cblr/session/{0}".format(session.session_id), desired_status="active")
+        try:
+            poll_status(self._cb, "/api/v1/cblr/session/{0}".format(session.session_id), desired_status="active")
+        except ObjectNotFoundError:
+            # the Cb server will return a 404 if we don't establish a session in time, so convert this to a "timeout"
+            raise TimeoutError("Could not establish session with sensor {0}".format(session.sensor_id))
+
         return session
 
     def _create_session(self, sensor_id):
