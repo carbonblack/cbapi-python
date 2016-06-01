@@ -251,7 +251,8 @@ class LiveResponseScheduler(object):
                         session_data = self._cb.get_object("/api/v1/cblr/session/{0}"
                                                            .format(self._sessions[sensor_id].session_id))
                         session_data["status"] = "close"
-                        self._cb.post_object("/api/v1/cblr/session/{0}", session_data)
+                        self._cb.post_object("/api/v1/cblr/session/{0}".format(self._sessions[sensor_id].session_id),
+                                             session_data)
                     except:
                         pass
                     finally:
