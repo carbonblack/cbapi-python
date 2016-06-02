@@ -53,7 +53,7 @@ class TestCbResponse(unittest.TestCase):
             #
             # We don't want to connect to a cbserver so using bogus values
             #
-            c = CbEnterpriseResponseAPI(url="http://localhost", token="", ssl_verify=False)
+            c = CbEnterpriseResponseAPI(url="http://localhost", token="N/A", ssl_verify=False)
         else:
             c = CbEnterpriseResponseAPI()
 
