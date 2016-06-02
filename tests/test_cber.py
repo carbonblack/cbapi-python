@@ -41,7 +41,6 @@ else:
 # Install the cache
 # NOTE: deny_outbound is set so we don't attempt comms and force using the cache
 #
-print cache_file_name
 requests_cache.install_cache(cache_file_name, allowable_methods=('GET', 'POST'), deny_outbound=True)
 
 
