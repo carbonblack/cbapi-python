@@ -14,7 +14,7 @@ import requests
 from requests import Session as OriginalSession
 from requests.hooks import dispatch_hook
 
-import backends
+from . import backends
 
 try:
     ver = tuple(map(int, requests.__version__.split(".")))

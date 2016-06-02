@@ -5,7 +5,7 @@ from nose.tools import assert_equal
 from testconfig import config
 
 import os
-import requests_cache
+from . import requests_cache
 import unittest
 
 #import requests.packages.urllib3
@@ -67,7 +67,7 @@ class TestCbResponse(unittest.TestCase):
             #
             # TODO: Save to sqlite database
             #
-            print len(binary_query)
+            print(len(binary_query))
 
     def test_read_binary(self):
         data = c.select(Binary).where('').first().file.read(2)

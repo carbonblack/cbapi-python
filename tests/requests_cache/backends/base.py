@@ -17,7 +17,13 @@ import requests
 
 from ..compat import is_py2, urlencode, urlparse, urlunparse, parse_qsl
 
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except:
+    #
+    # python 3
+    #
+    from urllib.parse import urljoin
 
 
 _DEFAULT_HEADERS = requests.utils.default_headers()
