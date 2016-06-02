@@ -46,6 +46,12 @@ class BaseCache(object):
         .. note:: Response is reduced before saving (with :meth:`reduce_response`)
                   to make it picklable
         """
+        #
+        # Delete the X-Auth-Token
+        #
+        if 'X-Auth-Token' in response.request.headers:
+            del response.request.headers['X-Auth-Token']
+
         self.responses[key] = self.reduce_response(response), datetime.utcnow()
 
     def add_key_mapping(self, new_key, key_to_response):
@@ -218,7 +224,7 @@ class BaseCache(object):
             url, body = self._remove_ignored_parameters(request)
         else:
             url, body = request.url, request.body
-        key = hashlib.sha256()
+        #key = hashlib.sha256()
 
         #
         # Make the url only be the path part of the url
@@ -228,16 +234,16 @@ class BaseCache(object):
             url = url + request.body
         ###############################################
 
-        key.update(_to_bytes(request.method.upper()))
-        key.update(_to_bytes(url))
-        if request.body:
-            key.update(_to_bytes(body))
-        else:
-            if self._include_get_headers and request.headers != _DEFAULT_HEADERS:
-                for name, value in sorted(request.headers.items()):
-                    key.update(_to_bytes(name))
-                    key.update(_to_bytes(value))
-        digest = key.hexdigest()
+        #key.update(_to_bytes(request.method.upper()))
+        #key.update(_to_bytes(url))
+        #if request.body:
+        #    key.update(_to_bytes(body))
+        #else:
+        #    if self._include_get_headers and request.headers != _DEFAULT_HEADERS:
+        #        for name, value in sorted(request.headers.items()):
+        #            key.update(_to_bytes(name))
+        #            key.update(_to_bytes(value))
+        #digest = key.hexdigest()
         return request.method.upper() + " " + url
 
     def __str__(self):
