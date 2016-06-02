@@ -7,6 +7,7 @@ python:
 # command to install dependencies
 install:
     - "pip install nose"
+    - "pip install nose-testconfig"
     - "python setup.py install"
 # command to run tests
-script: "nosetests -s -v"
+script: "nosetests -s -v --tc-file ./tests/nosetests.cfg"

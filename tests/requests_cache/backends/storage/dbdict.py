@@ -18,8 +18,7 @@ try:
 except ImportError:
     import pickle
 
-from requests_cache.compat import bytes
-
+from ....requests_cache.compat import bytes
 
 class DbDict(MutableMapping):
     """ DbDict - a dictionary-like object for saving large datasets to `sqlite` database

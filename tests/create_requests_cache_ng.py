@@ -38,12 +38,30 @@ from cbapi.response.rest_api import CbEnterpriseResponseAPI
 import requests.packages.urllib3
 requests.packages.urllib3.disable_warnings()
 
+
 def large_process_search():
-    pass
+    processes = cb.select(Process).where('')
+    print "Number of process: ", len(processes)
+
 
 def large_binary_search():
-    binary = cb.select(Binary).where('observed_filename=svchost.exe').first()
-    print binary
+    binaries = cb.select(Binary).where('')
+    print "Number of binaries: ", len(binaries)
+
+
+def sensor_search():
+    sensors = cb.select(Sensor)
+    print "Number of sensors: ", len(sensors)
+
+
+def watchlist_search():
+    watchlists = cb.select(Watchlist)
+    print "Number of watchlists: ", len(watchlists)
+
+
+def feed_search():
+    feeds = cb.select(Feed)
+    print "Number of feeds: ", len(feeds)
 
 
 def main(argv):
@@ -59,6 +77,12 @@ def main(argv):
 
     global cb
     cb = CbEnterpriseResponseAPI()
+
+    large_process_search()
+    large_binary_search()
+    sensor_search()
+    watchlist_search()
+    feed_search()
 
 
 def build_cli_parser():
