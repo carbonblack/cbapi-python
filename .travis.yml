@@ -8,6 +8,6 @@ python:
 install:
     - "pip install nose"
     - "pip install nose-testconfig"
-    - "python setup.py install"
+    - "python setup.py develop"
 # command to run tests
 script: "nosetests -s -v --tc-file ./tests/nosetests.cfg"
