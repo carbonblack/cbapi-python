@@ -28,6 +28,8 @@
 #
 import sys
 import os
+
+sys.path.append(os.path.dirname(__file__))
 import requests_cache
 
 import optparse
@@ -41,27 +43,27 @@ requests.packages.urllib3.disable_warnings()
 
 def large_process_search():
     processes = cb.select(Process).where('')
-    print "Number of process: ", len(processes)
+    print("Number of process: ", len(processes))
 
 
 def large_binary_search():
     binaries = cb.select(Binary).where('')
-    print "Number of binaries: ", len(binaries)
+    print("Number of binaries: ", len(binaries))
 
 
 def sensor_search():
     sensors = cb.select(Sensor)
-    print "Number of sensors: ", len(sensors)
+    print("Number of sensors: ", len(sensors))
 
 
 def watchlist_search():
     watchlists = cb.select(Watchlist)
-    print "Number of watchlists: ", len(watchlists)
+    print("Number of watchlists: ", len(watchlists))
 
 
 def feed_search():
     feeds = cb.select(Feed)
-    print "Number of feeds: ", len(feeds)
+    print("Number of feeds: ", len(feeds))
 
 
 def main(argv):

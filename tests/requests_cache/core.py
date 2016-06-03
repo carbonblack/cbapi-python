@@ -14,7 +14,10 @@ import requests
 from requests import Session as OriginalSession
 from requests.hooks import dispatch_hook
 
-from . import backends
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from requests_cache import backends
 
 try:
     ver = tuple(map(int, requests.__version__.split(".")))

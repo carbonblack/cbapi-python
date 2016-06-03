@@ -4,9 +4,9 @@ from cbapi.response.rest_api import CbEnterpriseResponseAPI
 from nose.tools import assert_equal
 from testconfig import config
 
-import os
-from . import requests_cache
+import requests_cache
 import unittest
+import os
 
 #import requests.packages.urllib3
 #requests.packages.urllib3.disable_warnings()
