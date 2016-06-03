@@ -4,10 +4,13 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
-# command to install dependencies
+
+before_install:
+  - "apt-get install libyaml-dev"
+
 install:
-    - "pip install nose"
-    - "pip install nose-testconfig"
-    - "python setup.py install"
+  - "pip install nose"
+  - "pip install nose-testconfig"
+  - "python setup.py install"
 # command to run tests
 script: "nosetests -s -v --tc-file ./tests/nosetest.cfg"
