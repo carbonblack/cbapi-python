@@ -29,7 +29,7 @@ def add_feed(cb, parser, args):
     f = cb.create(Feed)
     f.feed_url = args.feed_url
     if args.enable:
-        f.enable = True
+        f.enabled = True
 
     if args.username:
         f.username = args.username
