@@ -6,7 +6,7 @@ python:
   - "3.5"
 
 before_install:
-  - "apt-get install libyaml-dev"
+  - "sudo apt-get install libyaml-dev"
 
 install:
   - "pip install nose"
