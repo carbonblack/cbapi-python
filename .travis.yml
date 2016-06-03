@@ -5,11 +5,10 @@ python:
   - "3.4"
   - "3.5"
 
-before_install:
-  #- "sudo apt-get install libyaml-dev"
-
 install:
-  - "pip install -r requirements.txt"
-  - "python setup.py install"
+  - if [[ $TRAVIS_PYTHON_VERSION == 2.6 ]]; then pip install simplejson total-ordering ordereddict; fi
+  - if [[ $TRAVIS_PYTHON_VERSION < 3.0 ]]; then pip install futures; fi
+  - pip install -r requirements.txt
+  - python setup.py install
 # command to run tests
 script: "nosetests -s -v --tc-file ./tests/nosetest.cfg"
