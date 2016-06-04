@@ -181,7 +181,7 @@ class BaseAPI(object):
 
     def get_object(self, uri, query_parameters=None, default=None):
         if query_parameters:
-            uri += '?%s' % (urllib.parse.urlencode(query_parameters))
+            uri += '?%s' % (urllib.parse.urlencode(sorted(query_parameters)))
 
         result = self.api_json_request("GET", uri)
         if result.status_code == 200:
