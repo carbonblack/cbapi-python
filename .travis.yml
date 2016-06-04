@@ -4,10 +4,12 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
-# command to install dependencies
+
 install:
-    - "pip install nose"
-    - "pip install nose-testconfig"
-    - "python setup.py install"
+  - if [[ $TRAVIS_PYTHON_VERSION == 2.6 ]]; then pip install simplejson total-ordering ordereddict; fi
+  - if [[ $TRAVIS_PYTHON_VERSION < 3.0 ]]; then pip install futures; fi
+  - pip install -r requirements.txt
+  - pip freeze
+  - python setup.py install
 # command to run tests
 script: "nosetests -s -v --tc-file ./tests/nosetest.cfg"
