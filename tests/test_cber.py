@@ -7,6 +7,7 @@ from testconfig import config
 import requests_cache
 import unittest
 import os
+import sys
 
 #import requests.packages.urllib3
 #requests.packages.urllib3.disable_warnings()
@@ -15,9 +16,14 @@ import os
 # Golden Cache attributes for assertion tests
 # TODO: move this to the sqlite golden cache file
 #
-GOLDEN_CACHE_NAME = os.path.join(os.path.dirname(__file__), "caches/cache")
-NUMBER_OF_BINARIES = 633
-NUMBER_OF_PROCESSES = 1902
+if sys.version_info >= (3, 0):
+    GOLDEN_CACHE_NAME = os.path.join(os.path.dirname(__file__), "caches/cache.py3")
+
+else:
+    GOLDEN_CACHE_NAME = os.path.join(os.path.dirname(__file__), "caches/cache")
+
+NUMBER_OF_BINARIES = 636
+NUMBER_OF_PROCESSES = 2125
 
 #
 # Config file parsing
@@ -32,16 +38,20 @@ if use_golden:
 else:
     cache_file_name = config['cache']['cache_filename']
     if config['cache']['cache_overwrite'].lower() == 'true':
+        overwrite = True
         #
         # Delete old cache
         #
-        os.remove(cache_file_name)
+        try:
+            os.remove(cache_file_name)
+        except:
+            pass
 
 #
 # Install the cache
 # NOTE: deny_outbound is set so we don't attempt comms and force using the cache
 #
-requests_cache.install_cache(cache_file_name, allowable_methods=('GET', 'POST'), deny_outbound=True)
+requests_cache.install_cache(cache_file_name, allowable_methods=('GET', 'POST'), deny_outbound=use_golden)
 
 
 class TestCbResponse(unittest.TestCase):
@@ -72,7 +82,7 @@ class TestCbResponse(unittest.TestCase):
     def test_read_binary(self):
         data = c.select(Binary).where('').first().file.read(2)
         if use_golden:
-            assert_equal(data, "MZ")
+            assert_equal(data, b'MZ')
         else:
             #
             # Save off the returned value into the database
@@ -88,6 +98,7 @@ class TestCbResponse(unittest.TestCase):
                          NUMBER_OF_PROCESSES, len(process_query)))
         else:
             # Save off the returned value into the database
+            print(len(process_query))
             pass
 
 
