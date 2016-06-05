@@ -18,12 +18,18 @@ import sys
 #
 if sys.version_info >= (3, 0):
     GOLDEN_CACHE_NAME = os.path.join(os.path.dirname(__file__), "caches/cache.py3")
-
+    NUMBER_OF_BINARIES = 636
+    NUMBER_OF_PROCESSES = 2274
+elif sys.version_info >= (2, 7):
+    GOLDEN_CACHE_NAME = os.path.join(os.path.dirname(__file__), "caches/cache.py27")
+    NUMBER_OF_BINARIES = 636
+    NUMBER_OF_PROCESSES = 2272
+elif sys.version_info >= (2, 6):
+    GOLDEN_CACHE_NAME = os.path.join(os.path.dirname(__file__), "caches/cache.py26")
+    NUMBER_OF_BINARIES = 636
+    NUMBER_OF_PROCESSES = 2274
 else:
-    GOLDEN_CACHE_NAME = os.path.join(os.path.dirname(__file__), "caches/cache")
-
-NUMBER_OF_BINARIES = 636
-NUMBER_OF_PROCESSES = 2125
+    raise Exception("Unsupported python version")
 
 #
 # Config file parsing
@@ -43,7 +49,7 @@ else:
         # Delete old cache
         #
         try:
-            os.remove(cache_file_name)
+            os.remove(cache_file_name + ".sqlite")
         except:
             pass
 
