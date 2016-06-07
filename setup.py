@@ -9,7 +9,6 @@ packages = ['cbapi', 'cbapi.protection', 'cbapi.response', 'cbapi.cache']
 if sys.version_info < (3, 0):
     packages.extend(['cbapi.legacy', 'cbapi.legacy.util'])
 
-""""
 install_requires=[
     'requests',
     'attrdict',
@@ -24,7 +23,6 @@ if sys.version_info < (2, 7):
     install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])
 if sys.version_info < (3, 0):
     install_requires.extend(['futures'])
-"""
 
 setup(
     name='cbapi',
@@ -39,7 +37,7 @@ setup(
     package_dir = {'': 'src'},
     zip_safe=False,
     platforms='any',
-    #install_requires=install_requires,
+    install_requires=install_requires,
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
