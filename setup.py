@@ -5,7 +5,7 @@ cbapi-python
 from setuptools import setup
 import sys
 
-packages = ['cbapi', 'cbapi.protection', 'cbapi.response']
+packages = ['cbapi', 'cbapi.protection', 'cbapi.response', 'cbapi.cache']
 if sys.version_info < (3, 0):
     packages.extend(['cbapi.legacy', 'cbapi.legacy.util'])
 
@@ -16,7 +16,9 @@ install_requires=[
     'cachetools',
     'six',
     'pyyaml',
-    'pika'
+    'pika',
+    'prompt_toolkit',
+    'pygments'
 ]
 if sys.version_info < (2, 7):
     install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])

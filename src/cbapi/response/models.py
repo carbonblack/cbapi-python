@@ -15,6 +15,7 @@ from six.moves import urllib
 import six
 import logging
 
+from cbapi.utils import convert_query_params
 from ..errors import InvalidObjectError, ApiError
 from ..oldmodels import BaseModel, MutableModel, immutable
 
@@ -275,14 +276,18 @@ class Sensor(MutableBaseModel):
     def resource_status(self):
         return self._cb.get_object("{0}/resourcestatus".format(self._build_api_request_uri()), default=[])
 
-    @contextlib.contextmanager
     def lr_session(self):
+        """
+        Retrieve a Live Response session object for this Sensor.
+
+        :return: Live Response session object
+        :rtype: :py:class:`cbapi.live_response_api.LiveResponseSession`
+        :raises ApiError: if there is an error establishing a Live Response session for this Sensor
+        """
         if not getattr(self, "supports_cblr", False):
             raise ApiError("Sensor does not support Cb Live Response")
 
-        yield self._cb._request_lr_session(self._model_unique_id)
-
-        self._cb._close_lr_session(self._model_unique_id)
+        return self._cb._request_lr_session(self._model_unique_id)
 
 
 class SensorGroup(MutableBaseModel):
@@ -325,7 +330,7 @@ class SensorQuery(SimpleQuery):
     @property
     def results(self):
         if not self._full_init:
-            full_results = self._cb.get_object(self._urlobject, query_parameters=self._query)
+            full_results = self._cb.get_object(self._urlobject, query_parameters=convert_query_params(self._query))
             if not full_results:
                 self._results = []
             else:
