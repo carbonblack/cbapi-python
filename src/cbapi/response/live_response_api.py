@@ -183,7 +183,7 @@ class LiveResponseSession(object):
 
             return file_content
 
-    def get_processes(self):
+    def list_processes(self):
         data = {"name": "process list"}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')

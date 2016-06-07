@@ -356,7 +356,7 @@ class CblrCli(cmd.Cmd):
 
         if (opts.pid): opts.pid = int(opts.pid)
 
-        processes = self.lr_session.get_processes()
+        processes = self.lr_session.list_processes()
 
         for p in processes:
             if (opts.pid and p['pid'] == opts.pid) or opts.pid is None:
