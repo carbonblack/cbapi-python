@@ -258,7 +258,7 @@ class LiveResponseSession(object):
                 data["session_id"] = self.session_id
                 resp = self._cb.post_object("/api/v1/cblr/session/{0}/command".format(self.session_id), data)
             except ObjectNotFoundError as e:
-                if e.message.startswith("Sensor") and e.message.endswith("does not exist."):
+                if e.message.startswith("Sensor") or e.message.startswith("Session"):
                     self.session_id, self.session_data = self._lr_scheduler._get_or_create_session(self.sensor_id)
                     retries -= 1
                     continue
