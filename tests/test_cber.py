@@ -1,31 +1,21 @@
-from cbapi.response.models import Binary, Process
+from cbapi.response.models import Binary, Process, Sensor, Watchlist, Feed
 from cbapi.response.rest_api import CbEnterpriseResponseAPI
 
 from nose.tools import assert_equal
 from testconfig import config
 
-import requests_cache
 import unittest
 import os
 import sys
 import sqlite3
 
+sys.path.append(os.path.dirname(__file__))
+import requests_cache
+
 #import requests.packages.urllib3
 #requests.packages.urllib3.disable_warnings()
 
-#
-# Golden Cache attributes for assertion tests
-# TODO: move this to the sqlite golden cache file
-#
-if sys.version_info >= (3, 0):
-    cache_file_name = os.path.join(os.path.dirname(__file__), "caches/cache.py3")
-elif sys.version_info >= (2, 7):
-    cache_file_name = os.path.join(os.path.dirname(__file__), "caches/cache.py27")
-elif sys.version_info >= (2, 6):
-    cache_file_name = os.path.join(os.path.dirname(__file__), "caches/cache.py26")
-else:
-    raise Exception("Unsupported python version")
-
+cache_file_name = os.path.join(os.path.dirname(__file__), "caches/cber")
 #
 # Config file parsing
 #
@@ -84,18 +74,20 @@ def getTestResult(testname):
 
 class TestCbResponse(unittest.TestCase):
     def setUp(self):
-        global c
-
         if use_golden:
             #
             # We don't want to connect to a cbserver so using bogus values
             #
-            c = CbEnterpriseResponseAPI(url="http://localhost", token="N/A", ssl_verify=False)
+            self.c = CbEnterpriseResponseAPI(url="http://localhost", token="N/A", ssl_verify=False)
         else:
-            c = CbEnterpriseResponseAPI()
+            self.c = CbEnterpriseResponseAPI()
+
+        self.sensor = self.c.select(Sensor, 1)
+        self.lr_session = self.sensor.lr_session()
+
 
     def test_all_binary(self):
-        binary_query = c.select(Binary).where('')
+        binary_query = self.c.select(Binary).where('')
         if use_golden:
             test_result = getTestResult('test_all_binary')[0]
             assert_equal(len(binary_query),
@@ -106,12 +98,12 @@ class TestCbResponse(unittest.TestCase):
             insertResult('test_all_binary', str(len(binary_query)))
 
     def test_read_binary(self):
-        data = c.select(Binary).where('').first().file.read(2)
+        data = self.c.select(Binary).where('').first().file.read(2)
         if use_golden:
             assert_equal(data, b'MZ')
 
     def test_all_process(self):
-        process_query = c.select(Process).where('')
+        process_query = self.c.select(Process).where('')
         if use_golden:
             test_result = getTestResult('test_all_process')[0]
             assert_equal(len(process_query),
@@ -120,6 +112,44 @@ class TestCbResponse(unittest.TestCase):
                              test_result, len(process_query)))
         else:
             insertResult('test_all_process', str(len(process_query)))
+
+    def test_cblr_ps(self):
+        processes = self.lr_session.list_processes()
+        if use_golden:
+            test_result = len(processes)
+            assert_equal(len(processes),
+                         test_result,
+                         "Number of Binaries returned should be {0}, but received {1}".format(
+                             test_result, len(processes)))
+        else:
+            insertResult('test_cblr_ps', str(len(processes)))
+
+    def test_cblr_get(self):
+        self.lr_session.get_raw_file(r"C:\test.txt")
+
+    def test_cber_watchlists(self):
+        watchlists = self.c.select(Watchlist)
+        if use_golden:
+            test_result = getTestResult('test_cber_watchlists')[0]
+            assert_equal(len(watchlists),
+                         test_result,
+                         "Number of Watchlists returned should be {0}, but received {1}".format(
+                            test_result, len(watchlists)))
+
+        else:
+            insertResult('test_cber_watchlists', str(len(watchlists)))
+
+    def test_cber_feeds(self):
+        feeds = self.c.select(Feed)
+
+        if use_golden:
+            test_result = getTestResult('test_cber_feeds')[0]
+            assert_equal(len(feeds),
+                         test_result,
+                         "Number of Feeds returned should be {0}, but received {1}".format(
+                             test_result, len(feeds)))
+        else:
+            insertResult('test_cber_feeds', str(len(feeds)))
 
 
 
