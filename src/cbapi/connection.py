@@ -203,7 +203,7 @@ class BaseAPI(object):
             if "Content-Type" not in headers:
                 headers["Content-Type"] = "application/json"
                 raw_data = kwargs.pop("data", {})
-                raw_data = json.dumps(raw_data)
+                raw_data = json.dumps(raw_data, sort_keys=True)
 
         return self.session.http_request(method, uri, headers=headers, data=raw_data, **kwargs)
 
