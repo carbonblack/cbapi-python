@@ -238,7 +238,7 @@ class Sensor(MutableBaseModel):
         return getattr(self, 'computer_name', None)
 
     @property
-    def network_adapters(self):
+    def network_interfaces(self):
         out = []
         for adapter in getattr(self, 'network_adapters', '').split('|'):
             parts = adapter.split(',')
@@ -313,7 +313,7 @@ class SensorGroup(MutableBaseModel):
 
 
 class SensorQuery(SimpleQuery):
-    valid_field_names = ['ipaddr', 'hostname', 'groupid']
+    valid_field_names = ['ip', 'hostname', 'groupid']
 
     def __init__(self, cls, cb):
         super(SensorQuery, self).__init__(cls, cb)

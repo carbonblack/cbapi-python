@@ -101,6 +101,11 @@ class Computer(MutableBaseModel):
     def template(self):
         return self._join(Computer, "templateComputerId")
 
+    def resetCLIPassword(self):
+        self._build_api_request_uri()
+        self.refresh()
+        return getattr(self, "cliPassword")
+
 
 class Connector(MutableBaseModel, CreatableModelMixin):
     urlobject = "/api/bit9platform/v1/connector"
@@ -111,12 +116,15 @@ class Connector(MutableBaseModel, CreatableModelMixin):
         return self._cb.select(PendingAnalysis).where("connectorId:{0:d}".format(self.id))
 
 
-@immutable
-class Event(BaseModel):
+class Event(NewBaseModel):
     urlobject = "/api/bit9platform/v1/event"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(Event, self).__init__(cb, model_unique_id, initial_data)
+
+    @property
+    def fileCatalog(self):
+        return self._join(FileCatalog, "fileCatalogId")
 
 
 class FileAnalysis(MutableModel):

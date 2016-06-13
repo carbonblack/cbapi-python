@@ -26,7 +26,7 @@ if sys.version_info < (3, 0):
 
 setup(
     name='cbapi',
-    version='0.9.2',
+    version='0.9.3',
     url='https://github.com/carbonblack/cbapi-python',
     license='MIT',
     author='Carbon Black',
@@ -44,5 +44,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Software Development :: Libraries :: Python Modules'
-    ]
+    ],
+    scripts=['bin/cbapi-response', 'bin/cbapi-protection']
 )

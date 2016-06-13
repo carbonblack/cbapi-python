@@ -169,6 +169,15 @@ class NewBaseModel(object):
     primary_key = "id"
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=False):
+        """
+        Base model for
+        :param cb:
+        :param model_unique_id:
+        :param initial_data:
+        :param force_init:
+        :param full_doc:
+        :return:
+        """
         self._cb = cb
         self._last_refresh_time = 0
 

@@ -88,7 +88,7 @@ Once you acquire your API token, place it in one of the default credentials file
 Credentials found in a later path will overwrite earlier ones.
 
 The credentials are stored in INI format. The name of each credential profile is enclosed in square brackets, followed
-by comma separated key-value pairs providing the necessary credential information::
+by key-value pairs providing the necessary credential information::
 
     [default]
     url=https://localhost

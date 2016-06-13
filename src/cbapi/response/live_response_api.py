@@ -344,7 +344,10 @@ class LiveResponseScheduler(object):
 
     def close_session(self, sensor_id):
         with self._session_lock:
-            self._sessions[sensor_id]._refcount -= 1
+            try:
+                self._sessions[sensor_id]._refcount -= 1
+            except KeyError:
+                pass
 
     def _send_keepalive(self, session_id):
         log.debug("Sending keepalive message for session id {0}".format(session_id))
