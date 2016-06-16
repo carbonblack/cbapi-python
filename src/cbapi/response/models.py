@@ -382,7 +382,14 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
 
     @property
     def query(self):
-        queryparts = [v for k, v in self._query if k == "q" or k.startswith("cb.q.")]
+        queryparams = [(k, v) for k, v in self._query if k == "q" or k.startswith("cb.q.")]
+        queryparts = []
+        for k, v in queryparams:
+            if k == 'q':
+                queryparts.append(v)
+            else:
+                queryparts.append("{0}:{1}".format(k[5:], v))
+
         return " ".join(queryparts)
 
     def _reset_query(self):
