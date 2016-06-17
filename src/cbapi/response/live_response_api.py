@@ -111,6 +111,7 @@ class LiveResponseSession(object):
         data = {"name": "delete file", "object": filename}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
+        self._poll_command(command_id)
 
     def put_file(self, infp, remote_filename):
         data = {"name": "put file", "object": remote_filename}
@@ -119,6 +120,7 @@ class LiveResponseSession(object):
 
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
+        self._poll_command(command_id)
 
     def list_directory(self, dir_name):
         data = {"name": "directory list", "object": dir_name}
@@ -130,6 +132,7 @@ class LiveResponseSession(object):
         data = {"name": "create directory", "object": dir_name}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
+        self._poll_command(command_id)
 
     #
     # Process operations
@@ -223,21 +226,25 @@ class LiveResponseSession(object):
                 "value_data": value}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
+        self._poll_command(command_id)
 
     def create_registry_key(self, regkey):
         data = {"name": "reg create key", "object": regkey}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
+        self._poll_command(command_id)
 
     def delete_registry_key(self, regkey):
         data = {"name": "reg delete key", "object": regkey}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
+        self._poll_command(command_id)
 
     def delete_registry_value(self, regkey):
         data = {"name": "reg delete value", "object": regkey}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
+        self._poll_command(command_id)
 
     def _poll_command(self, command_id, **kwargs):
         return poll_status(self._cb, "/api/v1/cblr/session/{0}/command/{1}".format(self.session_id, command_id),
