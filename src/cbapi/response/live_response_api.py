@@ -23,8 +23,8 @@ log = logging.getLogger(__name__)
 
 
 class LiveResponseError(Exception):
-    def __init__(self, message, details):
-        message_list = [message]
+    def __init__(self, details):
+        message_list = []
 
         self.details = details
         self.win32_error = None
@@ -400,7 +400,7 @@ def poll_status(cb, url, desired_status="complete", timeout=120, delay=0.5):
         if res["status"] == desired_status:
             return res
         elif res["status"] == "error":
-            raise LiveResponseError("error returned from Live Response", details=res)
+            raise LiveResponseError(res)
         else:
             time.sleep(delay)
 
