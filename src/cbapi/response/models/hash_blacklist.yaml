@@ -1,0 +1,29 @@
+type: "object"
+properties:
+  username:
+    type: "string"
+  audit:
+    type: array
+  text:
+    type: "string"
+  md5hash:
+    type: "string"
+  block_count:
+    type: "integer"
+    format: "int32"
+  user_id:
+    type: "integer"
+    format: "int32"
+  last_block_sensor_id:
+    type: "integer"
+    format: "int32"
+  enabled:
+    type: "boolean"
+  last_block_time:
+    type: "string"
+    format: "date-time"
+  timestamp:
+    type: "string"
+    format: "date-time"
+  last_block_hostname:
+    type: "string"

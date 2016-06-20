@@ -367,30 +367,33 @@ class MutableBaseModel(NewBaseModel):
             ret = self._cb.api_json_request(self.__class__._change_object_http_method,
                                             self._build_api_request_uri(), data=self._info)
 
+        return self._refresh_if_needed(ret)
+
+    def _refresh_if_needed(self, request_ret):
         refresh_required = False
 
-        if ret.status_code not in range(200, 300):
+        if request_ret.status_code not in range(200, 300):
             try:
-                message = json.loads(ret.content)[0]
+                message = json.loads(request_ret.content)[0]
             except:
-                message = ret.content
+                message = request_ret.content
 
-            raise ServerError(ret.status_code, message,
+            raise ServerError(request_ret.status_code, message,
                               result="Did not update {} record.".format(self.__class__.__name__))
         else:
             try:
-                message = ret.json()
+                message = request_ret.json()
                 log.debug("Received response: %s" % message)
                 if message.keys() == ["result"]:
                     post_result = message.get("result", None)
 
                     if post_result and post_result != "success":
-                        raise ServerError(ret.status_code, post_result,
+                        raise ServerError(request_ret.status_code, post_result,
                                           result="Did not update {0:s} record.".format(self.__class__.__name__))
                     else:
                         refresh_required = True
                 else:
-                    self._info = json.loads(ret.content)
+                    self._info = json.loads(request_ret.content)
                     if message.keys() == ["id"]:
                         # if all we got back was an ID, try refreshing to get the entire record.
                         log.debug("Only received an ID back from the server, forcing a refresh")

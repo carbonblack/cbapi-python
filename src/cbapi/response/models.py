@@ -28,7 +28,7 @@ else:
 from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
 from ..oldmodels import BaseModel, immutable
 from .utils import convert_from_cb, sign_datetime_format, convert_from_solr, parse_42_guid, cb_datetime_format
-from ..errors import ServerError, InvalidHashError
+from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
 from ..query import SimpleQuery
 
 try:
@@ -64,6 +64,45 @@ log = logging.getLogger(__name__)
 #     primary_key = "md5"
 #     swagger_meta_file = "response/models/binary.yaml"
 #     urlobject = '/api/v1/binary'
+
+
+class BannedHash(MutableBaseModel, CreatableModelMixin):
+    urlobject = "/api/v1/banning/blacklist"
+    swagger_meta_file = "response/models/hash_blacklist.yaml"
+    primary_key = "md5hash"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return SimpleQuery(cls, cb)
+
+    @property
+    def binary(self):
+        return self._join(Binary, "md5hash")
+
+    def _update_object(self):
+        if "enabled" in self._dirty_attributes:
+            # Emulate the strange behavior we have to do for banned hashes.
+            # - if we are enabling a hash, just "POST" to the root urlobject.
+            # - if we are disabling a hash, just "DELETE" the specific object.
+            #   note that disabling a hash also removes the "text" from the object. save it back.
+
+            if self.enabled:
+                ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.__class__.urlobject,
+                                                data=self._info)
+                self._dirty_attributes = {}
+                return self._refresh_if_needed(ret)
+            else:
+                ret = self._cb.delete_object(self._build_api_request_uri())
+                del(self._dirty_attributes["enabled"])
+                if self.text:
+                    self._dirty_attributes["text"] = None
+
+                if self.is_dirty():
+                    return super(BannedHash, self)._update_object()
+                else:
+                    return self._refresh_if_needed(ret)
+        else:
+            return super(BannedHash, self)._update_object()
 
 
 class Site(MutableBaseModel, CreatableModelMixin):
@@ -751,6 +790,19 @@ class Binary(TaggedModel):
             pass
 
         return base64.b64decode(icon)
+
+    @property
+    def banned(self):
+        try:
+            bh = self._cb.select(BannedHash, self.md5sum.lower())
+            bh.refresh()
+        except ServerError as e:
+            if e.error_code == 409:
+                return False
+        except ObjectNotFoundError:
+            return False
+        else:
+            return bh
 
 
 class ProcessV1Parser(object):
