@@ -723,8 +723,7 @@ class Binary(TaggedModel):
             frequency_fraction = float(globalCount) / float(numDocs)
 
         # TODO: frequency calculated over number of hosts rather than number of processes
-        self._frequency = Binary.FrequencyData._make([hostCount, globalCount, numDocs,
-                                                        frequency_fraction])
+        self._frequency = Binary.FrequencyData._make([hostCount, globalCount, numDocs, frequency_fraction])
 
         return self._frequency
 
@@ -758,10 +757,10 @@ class Binary(TaggedModel):
 
     @property
     def version_info(self):
-        return Binary.VersionInfo._make([self._attribute('file_desc'), self._attribute('file_version'),
-                                           self._attribute('product_name'), self._attribute('product_version'),
-                                           self._attribute('company_name'), self._attribute('legal_copyright'),
-                                           self._attribute('original_filename')])
+        return Binary.VersionInfo._make([self._attribute('file_desc', ""), self._attribute('file_version', ""),
+                                         self._attribute('product_name', ""), self._attribute('product_version', ""),
+                                         self._attribute('company_name', ""), self._attribute('legal_copyright', ""),
+                                         self._attribute('original_filename', "")])
 
     # Returns True if the binary contains a valid digital signature.
     # Returns False if the binary has no digital signature, if the signature is expired or otherwise
