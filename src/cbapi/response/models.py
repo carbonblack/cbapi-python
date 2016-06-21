@@ -7,7 +7,7 @@ import json
 from distutils.version import LooseVersion
 from collections import namedtuple, defaultdict
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 from zipfile import ZipFile
 from contextlib import closing
 import struct
@@ -327,6 +327,10 @@ class Sensor(MutableBaseModel):
             raise ApiError("Sensor does not support Cb Live Response")
 
         return self._cb._request_lr_session(self._model_unique_id)
+
+    def flush_events(self):
+        self.event_log_flush_time = datetime.now() + timedelta(days=1)
+        self.save()
 
 
 class SensorGroup(MutableBaseModel):
@@ -706,18 +710,21 @@ class Binary(TaggedModel):
     @property
     def frequency(self):
         if not self._frequency:
-            frequency = self._cb._binary_frequency(self.md5sum)
-            hostCount = frequency.get('hostCount', 0)
-            globalCount = frequency.get('globalCount', 0)
-            numDocs = frequency.get('numDocs', 0)
-            if numDocs == 0:
-                frequency_fraction = 0.0
-            else:
-                frequency_fraction = float(globalCount) / float(numDocs)
+            r = self._cb.get_object('/api/v1/process/host/count',
+                                    query_parameters=(('cb.freqver', 1), ('name', 'md5'), ('md5', self.md5sum)))
+            self._frequency = r
 
-            # TODO: frequency calculated over number of hosts rather than number of processes
-            self._frequency = Binary.FrequencyData._make([hostCount, globalCount, numDocs,
-                                                            frequency_fraction])
+        hostCount = self._frequency.get('hostCount', 0)
+        globalCount = self._frequency.get('globalCount', 0)
+        numDocs = self._frequency.get('numDocs', 0)
+        if numDocs == 0:
+            frequency_fraction = 0.0
+        else:
+            frequency_fraction = float(globalCount) / float(numDocs)
+
+        # TODO: frequency calculated over number of hosts rather than number of processes
+        self._frequency = Binary.FrequencyData._make([hostCount, globalCount, numDocs,
+                                                        frequency_fraction])
 
         return self._frequency
 
@@ -768,16 +775,25 @@ class Binary(TaggedModel):
 
     @property
     def signing_data(self):
-        digsig_sign_time = self._attribute('digsig_sign_time')
+        digsig_sign_time = self._attribute('digsig_sign_time', "")
         if digsig_sign_time:
             digsig_sign_time = datetime.strptime(digsig_sign_time, sign_datetime_format)
 
-        return Binary.SigningData._make([self._attribute('digsig_result'),
-                                         self._attribute('digsig_publisher'),
-                                         self._attribute('digsig_issuer'),
-                                         self._attribute('digsig_subject'),
+        return Binary.SigningData._make([self._attribute('digsig_result', ""),
+                                         self._attribute('digsig_publisher', ""),
+                                         self._attribute('digsig_issuer', ""),
+                                         self._attribute('digsig_subject', ""),
                                          digsig_sign_time,
-                                         self._attribute('digsig_prog_name')])
+                                         self._attribute('digsig_prog_name', "")])
+
+    @property
+    def virustotal(self):
+        virustotal_score = self._attribute('alliance_score_virustotal', 0)
+        if virustotal_score:
+            ret = Binary.VirusTotal._make([int(virustotal_score), self._attribute('alliance_link_virustotal', "")])
+        else:
+            ret = Binary.VirusTotal._make([0, ''])
+        return ret
 
     @property
     def icon(self):
