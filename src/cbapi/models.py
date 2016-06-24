@@ -119,15 +119,10 @@ class ObjectFieldDescriptor(FieldDescriptor):
 class DateTimeFieldDescriptor(FieldDescriptor):
     def __init__(self, field_name):
         super(DateTimeFieldDescriptor, self).__init__(field_name)
-        self._cached = None
-        self._parsed = False
 
     def __get__(self, instance, instance_type=None):
-        if not self._parsed:
-            d = super(DateTimeFieldDescriptor, self).__get__(instance, instance_type)
-            self._cached = convert_from_cb(d)
-            self._parsed = True
-        return self._cached
+        d = super(DateTimeFieldDescriptor, self).__get__(instance, instance_type)
+        return convert_from_cb(d)
 
     def __set__(self, instance, value):
         parsed_date = convert_to_cb(value)
