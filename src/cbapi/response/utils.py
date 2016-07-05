@@ -2,6 +2,7 @@
 
 import struct
 from datetime import datetime
+import dateutil.parser
 import socket
 
 
@@ -45,16 +46,8 @@ def convert_from_solr(s):
 
 
 def convert_from_cb(s):
-    # hack: we strip off the timezone if it exists
-    # by simply cutting off the string by 26 characters
-    # 2014-06-03 10:14:14.637964
-
-    if not s or s == -1:
-        # special case for invalid processes
-        return datetime.fromtimestamp(0)
-
-    s = s[:26]
-    return datetime.strptime(s, cb_datetime_format)
+    # Use dateutil.parser to parse incoming dates; flexible on what we receive, strict on what we send.
+    return dateutil.parser.parse(s)
 
 
 def convert_to_cb(dt):

@@ -18,6 +18,7 @@ properties:
     type: integer
   "last_update":
     type: string
+    format: "date-time"
   "physical_memory_size":
     type: integer
   "build_id":
@@ -70,6 +71,7 @@ properties:
     type: string
   "license_expiration":
     type: string
+    format: "date-time"
   "supports_isolation":
     type: boolean
   "parity_host_id":

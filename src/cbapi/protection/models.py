@@ -158,7 +158,7 @@ class FileCatalog(BaseModel):
         return getattr(self, "md5", None) or getattr(self, "sha1", None) or getattr(self, "sha256", None)
 
 
-class FileInstance(MutableModel):
+class FileInstance(MutableBaseModel):
     urlobject = "/api/bit9platform/v1/fileInstance"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
@@ -166,11 +166,11 @@ class FileInstance(MutableModel):
 
     @property
     def computer(self):
-        return self._cb.select(Computer, self.computerId)
+        return self._join(Computer, "computerId")
 
     @property
     def fileCatalog(self):
-        return self._cb.select(FileCatalog, self.fileCatalogId)
+        return self._join(FileCatalog, "fileCatalogId")
 
 
 @immutable

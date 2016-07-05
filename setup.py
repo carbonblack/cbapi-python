@@ -17,7 +17,8 @@ install_requires=[
     'pyyaml',
     'pika',
     'prompt_toolkit',
-    'pygments'
+    'pygments',
+    'python-dateutil'
 ]
 if sys.version_info < (2, 7):
     install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])
