@@ -29,7 +29,7 @@ def get_cb_response_object(args):
         logging.getLogger("__main__").setLevel(logging.DEBUG)
 
     if args.cburl and args.apitoken:
-        cb = CbEnterpriseResponseAPI(args.cburl, args.apitoken)
+        cb = CbEnterpriseResponseAPI(url=args.cburl, token=args.apitoken, ssl_verify=(not args.no_ssl_verify))
     else:
         cb = CbEnterpriseResponseAPI(profile=args.profile)
 
