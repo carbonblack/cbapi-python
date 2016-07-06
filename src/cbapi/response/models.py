@@ -122,8 +122,8 @@ class Site(MutableBaseModel, CreatableModelMixin):
     def throttle_rules(self):
         return self._cb.select(ThrottleRule).where("site_id:{0}".format(self.id))
 
-    def __init__(self, cb, site_id=None, initial_data=None):
-        super(Site, self).__init__(cb, site_id, initial_data)
+    def __init__(self, cb, site_id=None, initial_data=None, **kwargs):
+        super(Site, self).__init__(cb, site_id, initial_data, **kwargs)
 
         if initial_data:
             self._full_init = True
@@ -333,7 +333,7 @@ class Sensor(MutableBaseModel):
         self.save()
 
 
-class SensorGroup(MutableBaseModel):
+class SensorGroup(MutableBaseModel, CreatableModelMixin):
     swagger_meta_file = "response/models/group-modify.yaml"
     urlobject = '/api/group'
 
@@ -353,6 +353,14 @@ class SensorGroup(MutableBaseModel):
         target_url = "/api/v1/group/{0}/installer/{1:s}".format(self._model_unique_id, osname)
         with closing(self._cb.session.get(target_url, stream=True)) as r:
             return r.content
+
+    @property
+    def site(self):
+        return self._join(Site, "site_id")
+
+    @site.setter
+    def site(self, new_site):
+        self.site_id = new_site.id
 
 
 class SensorQuery(SimpleQuery):
