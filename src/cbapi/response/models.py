@@ -114,8 +114,8 @@ class Site(MutableBaseModel, CreatableModelMixin):
         return SimpleQuery(cls, cb)
 
     def _parse(self, info):
-        if len(info) != 1:
-            raise ApiError("Expecting Site response to be array of size 1")
+        if info is None or len(info) != 1:
+            raise ObjectNotFoundError(uri=self._build_api_request_uri())
         return info[0]
 
     @property
@@ -343,7 +343,10 @@ class SensorGroup(MutableBaseModel, CreatableModelMixin):
 
     def _parse(self, obj):
         # for some reason, these are returned as an array of size one
-        return obj[0]
+        if obj and len(obj):
+            return obj[0]
+        else:
+            raise ObjectNotFoundError(uri=self._build_api_request_uri())
 
     @property
     def sensors(self):
@@ -615,11 +618,30 @@ class TaggedModel(BaseModel):
         return self._tags.get(tag_name, {})
 
 
-class ThreatReport(MutableModel):
+class ThreatReport(MutableBaseModel):
     urlobject = '/api/v1/threat_report'
+    primary_key = "_internal_id"
+
+    @property
+    def _model_unique_id(self):
+        feed_id = getattr(self, "feed_id")
+        report_id = getattr(self, "id")
+
+        if feed_id and report_id:
+            return "{0}:{1}".format(feed_id, report_id)
+        else:
+            return None
+
+    def disable(self):
+        self.is_ignored = True
+        self.save()
+
+    def enable(self):
+        self.is_ignored = False
+        self.save()
 
     @classmethod
-    def new_object(cls, cb, item):
+    def new_object(cls, cb, item, **kwargs):
         return cb.select(ThreatReport, "%s:%s" % (item["feed_id"], item["id"]), initial_data=item)
 
     def _build_api_request_uri(self):
@@ -639,9 +661,6 @@ class ThreatReport(MutableModel):
     @property
     def feed(self):
         return self._join(Feed, "feed_id")
-
-    def _set_model_unique_id(self):
-        self._model_unique_id = "%s:%s" % (self.feed_id, self.id)
 
     def _update_object(self):
         update_content = { "ids": { str(self.feed_id): [str(self.id)] }, "updates": {}}
@@ -674,9 +693,6 @@ class ThreatReport(MutableModel):
                     self._full_init = True
             except:
                 self.refresh()
-
-        if not self._model_unique_id:
-            self._set_model_unique_id()
 
         self._dirty_attributes = {}
         return self._model_unique_id
