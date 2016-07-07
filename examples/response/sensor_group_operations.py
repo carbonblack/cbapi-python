@@ -16,6 +16,19 @@ def list_sensor_groups(cb, parser, args):
         print("")
 
 
+def list_sensors(cb, parser, args):
+    if args.group_name:
+        group = cb.select(SensorGroup).where("name:{0}".format(args.group_name)).first()
+    else:
+        group = min(cb.select(SensorGroup), key=lambda x: x.id)
+
+    print("Sensors in group {0} (id {1}):".format(group.name, group.id))
+    print("  {0:40}{1:18}{2}".format("Hostname", "IP Address", "Last Checkin Time"))
+    for sensor in group.sensors:
+        ipaddrs = [iface.ipaddr for iface in sensor.network_interfaces if iface.ipaddr not in ("127.0.0.1", "0.0.0.0")]
+        print("  {0:40}{1:18}{2}".format(sensor.hostname, ipaddrs[0], sensor.last_checkin_time))
+
+
 def add_sensor_group(cb, parser, args):
     g = cb.create(SensorGroup)
 
@@ -97,6 +110,10 @@ def main():
     del_command.add_argument("--force", help="If NAME matches multiple sensor groups, delete all matching sensor groups",
                              action="store_true", default=False)
 
+    list_sensors_command = commands.add_parser("list-sensors", help="List all sensors in a sensor group")
+    list_sensors_command.add_argument("-n", "--name", action="store", help="Sensor group name", required=False,
+                                      dest="group_name")
+
     args = parser.parse_args()
     cb = get_cb_response_object(args)
 
@@ -106,6 +123,8 @@ def main():
         return add_sensor_group(cb, parser, args)
     elif args.command_name == "delete":
         return delete_sensor_group(cb, parser, args)
+    elif args.command_name == "list-sensors":
+        return list_sensors(cb, parser, args)
 
 
 if __name__ == "__main__":
