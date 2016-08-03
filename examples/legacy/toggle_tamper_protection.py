@@ -27,7 +27,7 @@ def main(argv):
 	parser.add_argument('-u', action='store', dest='user_name', help='Last logged in user name to search for')
 	parser.add_argument('-c', action='store', dest='connect_tf', help='Either true or false for connected computers', type=bool)
 	parser.add_argument('-v', action='store', dest='version', help='Cb P Version to search for')
-	requiredNamed = parser.add_argument_group('Choose one of these arguments')
+	requiredNamed = parser.add_mutually_exclusive_group(required=True)
 	requiredNamed.add_argument('--disableTP', dest='disableTP', action='store_true', help='Set this flag to DISABLE Tamper Protection on all found systems')
 	requiredNamed.add_argument('--enableTP', dest='enableTP', action='store_true', help='Set this flag to ENABLE Tamper Protection on all found systems')
 	
@@ -53,11 +53,6 @@ def main(argv):
 			parser.error("The '-c' argument MUST be equal to either 'true' or 'false'")
 	if results.version != None:
 		search_conditions.append('agentVersion:*'+results.version+'*')
-	if not (results.disableTP or results.enableTP):
-		parser.error('You must specify either --disableTP or --enableTP')
-	elif (results.disableTP and results.enableTP):
-		parser.error('Only specify --disableTP or --enableTP, not both')
-
 
 	# Find all computers using the parameters provided at the command line
 	comps = bit9.search('v1/computer', search_conditions)
