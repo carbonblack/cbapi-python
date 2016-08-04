@@ -300,7 +300,7 @@ class Sensor(MutableBaseModel):
 
     @property
     def webui_link(self):
-        return '{0:s}/#/host/{1:s}'.format(self._cb.url, self._model_unique_id)
+        return '{0:s}/#/host/{1}'.format(self._cb.url, self._model_unique_id)
 
     # TODO: properly handle the stats api routes
     @property
@@ -388,7 +388,7 @@ class SensorQuery(SimpleQuery):
             if not full_results:
                 self._results = []
             else:
-                self._results = [self._doc_class.new_object(self._cb, it) for it in full_results]
+                self._results = [self._doc_class.new_object(self._cb, it, full_doc=True) for it in full_results]
             self._results = self._sort(self._results)
             self._full_init = True
 
@@ -722,7 +722,6 @@ class Binary(TaggedModel):
 
         self.md5sum = md5sum
         self._frequency = None
-        self._stat_titles.extend(['md5sum', 'size'])
 
     def _build_api_request_uri(self):
         return Binary.urlobject + "/{0:s}/summary".format(self.md5sum)
@@ -1079,7 +1078,6 @@ class Process(TaggedModel):
             self.id = procguid[:36]
 
         self.segment = int(segment)
-        self._stat_titles.extend(['hostname', 'username', 'cmdline', 'path'])
 
         if cb.cb_server_version >= LooseVersion('5.1.0'):
             # CbER 5.1.0 introduced an extended event API

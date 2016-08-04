@@ -56,7 +56,6 @@ class BaseModel(object):
 
         self._full_init = False
         self._info = {}
-        self._stat_titles = ['webui_link']
 
         self._last_refresh_time = 0
         if initial_data:
@@ -73,6 +72,10 @@ class BaseModel(object):
         unique_id = self._info.get("id", None)
         if unique_id:
             self._model_unique_id = str(unique_id)
+
+    @property
+    def _stat_titles(self):
+        return self._info.keys()
 
     @classmethod
     def new_object(cls, cb, item):
@@ -155,6 +158,11 @@ class BaseModel(object):
 
     def __str__(self):
         ret = '{0:s}.{1:s}:\n'.format(self.__class__.__module__, self.__class__.__name__)
+        try:
+            ret += "-> available via web UI at %s" % self.webui_link
+        except UnimplementedError:
+            pass
+
         ret += u'\n'.join(['%-20s : %s' %
                            (a, getattr(self, a, "")) for a in self._stat_titles])
 
