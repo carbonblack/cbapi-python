@@ -27,7 +27,7 @@ else:
 
 from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
 from ..oldmodels import BaseModel, immutable
-from .utils import convert_from_cb, sign_datetime_format, convert_from_solr, parse_42_guid, cb_datetime_format
+from .utils import convert_from_cb, convert_from_solr, parse_42_guid
 from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
 from ..query import SimpleQuery
 
@@ -737,16 +737,16 @@ class Binary(TaggedModel):
                                     query_parameters=(('cb.freqver', 1), ('name', 'md5'), ('md5', self.md5sum)))
             self._frequency = r
 
-        hostCount = self._frequency.get('hostCount', 0)
-        globalCount = self._frequency.get('globalCount', 0)
-        numDocs = self._frequency.get('numDocs', 0)
-        if numDocs == 0:
-            frequency_fraction = 0.0
-        else:
-            frequency_fraction = float(globalCount) / float(numDocs)
+            hostCount = self._frequency.get('hostCount', 0)
+            globalCount = self._frequency.get('globalCount', 0)
+            numDocs = self._frequency.get('numDocs', 0)
+            if numDocs == 0:
+                frequency_fraction = 0.0
+            else:
+                frequency_fraction = float(globalCount) / float(numDocs)
 
-        # TODO: frequency calculated over number of hosts rather than number of processes
-        self._frequency = Binary.FrequencyData._make([hostCount, globalCount, numDocs, frequency_fraction])
+            # TODO: frequency calculated over number of hosts rather than number of processes
+            self._frequency = Binary.FrequencyData._make([hostCount, globalCount, numDocs, frequency_fraction])
 
         return self._frequency
 
@@ -799,7 +799,7 @@ class Binary(TaggedModel):
     def signing_data(self):
         digsig_sign_time = self._attribute('digsig_sign_time', "")
         if digsig_sign_time:
-            digsig_sign_time = datetime.strptime(digsig_sign_time, sign_datetime_format)
+            digsig_sign_time = convert_from_cb(digsig_sign_time)
 
         return Binary.SigningData._make([self._attribute('digsig_result', ""),
                                          self._attribute('digsig_publisher', ""),
@@ -850,7 +850,7 @@ class ProcessV1Parser(object):
     def parse_modload(self, seq, raw_modload):
         parts = raw_modload.split('|')
         new_mod = {}
-        timestamp = datetime.strptime(parts[0], cb_datetime_format)
+        timestamp = convert_from_cb(parts[0])
         new_mod['md5'] = parts[1]
         new_mod['path'] = parts[2]
 
@@ -906,7 +906,7 @@ class ProcessV1Parser(object):
         parts = filemod.split('|')
         new_file = {}
         new_file['type'] = _lookup_type(int(parts[0]))
-        timestamp = datetime.strptime(parts[1], cb_datetime_format)
+        timestamp = convert_from_cb(parts[1])
         new_file['path'] = parts[2]
         new_file['md5'] = parts[3]
         new_file['filetype'] = 'Unknown'
@@ -922,9 +922,9 @@ class ProcessV1Parser(object):
     def parse_netconn(self, seq, netconn):
         parts = netconn.split('|')
         new_conn = {}
-        timestamp = datetime.strptime(parts[0], cb_datetime_format)
+        timestamp = convert_from_cb(parts[0])
         try:
-            new_conn['remote_ip'] = socket.inet_ntop(socket.AF_INET, struct.pack('>i', int(parts[1])))
+            new_conn['remote_ip'] = socket.inet_ntoa(struct.pack('>i', int(parts[1])))
         except:
             new_conn['remote_ip'] = '0.0.0.0'
         new_conn['remote_port'] = int(parts[2])
@@ -950,7 +950,7 @@ class ProcessV1Parser(object):
 
         parts = regmod.split('|')
         new_regmod = {}
-        timestamp = datetime.strptime(parts[1], cb_datetime_format)
+        timestamp = convert_from_cb(parts[1])
         new_regmod['type'] = _lookup_type(int(parts[0]))
         new_regmod['path'] = parts[2]
 
@@ -962,7 +962,7 @@ class ProcessV1Parser(object):
 
     def parse_childproc(self, seq, childproc):
         parts = childproc.split('|')
-        timestamp = datetime.strptime(parts[0], cb_datetime_format)
+        timestamp = convert_from_cb(parts[0])
         new_childproc = {}
         new_childproc['procguid'] = parts[1]
         new_childproc['md5'] = parts[2]
@@ -1001,7 +1001,7 @@ class ProcessV1Parser(object):
 
         parts = raw_crossproc.split('|')
         new_crossproc = {}
-        timestamp = datetime.strptime(parts[1], cb_datetime_format)
+        timestamp = convert_from_cb(parts[1])
 
         # Types currently supported: RemoteThread and ProcessOpen
         new_crossproc['type'] = parts[0]
@@ -1042,13 +1042,13 @@ class ProcessV2Parser(ProcessV1Parser):
         else:
             new_conn['direction'] = 'Inbound'
 
-        for ipfield in ('remote_ip', 'local_ip'):
+        for ipfield in ('remote_ip', 'local_ip', 'proxy_ip'):
             try:
-                new_conn[ipfield] = socket.inet_ntop(socket.AF_INET, struct.pack('>i', int(netconn.get(ipfield, 0))))
+                new_conn[ipfield] = socket.inet_ntoa(struct.pack('>i', int(netconn.get(ipfield, 0))))
             except:
-                new_conn[ipfield] = '0.0.0.0'
+                new_conn[ipfield] = netconn.get(ipfield, '0.0.0.0')
 
-        for portfield in ('remote_port', 'local_port'):
+        for portfield in ('remote_port', 'local_port', 'proxy_port'):
             new_conn[portfield] = int(netconn.get(portfield, 0))
 
         new_conn['proto'] = protocols.get(int(netconn.get('proto', 0)), "Unknown")
@@ -1206,7 +1206,7 @@ class Process(TaggedModel):
 
     @property
     def comms_ip(self):
-        return socket.inet_ntop(socket.AF_INET, struct.pack('>i', self._attribute('comms_ip', 0)))
+        return socket.inet_ntoa(struct.pack('>i', self._attribute('comms_ip', 0)))
 
     @property
     def parent(self):
@@ -1247,6 +1247,10 @@ class Process(TaggedModel):
     @property
     def last_update(self):
         return convert_from_solr(self._attribute('last_update', -1))
+
+    @property
+    def username(self):
+        return self._attribute("username", None)
 
 
 def get_constants(prefix):
@@ -1346,7 +1350,7 @@ class CbNetConnEvent(CbEvent):
         self.event_type = u'Cb Network Connection event'
         self.stat_titles.extend(['domain', 'remote_ip', 'remote_port', 'proto', 'direction'])
         if version == 2:
-            self.stat_titles.extend(['local_ip', 'local_port'])
+            self.stat_titles.extend(['local_ip', 'local_port', 'proxy_ip', 'proxy_port'])
 
 
 class CbChildProcEvent(CbEvent):

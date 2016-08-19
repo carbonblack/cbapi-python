@@ -8,8 +8,8 @@ __copyright__ = 'Copyright 2016 Carbon Black'
 
 try:
     __version__ = __import__('pkg_resources').get_distribution(__name__).version
-except ImportError:
-    __version__ = 'unknown'
+except Exception:
+    __version__ = 'dev'
 
 # New API as of cbapi 0.9.0
 from .response.rest_api import CbEnterpriseResponseAPI

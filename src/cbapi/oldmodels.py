@@ -109,11 +109,10 @@ class BaseModel(object):
     def webui_link(self):
         """Returns a link associated with this object in the Carbon Black user interface.
 
-        :returns: URL that can be used to view the object in the Carbon Black web user interface
-        :raises UnimplementedError: if the Model does not support generating a Web user interface URL
+        :returns: URL that can be used to view the object in the Carbon Black web user interface or None if the Model
+        does not support generating a Web user interface URL
         """
-
-        raise UnimplementedError()
+        return None
 
     def __dir__(self):
         if not self._full_init:
