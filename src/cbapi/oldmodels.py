@@ -154,7 +154,7 @@ class BaseModel(object):
     def __str__(self):
         ret = '{0:s}.{1:s}:\n'.format(self.__class__.__module__, self.__class__.__name__)
         if self.webui_link:
-            ret += "-> available via web UI at %s" % self.webui_link
+            ret += "-> available via web UI at %s\n" % self.webui_link
 
         ret += u'\n'.join(['%-20s : %s' %
                            (a, getattr(self, a, "")) for a in self._stat_titles])
