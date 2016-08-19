@@ -12,8 +12,19 @@ log = logging.getLogger(__name__)
 
 def list_feeds(cb, parser, args):
     for f in cb.select(Feed):
-        print(f)
-        print("")
+        for fieldname in ["id", "category", "display_name", "enabled", "provider_url", "summary", "tech_data",
+                          "feed_url", "use_proxy", "validate_server_cert"]:
+            print("%-20s: %s" % (fieldname, getattr(f, fieldname, "")))
+
+        if f.username:
+            for fieldname in ["username", "password"]:
+                print("%-20s: %s" % (fieldname, getattr(f, fieldname, "")))
+
+        if f.ssl_client_crt:
+            for fieldname in ["ssl_client_crt", "ssl_client_key"]:
+                print("%-20s: %s" % (fieldname, getattr(f, fieldname, "")))
+
+        print("\n")
 
 
 def add_feed(cb, parser, args):
