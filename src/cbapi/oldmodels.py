@@ -13,10 +13,6 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class UnimplementedError(Exception):
-    pass
-
-
 class CreatableModelMixin(object):
     pass
 
@@ -157,10 +153,8 @@ class BaseModel(object):
 
     def __str__(self):
         ret = '{0:s}.{1:s}:\n'.format(self.__class__.__module__, self.__class__.__name__)
-        try:
+        if self.webui_link:
             ret += "-> available via web UI at %s" % self.webui_link
-        except UnimplementedError:
-            pass
 
         ret += u'\n'.join(['%-20s : %s' %
                            (a, getattr(self, a, "")) for a in self._stat_titles])
