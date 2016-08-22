@@ -30,7 +30,7 @@ to do the easy stuff and handling all of the "sharp corners" behind the scenes f
 If you're more a Cb Enterprise Protection fellow, then you're in luck as well:
 
     >>> from cbapi.protection.models import FileInstance
-    >>> from cbapi.ep.rest_api import CbEnterpriseProtectionAPI
+    >>> from cbapi.protection import CbEnterpriseProtectionAPI
     >>> p=CbEnterpriseProtectionAPI()
     >>> # Select the first file instance
     >>> fi = p.select(FileInstance).first()
