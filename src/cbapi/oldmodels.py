@@ -151,6 +151,12 @@ class BaseModel(object):
 
         raise AttributeError()
 
+    def get(self, attrname, default_val=None):
+        try:
+            return self._attribute(attrname)
+        except AttributeError:
+            return default_val
+
     def __str__(self):
         ret = '{0:s}.{1:s}:\n'.format(self.__class__.__module__, self.__class__.__name__)
         if self.webui_link:

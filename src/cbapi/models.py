@@ -223,6 +223,9 @@ class NewBaseModel(object):
         else:
             raise AttributeError("Field {0:s} is immutable".format(attrname))
 
+    def get(self, attrname, default_val=None):
+        return getattr(self, attrname, default_val)
+
     def _set(self, attrname, new_value):
         pass
 
