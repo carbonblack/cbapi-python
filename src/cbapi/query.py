@@ -105,7 +105,7 @@ class SimpleQuery(BaseQuery):
         if self._query:
             raise ApiError("Cannot have multiple 'where' clauses")
 
-        field, value = new_query.split(':')
+        field, value = new_query.split(':', maxsplit=1)
         self._query[field] = value
 
         self._full_init = False
@@ -185,4 +185,3 @@ class PaginatedQuery(BaseQuery):
     def _perform_query(self, start=0, numrows=0):
         for item in self._search(start=start, rows=numrows):
             yield self._doc_class.new_object(self._cb, item)
-
