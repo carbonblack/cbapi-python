@@ -49,7 +49,7 @@ class Query(PaginatedQuery):
     >>> query = query.where("ipAddress:10.201.2.*")     # add a filter to this Query
     >>> query = query.sort("processorSpeed DESC")       # sort by computer processor speed, descending
     >>> for comp in query:                              # uses the iterator to retrieve all results
-    >>>     print comp.name
+    >>>     print(comp.name)
     >>> comps = query[:10]                              # retrieve the first ten results
     >>> len(query)                                      # retrieve the total count
 

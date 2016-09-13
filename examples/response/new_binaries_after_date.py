@@ -45,7 +45,7 @@ def main():
     #
     # query for all processes that match our query
     #
-    print "Performing Query..."
+    print("Performing Query...")
     query = "filewrite_md5:* last_update:[" + opts.date + "T00:00:00 TO *]"
     process_query = cb.select(Process).where(query)
 

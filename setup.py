@@ -5,24 +5,29 @@ cbapi-python
 from setuptools import setup
 import sys
 
-packages = ['cbapi', 'cbapi.protection', 'cbapi.response']
+packages = ['cbapi', 'cbapi.protection', 'cbapi.response', 'cbapi.cache']
 if sys.version_info < (3, 0):
     packages.extend(['cbapi.legacy', 'cbapi.legacy.util'])
 
 install_requires=[
-    'py-lru-cache',
     'requests',
     'attrdict',
     'cachetools',
     'six',
-    'pyyaml'
+    'pyyaml',
+    'pika',
+    'prompt_toolkit',
+    'pygments',
+    'python-dateutil'
 ]
 if sys.version_info < (2, 7):
-    install_requires.extend(['simplejson', 'total-ordering'])
+    install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])
+if sys.version_info < (3, 0):
+    install_requires.extend(['futures'])
 
 setup(
     name='cbapi',
-    version='0.9.1',
+    version='0.9.6',
     url='https://github.com/carbonblack/cbapi-python',
     license='MIT',
     author='Carbon Black',
@@ -40,5 +45,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Software Development :: Libraries :: Python Modules'
-    ]
+    ],
+    scripts=['bin/cbapi-response', 'bin/cbapi-protection']
 )

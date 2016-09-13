@@ -1,129 +1,156 @@
-import threading
-import time
-import requests
-import json
+# NOTE: this is highly experimental and in no way reflects how the API will ultimately be designed
+
+from __future__ import absolute_import
+
 import random
 import string
+import threading
+import time
+import logging
+from collections import defaultdict
+
+import six
+
+from cbapi.errors import TimeoutError, ObjectNotFoundError, ApiError, ServerError
+from six import itervalues
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from cbapi import winerror
+
+from cbapi.response.models import Sensor
 
 
-# TODO/NOTE: this is not the intended "new" API. Just putting this here for now.
+log = logging.getLogger(__name__)
 
 
 class LiveResponseError(Exception):
-    pass
+    def __init__(self, details):
+        message_list = []
+
+        self.details = details
+        self.win32_error = None
+        self.decoded_win32_error = ""
+
+        # Details object:
+        # {u'status': u'error', u'username': u'admin', u'sensor_id': 9, u'name': u'kill', u'completion': 1464319733.190924,
+        # u'object': 1660, u'session_id': 7, u'result_type': u'WinHresult', u'create_time': 1464319733.171967,
+        # u'result_desc': u'', u'id': 22, u'result_code': 2147942487}
+
+        if self.details.get("status") == "error" and self.details.get("result_type") == "WinHresult":
+            # attempt to decode the win32 error
+            win32_error_text = "Unknown Win32 error code"
+            try:
+                self.win32_error = int(self.details.get("result_code"))
+                win32_error_text = "Win32 error code 0x%08X" % (self.win32_error,)
+                self.decoded_win32_error = winerror.decode_hresult(self.win32_error)
+                if self.decoded_win32_error:
+                    win32_error_text += " ({0})".format(self.decoded_win32_error)
+            except:
+                pass
+            finally:
+                message_list.append(win32_error_text)
+        
+        self.message = ": ".join(message_list)
+
+    def __str__(self):
+        return self.message
 
 
-class LiveResponseThread(threading.Thread):
-    """ note that timeout is not currently implemented """
-    def __init__(self, cb, logger, sensor_id):
-        self.cb = cb
-        self.logger = logger
+class LiveResponseSession(object):
+    MAX_RETRY_COUNT = 5
+
+    def __init__(self, scheduler, session_id, sensor_id, session_data=None):
+        self.session_id = session_id
         self.sensor_id = sensor_id
-        self.result_available = False
-        self.result = None
-        self.done = False
-        self.live_response_session = None
-        self.newest_time_stamp = time.time()
-        self.one_time = True
+        self._lr_scheduler = scheduler
+        self._cb = scheduler._cb
+        # TODO: refcount should be in a different object in the scheduler
+        self._refcount = 1
+        self._closed = False
 
-        threading.Thread.__init__(self)
+        self.session_data = session_data
 
-    def timed_out(self):
-        return not self.is_alive() and not self.done
+    def __enter__(self):
+        return self
 
-    def stop(self):
-        self.done = True
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
-    def establish_session(self):
-        self._establish_live_response_session()
-        return self.live_response_session
+    def close(self):
+        self._lr_scheduler.close_session(self.sensor_id)
+        self._closed = True
 
-    def _establish_live_response_session(self):
-        resp = self.cb.live_response_session_create(self.sensor_id)
-        session_id = resp.get('id')
+    def get_session_archive(self):
+        response = self._cb.session.get("/api/v1/cblr/session/{0}/archive".format(self.session_id), stream=True)
+        response.raw.decode_content = True
+        return response.raw
 
-        session_state = 'pending'
-        while session_state != 'active':
-            time.sleep(5)
-            session_state = self.cb.live_response_session_status(session_id).get('status')
-            self.logger.debug('LR status=%s' % session_state)
+    #
+    # File operations
+    #
+    def get_raw_file(self, file_name):
+        data = {"name": "get file", "object": file_name}
 
-        self.logger.debug('I have a live response session: session_id=%d status=%s' % (session_id, session_state))
+        resp = self._lr_post_command(data).json()
+        file_id = resp.get('file_id', None)
+        command_id = resp.get('id', None)
 
-        self.live_response_session = session_id
+        self._poll_command(command_id)
+        response = self._cb.session.get("/api/v1/cblr/session/{0}/file/{1}/content".format(self.session_id,
+                                                                                           file_id), stream=True)
+        response.raw.decode_content = True
+        return response.raw
 
-    def _kill_process(self, pid):
-        session_id = self.live_response_session
-        resp = self.cb.live_response_session_command_post(session_id, "kill", pid)
+    def get_file(self, file_name):
+        fp = self.get_raw_file(file_name)
+        content = fp.read()
+        fp.close()
+
+        return content
+
+    def delete_file(self, filename):
+        data = {"name": "delete file", "object": filename}
+        resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
-        killed = False
-        count = 0
+        self._poll_command(command_id)
 
-        self.logger.warn("Killing %d" % pid)
+    def put_file(self, infp, remote_filename):
+        data = {"name": "put file", "object": remote_filename}
+        file_id = self._upload_file(infp)
+        data["file_id"] = file_id
 
-        while not killed and count < 5:
-            resp = self.cb.live_response_session_command_get(session_id, command_id)
-            if resp.get('status') == 'complete':
-                killed = True
-            count += 1
-            time.sleep(.1)
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+        self._poll_command(command_id)
 
-        return killed
+    def list_directory(self, dir_name):
+        data = {"name": "directory list", "object": dir_name}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get("id")
+        return self._poll_command(command_id).get("files", [])
 
-    def _kill_processes(self, target_proc_guids):
-        session_id = self.live_response_session
-        killed = []
+    def create_directory(self, dir_name):
+        data = {"name": "create directory", "object": dir_name}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+        self._poll_command(command_id)
 
-        resp = self.cb.live_response_session_command_post(session_id, "process list")
+    #
+    # Process operations
+    #
+    def kill_process(self, pid):
+        data = {"name": "kill", "object": pid}
+        resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
 
-        command_state = 'pending'
+        try:
+            self._poll_command(command_id, timeout=10, delay=0.1)
+        except TimeoutError:
+            return False
 
-        while command_state != 'complete':
-            resp = self.cb.live_response_session_command_get(session_id, command_id)
-            command_state = resp.get('status')
-            time.sleep(.1)
+        return True
 
-        live_procs = resp.get('processes')
-        for live_proc in live_procs:
-            live_proc_guid = live_proc.get('proc_guid')
-            if live_proc_guid in target_proc_guids:
-                live_proc_pid = live_proc.get('pid')
-                if self._kill_process(live_proc_pid):
-                    self.logger.warn("KILLED %d" % live_proc_pid)
-                    killed.append(live_proc_guid)
-
-        return (len(live_procs) > 0), killed
-
-    def get_processes(self):
-        session_id = self.live_response_session
-        resp = self.cb.live_response_session_command_post(session_id, "process list")
-        command_id = resp.get('id')
-
-        command_state = 'pending'
-
-        while command_state != 'complete':
-            resp = self.cb.live_response_session_command_get(session_id, command_id)
-            command_state = resp.get('status')
-            time.sleep(.1)
-
-        live_procs = resp.get('processes')
-        return live_procs
-
-    def get_file(self, filename):
-        session_id = self.live_response_session
-        resp = self.cb.live_response_session_command_post(session_id, "get file", filename)
-        file_id = resp.get('file_id')
-        command_id = resp.get('id')
-        command_state = 'pending'
-        while command_state != 'complete':
-            time.sleep(.2)
-            resp = self.cb.live_response_session_command_get(session_id, command_id)
-            command_state = resp.get('status')
-        file_content = self.cb.live_response_session_command_get_file(session_id, file_id)
-        return file_content
-
-    def create_process(self, command_string):
+    def create_process(self, command_string, wait_for_output=True, remote_output_file_name=None,
+                       working_directory=None, wait_timeout=30):
         # process is:
         # - create a temporary file name
         # - create the process, writing output to a temporary file
@@ -131,32 +158,270 @@ class LiveResponseThread(threading.Thread):
         # - get the temporary file from the endpoint
         # - delete the temporary file
 
-        randfile = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(12)])
-        workdir = 'c:\\windows\\carbonblack'
-        randfilename = '%s\\cblr.%s.tmp' % (workdir, randfile)
+        data = {"name": "create process", "object": command_string, "wait": False}
 
-        session_id = self.live_response_session
+        if wait_for_output and not remote_output_file_name:
+            randfile = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(12)])
+            workdir = 'c:\\windows\\carbonblack'       # TODO: cross-platform
+            randfilename = '%s\\cblr.%s.tmp' % (workdir, randfile)
+            data["output_file"] = randfilename
 
-        url = "%s/api/v1/cblr/session/%d/command" % (self.cb.server, session_id)
-        data = {"session_id": session_id, "name": "create process", "object": command_string,
-                "wait": True, "working_directory": workdir, "output_file": randfilename}
-        r = requests.post(url, headers=self.cb.token_header, data=json.dumps(data), verify=self.cb.ssl_verify,
-                          timeout=120)
-        r.raise_for_status()
-        resp = r.json()
+        if working_directory:
+            data["working_directory"] = working_directory
 
+        if remote_output_file_name:
+            data["output_file"] = remote_output_file_name
+
+        resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
-        command_state = 'pending'
 
-        while command_state != 'complete':
-            time.sleep(.2)
-            resp = self.cb.live_response_session_command_get(session_id, command_id)
-            command_state = resp.get('status')
+        if wait_for_output:
+            self._poll_command(command_id, timeout=wait_timeout)
 
-        # now the file is ready to be read
+            # now the file is ready to be read
 
-        file_content = self.get_file(randfilename)
-        # delete the file
-        self.cb.live_response_session_command_post(session_id, "delete file", randfilename)
+            file_content = self.get_file(data["output_file"])
+            # delete the file
+            self._lr_post_command({"name": "delete file", "object": data["output_file"]})
 
-        return file_content
+            return file_content
+
+    def list_processes(self):
+        data = {"name": "process list"}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+
+        return self._poll_command(command_id).get("processes", [])
+
+    #
+    # Registry operations
+    #
+    def list_registry_keys(self, regkey):
+        data = {"name": "reg enum key", "object": regkey}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+
+        return self._poll_command(command_id).get("values", [])
+
+    def get_registry_value(self, regkey):
+        data = {"name": "reg query value", "object": regkey}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+
+        return self._poll_command(command_id).get("value", {})
+
+    def set_registry_value(self, regkey, value, overwrite=True, value_type=None):
+        if value_type is None:
+            if type(value) == int:
+                value_type = "REG_DWORD"
+            elif type(value) == list:
+                value_type = "REG_MULTI_SZ"
+            # elif type(value) == bytes:
+            #     value_type = "REG_BINARY"
+            else:
+                value_type = "REG_SZ"
+                value = str(value)
+
+        data = {"name": "reg set value", "object": regkey, "overwrite": overwrite, "value_type": value_type,
+                "value_data": value}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+        self._poll_command(command_id)
+
+    def create_registry_key(self, regkey):
+        data = {"name": "reg create key", "object": regkey}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+        self._poll_command(command_id)
+
+    def delete_registry_key(self, regkey):
+        data = {"name": "reg delete key", "object": regkey}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+        self._poll_command(command_id)
+
+    def delete_registry_value(self, regkey):
+        data = {"name": "reg delete value", "object": regkey}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+        self._poll_command(command_id)
+
+    def _poll_command(self, command_id, **kwargs):
+        return poll_status(self._cb, "/api/v1/cblr/session/{0}/command/{1}".format(self.session_id, command_id),
+                           **kwargs)
+
+    def _upload_file(self, fp):
+        resp = self._cb.session.post("/api/v1/cblr/session/{0}/file".format(self.session_id), files={"file": fp}).json()
+        return resp.get('id')
+
+    def _lr_post_command(self, data):
+        retries = self.MAX_RETRY_COUNT
+
+        if "name" in data and data["name"] not in self.session_data["supported_commands"]:
+            raise ApiError("Command {0} not supported by this sensor".format(data["name"]))
+
+        while retries:
+            try:
+                data["session_id"] = self.session_id
+                resp = self._cb.post_object("/api/v1/cblr/session/{0}/command".format(self.session_id), data)
+            except ObjectNotFoundError as e:
+                if e.message.startswith("Sensor") or e.message.startswith("Session"):
+                    self.session_id, self.session_data = self._lr_scheduler._get_or_create_session(self.sensor_id)
+                    retries -= 1
+                    continue
+                else:
+                    raise ApiError("Received 404 error from server: {0}".format(e.message))
+            else:
+                return resp
+
+        raise ApiError("Command {0} failed after {1} retries".format(data["name"], self.MAX_RETRY_COUNT))
+
+
+def jobrunner(callable, cb, sensor_id):
+    with cb.select(Sensor, sensor_id).lr_session() as sess:
+        return callable(sess)
+
+
+class LiveResponseScheduler(object):
+    def __init__(self, cb, timeout=30, max_workers=10):
+        self._timeout = timeout
+        self._cb = cb
+        self._sessions = {}
+        self._session_lock = threading.RLock()
+
+        self._cleanup_thread = threading.Thread(target=self._session_keepalive_thread)
+        self._cleanup_thread.daemon = True
+        self._cleanup_thread.start()
+
+        self._job_workers = ThreadPoolExecutor(max_workers=max_workers)
+        self._jobs = defaultdict(list)
+
+    def submit_job(self, tag, job, sensor_list):
+        for s in sensor_list:
+            self._jobs[tag].append(self._job_workers.submit(jobrunner, job, self._cb, s))
+
+    def job_results(self, tag):
+        return as_completed(self._jobs[tag])
+
+    def _session_keepalive_thread(self):
+        log.debug("Starting Live Response scheduler cleanup task")
+        while True:
+            time.sleep(self._timeout)
+
+            delete_list = []
+            with self._session_lock:
+                for session in itervalues(self._sessions):
+                    if session._refcount == 0:
+                        delete_list.append(session.sensor_id)
+                    else:
+                        try:
+                            self._send_keepalive(session.session_id)
+                        except ObjectNotFoundError:
+                            log.debug("Session {0} for sensor {1} not valid any longer, removing from cache"
+                                      .format(session.session_id, session.sensor_id))
+                            delete_list.append(session.sensor_id)
+                        except:
+                            log.debug("Keepalive on session {0} (sensor {1}) failed with unknown error, removing from cache"
+                                      .format(session.session_id, session.sensor_id))
+                            delete_list.append(session.sensor_id)
+
+                for sensor_id in delete_list:
+                    try:
+                        session_data = self._cb.get_object("/api/v1/cblr/session/{0}"
+                                                           .format(self._sessions[sensor_id].session_id))
+                        session_data["status"] = "close"
+                        self._cb.put_object("/api/v1/cblr/session/{0}".format(self._sessions[sensor_id].session_id),
+                                            session_data)
+                    except:
+                        pass
+                    finally:
+                        del self._sessions[sensor_id]
+
+    def request_session(self, sensor_id):
+        with self._session_lock:
+            if sensor_id in self._sessions:
+                session = self._sessions[sensor_id]
+                self._sessions[sensor_id]._refcount += 1
+            else:
+                session_id, session_data = self._get_or_create_session(sensor_id)
+                session = LiveResponseSession(self, session_id, sensor_id, session_data=session_data)
+                self._sessions[sensor_id] = session
+
+        return session
+
+    def close_session(self, sensor_id):
+        with self._session_lock:
+            try:
+                self._sessions[sensor_id]._refcount -= 1
+            except KeyError:
+                pass
+
+    def _send_keepalive(self, session_id):
+        log.debug("Sending keepalive message for session id {0}".format(session_id))
+        self._cb.get_object("/api/v1/cblr/session/{0}/keepalive".format(session_id))
+
+    def _get_or_create_session(self, sensor_id):
+        sensor_sessions = [s for s in self._cb.get_object("/api/v1/cblr/session")
+                           if s["sensor_id"] == sensor_id and s["status"] in ("pending", "active")]
+
+        if len(sensor_sessions) > 0:
+            session_id = sensor_sessions[0]["id"]
+        else:
+            session_id = self._create_session(sensor_id)
+
+        try:
+            res = poll_status(self._cb, "/api/v1/cblr/session/{0}".format(session_id), desired_status="active")
+        except ObjectNotFoundError:
+            # the Cb server will return a 404 if we don't establish a session in time, so convert this to a "timeout"
+            raise TimeoutError("Could not establish session with sensor {0}".format(sensor_id))
+        else:
+            return session_id, res
+
+    def _create_session(self, sensor_id):
+        response = self._cb.post_object("/api/v1/cblr/session", {"sensor_id": sensor_id}).json()
+        session_id = response["id"]
+        return session_id
+
+
+class GetFileJob(object):
+    def __init__(self, file_name):
+        self._file_name = file_name
+
+    def run(self, session):
+        return session.get_file(self._file_name)
+
+
+def poll_status(cb, url, desired_status="complete", timeout=120, delay=0.5):
+    start_time = time.time()
+    status = None
+
+    while status != desired_status and time.time() - start_time < timeout:
+        res = cb.get_object(url)
+        if res["status"] == desired_status:
+            return res
+        elif res["status"] == "error":
+            raise LiveResponseError(res)
+        else:
+            time.sleep(delay)
+
+    raise TimeoutError(url, message="timeout polling for Live Response")
+
+
+if __name__ == "__main__":
+    from cbapi.response import CbEnterpriseResponseAPI
+    from cbapi.response.models import Sensor
+    import logging
+    root = logging.getLogger()
+    root.addHandler(logging.StreamHandler())
+
+    logging.getLogger("cbapi").setLevel(logging.DEBUG)
+
+    c = CbEnterpriseResponseAPI()
+    j = GetFileJob(r"c:\test.txt")
+    with c.select(Sensor, 9).lr_session() as lr_session:
+        file_contents = lr_session.get_file(r"c:\test.txt")
+
+    c.live_response.submit_job("test", j.run, [9, ])
+    for x in c.live_response.job_results("test"):
+        print(x.result())
+

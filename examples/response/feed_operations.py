@@ -12,8 +12,19 @@ log = logging.getLogger(__name__)
 
 def list_feeds(cb, parser, args):
     for f in cb.select(Feed):
-        print(f)
-        print("")
+        for fieldname in ["id", "category", "display_name", "enabled", "provider_url", "summary", "tech_data",
+                          "feed_url", "use_proxy", "validate_server_cert"]:
+            print("%-20s: %s" % (fieldname, getattr(f, fieldname, "")))
+
+        if f.username:
+            for fieldname in ["username", "password"]:
+                print("%-20s: %s" % (fieldname, getattr(f, fieldname, "")))
+
+        if f.ssl_client_crt:
+            for fieldname in ["ssl_client_crt", "ssl_client_key"]:
+                print("%-20s: %s" % (fieldname, getattr(f, fieldname, "")))
+
+        print("\n")
 
 
 def add_feed(cb, parser, args):
@@ -29,7 +40,7 @@ def add_feed(cb, parser, args):
     f = cb.create(Feed)
     f.feed_url = args.feed_url
     if args.enable:
-        f.enable = True
+        f.enabled = True
 
     if args.username:
         f.username = args.username
@@ -94,6 +105,30 @@ def delete_feed(cb, parser, args):
             print("Deleted feed id {0:d} with name {1:s}".format(f.id, f.name))
 
 
+def toggle_feed(cb, feedname, enable=True):
+    try:
+        feeds = list(cb.select(Feed).where("name:{0:s}".format(feedname)))
+    except Exception as e:
+        print("Could not find any feeds with the name {0:s}: {1:s}".format(feedname, str(e)))
+        return
+
+    for feed in feeds:
+        if enable:
+            operation = "Enabl"
+        else:
+            operation = "Disabl"
+
+        if feed.enabled == enable:
+            print("Feed named {0} with id {1} already {2}ed, continuing".format(feed.name, feed.id, operation))
+        else:
+            print("{0}ing feed named {1:s} with id {2}".format(operation, feed.name, feed.id))
+            feed.enabled = enable
+            try:
+                feed.save()
+            except Exception as e:
+                print("-> Encountered error {0}ing feed id {1}: {2}".format(operation, feed.id, str(e)))
+
+
 def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="Feed commands", dest="command_name")
@@ -125,6 +160,12 @@ def main():
     del_command.add_argument("--force", help="If FEEDNAME matches multiple feeds, delete all matching feeds",
                              action="store_true", default=False)
 
+    enable_command = commands.add_parser("enable", help="Enable a feed")
+    enable_command.add_argument("-f", "--feedname", help="Name of feed to enable", required=True)
+
+    disable_command = commands.add_parser("disable", help="Disable a feed")
+    disable_command.add_argument("-f", "--feedname", help="Name of feed to disable", required=True)
+
     args = parser.parse_args()
     cb = get_cb_response_object(args)
 
@@ -134,6 +175,8 @@ def main():
         return add_feed(cb, parser, args)
     elif args.command_name == "delete":
         return delete_feed(cb, parser, args)
+    elif args.command_name in ("disable", "enable"):
+        return toggle_feed(cb, args.feedname, enable=args.command_name=="enable")
 
 
 if __name__ == "__main__":

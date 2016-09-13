@@ -4,10 +4,18 @@ from __future__ import absolute_import
 
 import requests
 import sys
-import os
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3 import Retry
+
+# Older versions of requests (such as the one packaged with Splunk) do not have a Retry object
+# in the packaged version of urllib3. Fall back gracefully.
+try:
+    from requests.packages.urllib3 import Retry
+    MAX_RETRIES = Retry(total=5, status_forcelist=[502, 504], backoff_factor=0.5)
+except ImportError:
+    MAX_RETRIES = 5
+
 from requests.packages.urllib3.poolmanager import PoolManager
+
 import logging
 import json
 
@@ -18,7 +26,7 @@ from .auth import CredentialStore, Credentials
 from .errors import ServerError, TimeoutError, ApiError, ObjectNotFoundError, UnauthorizedError, CredentialError
 from . import __version__
 
-from lru import lru_cache_function
+from .cache.lru import lru_cache_function
 from .models import CreatableModelMixin
 
 
@@ -87,7 +95,7 @@ class Connection(object):
             self.session.mount(self.server, HostNameIgnoringAdapter())
 
         # TODO: apply this to the ssl_verify_hostname case as well
-        self.session.mount(self.server, HTTPAdapter(max_retries=Retry(total=5, status_forcelist=[502, 504], backoff_factor=0.5)))
+        self.session.mount(self.server, HTTPAdapter(max_retries=MAX_RETRIES))
 
         self.proxies = {}
         if credentials.ignore_system_proxy:         # see https://github.com/kennethreitz/requests/issues/879
@@ -130,104 +138,33 @@ class Connection(object):
                            original_exception=e)
         else:
             if r.status_code == 404:
-                raise ObjectNotFoundError(uri=uri)
+                raise ObjectNotFoundError(uri=uri, message=r.content)
             elif r.status_code == 401:
-                raise UnauthorizedError(uri=uri, action=method)
+                raise UnauthorizedError(uri=uri, action=method, message=r.content)
             elif r.status_code >= 400:
                 raise ServerError(error_code=r.status_code, message=r.content)
             return r
 
     def get(self, url, **kwargs):
-        verify_ssl = kwargs.pop('verify', None) or self.ssl_verify
-        proxies = kwargs.pop('proxies', None) or self.proxies
-
-        new_headers = kwargs.pop('headers', None)
-        if new_headers:
-            headers = self.token_header.copy()
-            headers.update(new_headers)
-        else:
-            headers = self.token_header
-
-        uri = self.server + url
-
-        # TODO: add appropriate error handling code around this & eliminate code duplication
-        try:
-            r = self.session.get(uri, headers=headers, verify=verify_ssl, proxies=proxies, **kwargs)
-            log.debug('HTTP GET {0:s} took {2:.3f}s (response {1:d})'.format(url, r.status_code,
-                                                                      calculate_elapsed_time(r.elapsed)))
-        except requests.Timeout as timeout_error:
-            raise TimeoutError(uri=uri, original_exception=timeout_error)
-        except requests.ConnectionError as connection_error:
-            raise ApiError("Received a network connection error from {0:s}: {1:s}".format(self.server,
-                                                                                          str(connection_error)),
-                           original_exception=connection_error)
-        except Exception as e:
-            raise ApiError("Unknown exception when connecting to server: {0:s}".format(str(e)),
-                           original_exception=e)
-        else:
-            if r.status_code == 404:
-                raise ObjectNotFoundError(uri=uri)
-            elif r.status_code == 401:
-                raise UnauthorizedError(uri=uri, action="GET")
-            elif r.status_code >= 400:
-                raise ServerError(error_code=r.status_code, message=r.content)
-            return r
+        return self.http_request("GET", url, **kwargs)
 
     def post(self, url, **kwargs):
-        verify_ssl = kwargs.pop('verify', None) or self.ssl_verify
-        proxies = kwargs.pop('proxies', None) or self.proxies
-
-        new_headers = kwargs.pop('headers', None)
-        if new_headers:
-            headers = self.token_header.copy()
-            headers.update(new_headers)
-        else:
-            headers = self.token_header
-
-        r = self.session.post(self.server + url, headers=headers, verify=verify_ssl, proxies=proxies, **kwargs)
-        log.debug('HTTP POST {0:s} took {2:.3f}s (response {1:d})'.format(url, r.status_code,
-                                                                          r.elapsed.total_seconds()))
-        return r
+        return self.http_request("POST", url, **kwargs)
 
     def put(self, url, **kwargs):
-        verify_ssl = kwargs.pop('verify', None) or self.ssl_verify
-        proxies = kwargs.pop('proxies', None) or self.proxies
-
-        new_headers = kwargs.pop('headers', None)
-        if new_headers:
-            headers = self.token_header.copy()
-            headers.update(new_headers)
-        else:
-            headers = self.token_header
-
-        r = self.session.put(self.server + url, headers=headers, verify=verify_ssl, proxies=proxies, **kwargs)
-        log.debug('HTTP PUT {0:s} took {2:.3f}s (response {1:d})'.format(url, r.status_code,
-                                                                         r.elapsed.total_seconds()))
-        return r
+        return self.http_request("PUT", url, **kwargs)
 
     def delete(self, url, **kwargs):
-        verify_ssl = kwargs.pop('verify', None) or self.ssl_verify
-        proxies = kwargs.pop('proxies', None) or self.proxies
-
-        new_headers = kwargs.pop('headers', None)
-        if new_headers:
-            headers = self.token_header.copy()
-            headers.update(new_headers)
-        else:
-            headers = self.token_header
-
-        r = self.session.delete(self.server + url, headers=headers, verify=verify_ssl, proxies=proxies, **kwargs)
-        log.debug('HTTP DELETE {0:s} took {2:.3f}s (response {1:d})'.format(url, r.status_code,
-                                                                            r.elapsed.total_seconds()))
-
-        return r
+        return self.http_request("DELETE", url, **kwargs)
 
 
 class BaseAPI(object):
     """baseapi"""
     def __init__(self, *args, **kwargs):
         product_name = kwargs.pop("product_name", None)
-        self.credential_store = CredentialStore(product_name)
+        credential_file = kwargs.pop("credential_file", None)
+
+        self.credential_store = CredentialStore(product_name, credential_file=credential_file)
 
         url, token = kwargs.pop("url", None), kwargs.pop("token", None)
         if url and token:
@@ -236,12 +173,13 @@ class BaseAPI(object):
             for k in ("ssl_verify",):
                 if k in kwargs:
                     credentials[k] = kwargs.pop(k)
-            credentials = Credentials(credentials)
+            self.credentials = Credentials(credentials)
+            self.credential_profile_name = None
         else:
-            profile_name = kwargs.pop("profile", None)
-            credentials = self.credential_store.get_credentials(profile_name)
+            self.credential_profile_name = kwargs.pop("profile", None)
+            self.credentials = self.credential_store.get_credentials(self.credential_profile_name)
 
-        self.session = Connection(credentials)
+        self.session = Connection(self.credentials)
 
     def raise_unless_json(self, ret, expected):
         if ret.status_code == 200:
@@ -252,12 +190,11 @@ class BaseAPI(object):
         else:
             raise ServerError(ret.status_code, "".format(ret.content), )
 
-    def get_object(self, uri, query_parameters=None):
+    def get_object(self, uri, query_parameters=None, default=None):
         if query_parameters:
-            uri += '?%s' % (urllib.parse.urlencode(query_parameters))
+            uri += '?%s' % (urllib.parse.urlencode(sorted(query_parameters)))
 
-        # TODO: we need better error handling around this
-        result = self.session.get(uri)
+        result = self.api_json_request("GET", uri)
         if result.status_code == 200:
             try:
                 return result.json()
@@ -265,13 +202,11 @@ class BaseAPI(object):
                 raise ServerError(result.status_code, "Cannot parse response as JSON: {0:s}".format(result.content))
         elif result.status_code == 204:
             # empty response
-            return None
-        elif result.status_code == 404:
-            raise ServerError(result.status_code, "Object not found: {0:s}".format(uri))
+            return default
         else:
-            raise ServerError(result.status_code, "Unknown API error: {0:s}".format(result.content))
+            raise ServerError(error_code=result.status_code, message="Unknown error: {0}".format(result.content))
 
-    def http_request(self, method, uri, **kwargs):
+    def api_json_request(self, method, uri, **kwargs):
         headers = kwargs.pop("headers", {})
         raw_data = None
 
@@ -279,20 +214,18 @@ class BaseAPI(object):
             if "Content-Type" not in headers:
                 headers["Content-Type"] = "application/json"
                 raw_data = kwargs.pop("data", {})
-                raw_data = json.dumps(raw_data)
+                raw_data = json.dumps(raw_data, sort_keys=True)
 
         return self.session.http_request(method, uri, headers=headers, data=raw_data, **kwargs)
 
-    def post_object(self, uri, body):
-        return self.session.http_request("POST", uri, data=json.dumps(body),
-                                         headers={"Content-Type": "application/json"})
+    def post_object(self, uri, body, **kwargs):
+        return self.api_json_request("POST", uri, data=body, **kwargs)
 
-    def put_object(self, uri, body):
-        return self.session.http_request("PUT", uri, data=json.dumps(body),
-                                         headers={"Content-Type": "application/json"})
+    def put_object(self, uri, body, **kwargs):
+        return self.api_json_request("PUT", uri, data=body, **kwargs)
 
     def delete_object(self, uri):
-        return self.session.http_request("DELETE", uri)
+        return self.api_json_request("DELETE", uri)
 
     def select(self, cls, unique_id=None, *args, **kwargs):
         """Prepares a query against the Carbon Black data store.

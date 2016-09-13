@@ -21,7 +21,8 @@ log = logging.getLogger(__name__)
 
 
 class VirusTotalConnector(object):
-    def __init__(self, api, vt_token=None, connector_name='VirusTotal', allow_uploads=True):
+    def __init__(self, api, vt_token=None, connector_name='VirusTotal', allow_uploads=True, malicious_threshold=50,
+                 potential_threshold=10):
         """VirusTotal connector main object.
 
         :param cbapi.protection.CbEnterpriseResponseAPI: api: API object
@@ -38,6 +39,9 @@ class VirusTotalConnector(object):
         self.vt_token = vt_token
         self.vt_url = 'https://www.virustotal.com/vtapi/v2'
         self.polling_frequency = 30 # seconds
+
+        self.malicious_threshold = malicious_threshold
+        self.potential_threshold = potential_threshold
 
         # Global dictionary to track our VT scheduled scans. We need this since it takes VT a while to process results
         # and we don't want to keep polling VT too often
@@ -80,6 +84,7 @@ class VirusTotalConnector(object):
         else:
             binary.analysisStatus = PendingAnalysis.StatusCancelled
             log.info("%s: VirusTotal has no information and we aren't allowed to upload it. Cancelling the analysis request." % binary.fileHash)
+            binary.save()
 
     def report_result(self, binary, scanResults):
         # We have results. Create our notification
@@ -87,11 +92,11 @@ class VirusTotalConnector(object):
 
         # Let's see if it is malicious. Use some fancy heuristics...
         positivesPerc = 100 * scanResults.get('positives') / scanResults.get('total')
-        if positivesPerc > 50:
+        if positivesPerc > self.malicious_threshold:
             n.analysisResult = Notification.ResultMalicious
             n.severity = "critical"
             n.type = "malicious_file"
-        elif positivesPerc > 0:
+        elif positivesPerc > self.potential_threshold:
             n.analysisResult = Notification.ResultPotentialThreat
             n.severity = "high"
             n.type = "potential_risk_file"

@@ -2,22 +2,20 @@
 
 from __future__ import absolute_import
 
-import json
-
 from six.moves import urllib
 
 from distutils.version import LooseVersion
 from ..connection import BaseAPI
 from .models import Process, Binary, Watchlist, Investigation, Alert, ThreatReport
-from ..errors import UnauthorizedError, ApiError, MoreThanOneResultError
+from ..errors import UnauthorizedError, ApiError
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
 from ..errors import CredentialError
+from .live_response_api import LiveResponseScheduler
 
 import requests
 
 import logging
-
 log = logging.getLogger(__name__)
 
 
@@ -62,14 +60,25 @@ class CbEnterpriseResponseAPI(BaseAPI):
 
         self._parsed_url = urllib.parse.urlparse(self.url)
         try:
-            server_info = self.info()
+            self.server_info = self.info()
         except UnauthorizedError:
             raise UnauthorizedError(uri=self.url, message="Invalid API token for server {0:s}.".format(self.url))
 
-        log.debug('Connected to Cb server version %s at %s' % (server_info['version'], self.session.server))
-        self.cb_server_version = LooseVersion(server_info['version'])
+        log.debug('Connected to Cb server version %s at %s' % (self.server_info['version'], self.session.server))
+        self.cb_server_version = LooseVersion(self.server_info['version'])
         if self.cb_server_version < LooseVersion('5.0'):
             raise ApiError("CbEnterpriseResponseAPI only supports Cb servers version >= 5.0.0")
+
+        self._lr_scheduler = None
+
+    @property
+    def live_response(self):
+        if self._lr_scheduler is None:
+            if not self.server_info.get("cblrEnabled", False):
+                raise ApiError("Cb server does not support Live Response")
+            self._lr_scheduler = LiveResponseScheduler(self)
+
+        return self._lr_scheduler
 
     def info(self):
         """Retrieve basic version information from the Carbon Black Enterprise Response server.
@@ -95,7 +104,7 @@ class CbEnterpriseResponseAPI(BaseAPI):
         :param str license_block: Licence block provided by Carbon Black support
         :raises ServerError: if the license is not accepted by the Carbon Black server
         """
-        r = self.session.post("/api/license", data=json.dumps({"license": license_block}))
+        r = self.post_object("/api/license", {"license": license_block})
         self.raise_unless_json(r, {"status": "success"})
 
     def _perform_query(self, cls, **kwargs):
@@ -159,6 +168,12 @@ class CbEnterpriseResponseAPI(BaseAPI):
         else:
             raise ApiError("Unknown URL endpoint: %s" % uri)
 
+    def _request_lr_session(self, sensor_id):
+        return self.live_response.request_session(sensor_id)
+
+    def _close_lr_session(self, sensor_id):
+        return self.live_response.close_session(sensor_id)
+
 
 class Query(PaginatedQuery):
     """Represents a prepared query to the Carbon Black Enterprise Response server.
@@ -183,7 +198,7 @@ class Query(PaginatedQuery):
     >>> query = query.where("process_name:notepad.exe") # add a filter to this Query
     >>> query = query.sort("last_update desc")          # sort by last update time, most recent first
     >>> for proc in query:                              # uses the iterator to retrieve all results
-    >>>     print proc.username, proc.hostname
+    >>>     print("{0} {1}".format(proc.username, proc.hostname))
     >>> processes = query[:10]                          # retrieve the first ten results
     >>> len(query)                                      # retrieve the total count
 

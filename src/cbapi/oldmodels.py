@@ -13,10 +13,6 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class UnimplementedError(Exception):
-    pass
-
-
 class CreatableModelMixin(object):
     pass
 
@@ -56,7 +52,6 @@ class BaseModel(object):
 
         self._full_init = False
         self._info = {}
-        self._stat_titles = ['webui_link']
 
         self._last_refresh_time = 0
         if initial_data:
@@ -73,6 +68,10 @@ class BaseModel(object):
         unique_id = self._info.get("id", None)
         if unique_id:
             self._model_unique_id = str(unique_id)
+
+    @property
+    def _stat_titles(self):
+        return self._info.keys()
 
     @classmethod
     def new_object(cls, cb, item):
@@ -106,11 +105,10 @@ class BaseModel(object):
     def webui_link(self):
         """Returns a link associated with this object in the Carbon Black user interface.
 
-        :returns: URL that can be used to view the object in the Carbon Black web user interface
-        :raises UnimplementedError: if the Model does not support generating a Web user interface URL
+        :returns: URL that can be used to view the object in the Carbon Black web user interface or None if the Model
+        does not support generating a Web user interface URL
         """
-
-        raise UnimplementedError()
+        return None
 
     def __dir__(self):
         if not self._full_init:
@@ -153,8 +151,17 @@ class BaseModel(object):
 
         raise AttributeError()
 
+    def get(self, attrname, default_val=None):
+        try:
+            return self._attribute(attrname)
+        except AttributeError:
+            return default_val
+
     def __str__(self):
         ret = '{0:s}.{1:s}:\n'.format(self.__class__.__module__, self.__class__.__name__)
+        if self.webui_link:
+            ret += "-> available via web UI at %s\n" % self.webui_link
+
         ret += u'\n'.join(['%-20s : %s' %
                            (a, getattr(self, a, "")) for a in self._stat_titles])
 
@@ -319,3 +326,14 @@ class MutableModel(BaseModel):
     # TODO: How do we delete this object from our LRU cache?
     def delete(self):
         return self._delete_object()
+
+    def _join(self, join_cls, field_name):
+        try:
+            field_value = getattr(self, field_name)
+        except AttributeError:
+            return None
+
+        if field_value is None:
+            return None
+
+        return self._cb.select(join_cls, field_value)

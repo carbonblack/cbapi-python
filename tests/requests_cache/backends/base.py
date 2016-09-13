@@ -17,7 +17,13 @@ import requests
 
 from ..compat import is_py2, urlencode, urlparse, urlunparse, parse_qsl
 
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except:
+    #
+    # python 3
+    #
+    from urllib.parse import urljoin
 
 
 _DEFAULT_HEADERS = requests.utils.default_headers()
@@ -46,7 +52,13 @@ class BaseCache(object):
         .. note:: Response is reduced before saving (with :meth:`reduce_response`)
                   to make it picklable
         """
-        self.responses[key] = self.reduce_response(response), datetime.utcnow()
+        #
+        # Delete the X-Auth-Token
+        #
+        if 'X-Auth-Token' in response.request.headers:
+            del response.request.headers['X-Auth-Token']
+
+        self.responses[key] = response
 
     def add_key_mapping(self, new_key, key_to_response):
         """
@@ -76,6 +88,24 @@ class BaseCache(object):
         except KeyError:
             return default
         return self.restore_response(response), timestamp
+
+    def get_response(self, key, default=None):
+        """ Retrieves response and timestamp for `key` if it's stored in cache,
+        otherwise returns `default`
+
+        :param key: key of resource
+        :param default: return this if `key` not found in cache
+        :returns: tuple (response, datetime)
+
+        .. note:: Response is restored after unpickling with :meth:`restore_response`
+        """
+        try:
+            if key not in self.responses:
+                key = self.keys_map[key]
+            response = self.responses[key]
+        except KeyError:
+            return default
+        return response
 
     def delete(self, key):
         """ Delete `key` from cache. Also deletes all responses from response history
@@ -218,7 +248,6 @@ class BaseCache(object):
             url, body = self._remove_ignored_parameters(request)
         else:
             url, body = request.url, request.body
-        key = hashlib.sha256()
 
         #
         # Make the url only be the path part of the url
@@ -226,18 +255,7 @@ class BaseCache(object):
         url = urlparse(url).path + urlparse(url).query
         if request.body:
             url = url + request.body
-        ###############################################
 
-        key.update(_to_bytes(request.method.upper()))
-        key.update(_to_bytes(url))
-        if request.body:
-            key.update(_to_bytes(body))
-        else:
-            if self._include_get_headers and request.headers != _DEFAULT_HEADERS:
-                for name, value in sorted(request.headers.items()):
-                    key.update(_to_bytes(name))
-                    key.update(_to_bytes(value))
-        digest = key.hexdigest()
         return request.method.upper() + " " + url
 
     def __str__(self):

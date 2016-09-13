@@ -8,7 +8,7 @@ import time
 
 
 def main():
-    parser = build_cli_parser()
+    parser = build_cli_parser("Bulk resolve alerts")
     parser.add_argument("--query", action="store", default="",
                         help="The query string of alerts to resolve. All matching alerts will be resolved.")
 

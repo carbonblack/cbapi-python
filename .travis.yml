@@ -1,0 +1,13 @@
+language: python
+python:
+  - "2.6"
+  - "2.7"
+  - "3.4"
+  - "3.5"
+
+install:
+  - pip install nose
+  - pip install nose-testconfig
+  - python setup.py install
+# command to run tests
+script: "nosetests -s -v --tc-file ./tests/nosetest.cfg"

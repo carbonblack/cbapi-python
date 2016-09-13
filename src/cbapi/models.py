@@ -119,15 +119,10 @@ class ObjectFieldDescriptor(FieldDescriptor):
 class DateTimeFieldDescriptor(FieldDescriptor):
     def __init__(self, field_name):
         super(DateTimeFieldDescriptor, self).__init__(field_name)
-        self._cached = None
-        self._parsed = False
 
     def __get__(self, instance, instance_type=None):
-        if not self._parsed:
-            d = super(DateTimeFieldDescriptor, self).__get__(instance, instance_type)
-            self._cached = convert_from_cb(d)
-            self._parsed = True
-        return self._cached
+        d = super(DateTimeFieldDescriptor, self).__get__(instance, instance_type)
+        return convert_from_cb(d)
 
     def __set__(self, instance, value):
         parsed_date = convert_to_cb(value)
@@ -168,7 +163,16 @@ class BinaryFieldDescriptor(FieldDescriptor):
 class NewBaseModel(object):
     primary_key = "id"
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=False):
+        """
+        Base model for
+        :param cb:
+        :param model_unique_id:
+        :param initial_data:
+        :param force_init:
+        :param full_doc:
+        :return:
+        """
         self._cb = cb
         self._last_refresh_time = 0
 
@@ -180,7 +184,7 @@ class NewBaseModel(object):
         self._info[self.__class__.primary_key] = model_unique_id
 
         self._dirty_attributes = {}
-        self._full_init = False
+        self._full_init = full_doc
 
         if force_init:
             self.refresh()
@@ -190,24 +194,37 @@ class NewBaseModel(object):
         return self._info.get(self.__class__.primary_key, None)
 
     @classmethod
-    def new_object(cls, cb, item):
-        return cb.select(cls, item[cls.primary_key], initial_data=item)
+    def new_object(cls, cb, item, **kwargs):
+        return cb.select(cls, item[cls.primary_key], initial_data=item, **kwargs)
 
     def __getattr__(self, item):
         try:
-            return super(NewBaseModel, self).__getattribute__(item)
+            val = super(NewBaseModel, self).__getattribute__(item)
         except AttributeError:
-            # try looking up via self._info
-            if item in self._info:
-                return self._info[item]
-            else:
-                raise
+            pass         # fall through to the rest of the logic...
+
+        # try looking up via self._info, if we already have it.
+        if item in self._info:
+            return self._info[item]
+
+        # if we're still here, let's load the object if we haven't done so already.
+        if not self._full_init:
+            self._refresh()
+
+        # try one more time.
+        if item in self._info:
+            return self._info[item]
+        else:
+            raise
 
     def __setattr__(self, attrname, val):
         if attrname.startswith("_"):
             super(NewBaseModel, self).__setattr__(attrname, val)
         else:
             raise AttributeError("Field {0:s} is immutable".format(attrname))
+
+    def get(self, attrname, default_val=None):
+        return getattr(self, attrname, default_val)
 
     def _set(self, attrname, new_value):
         pass
@@ -277,6 +294,17 @@ class NewBaseModel(object):
 
         return "\n".join(lines)
 
+    def _join(self, join_cls, field_name):
+        try:
+            field_value = getattr(self, field_name)
+        except AttributeError:
+            return None
+
+        if not field_value:             # NOTE THAT this is assuming no legitimate object has an ID of 0 (zero)
+            return None                 # - passing 0 to .select() for the field_value will return a Query object
+
+        return self._cb.select(join_cls, field_value)
+
 
 class MutableBaseModel(NewBaseModel):
     _new_object_http_method = "POST"
@@ -286,8 +314,7 @@ class MutableBaseModel(NewBaseModel):
         # allow subclasses to define their own property setters
         propobj = getattr(self.__class__, attrname, None)
         if isinstance(propobj, property) and propobj.fset:
-            propobj.fset(self, val)
-            return
+            return propobj.fset(self, val)
 
         if not attrname.startswith("_") and attrname not in self.__class__._valid_fields:
             if attrname in self._info:
@@ -302,6 +329,10 @@ class MutableBaseModel(NewBaseModel):
         # ensure that we are operating on the full object first
         if not self._full_init and self._model_unique_id is not None:
             self.refresh()
+
+        # extract unique ID if we're updating a "joined" field
+        if isinstance(new_value, NewBaseModel):
+            new_value = new_value._model_unique_id
 
         # early exit if we attempt to set the field to its own value
         if new_value == self._info.get(attrname, None):
@@ -327,37 +358,40 @@ class MutableBaseModel(NewBaseModel):
     def _update_object(self):
         if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
             log.debug("Creating a new {0:s} object".format(self.__class__.__name__))
-            ret = self._cb.http_request(self.__class__._new_object_http_method, self.__class__.urlobject,
-                                        data=self._info)
+            ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.__class__.urlobject,
+                                            data=self._info)
         else:
-            log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, self._model_unique_id))
-            ret = self._cb.http_request(self.__class__._change_object_http_method,
-                                        self._build_api_request_uri(), data=self._info)
+            log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
+            ret = self._cb.api_json_request(self.__class__._change_object_http_method,
+                                            self._build_api_request_uri(), data=self._info)
 
+        return self._refresh_if_needed(ret)
+
+    def _refresh_if_needed(self, request_ret):
         refresh_required = False
 
-        if ret.status_code not in range(200, 300):
+        if request_ret.status_code not in range(200, 300):
             try:
-                message = json.loads(ret.content)[0]
+                message = json.loads(request_ret.content)[0]
             except:
-                message = ret.content
+                message = request_ret.content
 
-            raise ServerError(ret.status_code, message,
+            raise ServerError(request_ret.status_code, message,
                               result="Did not update {} record.".format(self.__class__.__name__))
         else:
             try:
-                message = ret.json()
+                message = request_ret.json()
                 log.debug("Received response: %s" % message)
                 if message.keys() == ["result"]:
                     post_result = message.get("result", None)
 
                     if post_result and post_result != "success":
-                        raise ServerError(ret.status_code, post_result,
+                        raise ServerError(request_ret.status_code, post_result,
                                           result="Did not update {0:s} record.".format(self.__class__.__name__))
                     else:
                         refresh_required = True
                 else:
-                    self._info = json.loads(ret.content)
+                    self._info = json.loads(request_ret.content)
                     if message.keys() == ["id"]:
                         # if all we got back was an ID, try refreshing to get the entire record.
                         log.debug("Only received an ID back from the server, forcing a refresh")
@@ -421,5 +455,4 @@ class MutableBaseModel(NewBaseModel):
         if self.is_dirty():
             r += " (*)"
         return r
-
 

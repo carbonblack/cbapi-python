@@ -30,7 +30,7 @@ to do the easy stuff and handling all of the "sharp corners" behind the scenes f
 If you're more a Cb Enterprise Protection fellow, then you're in luck as well:
 
     >>> from cbapi.protection.models import FileInstance
-    >>> from cbapi.ep.rest_api import CbEnterpriseProtectionAPI
+    >>> from cbapi.protection import CbEnterpriseProtectionAPI
     >>> p=CbEnterpriseProtectionAPI()
     >>> # Select the first file instance
     >>> fi = p.select(FileInstance).first()
@@ -88,7 +88,7 @@ Once you acquire your API token, place it in one of the default credentials file
 Credentials found in a later path will overwrite earlier ones.
 
 The credentials are stored in INI format. The name of each credential profile is enclosed in square brackets, followed
-by comma separated key-value pairs providing the necessary credential information::
+by key-value pairs providing the necessary credential information::
 
     [default]
     url=https://localhost
@@ -133,11 +133,19 @@ exactly as they had previously.
 Since the old API was not compatible with Python 3, the legacy package is not importable in Python 3.x and therefore
 legacy scripts cannot run under Python 3.
 
-Once cbapi 2.0.0 is released, the old :py:mod:`cbapi.legacy.CbApi` will be deprecated and removed entirely no earlier than January 2017.
+Once cbapi 1.0.0 is released, the old :py:mod:`cbapi.legacy.CbApi` will be deprecated and removed entirely no earlier
+than January 2017.
 New scripts should use the :py:mod:`cbapi.response.rest_api.CbEnterpriseResponseAPI`
 (for Carbon Black Enterprise Response) and :py:mod:`cbapi.protection.rest_api.CbEnterpriseProtectionAPI`
 (for Carbon Black Enterprise Protection / former Bit9 Parity) API entry points.
 
+
+Forwards Compatibility
+----------------------
+
+*The new API is still in development and may change subtly during the 0.9 release process.* Any breaking changes
+will be documented in the changelog. The API will be frozen as of version 1.0; afterward, any changes in the 1.x version branch
+will be additions/bug fixes only. Breaking changes to the API will increment the major version number (2.x).
 
 Contents:
 

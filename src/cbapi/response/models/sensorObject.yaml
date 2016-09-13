@@ -3,21 +3,22 @@ properties:
   "systemvolume_total_size":
     type: string
   "emet_telemetry_path":
-    type: object
+    type: string
   "os_environment_display_string":
-    type: object
+    type: string
   "emet_version":
-    type: object
+    type: string
   "emet_dump_flags":
-    type: object
+    type: string
   "clock_delta":
     type: integer
   "supports_cblr":
     type: boolean
   "sensor_uptime":
-    type: object
+    type: integer
   "last_update":
     type: string
+    format: "date-time"
   "physical_memory_size":
     type: integer
   "build_id":
@@ -32,7 +33,7 @@ properties:
   "computer_dns_name":
     type: string
   "emet_report_setting":
-    type: object
+    type: string
   "id":
     type: integer
   "emet_process_count":
@@ -44,7 +45,7 @@ properties:
   "network_isolation_enabled":
     type: boolean
   "uninstalled":
-    type: object
+    type: boolean
   "systemvolume_free_size":
     type: string
   "status":
@@ -65,11 +66,12 @@ properties:
   "cookie":
     type: integer
   "emet_exploit_action":
-    type: object
+    type: string
   "computer_name":
     type: string
   "license_expiration":
     type: string
+    format: "date-time"
   "supports_isolation":
     type: boolean
   "parity_host_id":

@@ -2,24 +2,22 @@
 
 from __future__ import absolute_import
 
+import contextlib
 import json
 from distutils.version import LooseVersion
 from collections import namedtuple, defaultdict
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 from zipfile import ZipFile
 from contextlib import closing
 import struct
 from six.moves import urllib
 import six
+import logging
 
-import yaml
-
+from cbapi.utils import convert_query_params
 from ..errors import InvalidObjectError, ApiError
 from ..oldmodels import BaseModel, MutableModel, immutable
-
-# TODO: do we really need to cast to long() in python 2?
-import sys
 
 if six.PY3:
     long = int
@@ -29,8 +27,8 @@ else:
 
 from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
 from ..oldmodels import BaseModel, immutable
-from .utils import convert_from_cb, sign_datetime_format, convert_from_solr, parse_42_guid, cb_datetime_format
-from ..errors import ServerError, InvalidHashError
+from .utils import convert_from_cb, convert_from_solr, parse_42_guid
+from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
 from ..query import SimpleQuery
 
 try:
@@ -42,6 +40,9 @@ from six import python_2_unicode_compatible, iteritems
 
 # Get constants for decoding the Netconn events
 import socket
+
+
+log = logging.getLogger(__name__)
 
 
 # class Process(NewBaseModel):
@@ -65,6 +66,83 @@ import socket
 #     urlobject = '/api/v1/binary'
 
 
+class BannedHash(MutableBaseModel, CreatableModelMixin):
+    urlobject = "/api/v1/banning/blacklist"
+    swagger_meta_file = "response/models/hash_blacklist.yaml"
+    primary_key = "md5hash"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return SimpleQuery(cls, cb)
+
+    @property
+    def binary(self):
+        return self._join(Binary, "md5hash")
+
+    def _update_object(self):
+        if "enabled" in self._dirty_attributes:
+            # Emulate the strange behavior we have to do for banned hashes.
+            # - if we are enabling a hash, just "POST" to the root urlobject.
+            # - if we are disabling a hash, just "DELETE" the specific object.
+            #   note that disabling a hash also removes the "text" from the object. save it back.
+
+            if self.enabled:
+                ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.__class__.urlobject,
+                                                data=self._info)
+                self._dirty_attributes = {}
+                return self._refresh_if_needed(ret)
+            else:
+                ret = self._cb.delete_object(self._build_api_request_uri())
+                del(self._dirty_attributes["enabled"])
+                if self.text:
+                    self._dirty_attributes["text"] = None
+
+                if self.is_dirty():
+                    return super(BannedHash, self)._update_object()
+                else:
+                    return self._refresh_if_needed(ret)
+        else:
+            return super(BannedHash, self)._update_object()
+
+
+class Site(MutableBaseModel, CreatableModelMixin):
+    urlobject = "/api/site"
+    swagger_meta_file = "response/models/site.yaml"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return SimpleQuery(cls, cb)
+
+    def _parse(self, info):
+        if info is None or len(info) != 1:
+            raise ObjectNotFoundError(uri=self._build_api_request_uri())
+        return info[0]
+
+    @property
+    def throttle_rules(self):
+        return self._cb.select(ThrottleRule).where("site_id:{0}".format(self.id))
+
+    def __init__(self, cb, site_id=None, initial_data=None, **kwargs):
+        super(Site, self).__init__(cb, site_id, initial_data, **kwargs)
+
+        if initial_data:
+            self._full_init = True
+
+
+# TODO: we cannot modify/create Throttle rules until the semantics around the POST/PUT handler are fixed
+class ThrottleRule(NewBaseModel):
+    urlobject = "/api/throttle"
+    swagger_meta_file = "response/models/throttle.yaml"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return SimpleQuery(cls, cb)
+
+    @property
+    def site(self):
+        return self._join(Site, "site_id")
+
+
 class Alert(MutableBaseModel):
     urlobject = "/api/v1/alert"
     swagger_meta_file = "response/models/alert.yaml"
@@ -86,15 +164,15 @@ class Alert(MutableBaseModel):
 
     @property
     def binary(self):
-        return self._cb.select(Binary, self.md5)
+        return self._join(Binary, "md5")
 
     @property
     def sensor(self):
-        return self._cb.select(Sensor, self.sensor_id)
+        return self._join(Sensor, "sensor_id")
 
     @property
     def feed(self):
-        return self._cb.select(Feed, self.feed_id)
+        return self._join(Feed, "feed_id")
 
     @property
     def trigger_ioc(self):
@@ -140,18 +218,18 @@ class Feed(MutableBaseModel, CreatableModelMixin):
 
     @property
     def actions(self):
-        return self._cb.select(FeedAction).where("feed_id:{0:d}".format(int(self._model_unique_id)))
+        return self._cb.select(FeedAction).where("feed_id:{0}".format(int(self._model_unique_id)))
 
     @property
     def reports(self):
-        return self._cb.select(ThreatReport).where("feed_id:{0:d}".format(int(self._model_unique_id)))
+        return self._cb.select(ThreatReport).where("feed_id:{0}".format(int(self._model_unique_id)))
 
 
 class FeedAction(MutableModel):
     urlobject = None
 
     def _build_api_request_uri(self):
-        return "/api/v1/feed/{0:d}/action".format(self.feed_id)
+        return "/api/v1/feed/{0}/action".format(self.feed_id)
 
     def _retrieve_cb_info(self):
         # Can't "get" a feedaction
@@ -159,7 +237,7 @@ class FeedAction(MutableModel):
 
     @classmethod
     def _query_implementation(cls, cb):
-        return ArrayQuery(cls, cb, "feed_id", urlbuilder=lambda x: "/api/v1/feed/{0:d}/action".format(int(x)))
+        return ArrayQuery(cls, cb, "feed_id", urlbuilder=lambda x: "/api/v1/feed/{0}/action".format(int(x)))
 
     @property
     def feed_id(self):
@@ -167,7 +245,7 @@ class FeedAction(MutableModel):
 
     @property
     def feed(self):
-        return self._cb.select(Feed, self.feed_id)
+        return self._join(Feed, "feed_id")
 
 
 class Sensor(MutableBaseModel):
@@ -175,13 +253,16 @@ class Sensor(MutableBaseModel):
     urlobject = '/api/v1/sensor'
     NetworkAdapter = namedtuple('NetworkAdapter', ['macaddr', 'ipaddr'])
 
+    def __init__(self, *args, **kwargs):
+        super(Sensor, self).__init__(*args, **kwargs)
+
     @classmethod
     def _query_implementation(cls, cb):
         return SensorQuery(cls, cb)
 
     @property
     def group(self):
-        return self._cb.select(SensorGroup, self.group_id)
+        return self._join(SensorGroup, "group_id")
 
     @group.setter
     def group(self, new_group):
@@ -189,14 +270,14 @@ class Sensor(MutableBaseModel):
 
     @property
     def dns_name(self):
-        return self.computer_dns_name
+        return getattr(self, 'computer_dns_name', None)
 
     @property
     def hostname(self):
-        return self.computer_name
+        return getattr(self, 'computer_name', None)
 
     @property
-    def network_adapters(self):
+    def network_interfaces(self):
         out = []
         for adapter in getattr(self, 'network_adapters', '').split('|'):
             parts = adapter.split(',')
@@ -207,7 +288,7 @@ class Sensor(MutableBaseModel):
 
     @property
     def os(self):
-        return getattr(self, 'os_environment_display_string')
+        return getattr(self, 'os_environment_display_string', None)
 
     @property
     def registration_time(self):
@@ -219,19 +300,40 @@ class Sensor(MutableBaseModel):
 
     @property
     def webui_link(self):
-        return '{0:s}/#/host/{1:s}'.format(self._cb.url, self._model_unique_id)
+        return '{0:s}/#/host/{1}'.format(self._cb.url, self._model_unique_id)
 
     # TODO: properly handle the stats api routes
     @property
     def queued_stats(self):
-        return self._cb.get_object('%s/%d/queued' % (Sensor.urlobject, self.id))
+        return self._cb.get_object("{0}/queued".format(self._build_api_request_uri()), default=[])
 
     @property
     def activity_stats(self):
-        return self._cb.get_object('%s/%d/activity' % (Sensor.urlobject, self.id))
+        return self._cb.get_object("{0}/activity".format(self._build_api_request_uri()), default=[])
+
+    @property
+    def resource_status(self):
+        return self._cb.get_object("{0}/resourcestatus".format(self._build_api_request_uri()), default=[])
+
+    def lr_session(self):
+        """
+        Retrieve a Live Response session object for this Sensor.
+
+        :return: Live Response session object
+        :rtype: :py:class:`cbapi.live_response_api.LiveResponseSession`
+        :raises ApiError: if there is an error establishing a Live Response session for this Sensor
+        """
+        if not getattr(self, "supports_cblr", False):
+            raise ApiError("Sensor does not support Cb Live Response")
+
+        return self._cb._request_lr_session(self._model_unique_id)
+
+    def flush_events(self):
+        self.event_log_flush_time = datetime.now() + timedelta(days=1)
+        self.save()
 
 
-class SensorGroup(MutableBaseModel):
+class SensorGroup(MutableBaseModel, CreatableModelMixin):
     swagger_meta_file = "response/models/group-modify.yaml"
     urlobject = '/api/group'
 
@@ -241,20 +343,31 @@ class SensorGroup(MutableBaseModel):
 
     def _parse(self, obj):
         # for some reason, these are returned as an array of size one
-        return obj[0]
+        if obj and len(obj):
+            return obj[0]
+        else:
+            raise ObjectNotFoundError(uri=self._build_api_request_uri())
 
     @property
     def sensors(self):
         return self._cb.select(Sensor).where("groupid:{0:s}".format(str(self._model_unique_id)))
 
     def get_installer(self, osname="windows/exe"):
-        target_url = "/api/v1/group/{0:d}/installer/{1:s}".format(self._model_unique_id, osname)
+        target_url = "/api/v1/group/{0}/installer/{1:s}".format(self._model_unique_id, osname)
         with closing(self._cb.session.get(target_url, stream=True)) as r:
             return r.content
 
+    @property
+    def site(self):
+        return self._join(Site, "site_id")
+
+    @site.setter
+    def site(self, new_site):
+        self.site_id = new_site.id
+
 
 class SensorQuery(SimpleQuery):
-    valid_field_names = ['ipaddr', 'hostname', 'groupid']
+    valid_field_names = ['ip', 'hostname', 'groupid']
 
     def __init__(self, cls, cb):
         super(SensorQuery, self).__init__(cls, cb)
@@ -271,12 +384,14 @@ class SensorQuery(SimpleQuery):
     @property
     def results(self):
         if not self._full_init:
-            full_results = self._cb.get_object(self._urlobject, query_parameters=self._query)
+            full_results = self._cb.get_object(self._urlobject, query_parameters=convert_query_params(self._query))
             if not full_results:
                 self._results = []
             else:
-                self._results = [self._doc_class.new_object(self._cb, it) for it in full_results]
+                self._results = [self._doc_class.new_object(self._cb, it, full_doc=True) for it in full_results]
+            self._results = self._sort(self._results)
             self._full_init = True
+
         return self._results
 
 
@@ -308,40 +423,59 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
         return SimpleQuery(cls, cb)
 
     def __init__(self, *args, **kwargs):
+        self._query_template = {"cb.urlver": 1}
         super(Watchlist, self).__init__(*args, **kwargs)
-        sq = getattr(self, "search_query", None)
-        self._query = {"cb.urlver": 1}
 
+    @property
+    def _query(self):
+        sq = getattr(self, "search_query", None)
         if sq is not None:
-            self._query = urllib.parse.parse_qs(sq, "")
+            return urllib.parse.parse_qsl(getattr(self, "search_query", ""))
+        else:
+            return []
 
     @property
     def query(self):
+        queryparams = [(k, v) for k, v in self._query if k == "q" or k.startswith("cb.q.")]
         queryparts = []
-        if 'q' in self._query:
-            queryparts.extend(self._query["q"])
-        for k, v in iteritems(self._query):
-            if k.startswith("cb.q."):
-                queryparts.extend(v)
+        for k, v in queryparams:
+            if k == 'q':
+                queryparts.append(v)
+            else:
+                queryparts.append("{0}:{1}".format(k[5:], v))
+
         return " ".join(queryparts)
 
     def _reset_query(self):
-        if "q" in self._query:
-            del self._query["q"]
-        additional_query_parameters = [q for q in self._query if q.startswith("cb.q.")]
-        for k in additional_query_parameters:
-            del self._query[k]
+        qt = list(self._query)
+        new_q = []
+        template_items = self._query_template.copy()
+
+        for k, v in qt:
+            if k == "q" or k.startswith("cb.q."):
+                pass
+            else:
+                new_q.append((k, v))
+
+            if k in template_items:
+                del template_items[k]
+
+        for k, v in iteritems(template_items):
+            new_q.append((k, v))
+
+        self.search_query = urllib.parse.urlencode(new_q)
 
     @query.setter
     def query(self, new_query):
         self._reset_query()
-        self._query["q"] = new_query
-        self.search_query = urllib.parse.urlencode(self._query)
+        qt = list(self._query)
+        qt.append(("q", new_query))
+        self.search_query = urllib.parse.urlencode(qt)
 
     @property
     def facets(self):
         facets = {}
-        for k, v in iteritems(self._query):
+        for k, v in self._query:
             if k.startswith("cb.fq."):
                 facets[k[6:]] = v
 
@@ -406,7 +540,7 @@ class TaggedEvent(MutableBaseModel, CreatableModelMixin):
 
     @property
     def investigation(self):
-        return self.select(Investigation).where("id:{0:d}".format(self.investigation_id))
+        return self.select(Investigation).where("id:{0}".format(self.investigation_id))
 
     @property
     def process(self):
@@ -432,7 +566,7 @@ class Investigation(MutableBaseModel):
 
     @property
     def events(self):
-        return self._cb.select(TaggedEvent).where("investigation_id:{0:d}".format(self._model_unique_id))
+        return self._cb.select(TaggedEvent).where("investigation_id:{0}".format(self._model_unique_id))
 
 
 class TaggedModel(BaseModel):
@@ -484,11 +618,30 @@ class TaggedModel(BaseModel):
         return self._tags.get(tag_name, {})
 
 
-class ThreatReport(MutableModel):
+class ThreatReport(MutableBaseModel):
     urlobject = '/api/v1/threat_report'
+    primary_key = "_internal_id"
+
+    @property
+    def _model_unique_id(self):
+        feed_id = getattr(self, "feed_id")
+        report_id = getattr(self, "id")
+
+        if feed_id and report_id:
+            return "{0}:{1}".format(feed_id, report_id)
+        else:
+            return None
+
+    def disable(self):
+        self.is_ignored = True
+        self.save()
+
+    def enable(self):
+        self.is_ignored = False
+        self.save()
 
     @classmethod
-    def new_object(cls, cb, item):
+    def new_object(cls, cb, item, **kwargs):
         return cb.select(ThreatReport, "%s:%s" % (item["feed_id"], item["id"]), initial_data=item)
 
     def _build_api_request_uri(self):
@@ -507,10 +660,7 @@ class ThreatReport(MutableModel):
 
     @property
     def feed(self):
-        return self._cb.select(Feed, self.feed_id)
-
-    def _set_model_unique_id(self):
-        self._model_unique_id = "%s:%s" % (self.feed_id, self.id)
+        return self._join(Feed, "feed_id")
 
     def _update_object(self):
         update_content = { "ids": { str(self.feed_id): [str(self.id)] }, "updates": {}}
@@ -544,9 +694,6 @@ class ThreatReport(MutableModel):
             except:
                 self.refresh()
 
-        if not self._model_unique_id:
-            self._set_model_unique_id()
-
         self._dirty_attributes = {}
         return self._model_unique_id
 
@@ -575,7 +722,6 @@ class Binary(TaggedModel):
 
         self.md5sum = md5sum
         self._frequency = None
-        self._stat_titles.extend(['md5sum', 'size'])
 
     def _build_api_request_uri(self):
         return Binary.urlobject + "/{0:s}/summary".format(self.md5sum)
@@ -587,18 +733,20 @@ class Binary(TaggedModel):
     @property
     def frequency(self):
         if not self._frequency:
-            frequency = self._cb._binary_frequency(self.md5sum)
-            hostCount = frequency.get('hostCount', 0)
-            globalCount = frequency.get('globalCount', 0)
-            numDocs = frequency.get('numDocs', 0)
+            r = self._cb.get_object('/api/v1/process/host/count',
+                                    query_parameters=(('cb.freqver', 1), ('name', 'md5'), ('md5', self.md5sum)))
+            self._frequency = r
+
+            hostCount = self._frequency.get('hostCount', 0)
+            globalCount = self._frequency.get('globalCount', 0)
+            numDocs = self._frequency.get('numDocs', 0)
             if numDocs == 0:
                 frequency_fraction = 0.0
             else:
                 frequency_fraction = float(globalCount) / float(numDocs)
 
             # TODO: frequency calculated over number of hosts rather than number of processes
-            self._frequency = Binary.FrequencyData._make([hostCount, globalCount, numDocs,
-                                                            frequency_fraction])
+            self._frequency = Binary.FrequencyData._make([hostCount, globalCount, numDocs, frequency_fraction])
 
         return self._frequency
 
@@ -632,10 +780,10 @@ class Binary(TaggedModel):
 
     @property
     def version_info(self):
-        return Binary.VersionInfo._make([self._attribute('file_desc'), self._attribute('file_version'),
-                                           self._attribute('product_name'), self._attribute('product_version'),
-                                           self._attribute('company_name'), self._attribute('legal_copyright'),
-                                           self._attribute('original_filename')])
+        return Binary.VersionInfo._make([self._attribute('file_desc', ""), self._attribute('file_version', ""),
+                                         self._attribute('product_name', ""), self._attribute('product_version', ""),
+                                         self._attribute('company_name', ""), self._attribute('legal_copyright', ""),
+                                         self._attribute('original_filename', "")])
 
     # Returns True if the binary contains a valid digital signature.
     # Returns False if the binary has no digital signature, if the signature is expired or otherwise
@@ -649,16 +797,25 @@ class Binary(TaggedModel):
 
     @property
     def signing_data(self):
-        digsig_sign_time = self._attribute('digsig_sign_time')
+        digsig_sign_time = self._attribute('digsig_sign_time', "")
         if digsig_sign_time:
-            digsig_sign_time = datetime.strptime(digsig_sign_time, sign_datetime_format)
+            digsig_sign_time = convert_from_cb(digsig_sign_time)
 
-        return Binary.SigningData._make([self._attribute('digsig_result'),
-                                         self._attribute('digsig_publisher'),
-                                         self._attribute('digsig_issuer'),
-                                         self._attribute('digsig_subject'),
+        return Binary.SigningData._make([self._attribute('digsig_result', ""),
+                                         self._attribute('digsig_publisher', ""),
+                                         self._attribute('digsig_issuer', ""),
+                                         self._attribute('digsig_subject', ""),
                                          digsig_sign_time,
-                                         self._attribute('digsig_prog_name')])
+                                         self._attribute('digsig_prog_name', "")])
+
+    @property
+    def virustotal(self):
+        virustotal_score = self._attribute('alliance_score_virustotal', 0)
+        if virustotal_score:
+            ret = Binary.VirusTotal._make([int(virustotal_score), self._attribute('alliance_link_virustotal', "")])
+        else:
+            ret = Binary.VirusTotal._make([0, ''])
+        return ret
 
     @property
     def icon(self):
@@ -672,6 +829,19 @@ class Binary(TaggedModel):
 
         return base64.b64decode(icon)
 
+    @property
+    def banned(self):
+        try:
+            bh = self._cb.select(BannedHash, self.md5sum.lower())
+            bh.refresh()
+        except ServerError as e:
+            if e.error_code == 409:
+                return False
+        except ObjectNotFoundError:
+            return False
+        else:
+            return bh
+
 
 class ProcessV1Parser(object):
     def __init__(self, process_model):
@@ -680,7 +850,7 @@ class ProcessV1Parser(object):
     def parse_modload(self, seq, raw_modload):
         parts = raw_modload.split('|')
         new_mod = {}
-        timestamp = datetime.strptime(parts[0], cb_datetime_format)
+        timestamp = convert_from_cb(parts[0])
         new_mod['md5'] = parts[1]
         new_mod['path'] = parts[2]
 
@@ -736,7 +906,7 @@ class ProcessV1Parser(object):
         parts = filemod.split('|')
         new_file = {}
         new_file['type'] = _lookup_type(int(parts[0]))
-        timestamp = datetime.strptime(parts[1], cb_datetime_format)
+        timestamp = convert_from_cb(parts[1])
         new_file['path'] = parts[2]
         new_file['md5'] = parts[3]
         new_file['filetype'] = 'Unknown'
@@ -752,9 +922,9 @@ class ProcessV1Parser(object):
     def parse_netconn(self, seq, netconn):
         parts = netconn.split('|')
         new_conn = {}
-        timestamp = datetime.strptime(parts[0], cb_datetime_format)
+        timestamp = convert_from_cb(parts[0])
         try:
-            new_conn['remote_ip'] = socket.inet_ntop(socket.AF_INET, struct.pack('>i', int(parts[1])))
+            new_conn['remote_ip'] = socket.inet_ntoa(struct.pack('>i', int(parts[1])))
         except:
             new_conn['remote_ip'] = '0.0.0.0'
         new_conn['remote_port'] = int(parts[2])
@@ -780,7 +950,7 @@ class ProcessV1Parser(object):
 
         parts = regmod.split('|')
         new_regmod = {}
-        timestamp = datetime.strptime(parts[1], cb_datetime_format)
+        timestamp = convert_from_cb(parts[1])
         new_regmod['type'] = _lookup_type(int(parts[0]))
         new_regmod['path'] = parts[2]
 
@@ -792,7 +962,7 @@ class ProcessV1Parser(object):
 
     def parse_childproc(self, seq, childproc):
         parts = childproc.split('|')
-        timestamp = datetime.strptime(parts[0], cb_datetime_format)
+        timestamp = convert_from_cb(parts[0])
         new_childproc = {}
         new_childproc['procguid'] = parts[1]
         new_childproc['md5'] = parts[2]
@@ -831,7 +1001,7 @@ class ProcessV1Parser(object):
 
         parts = raw_crossproc.split('|')
         new_crossproc = {}
-        timestamp = datetime.strptime(parts[1], cb_datetime_format)
+        timestamp = convert_from_cb(parts[1])
 
         # Types currently supported: RemoteThread and ProcessOpen
         new_crossproc['type'] = parts[0]
@@ -872,13 +1042,13 @@ class ProcessV2Parser(ProcessV1Parser):
         else:
             new_conn['direction'] = 'Inbound'
 
-        for ipfield in ('remote_ip', 'local_ip'):
+        for ipfield in ('remote_ip', 'local_ip', 'proxy_ip'):
             try:
-                new_conn[ipfield] = socket.inet_ntop(socket.AF_INET, struct.pack('>i', int(netconn.get(ipfield, 0))))
+                new_conn[ipfield] = socket.inet_ntoa(struct.pack('>i', int(netconn.get(ipfield, 0))))
             except:
-                new_conn[ipfield] = '0.0.0.0'
+                new_conn[ipfield] = netconn.get(ipfield, '0.0.0.0')
 
-        for portfield in ('remote_port', 'local_port'):
+        for portfield in ('remote_port', 'local_port', 'proxy_port'):
             new_conn[portfield] = int(netconn.get(portfield, 0))
 
         new_conn['proto'] = protocols.get(int(netconn.get('proto', 0)), "Unknown")
@@ -908,7 +1078,6 @@ class Process(TaggedModel):
             self.id = procguid[:36]
 
         self.segment = int(segment)
-        self._stat_titles.extend(['hostname', 'username', 'cmdline', 'path'])
 
         if cb.cb_server_version >= LooseVersion('5.1.0'):
             # CbER 5.1.0 introduced an extended event API
@@ -924,7 +1093,7 @@ class Process(TaggedModel):
 
     def _build_api_request_uri(self):
         # TODO: how do we handle process segments?
-        return "/api/{0:s}/process/{1:s}/{2:d}/event".format(self._process_event_api, self.id, self.segment)
+        return "/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id, self.segment)
 
     def _parse(self, obj):
         self._info = obj.get('process', {})
@@ -1037,7 +1206,7 @@ class Process(TaggedModel):
 
     @property
     def comms_ip(self):
-        return socket.inet_ntop(socket.AF_INET, struct.pack('>i', self._attribute('comms_ip', 0)))
+        return socket.inet_ntoa(struct.pack('>i', self._attribute('comms_ip', 0)))
 
     @property
     def parent(self):
@@ -1078,6 +1247,10 @@ class Process(TaggedModel):
     @property
     def last_update(self):
         return convert_from_solr(self._attribute('last_update', -1))
+
+    @property
+    def username(self):
+        return self._attribute("username", None)
 
 
 def get_constants(prefix):
@@ -1177,7 +1350,7 @@ class CbNetConnEvent(CbEvent):
         self.event_type = u'Cb Network Connection event'
         self.stat_titles.extend(['domain', 'remote_ip', 'remote_port', 'proto', 'direction'])
         if version == 2:
-            self.stat_titles.extend(['local_ip', 'local_port'])
+            self.stat_titles.extend(['local_ip', 'local_port', 'proxy_ip', 'proxy_port'])
 
 
 class CbChildProcEvent(CbEvent):

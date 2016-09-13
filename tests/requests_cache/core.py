@@ -14,8 +14,12 @@ import requests
 from requests import Session as OriginalSession
 from requests.hooks import dispatch_hook
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from requests_cache import backends
-from requests_cache.compat import basestring
+
+from requests.adapters import HTTPAdapter
 
 try:
     ver = tuple(map(int, requests.__version__.split(".")))
@@ -90,32 +94,40 @@ class CachedSession(OriginalSession):
 
         def send_request_and_cache_response():
             if self._deny_outbound:
+                print(request.url)
                 raise Exception(("ERROR: OutBound communication was attempted,"
                                  " but deny_outbound was set to True"))
+
+            cache_response = True
             response = super(CachedSession, self).send(request, **kwargs)
             if response.status_code in self._cache_allowable_codes:
-                self.cache.save_response(cache_key, response)
+
+                #
+                # Special case for cblr:
+                # if we get a status of pending then don't cache
+                #
+                try:
+                    if request.url.find('cblr') != -1 and request.method == 'GET':
+                        if isinstance(response.json(), dict) and response.json().get('status', '') == 'pending':
+                            cache_response = False
+                except:
+                    cache_response = True
+                if cache_response:
+                    self.cache.save_response(cache_key, response)
+
             response.from_cache = False
             return response
 
-        response, timestamp = self.cache.get_response_and_time(cache_key)
+        response = self.cache.get_response(cache_key)
         if response is None:
             return send_request_and_cache_response()
 
-        if self._cache_expire_after is not None:
-            is_expired = datetime.utcnow() - timestamp > self._cache_expire_after
-            if is_expired:
-                if not self._return_old_data_on_error:
-                    self.cache.delete(cache_key)
-                    return send_request_and_cache_response()
-                try:
-                    new_response = send_request_and_cache_response()
-                except Exception:
-                    return response
-                else:
-                    if new_response.status_code not in self._cache_allowable_codes:
-                        return response
-                    return new_response
+        if 'Content-Encoding' in response.headers:
+            del response.headers['Content-Encoding']
+
+        adapter = HTTPAdapter()
+        response = adapter.build_response(request, response)
+
 
         # dispatch hook here, because we've removed it before pickling
         response.from_cache = True

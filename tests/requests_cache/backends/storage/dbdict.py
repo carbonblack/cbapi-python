@@ -20,6 +20,7 @@ except ImportError:
 
 from requests_cache.compat import bytes
 
+from .serialize import Serializer
 
 class DbDict(MutableMapping):
     """ DbDict - a dictionary-like object for saving large datasets to `sqlite` database
@@ -51,6 +52,7 @@ class DbDict(MutableMapping):
         #: Transactions can be commited if this property is set to `True`
         self.can_commit = True
 
+        self.serializer = Serializer()
         
         self._bulk_commit = False
         self._pending_connection = None
@@ -155,9 +157,9 @@ class DbDict(MutableMapping):
 class DbPickleDict(DbDict):
     """ Same as :class:`DbDict`, but pickles values before saving
     """
-    def __setitem__(self, key, item):
+    def __setitem__(self, key, response):
         super(DbPickleDict, self).__setitem__(key,
-                                              sqlite.Binary(pickle.dumps(item)))
+                                              sqlite.Binary(self.serializer.dumps(response.raw, body=response.content)))
 
     def __getitem__(self, key):
-        return pickle.loads(bytes(super(DbPickleDict, self).__getitem__(key)))
+        return self.serializer.loads(super(DbPickleDict, self).__getitem__(key))

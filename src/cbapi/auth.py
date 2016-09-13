@@ -16,6 +16,11 @@ default_profile = {
 
     "proxy": None,
     "ignore_system_proxy": "False",
+
+    "rabbitmq_user": "cb",
+    "rabbitmq_pass": None,
+    "rabbitmq_host": "localhost",
+    "rabbitmq_port": 5004
 }
 
 _boolean_states = {'1': True, 'yes': True, 'true': True, 'on': True,
@@ -43,14 +48,17 @@ class CredentialStore(object):
         if product_name not in ("response", "protection"):
             raise CredentialError("Product name {0:s} not valid")
 
+        self.credential_search_path = [
+            os.path.join(os.path.sep, "etc", "carbonblack", "credentials.%s" % product_name),
+            os.path.join(os.path.expanduser("~"), ".carbonblack", "credentials.%s" % product_name),
+            os.path.join(".", ".carbonblack", "credentials.%s" % product_name),
+        ]
+
         if "credential_file" in kwargs:
-            self.credential_search_path = [kwargs["credential_file"]]
-        else:
-            self.credential_search_path = [
-                os.path.join(os.path.sep, "etc", "carbonblack", "credentials.%s" % product_name),
-                os.path.join(os.path.expanduser("~"), ".carbonblack", "credentials.%s" % product_name),
-                os.path.join(".", ".carbonblack", "credentials.%s" % product_name),
-            ]
+            if isinstance(kwargs["credential_file"], six.string_types):
+                self.credential_search_path = [kwargs["credential_file"]]
+            elif type(kwargs["credential_file"]) is list:
+                self.credential_search_path = kwargs["credential_file"]
 
         self.credentials = RawConfigParser(defaults=default_profile)
         self.credential_files = self.credentials.read(self.credential_search_path)
