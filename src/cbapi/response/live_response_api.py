@@ -196,6 +196,19 @@ class LiveResponseSession(object):
     #
     # Registry operations
     #
+    # returns dictionary with 2 entries ("values" and "sub_keys")
+    #  "values" is a list containing a dictionary for each registry value in the key
+    #  "sub_keys" is a list containing one entry for each sub_key
+    def list_registry_keys_and_values(self, regkey):
+        data = {"name": "reg enum key", "object": regkey}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+        results = {}
+        results["values"] = self._poll_command(command_id).get("values", [])
+        results["sub_keys"] = self._poll_command(command_id).get("sub_keys", [])
+        return results
+
+    # returns a list containing a dictionary for each registry value in the key
     def list_registry_keys(self, regkey):
         data = {"name": "reg enum key", "object": regkey}
         resp = self._lr_post_command(data).json()
@@ -203,6 +216,7 @@ class LiveResponseSession(object):
 
         return self._poll_command(command_id).get("values", [])
 
+    # returns a dictionary with the registry value
     def get_registry_value(self, regkey):
         data = {"name": "reg query value", "object": regkey}
         resp = self._lr_post_command(data).json()
