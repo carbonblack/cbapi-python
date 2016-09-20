@@ -8,6 +8,8 @@ except ImportError:
     # Python 2.6 compatibility
     from ordereddict import OrderedDict
 
+from six import iteritems
+from itertools import islice
 import time
 import threading
 import weakref
@@ -184,23 +186,32 @@ class LRUCacheDict(object):
 
     @_lock_decorator
     def cleanup(self):
+        marked_for_deletion = set()
+
         if self.expiration is None:
             return None
         t = int(time.time())
-        #Delete expired
+
+        # Delete expired
         next_expire = None
-        for k in self.__expire_times:
-            if self.__expire_times[k] < t:
-                self.__delete__(k)
+        for k, v in iteritems(self.__expire_times):
+            if v < t:
+                marked_for_deletion.add(k)
             else:
-                next_expire = self.__expire_times[k]
+                next_expire = v
                 break
 
-        #If we have more than self.max_size items, delete the oldest
-        while (len(self.__values) > self.max_size):
-            for k in self.__access_times:
-                self.__delete__(k)
-                break
+        for k in marked_for_deletion:
+            self.__delete__(k)
+
+        marked_for_deletion = set()
+
+        # If we have more than self.max_size items, delete the oldest
+        number_to_delete = self.max_size - len(self.__values)
+        marked_for_deletion = [k for k in islice(self.__access_times, number_to_delete)]
+        for k in marked_for_deletion:
+            self.__delete__(k)
+
         if not (next_expire is None):
             return next_expire - t
         else:
