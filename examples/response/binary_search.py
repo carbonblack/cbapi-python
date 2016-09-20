@@ -19,7 +19,7 @@ def main():
         print("-" * 80)
         print("%-20s : %s" % ('Size (bytes)', binary.size))
         print("%-20s : %s" % ('Signature Status', binary.signed))
-        print("%-20s : %s" % ('Publisher', binary.digsig_publisher))
+        print("%-20s : %s" % ('Publisher', binary.digsig_publisher) if binary.signed == True else "%-20s : %s" % ('Publisher', 'n/a'))
         print("%-20s : %s" % ('Product Version', binary.product_version))
         print("%-20s : %s" % ('File Version', binary.file_version))
         print("%-20s : %s" % ('64-bit (x64)', binary.is_64bit))
