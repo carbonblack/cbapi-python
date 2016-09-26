@@ -373,13 +373,13 @@ class SensorQuery(SimpleQuery):
         super(SensorQuery, self).__init__(cls, cb)
 
     def where(self, new_query):
-        super(SensorQuery, self).where(new_query)
-        for k, v in iteritems(self._query):
+        nq = super(SensorQuery, self).where(new_query)
+        for k, v in iteritems(nq._query):
             if k not in SensorQuery.valid_field_names:
-                self._query = {}
+                nq._query = {}
                 raise ValueError("Field name must be one of: {0:s}".format(", ".join(SensorQuery.valid_field_names)))
 
-        return self
+        return nq
 
     @property
     def results(self):
@@ -502,13 +502,13 @@ class ArrayQuery(SimpleQuery):
         self.urlbuilder = urlbuilder
 
     def where(self, new_query):
-        super(ArrayQuery, self).where(new_query)
-        for k, v in iteritems(self._query):
-            if k != self.valid_field_name:
-                self._query = {}
+        nq = super(ArrayQuery, self).where(new_query)
+        for k, v in iteritems(nq._query):
+            if k != nq.valid_field_name:
+                nq._query = {}
                 raise ValueError("Field name must be: {0:s}".format(self.valid_field_name))
 
-        return self
+        return nq
 
     def _build_object(self, item):
         return self._doc_class.new_object(self._cb, item)

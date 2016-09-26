@@ -69,6 +69,13 @@ class Query(PaginatedQuery):
         self._sort_by = None
         self._group_by = None
 
+    def _clone(self):
+        nq = self.__class__(self._doc_class, self._cb)
+        nq._query = self._query[::]
+        nq._sort_by = self._sort_by
+        nq._group_by = self._group_by
+        return nq
+
     def where(self, q):
         """Add a filter to this query.
 
@@ -76,8 +83,9 @@ class Query(PaginatedQuery):
         :return: Query object
         :rtype: :py:class:`Query`
         """
-        self._query.append(q)
-        return self
+        nq = self._clone()
+        nq._query.append(q)
+        return nq
 
     def and_(self, q):
         """Add a filter to this query. Equivalent to calling :py:meth:`where` on this object.
@@ -96,11 +104,12 @@ class Query(PaginatedQuery):
         :rtype: :py:class:`Query`
         """
         new_sort = new_sort.strip()
+        nq = self._clone()
         if len(new_sort) == 0:
-            self._sort_by = None
+            nq._sort_by = None
         else:
-            self._sort_by = new_sort
-        return self
+            nq._sort_by = new_sort
+        return nq
 
     def _count(self):
         args = {'limit': -1}

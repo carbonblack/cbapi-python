@@ -219,6 +219,17 @@ class Query(PaginatedQuery):
         self._sort_by = getattr(self._doc_class, 'default_sort', None)
         self._default_args = {"cb.urlver": 1, 'facet': 'false'}
 
+    def _clone(self):
+        nq = self.__class__(self._doc_class, self._cb)
+        nq._query = self._query
+        nq._raw_query = None
+        if self._raw_query:
+            nq._raw_query = self._raw_query
+
+        nq._sort_by = self._sort_by
+        nq._default_args = self._default_args
+        return nq
+
     def create_watchlist(self, watchlist_name):
         """Create a watchlist based on this query.
 
@@ -256,11 +267,13 @@ class Query(PaginatedQuery):
         :rtype: :py:class:`Query`
         """
         new_sort = new_sort.strip()
+
+        nq = self._clone()
         if len(new_sort) == 0:
-            self._sort_by = None
+            nq._sort_by = None
         else:
-            self._sort_by = new_sort
-        return self
+            nq._sort_by = new_sort
+        return nq
 
     def and_(self, new_query):
         """Add a filter to this query. Equivalent to calling :py:meth:`where` on this object.
@@ -281,12 +294,13 @@ class Query(PaginatedQuery):
         if self._raw_query:
             raise ApiError("Cannot call .where() on a raw query")
 
-        if self._query and len(self._query) > 0:
-            self._query = "{0:s} {1:s}".format(self._query, new_query)
+        nq = self._clone()
+        if nq._query and len(nq._query) > 0:
+            nq._query = "{0:s} {1:s}".format(self._query, new_query)
         else:
-            self._query = new_query
+            nq._query = new_query
 
-        return self
+        return nq
 
     def facets(self, *args):
         """Retrieve a dictionary with the facets for this query.
