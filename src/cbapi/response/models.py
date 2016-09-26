@@ -809,6 +809,34 @@ class Binary(TaggedModel):
                                          self._attribute('digsig_prog_name', "")])
 
     @property
+    def digsig_publisher(self):
+        return self._attribute('digsig_publisher', "")
+
+    @property
+    def digsig_issuer(self):
+        return self._attribute('digsig_issuer', "")
+
+    @property
+    def digsig_subject(self):
+        return self._attribute('digsig_subject', "")
+
+    @property
+    def digsig_sign_time(self):
+        return self._attribute('digsig_sign_time', "")
+
+    @property
+    def digsig_prog_name(self):
+        return self._attribute('digsig_prog_name', "")
+
+    @property
+    def is_64bit(self):
+        return self._attribute('is_64bit', False)
+
+    @property
+    def is_executable_image(self):
+        return self._attribute('is_executable_image', False)
+
+    @property
     def virustotal(self):
         virustotal_score = self._attribute('alliance_score_virustotal', 0)
         if virustotal_score:
