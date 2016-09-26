@@ -68,6 +68,7 @@ class LiveResponseSession(object):
         self._closed = False
 
         self.session_data = session_data
+        self.os_type = self._cb.select(Sensor, self.sensor_id).os_type
 
     def __enter__(self):
         return self
@@ -134,6 +135,48 @@ class LiveResponseSession(object):
         command_id = resp.get('id')
         self._poll_command(command_id)
 
+    def path_join(self, *dirnames):
+        if self.os_type == 1:
+            # Windows
+            return "\\".join(dirnames)
+        else:
+            # Unix/Mac OS X
+            return "/".join(dirnames)
+
+    def path_islink(self, fi):
+        # TODO: implement
+        return False
+
+    def walk(self, top, topdown=True, onerror=None, followlinks=False):
+        try:
+            allfiles = self.list_directory(self.path_join(top, "*"))
+        except Exception as err:
+            if onerror is not None:
+                onerror(err)
+            return
+
+        dirnames = []
+        filenames = []
+
+        for fn in allfiles:
+            if "DIRECTORY" in fn["attributes"]:
+                if fn["filename"] not in (".", ".."):
+                    dirnames.append(fn)
+            else:
+                filenames.append(fn)
+
+        if topdown:
+            yield top, [fn["filename"] for fn in dirnames], [fn["filename"] for fn in filenames]
+
+        for name in dirnames:
+            new_path = self.path_join(top, name["filename"])
+            if followlinks or not self.path_islink(new_path):
+                for x in self.walk(new_path, topdown, onerror, followlinks):
+                    yield x
+        if not topdown:
+            yield top, [fn["filename"] for fn in dirnames], [fn["filename"] for fn in filenames]
+
+
     #
     # Process operations
     #
@@ -162,8 +205,12 @@ class LiveResponseSession(object):
 
         if wait_for_output and not remote_output_file_name:
             randfile = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(12)])
-            workdir = 'c:\\windows\\carbonblack'       # TODO: cross-platform
-            randfilename = '%s\\cblr.%s.tmp' % (workdir, randfile)
+            if self.os_type == 1:
+                workdir = 'c:\\windows\\carbonblack'
+            else:
+                workdir = '/tmp'
+
+            randfilename = self.path_join(workdir, 'cblr.%s.tmp' % (randfile,))
             data["output_file"] = randfilename
 
         if working_directory:
