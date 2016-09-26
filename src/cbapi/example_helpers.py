@@ -1,6 +1,12 @@
 import argparse
 from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.protection import CbEnterpriseProtectionAPI
+import codecs
+import sys
+
+
+# Example scripts: we want to make sure that sys.stdout is using utf-8 encoding. See issue #36.
+sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
 
 def build_cli_parser(description="Cb Example Script"):
