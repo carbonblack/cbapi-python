@@ -1,5 +1,3 @@
-# NOTE: this is highly experimental and in no way reflects how the API will ultimately be designed
-
 from __future__ import absolute_import
 
 import random
@@ -8,8 +6,6 @@ import threading
 import time
 import logging
 from collections import defaultdict
-
-import six
 
 from cbapi.errors import TimeoutError, ObjectNotFoundError, ApiError, ServerError
 from six import itervalues
@@ -470,7 +466,6 @@ def poll_status(cb, url, desired_status="complete", timeout=120, delay=0.5):
 
 if __name__ == "__main__":
     from cbapi.response import CbEnterpriseResponseAPI
-    from cbapi.response.models import Sensor
     import logging
     root = logging.getLogger()
     root.addHandler(logging.StreamHandler())
