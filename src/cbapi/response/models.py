@@ -470,7 +470,7 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
         self._reset_query()
         qt = list(self._query)
         qt.append(("q", new_query))
-        self.search_query = urllib.parse.urlencode(qt)
+        self.search_query = "&".join(("{0}={1}".format(k, urllib.parse.quote(v)) for k,v in qt))
 
     @property
     def facets(self):
