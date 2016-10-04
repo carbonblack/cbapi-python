@@ -7,7 +7,6 @@ from .errors import ApiError, MoreThanOneResultError
 from six import iteritems
 from six.moves import range
 import logging
-import string
 
 
 log = logging.getLogger(__name__)
@@ -124,7 +123,7 @@ class SimpleQuery(BaseQuery):
             raise ApiError("Cannot have multiple 'where' clauses")
 
         nq = self._clone()
-        field, value = string.split(new_query, ':', maxsplit=1)
+        field, value = new_query.split(':', 1)
         nq._query[field] = value
         nq._full_init = False
         return nq
