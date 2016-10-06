@@ -1252,8 +1252,11 @@ class Process(TaggedModel):
 
     @property
     def binary(self):
-        binary_md5 = self._attribute('process_md5')
-        return self._cb.select(Binary, binary_md5)
+        binary_md5 = self.get('process_md5')
+        if binary_md5:
+            return self._cb.select(Binary, binary_md5)
+        else:
+            return None
 
     @property
     def comms_ip(self):
@@ -1261,8 +1264,8 @@ class Process(TaggedModel):
 
     @property
     def parent(self):
-        parent_unique_id = self._attribute('parent_unique_id', None)
-        parent_id = self._attribute('parent_id', None)
+        parent_unique_id = self.get('parent_unique_id', None)
+        parent_id = self.get('parent_id', None)
 
         if parent_unique_id:
             return self._cb.select(self.__class__, self.get_correct_unique_id(parent_id, parent_unique_id), 1)
@@ -1273,7 +1276,7 @@ class Process(TaggedModel):
 
     @property
     def cmdline(self):
-        cmdline = self._attribute('cmdline')
+        cmdline = self.get('cmdline')
         if not cmdline:
             return self.path
         else:
@@ -1281,7 +1284,11 @@ class Process(TaggedModel):
 
     @property
     def sensor(self):
-        return self._cb.select(Sensor, int(self._attribute('sensor_id', 0)))
+        sensor_id = self.get("sensor_id")
+        if sensor_id:
+            return self._cb.select(Sensor, int(sensor_id))
+        else:
+            return None
 
     @property
     def webui_link(self):
@@ -1297,11 +1304,11 @@ class Process(TaggedModel):
 
     @property
     def last_update(self):
-        return convert_from_solr(self._attribute('last_update', -1))
+        return convert_from_solr(self.get('last_update', -1))
 
     @property
     def username(self):
-        return self._attribute("username", None)
+        return self.get("username", None)
 
 
 def get_constants(prefix):

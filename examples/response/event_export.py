@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 import sys
+
+from cbapi.errors import ObjectNotFoundError
+
 from cbapi.response.models import Process
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object
 import csv
@@ -55,7 +58,11 @@ def event_summary(event):
     elif type(event) == CbRegModEvent:
         return [event.parent.path, timestamp, event.type, event.path, '']
     elif type(event) == CbChildProcEvent:
-        return [event.parent.path, timestamp, 'childproc', event.path, event.process.cmdline]
+        try:
+            childproc = event.process.cmdline
+        except ObjectNotFoundError:
+            childproc = "<unknown>"
+        return [event.parent.path, timestamp, 'childproc', event.path, childproc]
     elif type(event) == CbModLoadEvent:
         return [event.parent.path, timestamp, 'modload', event.path, event.md5]
     elif type(event) == CbCrossProcEvent:
@@ -98,10 +105,10 @@ def main():
             # interpret as a Process ID
             proc = cb.select(Process, args.processid)
 
-        write_csv(proc, proc.unique_id+".csv")
+        write_csv(proc, "{0}.{1}.csv".format(proc.id,proc.segment))
     else:
         for proc in cb.select(Process).where(args.query):
-            write_csv(proc, proc.unique_id+".csv")
+            write_csv(proc, "{0}.{1}.csv".format(proc.id, proc.segment))
 
 
 if __name__ == "__main__":
