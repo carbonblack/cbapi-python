@@ -1121,7 +1121,6 @@ class Process(TaggedModel):
             # new 5.x process IDs are hex strings with optional segment IDs.
             if len(procguid) == 36:
                 self.id = procguid
-                self.segment = None
             elif len(procguid) == 45:
                 self.id = procguid[:36]
                 self.segment = int(procguid[38:], 16)

@@ -64,25 +64,11 @@ def event_summary(event):
         return None
 
 
-def main():
-    parser = build_cli_parser()
-    parser.add_argument("--processid", help="Process ID or URL to Process Analysis page", required=True)
-    parser.add_argument("--output", "-o", help="Output filename", required=True)
-    args = parser.parse_args()
-
-    cb = get_cb_response_object(args)
-
-    if args.processid.startswith("http"):
-        # interpret as a URL
-        proc = cb.from_ui(args.processid)
-    else:
-        # interpret as a Process ID
-        proc = cb.select(Process, args.processid)
-
+def write_csv(proc, filename):
     total_events = 0
     written_events = 0
 
-    with UnicodeWriter(args.output) as eventwriter:
+    with UnicodeWriter(filename) as eventwriter:
         eventwriter.writerow(['ProcessPath', 'Timestamp', 'Event', 'Path/IP/Domain', 'Comments'])
         for event in proc.all_events:
             total_events += 1
@@ -93,6 +79,29 @@ def main():
 
     print("{0} events out of {1} total events exported from process at {2}".format(written_events, total_events,
                                                                                    proc.webui_link))
+
+
+def main():
+    parser = build_cli_parser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--processid", help="Process ID or URL to Process Analysis page")
+    group.add_argument("--query", help="query to pull multiple processes")
+    args = parser.parse_args()
+
+    cb = get_cb_response_object(args)
+
+    if args.processid:
+        if args.processid.startswith("http"):
+            # interpret as a URL
+            proc = cb.from_ui(args.processid)
+        else:
+            # interpret as a Process ID
+            proc = cb.select(Process, args.processid)
+
+        write_csv(proc, proc.unique_id+".csv")
+    else:
+        for proc in cb.select(Process).where(args.query):
+            write_csv(proc, proc.unique_id+".csv")
 
 
 if __name__ == "__main__":
