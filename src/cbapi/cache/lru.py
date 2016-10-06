@@ -207,10 +207,11 @@ class LRUCacheDict(object):
         marked_for_deletion = set()
 
         # If we have more than self.max_size items, delete the oldest
-        number_to_delete = self.max_size - len(self.__values)
-        marked_for_deletion = [k for k in islice(self.__access_times, number_to_delete)]
-        for k in marked_for_deletion:
-            self.__delete__(k)
+        if len(self.__values) > self.max_size:
+            number_to_delete = len(self.__values) - self.max_size
+            marked_for_deletion = [k for k in islice(self.__access_times, number_to_delete)]
+            for k in marked_for_deletion:
+                self.__delete__(k)
 
         if not (next_expire is None):
             return next_expire - t

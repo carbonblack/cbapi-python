@@ -1033,9 +1033,6 @@ class ProcessV1Parser(object):
 
         # Types currently supported: RemoteThread and ProcessOpen
         new_crossproc['type'] = parts[0]
-        new_crossproc['target_procguid'] = parts[2]
-        new_crossproc['target_md5'] = parts[3]
-        new_crossproc['target_path'] = parts[4]
 
         # subtype is only valid for ProcessOpen
         if new_crossproc['type'] == 'ProcessOpen' and int(parts[5]) == 2:
@@ -1052,6 +1049,26 @@ class ProcessV1Parser(object):
         new_crossproc['tamper_flag'] = False
         if parts[7] == 'true':
             new_crossproc['tamper_flag'] = True
+
+        new_crossproc['is_target'] = False
+        if len(parts) > 7:
+            if parts[8] == 'true':
+                new_crossproc['is_target'] = True
+
+        if new_crossproc['is_target'] == True:
+            new_crossproc['target_procguid'] = self.process_model.id
+            new_crossproc['target_md5'] = self.process_model.process_md5
+            new_crossproc['target_path'] = self.process_model.path
+            new_crossproc['source_procguid'] = parts[2]
+            new_crossproc['source_md5'] = parts[3]
+            new_crossproc['source_path'] = parts[4]
+        else:
+            new_crossproc['target_procguid'] = parts[2]
+            new_crossproc['target_md5'] = parts[3]
+            new_crossproc['target_path'] = parts[4]
+            new_crossproc['source_procguid'] = self.process_model.id
+            new_crossproc['source_md5'] = self.process_model.process_md5
+            new_crossproc['source_path'] = self.process_model.path
 
         return CbCrossProcEvent(self.process_model, timestamp, seq, new_crossproc)
 
@@ -1095,17 +1112,24 @@ class Process(TaggedModel):
         # TODO: is there a better way to handle this? (see how this is called from Query._search())
         return cb.select(Process, item['id'], long(item['segment_id']), initial_data=item)
 
-    def __init__(self, cb, procguid, segment=1, initial_data=None):
-        super(Process, self).__init__(cb, procguid)
-
+    def __init__(self, cb, procguid, segment=None, initial_data=None):
+        self.segment = segment
         try:
+            # old 4.x process IDs are integers.
             self.id = int(procguid)
         except ValueError:
-            # TODO: this is a hack to strip off the segment id. We should normalize this
-            # properly.
-            self.id = procguid[:36]
+            # new 5.x process IDs are hex strings with optional segment IDs.
+            if len(procguid) == 36:
+                self.id = procguid
+                self.segment = None
+            elif len(procguid) == 45:
+                self.id = procguid[:36]
+                self.segment = int(procguid[38:], 16)
 
-        self.segment = int(segment)
+        if not self.segment:
+            self.segment = 1
+
+        super(Process, self).__init__(cb, "%s-%08x" % (self.id, self.segment))
 
         if cb.cb_server_version >= LooseVersion('5.1.0'):
             # CbER 5.1.0 introduced an extended event API
@@ -1400,7 +1424,12 @@ class CbCrossProcEvent(CbEvent):
 
     @property
     def target_proc(self):
-        return self.parent._cb.select(Process, self.target_procguid, 1)
+
+        return self.parent._cb.select(Process, self.target_procguid)
+
+    @property
+    def source_proc(self):
+        return self.parent._cb.select(Process, self.source_procguid)
 
     def has_permission(self, perm):
         if perm in r_windows_rights_dict:
