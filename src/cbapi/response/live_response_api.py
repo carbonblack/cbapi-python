@@ -501,9 +501,14 @@ class GetFileJob(object):
 
 
 # TODO: adjust the polling interval and also provide a callback function to report progress
-def poll_status(cb, url, desired_status="complete", timeout=120, delay=0.5):
+def poll_status(cb, url, desired_status="complete", timeout=None, delay=None):
     start_time = time.time()
     status = None
+
+    if not timeout:
+        timeout = 120
+    if not delay:
+        delay = 0.5
 
     while status != desired_status and time.time() - start_time < timeout:
         res = cb.get_object(url)
