@@ -7,6 +7,8 @@ import time
 import logging
 from collections import defaultdict
 
+import shutil
+
 from cbapi.errors import TimeoutError, ObjectNotFoundError, ApiError, ServerError
 from six import itervalues
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -84,14 +86,14 @@ class LiveResponseSession(object):
     #
     # File operations
     #
-    def get_raw_file(self, file_name):
+    def get_raw_file(self, file_name, timeout=None, delay=None):
         data = {"name": "get file", "object": file_name}
 
         resp = self._lr_post_command(data).json()
         file_id = resp.get('file_id', None)
         command_id = resp.get('id', None)
 
-        self._poll_command(command_id)
+        self._poll_command(command_id, timeout=timeout, delay=delay)
         response = self._cb.session.get("/api/v1/cblr/session/{0}/file/{1}/content".format(self.session_id,
                                                                                            file_id), stream=True)
         response.raw.decode_content = True
@@ -200,13 +202,7 @@ class LiveResponseSession(object):
         data = {"name": "create process", "object": command_string, "wait": False}
 
         if wait_for_output and not remote_output_file_name:
-            randfile = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(12)])
-            if self.os_type == 1:
-                workdir = 'c:\\windows\\carbonblack'
-            else:
-                workdir = '/tmp'
-
-            randfilename = self.path_join(workdir, 'cblr.%s.tmp' % (randfile,))
+            randfilename = self._random_file_name()
             data["output_file"] = randfilename
 
         if working_directory:
@@ -303,6 +299,37 @@ class LiveResponseSession(object):
         command_id = resp.get('id')
         self._poll_command(command_id)
 
+    #
+    # Physical memory capture
+    #
+    def memdump(self, local_filename, remote_filename=None, compress=True):
+        dump_object = self.start_memdump(remote_filename=remote_filename, compress=compress)
+        dump_object.wait()
+        dump_object.get(local_filename)
+        dump_object.delete()
+
+    def start_memdump(self, remote_filename=None, compress=True):
+        if not remote_filename:
+            remote_filename = self._random_file_name()
+
+        data = {"name": "memdump", "object": remote_filename, "compress": compress}
+        resp = self._lr_post_command(data).json()
+        command_id = resp.get('id')
+
+        if compress:
+            remote_filename += ".zip"
+
+        return LiveResponseMemdump(self, command_id, remote_filename)
+
+    def _random_file_name(self):
+        randfile = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(12)])
+        if self.os_type == 1:
+            workdir = 'c:\\windows\\carbonblack'
+        else:
+            workdir = '/tmp'
+
+        return self.path_join(workdir, 'cblr.%s.tmp' % (randfile,))
+
     def _poll_command(self, command_id, **kwargs):
         return poll_status(self._cb, "/api/v1/cblr/session/{0}/command/{1}".format(self.session_id, command_id),
                            **kwargs)
@@ -332,6 +359,31 @@ class LiveResponseSession(object):
                 return resp
 
         raise ApiError("Command {0} failed after {1} retries".format(data["name"], self.MAX_RETRY_COUNT))
+
+
+class LiveResponseMemdump(object):
+    def __init__(self, lr_session, memdump_id, remote_filename):
+        self.lr_session = lr_session
+        self.memdump_id = memdump_id
+        self.remote_filename = remote_filename
+        self._done = False
+        self._error = None
+
+    def get(self, local_filename):
+        if not self._done:
+            self.wait()
+        if self._error:
+            raise self._error
+        src = self.lr_session.get_raw_file(self.remote_filename, timeout=3600, delay=5)
+        dst = open(local_filename, "wb")
+        shutil.copyfileobj(src, dst)
+
+    def wait(self):
+        self.lr_session._poll_command(self.memdump_id, timeout=3600, delay=5)
+        self._done = True
+
+    def delete(self):
+        self.lr_session.delete_file(self.remote_filename)
 
 
 def jobrunner(callable, cb, sensor_id):
@@ -448,6 +500,7 @@ class GetFileJob(object):
         return session.get_file(self._file_name)
 
 
+# TODO: adjust the polling interval and also provide a callback function to report progress
 def poll_status(cb, url, desired_status="complete", timeout=120, delay=0.5):
     start_time = time.time()
     status = None

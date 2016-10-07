@@ -712,7 +712,8 @@ class Binary(TaggedModel):
     @property
     def _stat_titles(self):
         titles = super(Binary, self)._stat_titles
-        titles.remove("icon")
+        if "icon" in titles:
+            titles.remove("icon")
         return titles
 
     @classmethod
