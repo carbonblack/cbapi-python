@@ -29,6 +29,11 @@ class EventRegistry(threading.Thread):
             log.debug("Registering function {0} for event_type {1}".format(func, event_type))
             self._registry[event_type].append({"func": func, "args": args, "kwargs": kwargs})
 
+    @property
+    def event_types(self):
+        with self._registry_lock:
+            return self._registry.keys()
+
     def eval_callback(self, event_type, event_data, cb):
         with self._registry_lock:
             callbacks = self._registry.get(event_type, [])
