@@ -11,8 +11,13 @@ import logging
 import json
 from time import sleep
 
-log = logging.getLogger(__name__)
+from six.moves import SimpleHTTPServer, BaseHTTPServer
+from six.moves import urllib
 
+import ssl
+
+
+log = logging.getLogger(__name__)
 
 
 class FileEventSource(threading.Thread):
@@ -44,6 +49,39 @@ class FileEventSource(threading.Thread):
 
     def stop(self):
         self._fp.close()
+
+
+class EventForwarderHTTPSource(threading.Thread):
+    def __init__(self, cb, listening_address, **kwargs):
+        super(EventForwarderHTTPSource, self).__init__()
+        self.daemon = True
+
+        http_parts = urllib.parse.urlparse(listening_address)
+        addr_parts = http_parts.netloc.split(":")
+        listening_host = addr_parts[0]
+        if len(addr_parts) == 2:
+            port = int(addr_parts[1])
+            listening_host = addr_parts[0]
+        else:
+            if http_parts.scheme == "https":
+                port = 443
+            else:
+                port = 80
+
+        self.listening_address = listening_address
+        self.httpd = BaseHTTPServer.HTTPServer((listening_host, port), SimpleHTTPServer.SimpleHTTPRequestHandler)
+
+        if http_parts.scheme == "https":
+            keyfile = kwargs.get("keyfile", None)
+            certfile = kwargs.get("certfile", None)
+            if not keyfile or not certfile:
+                raise CredentialError("Need to specify 'keyfile' and 'certfile' for HTTPS")
+            self.httpd.socket = ssl.wrap_socket (self.httpd.socket, certfile=certfile, keyfile=keyfile,
+                                                 server_side=True)
+
+    def run(self):
+        self.httpd.serve_forever()
+
 
 # This class is based on the pika asynchronous consumer example at
 # http://pika.readthedocs.io/en/0.10.0/examples/asynchronous_consumer_example.html
