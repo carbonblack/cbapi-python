@@ -709,6 +709,12 @@ class Binary(TaggedModel):
 
     urlobject = '/api/v1/binary'
 
+    @property
+    def _stat_titles(self):
+        titles = super(Binary, self)._stat_titles
+        titles.remove("icon")
+        return titles
+
     @classmethod
     def new_object(cls, cb, item):
         return cb.select(Binary, item['md5'], initial_data=item)
