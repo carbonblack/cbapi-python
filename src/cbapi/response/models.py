@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import contextlib
+import copy
 import json
 from distutils.version import LooseVersion
 from collections import namedtuple, defaultdict
@@ -187,10 +188,6 @@ class Feed(MutableBaseModel, CreatableModelMixin):
     def _query_implementation(cls, cb):
         return SimpleQuery(cls, cb)
 
-    # @property
-    # def actions(self):
-    #     return self._cb.select(FeedAction, self._model_unique_id)
-    #
     def _search(self, cls, min_score=None, max_score=None):
         if not self.enabled:
             return
@@ -218,18 +215,46 @@ class Feed(MutableBaseModel, CreatableModelMixin):
 
     @property
     def actions(self):
-        return self._cb.select(FeedAction).where("feed_id:{0}".format(int(self._model_unique_id)))
+        return self._cb.select(FeedAction).where("group_id:{0}".format(int(self._model_unique_id)))
 
     @property
     def reports(self):
         return self._cb.select(ThreatReport).where("feed_id:{0}".format(int(self._model_unique_id)))
 
 
-class FeedAction(MutableModel):
-    urlobject = None
+class ActionTypes(object):
+    TYPE_MAP = {
+        0: "email",
+        1: "syslog",
+        2: "http_post",
+        3: "alert"
+    }
+
+    R_TYPE_MAP = dict((value, key) for key, value in iteritems(TYPE_MAP))
+
+    @classmethod
+    def string_for_type(cls, typ):
+        return cls.TYPE_MAP.get(typ, "unknown")
+
+    @classmethod
+    def type_for_string(cls, s):
+        if s not in cls.R_TYPE_MAP:
+            raise ApiError("Unknown Action type: {}".format(s))
+        return cls.R_TYPE_MAP[s]
+
+
+class FeedAction(MutableBaseModel, CreatableModelMixin):
+    swagger_meta_file = "response/models/feedaction.yaml"
+
+    @property
+    def urlobject(self):
+        return self._build_api_request_uri()
 
     def _build_api_request_uri(self):
-        return "/api/v1/feed/{0}/action".format(self.feed_id)
+        if self._model_unique_id:
+            return "/api/v1/feed/{0}/action/{1}".format(self.feed_id, self._model_unique_id)
+        else:
+            return "/api/v1/feed/{0}/action".format(self.feed_id)
 
     def _retrieve_cb_info(self):
         # Can't "get" a feedaction
@@ -237,7 +262,7 @@ class FeedAction(MutableModel):
 
     @classmethod
     def _query_implementation(cls, cb):
-        return ArrayQuery(cls, cb, "feed_id", urlbuilder=lambda x: "/api/v1/feed/{0}/action".format(int(x)))
+        return ArrayQuery(cls, cb, "group_id", urlbuilder=lambda x: "/api/v1/feed/{0}/action".format(int(x)))
 
     @property
     def feed_id(self):
@@ -245,7 +270,71 @@ class FeedAction(MutableModel):
 
     @property
     def feed(self):
-        return self._join(Feed, "feed_id")
+        return self._join(Feed, "group_id")
+
+    @property
+    def type(self):
+        return ActionTypes.string_for_type(self.action_type)
+
+    @type.setter
+    def type(self, s):
+        self.action_type = ActionTypes.type_for_string(s)
+
+
+class WatchlistAction(MutableBaseModel, CreatableModelMixin):
+    swagger_meta_file = "response/models/watchlistaction.yaml"
+
+    def __init__(self, *args, **kwargs):
+        log.debug("WatchlistAction initializing: got args {0}, kwargs {1}".format(str(args), str(kwargs)))
+        super(WatchlistAction, self).__init__(*args, **kwargs)
+        log.debug("WatchlistAction done initializing")
+        log.debug("repr = {}".format(repr(self)))
+
+    @property
+    def urlobject(self):
+        return self._build_api_request_uri()
+
+    def _build_api_request_uri(self):
+        if self._model_unique_id:
+            return "/api/v1/watchlist/{0}/action/{1}".format(self.watchlist_id, self._model_unique_id)
+        else:
+            return "/api/v1/watchlist/{0}/action".format(self.watchlist_id)
+
+    def _retrieve_cb_info(self):
+        # Can't "get" a watchlistaction
+        pass
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return ArrayQuery(cls, cb, "watchlist_id", urlbuilder=lambda x: "/api/v1/watchlist/{0}/action".format(int(x)))
+
+    @property
+    def watchlist_id(self):
+        return self.group_id
+
+    @property
+    def watchlist(self):
+        return self._join(Watchlist, "watchlist_id")
+
+    @property
+    def type(self):
+        return ActionTypes.string_for_type(self.action_type)
+
+    @type.setter
+    def type(self, s):
+        self.action_type = ActionTypes.type_for_string(s)
+
+
+class ActionMixin(object):
+    pass
+
+
+def create_email_action(cls, cb, userid):
+    action_data = '{"email_recipients":[' + str(userid) + ']}'
+    new_action = cb.create(cls)
+    new_action.action_data = action_data
+    new_action.action_type = 0
+    return new_action
 
 
 class Sensor(MutableBaseModel):
@@ -492,6 +581,10 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
         else:
             raise InvalidObjectError("index_type of {0:s} is invalid".format(index_type))
 
+    @property
+    def actions(self):
+        return self._cb.select(WatchlistAction).where("watchlist_id:{0}".format(int(self._model_unique_id)))
+
 
 class ArrayQuery(SimpleQuery):
     def __init__(self, cls, cb, valid_field_name, urlbuilder):
@@ -500,6 +593,17 @@ class ArrayQuery(SimpleQuery):
         self._results_last_id = None
         self.valid_field_name = valid_field_name
         self.urlbuilder = urlbuilder
+
+    def _clone(self):
+        log.debug("Calling clone on {0}. Class {1}".format(repr(self), self.__class__))
+
+        nq = self.__class__(self._doc_class, self._cb, self.valid_field_name, self.urlbuilder)
+        nq._results_last_id = self._results_last_id
+        nq._results_last_query = self._results_last_query[::]
+        nq._query = copy.deepcopy(self._query)
+
+        log.debug("results_last_query length = {}".format(len(nq._results_last_query)))
+        return nq
 
     def where(self, new_query):
         nq = super(ArrayQuery, self).where(new_query)
@@ -511,6 +615,7 @@ class ArrayQuery(SimpleQuery):
         return nq
 
     def _build_object(self, item):
+        log.debug("Building object with data {0}".format(item))
         return self._doc_class.new_object(self._cb, item)
 
     @property
