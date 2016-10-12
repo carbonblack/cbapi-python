@@ -3,7 +3,7 @@
 
 import sys
 from cbapi.response.models import Watchlist
-from cbapi.example_helpers import build_cli_parser, get_cb_response_object
+from cbapi.example_helpers import build_cli_parser, get_cb_response_object, get_object_by_name_or_id
 from cbapi.errors import ServerError
 import logging
 
@@ -62,11 +62,28 @@ def delete_watchlist(cb, parser, args):
             print("Deleted watchlist id {0:s} with name {1:s}".format(f.id, f.name))
 
 
+def list_actions(cb, parser, args):
+    watchlists = get_object_by_name_or_id(cb, Watchlist, name=args.name, id=args.id)
+    if len(watchlists) > 1:
+        print("Multiple watchlists match the name {}, giving up.".format(args.name))
+        return
+
+    watchlist = watchlists[0]
+    print("Actions in Watchlist {}:".format(watchlist.name))
+    for action in watchlist.actions:
+        print("  - {0}: {1}".format(action.type, action.action_data))
+
+
 def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="Watchlist commands", dest="command_name")
 
     list_command = commands.add_parser("list", help="List all configured watchlists")
+
+    list_actions_command = commands.add_parser("list-actions", help="List actions associated with a watchlist")
+    list_actions_specifier = list_actions_command.add_mutually_exclusive_group(required=True)
+    list_actions_specifier.add_argument("-i", "--id", type=int, help="ID of watchlist")
+    list_actions_specifier.add_argument("-f", "--name", help="Name of watchlist")
 
     add_command = commands.add_parser("add", help="Add new watchlist")
     add_command.add_argument("-N", "--name", help="Name of watchlist", required=True)
@@ -87,6 +104,8 @@ def main():
 
     if args.command_name == "list":
         return list_watchlists(cb, parser, args)
+    elif args.command_name == "list-actions":
+        return list_actions(cb, parser, args)
     elif args.command_name == "add":
         return add_watchlist(cb, parser, args)
     elif args.command_name == "delete":

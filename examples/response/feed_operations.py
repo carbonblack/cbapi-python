@@ -3,7 +3,7 @@
 
 import sys
 from cbapi.response.models import Feed, FeedAction
-from cbapi.example_helpers import build_cli_parser, get_cb_response_object
+from cbapi.example_helpers import build_cli_parser, get_cb_response_object, get_object_by_name_or_id
 from cbapi.errors import ServerError
 import logging
 
@@ -129,11 +129,28 @@ def toggle_feed(cb, feedname, enable=True):
                 print("-> Encountered error {0}ing feed id {1}: {2}".format(operation, feed.id, str(e)))
 
 
+def list_actions(cb, parser, args):
+    feeds = get_object_by_name_or_id(cb, Feed, name=args.feedname, id=args.id)
+    if len(feeds) > 1:
+        print("Multiple feeds match the name {}, giving up.".format(args.feedname))
+        return
+
+    feed = feeds[0]
+    print("Actions in Feed {}:".format(feed.name))
+    for action in feed.actions:
+        print("  - {0}: {1}".format(action.type, action.action_data))
+
+
 def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="Feed commands", dest="command_name")
 
     list_command = commands.add_parser("list", help="List all configured feeds")
+
+    list_actions_command = commands.add_parser("list-actions", help="List actions associated with a feed")
+    list_actions_specifier = list_actions_command.add_mutually_exclusive_group(required=True)
+    list_actions_specifier.add_argument("-i", "--id", type=int, help="ID of feed")
+    list_actions_specifier.add_argument("-f", "--feedname", help="Name of feed")
 
     add_command = commands.add_parser("add", help="Add new feed")
     add_command.add_argument("-u", "--feed-url", help="URL location of feed data", dest="feed_url", required=True)
@@ -171,6 +188,8 @@ def main():
 
     if args.command_name == "list":
         return list_feeds(cb, parser, args)
+    elif args.command_name == "list-actions":
+        return list_actions(cb, parser, args)
     elif args.command_name == "add":
         return add_feed(cb, parser, args)
     elif args.command_name == "delete":

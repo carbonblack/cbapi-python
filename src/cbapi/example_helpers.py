@@ -55,3 +55,20 @@ def get_cb_protection_object(args):
         cb = CbEnterpriseProtectionAPI(profile=args.profile)
 
     return cb
+
+
+def get_object_by_name_or_id(cb, cls, name_field="name", id=None, name=None, force_init=True):
+    clsname = cls.__name__
+    try:
+        if id:
+            attempted_to_find = "ID of {0:d}".format(id)
+            objs = [cb.select(cls, id, force_init=force_init)]
+        else:
+            attempted_to_find = "name {0:s}".format(name)
+            objs = cb.select(cls).where("{0}:{1}".format(name_field, name))[::]
+            if not len(objs):
+                raise Exception("No {0}s match".format(clsname))
+    except Exception as e:
+        raise Exception("Could not find {0} with {1:s}: {2:s}".format(clsname, attempted_to_find, str(e)))
+    else:
+        return objs
