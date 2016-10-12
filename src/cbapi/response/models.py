@@ -28,7 +28,7 @@ else:
 
 from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
 from ..oldmodels import BaseModel, immutable
-from .utils import convert_from_cb, convert_from_solr, parse_42_guid
+from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time
 from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
 from ..query import SimpleQuery
 
@@ -989,7 +989,7 @@ class ProcessV1Parser(object):
     def parse_modload(self, seq, raw_modload):
         parts = raw_modload.split('|')
         new_mod = {}
-        timestamp = convert_from_cb(parts[0])
+        timestamp = convert_event_time(parts[0])
         new_mod['md5'] = parts[1]
         new_mod['path'] = parts[2]
 
@@ -1045,7 +1045,7 @@ class ProcessV1Parser(object):
         parts = filemod.split('|')
         new_file = {}
         new_file['type'] = _lookup_type(int(parts[0]))
-        timestamp = convert_from_cb(parts[1])
+        timestamp = convert_event_time(parts[1])
         new_file['path'] = parts[2]
         new_file['md5'] = parts[3]
         new_file['filetype'] = 'Unknown'
@@ -1061,7 +1061,7 @@ class ProcessV1Parser(object):
     def parse_netconn(self, seq, netconn):
         parts = netconn.split('|')
         new_conn = {}
-        timestamp = convert_from_cb(parts[0])
+        timestamp = convert_event_time(parts[0])
         try:
             new_conn['remote_ip'] = socket.inet_ntoa(struct.pack('>i', int(parts[1])))
         except:
@@ -1089,7 +1089,7 @@ class ProcessV1Parser(object):
 
         parts = regmod.split('|')
         new_regmod = {}
-        timestamp = convert_from_cb(parts[1])
+        timestamp = convert_event_time(parts[1])
         new_regmod['type'] = _lookup_type(int(parts[0]))
         new_regmod['path'] = parts[2]
 
@@ -1101,7 +1101,7 @@ class ProcessV1Parser(object):
 
     def parse_childproc(self, seq, childproc):
         parts = childproc.split('|')
-        timestamp = convert_from_cb(parts[0])
+        timestamp = convert_event_time(parts[0])
         new_childproc = {}
         new_childproc['procguid'] = parts[1]
         new_childproc['md5'] = parts[2]
@@ -1140,7 +1140,7 @@ class ProcessV1Parser(object):
 
         parts = raw_crossproc.split('|')
         new_crossproc = {}
-        timestamp = convert_from_cb(parts[1])
+        timestamp = convert_event_time(parts[1])
 
         # Types currently supported: RemoteThread and ProcessOpen
         new_crossproc['type'] = parts[0]
@@ -1190,7 +1190,7 @@ class ProcessV2Parser(ProcessV1Parser):
 
     def parse_netconn(self, seq, netconn):
         new_conn = {}
-        timestamp = convert_from_solr(netconn.get("timestamp", None))
+        timestamp = convert_event_time(netconn.get("timestamp", None))
         direction = netconn.get("direction", "true")
 
         if direction == 'true':

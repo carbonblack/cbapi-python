@@ -50,6 +50,12 @@ def convert_from_cb(s):
     return dateutil.parser.parse(s)
 
 
+def convert_event_time(s):
+    # NOTE that this will strip incoming tzinfo data... right now we do this since incoming Cb event data is
+    #  always relative to the local system clock on which it was created, and apparently sometimes the TZ data
+    #  is included, and sometimes it isn't... so we normalize it by stripping off the TZ data (unfortunately)
+    return convert_from_cb(s).replace(tzinfo=None)
+
 def convert_to_cb(dt):
     return dt.strftime(cb_datetime_format)
 
