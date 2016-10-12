@@ -1,0 +1,13 @@
+type: "object"
+required:
+- action_type
+- watchlist_id
+properties:
+  action_data:
+    type: "string"
+  action_type:
+    type: "integer"
+  watchlist_id:
+    type: "integer"
+  id:
+    type: "integer"

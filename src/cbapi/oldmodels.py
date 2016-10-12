@@ -43,7 +43,7 @@ def immutable(cls):
 
 @python_2_unicode_compatible
 class BaseModel(object):
-    def __init__(self, cb, model_unique_id=None, initial_data=None):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False):
         self._cb = cb
         if model_unique_id is not None:
             self._model_unique_id = str(model_unique_id)
@@ -59,6 +59,9 @@ class BaseModel(object):
             self._last_refresh_time = time.time()
 
         self._base_initialized = True
+
+        if force_init:
+            self.refresh()
 
     def _set_initial_data(self, initial_data):
         if initial_data:

@@ -123,6 +123,9 @@ class Connection(object):
         uri = self.server + url
 
         try:
+            raw_data = kwargs.get("data", None)
+            if raw_data:
+                log.debug("Sending HTTP {0} {1} with {2}".format(method, url, raw_data))
             r = self.session.request(method, uri, headers=headers, verify=verify_ssl, proxies=proxies, **kwargs)
             log.debug('HTTP {0:s} {1:s} took {2:.3f}s (response {3:d})'.format(method, url,
                                                                                calculate_elapsed_time(r.elapsed),

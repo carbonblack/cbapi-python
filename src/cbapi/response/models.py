@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import contextlib
+import copy
 import json
 from distutils.version import LooseVersion
 from collections import namedtuple, defaultdict
@@ -27,7 +28,7 @@ else:
 
 from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
 from ..oldmodels import BaseModel, immutable
-from .utils import convert_from_cb, convert_from_solr, parse_42_guid
+from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time
 from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
 from ..query import SimpleQuery
 
@@ -187,10 +188,6 @@ class Feed(MutableBaseModel, CreatableModelMixin):
     def _query_implementation(cls, cb):
         return SimpleQuery(cls, cb)
 
-    # @property
-    # def actions(self):
-    #     return self._cb.select(FeedAction, self._model_unique_id)
-    #
     def _search(self, cls, min_score=None, max_score=None):
         if not self.enabled:
             return
@@ -218,26 +215,59 @@ class Feed(MutableBaseModel, CreatableModelMixin):
 
     @property
     def actions(self):
-        return self._cb.select(FeedAction).where("feed_id:{0}".format(int(self._model_unique_id)))
+        return self._cb.select(FeedAction).where("group_id:{0}".format(int(self._model_unique_id)))
 
     @property
     def reports(self):
         return self._cb.select(ThreatReport).where("feed_id:{0}".format(int(self._model_unique_id)))
 
+    def create_action(self):
+        new_action = self._cb.create(FeedAction)
+        new_action.group_id = int(self._model_unique_id)
+        return new_action
 
-class FeedAction(MutableModel):
-    urlobject = None
+
+class ActionTypes(object):
+    TYPE_MAP = {
+        0: "email",
+        1: "syslog",
+        2: "http_post",
+        3: "alert"
+    }
+
+    R_TYPE_MAP = dict((value, key) for key, value in iteritems(TYPE_MAP))
+
+    @classmethod
+    def string_for_type(cls, typ):
+        return cls.TYPE_MAP.get(typ, "unknown")
+
+    @classmethod
+    def type_for_string(cls, s):
+        if s not in cls.R_TYPE_MAP:
+            raise ApiError("Unknown Action type: {}".format(s))
+        return cls.R_TYPE_MAP[s]
+
+
+class FeedAction(MutableBaseModel, CreatableModelMixin):
+    swagger_meta_file = "response/models/feedaction.yaml"
+
+    @property
+    def urlobject(self):
+        return self._build_api_request_uri()
 
     def _build_api_request_uri(self):
-        return "/api/v1/feed/{0}/action".format(self.feed_id)
+        if self._model_unique_id:
+            return "/api/v1/feed/{0}/action/{1}".format(self.feed_id, self._model_unique_id)
+        else:
+            return "/api/v1/feed/{0}/action".format(self.feed_id)
 
     def _retrieve_cb_info(self):
         # Can't "get" a feedaction
-        pass
+        return self._info
 
     @classmethod
     def _query_implementation(cls, cb):
-        return ArrayQuery(cls, cb, "feed_id", urlbuilder=lambda x: "/api/v1/feed/{0}/action".format(int(x)))
+        return ArrayQuery(cls, cb, "group_id", urlbuilder=lambda x: "/api/v1/feed/{0}/action".format(int(x)))
 
     @property
     def feed_id(self):
@@ -245,7 +275,53 @@ class FeedAction(MutableModel):
 
     @property
     def feed(self):
-        return self._join(Feed, "feed_id")
+        return self._join(Feed, "group_id")
+
+    @property
+    def type(self):
+        return ActionTypes.string_for_type(self.action_type)
+
+    @type.setter
+    def type(self, s):
+        self.action_type = ActionTypes.type_for_string(s)
+
+
+class WatchlistAction(MutableBaseModel, CreatableModelMixin):
+    swagger_meta_file = "response/models/watchlistaction.yaml"
+
+    @property
+    def urlobject(self):
+        return self._build_api_request_uri()
+
+    def _build_api_request_uri(self):
+        if self._model_unique_id:
+            return "/api/v1/watchlist/{0}/action/{1}".format(self.watchlist_id, self._model_unique_id)
+        else:
+            return "/api/v1/watchlist/{0}/action".format(self.watchlist_id)
+
+    def _retrieve_cb_info(self):
+        # Can't "get" a watchlistaction
+        return self._info
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return ArrayQuery(cls, cb, "watchlist_id", urlbuilder=lambda x: "/api/v1/watchlist/{0}/action".format(int(x)))
+
+    @property
+    def watchlist_id(self):
+        return self.group_id
+
+    @property
+    def watchlist(self):
+        return self._join(Watchlist, "watchlist_id")
+
+    @property
+    def type(self):
+        return ActionTypes.string_for_type(self.action_type)
+
+    @type.setter
+    def type(self, s):
+        self.action_type = ActionTypes.type_for_string(s)
 
 
 class Sensor(MutableBaseModel):
@@ -492,6 +568,15 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
         else:
             raise InvalidObjectError("index_type of {0:s} is invalid".format(index_type))
 
+    @property
+    def actions(self):
+        return self._cb.select(WatchlistAction).where("watchlist_id:{0}".format(int(self._model_unique_id)))
+
+    def create_action(self):
+        new_action = self._cb.create(WatchlistAction)
+        new_action.watchlist_id = int(self._model_unique_id)
+        return new_action
+
 
 class ArrayQuery(SimpleQuery):
     def __init__(self, cls, cb, valid_field_name, urlbuilder):
@@ -500,6 +585,14 @@ class ArrayQuery(SimpleQuery):
         self._results_last_id = None
         self.valid_field_name = valid_field_name
         self.urlbuilder = urlbuilder
+
+    def _clone(self):
+        nq = self.__class__(self._doc_class, self._cb, self.valid_field_name, self.urlbuilder)
+        nq._results_last_id = self._results_last_id
+        nq._results_last_query = self._results_last_query[::]
+        nq._query = copy.deepcopy(self._query)
+
+        return nq
 
     def where(self, new_query):
         nq = super(ArrayQuery, self).where(new_query)
@@ -519,8 +612,11 @@ class ArrayQuery(SimpleQuery):
             raise ApiError("Must use a search parameter: .where('{0:s}:<id>')".format(self.valid_field_name))
         if self._results_last_id != self._query[self.valid_field_name]:
             self._results_last_id = self._query[self.valid_field_name]
-            self._results_last_query = [self._build_object(it) for it in self._cb.get_object(
-                    self.urlbuilder(self._query[self.valid_field_name]))]
+            res = self._cb.get_object(self.urlbuilder(self._query[self.valid_field_name]))
+            if res and type(res) == list:
+                self._results_last_query = [self._build_object(it) for it in res]
+            else:
+                self._results_last_query = []
 
         return self._results_last_query
 
@@ -720,7 +816,7 @@ class Binary(TaggedModel):
     def new_object(cls, cb, item):
         return cb.select(Binary, item['md5'], initial_data=item)
 
-    def __init__(self, cb, md5sum, initial_data=None):
+    def __init__(self, cb, md5sum, initial_data=None, force_init=False):
         md5sum = md5sum.upper()
         if len(md5sum) != 32:
             raise InvalidHashError("MD5sum {} is not valid".format(md5sum))
@@ -729,6 +825,9 @@ class Binary(TaggedModel):
 
         self.md5sum = md5sum
         self._frequency = None
+
+        if force_init:
+            self.refresh()
 
     def _build_api_request_uri(self):
         return Binary.urlobject + "/{0:s}/summary".format(self.md5sum)
@@ -885,7 +984,7 @@ class ProcessV1Parser(object):
     def parse_modload(self, seq, raw_modload):
         parts = raw_modload.split('|')
         new_mod = {}
-        timestamp = convert_from_cb(parts[0])
+        timestamp = convert_event_time(parts[0])
         new_mod['md5'] = parts[1]
         new_mod['path'] = parts[2]
 
@@ -941,7 +1040,7 @@ class ProcessV1Parser(object):
         parts = filemod.split('|')
         new_file = {}
         new_file['type'] = _lookup_type(int(parts[0]))
-        timestamp = convert_from_cb(parts[1])
+        timestamp = convert_event_time(parts[1])
         new_file['path'] = parts[2]
         new_file['md5'] = parts[3]
         new_file['filetype'] = 'Unknown'
@@ -957,7 +1056,7 @@ class ProcessV1Parser(object):
     def parse_netconn(self, seq, netconn):
         parts = netconn.split('|')
         new_conn = {}
-        timestamp = convert_from_cb(parts[0])
+        timestamp = convert_event_time(parts[0])
         try:
             new_conn['remote_ip'] = socket.inet_ntoa(struct.pack('>i', int(parts[1])))
         except:
@@ -985,7 +1084,7 @@ class ProcessV1Parser(object):
 
         parts = regmod.split('|')
         new_regmod = {}
-        timestamp = convert_from_cb(parts[1])
+        timestamp = convert_event_time(parts[1])
         new_regmod['type'] = _lookup_type(int(parts[0]))
         new_regmod['path'] = parts[2]
 
@@ -997,7 +1096,7 @@ class ProcessV1Parser(object):
 
     def parse_childproc(self, seq, childproc):
         parts = childproc.split('|')
-        timestamp = convert_from_cb(parts[0])
+        timestamp = convert_event_time(parts[0])
         new_childproc = {}
         new_childproc['procguid'] = parts[1]
         new_childproc['md5'] = parts[2]
@@ -1036,7 +1135,7 @@ class ProcessV1Parser(object):
 
         parts = raw_crossproc.split('|')
         new_crossproc = {}
-        timestamp = convert_from_cb(parts[1])
+        timestamp = convert_event_time(parts[1])
 
         # Types currently supported: RemoteThread and ProcessOpen
         new_crossproc['type'] = parts[0]
@@ -1086,7 +1185,7 @@ class ProcessV2Parser(ProcessV1Parser):
 
     def parse_netconn(self, seq, netconn):
         new_conn = {}
-        timestamp = convert_from_solr(netconn.get("timestamp", None))
+        timestamp = convert_event_time(netconn.get("timestamp", None))
         direction = netconn.get("direction", "true")
 
         if direction == 'true':
@@ -1119,7 +1218,7 @@ class Process(TaggedModel):
         # TODO: is there a better way to handle this? (see how this is called from Query._search())
         return cb.select(Process, item['id'], long(item['segment_id']), initial_data=item)
 
-    def __init__(self, cb, procguid, segment=None, initial_data=None):
+    def __init__(self, cb, procguid, segment=None, initial_data=None, force_init=False):
         self.segment = segment
         try:
             # old 4.x process IDs are integers.
@@ -1148,6 +1247,9 @@ class Process(TaggedModel):
         if initial_data:
             # fill in data object for performance
             self._info = dict(initial_data)
+
+        if force_init:
+            self.refresh()
 
     def _build_api_request_uri(self):
         # TODO: how do we handle process segments?
