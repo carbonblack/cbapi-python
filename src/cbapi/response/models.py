@@ -324,14 +324,6 @@ class WatchlistAction(MutableBaseModel, CreatableModelMixin):
         self.action_type = ActionTypes.type_for_string(s)
 
 
-def create_email_action(cls, cb, userid):
-    action_data = '{"email_recipients":[' + str(userid) + ']}'
-    new_action = cb.create(cls)
-    new_action.action_data = action_data
-    new_action.action_type = 0
-    return new_action
-
-
 class Sensor(MutableBaseModel):
     swagger_meta_file = "response/models/sensorObject.yaml"
     urlobject = '/api/v1/sensor'
