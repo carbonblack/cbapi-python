@@ -824,7 +824,7 @@ class Binary(TaggedModel):
     def new_object(cls, cb, item):
         return cb.select(Binary, item['md5'], initial_data=item)
 
-    def __init__(self, cb, md5sum, initial_data=None):
+    def __init__(self, cb, md5sum, initial_data=None, force_init=False):
         md5sum = md5sum.upper()
         if len(md5sum) != 32:
             raise InvalidHashError("MD5sum {} is not valid".format(md5sum))
@@ -833,6 +833,9 @@ class Binary(TaggedModel):
 
         self.md5sum = md5sum
         self._frequency = None
+
+        if force_init:
+            self.refresh()
 
     def _build_api_request_uri(self):
         return Binary.urlobject + "/{0:s}/summary".format(self.md5sum)
@@ -1223,7 +1226,7 @@ class Process(TaggedModel):
         # TODO: is there a better way to handle this? (see how this is called from Query._search())
         return cb.select(Process, item['id'], long(item['segment_id']), initial_data=item)
 
-    def __init__(self, cb, procguid, segment=None, initial_data=None):
+    def __init__(self, cb, procguid, segment=None, initial_data=None, force_init=False):
         self.segment = segment
         try:
             # old 4.x process IDs are integers.
@@ -1252,6 +1255,9 @@ class Process(TaggedModel):
         if initial_data:
             # fill in data object for performance
             self._info = dict(initial_data)
+
+        if force_init:
+            self.refresh()
 
     def _build_api_request_uri(self):
         # TODO: how do we handle process segments?
