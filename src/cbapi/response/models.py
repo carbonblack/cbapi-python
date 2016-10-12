@@ -221,6 +221,11 @@ class Feed(MutableBaseModel, CreatableModelMixin):
     def reports(self):
         return self._cb.select(ThreatReport).where("feed_id:{0}".format(int(self._model_unique_id)))
 
+    def create_action(self):
+        new_action = self._cb.create(FeedAction)
+        new_action.group_id = int(self._model_unique_id)
+        return new_action
+
 
 class ActionTypes(object):
     TYPE_MAP = {
@@ -258,7 +263,7 @@ class FeedAction(MutableBaseModel, CreatableModelMixin):
 
     def _retrieve_cb_info(self):
         # Can't "get" a feedaction
-        pass
+        return self._info
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -284,12 +289,6 @@ class FeedAction(MutableBaseModel, CreatableModelMixin):
 class WatchlistAction(MutableBaseModel, CreatableModelMixin):
     swagger_meta_file = "response/models/watchlistaction.yaml"
 
-    def __init__(self, *args, **kwargs):
-        log.debug("WatchlistAction initializing: got args {0}, kwargs {1}".format(str(args), str(kwargs)))
-        super(WatchlistAction, self).__init__(*args, **kwargs)
-        log.debug("WatchlistAction done initializing")
-        log.debug("repr = {}".format(repr(self)))
-
     @property
     def urlobject(self):
         return self._build_api_request_uri()
@@ -302,7 +301,7 @@ class WatchlistAction(MutableBaseModel, CreatableModelMixin):
 
     def _retrieve_cb_info(self):
         # Can't "get" a watchlistaction
-        pass
+        return self._info
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -323,10 +322,6 @@ class WatchlistAction(MutableBaseModel, CreatableModelMixin):
     @type.setter
     def type(self, s):
         self.action_type = ActionTypes.type_for_string(s)
-
-
-class ActionMixin(object):
-    pass
 
 
 def create_email_action(cls, cb, userid):
@@ -585,6 +580,11 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
     def actions(self):
         return self._cb.select(WatchlistAction).where("watchlist_id:{0}".format(int(self._model_unique_id)))
 
+    def create_action(self):
+        new_action = self._cb.create(WatchlistAction)
+        new_action.watchlist_id = int(self._model_unique_id)
+        return new_action
+
 
 class ArrayQuery(SimpleQuery):
     def __init__(self, cls, cb, valid_field_name, urlbuilder):
@@ -595,14 +595,11 @@ class ArrayQuery(SimpleQuery):
         self.urlbuilder = urlbuilder
 
     def _clone(self):
-        log.debug("Calling clone on {0}. Class {1}".format(repr(self), self.__class__))
-
         nq = self.__class__(self._doc_class, self._cb, self.valid_field_name, self.urlbuilder)
         nq._results_last_id = self._results_last_id
         nq._results_last_query = self._results_last_query[::]
         nq._query = copy.deepcopy(self._query)
 
-        log.debug("results_last_query length = {}".format(len(nq._results_last_query)))
         return nq
 
     def where(self, new_query):
@@ -615,7 +612,6 @@ class ArrayQuery(SimpleQuery):
         return nq
 
     def _build_object(self, item):
-        log.debug("Building object with data {0}".format(item))
         return self._doc_class.new_object(self._cb, item)
 
     @property
@@ -624,8 +620,11 @@ class ArrayQuery(SimpleQuery):
             raise ApiError("Must use a search parameter: .where('{0:s}:<id>')".format(self.valid_field_name))
         if self._results_last_id != self._query[self.valid_field_name]:
             self._results_last_id = self._query[self.valid_field_name]
-            self._results_last_query = [self._build_object(it) for it in self._cb.get_object(
-                    self.urlbuilder(self._query[self.valid_field_name]))]
+            res = self._cb.get_object(self.urlbuilder(self._query[self.valid_field_name]))
+            if res and type(res) == list:
+                self._results_last_query = [self._build_object(it) for it in res]
+            else:
+                self._results_last_query = []
 
         return self._results_last_query
 

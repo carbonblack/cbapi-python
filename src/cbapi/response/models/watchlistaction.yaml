@@ -1,6 +1,5 @@
 type: "object"
 required:
-- action_data
 - action_type
 - watchlist_id
 properties:
