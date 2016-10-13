@@ -17,7 +17,7 @@ def main():
     for alert in alert_query:
         if 'binary' in alert.alert_type:
             print("Alert with score {0:d}: Binary {1:s} matched watchlist/report {2:s}".format(alert.report_score,
-                                                                                               alert.ioc_value,
+                                                                                               alert.md5,
                                                                                                alert.watchlist_name))
         else:
             print("Alert with score {0:d}: Process {1:s} matched watchlist/report {2:s}".format(alert.report_score,
