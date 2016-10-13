@@ -24,6 +24,12 @@ class CbEnterpriseProtectionAPI(BaseAPI):
     def _perform_query(self, cls, query_string=None):
         return Query(cls, self, query_string)
 
+class CbProtectionAPI(CbEnterpriseProtectionAPI):
+    """
+    Short-hand naming for the Cb Protection API.
+    """
+    pass
+
 
 class Query(PaginatedQuery):
     """Represents a prepared query to the Carbon Black Enterprise Protection server.

@@ -174,6 +174,12 @@ class CbEnterpriseResponseAPI(BaseAPI):
     def _close_lr_session(self, sensor_id):
         return self.live_response.close_session(sensor_id)
 
+class CbResponseAPI(CbEnterpriseResponseAPI):
+    """
+    Short-hand naming for the Cb Response API.
+    """
+    pass
+
 
 class Query(PaginatedQuery):
     """Represents a prepared query to the Carbon Black Enterprise Response server.
