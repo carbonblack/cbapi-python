@@ -103,8 +103,9 @@ class LiveResponseSession(object):
         """
         Retrieve contents of the specified file name
 
-        :param file_name: Name of the file
+        :param str file_name: Name of the file
         :return: Content of the specified file name
+        :rtype: str
         """
         fp = self.get_raw_file(file_name)
         content = fp.read()
@@ -116,7 +117,7 @@ class LiveResponseSession(object):
         """
         Delete the specified file name
 
-        :param filename: Name of the file
+        :param str filename: Name of the file
         :return: None
         """
         data = {"name": "delete file", "object": filename}
@@ -128,13 +129,13 @@ class LiveResponseSession(object):
         """
         Create a new file on the remote endpoint with the specified data
 
-        Example:
+        :Example:
 
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         >>>     lr_session.put_file('File Data', new_remote_file)
 
-        :param infp: File data to put on the remote endpoint
-        :param remote_filename: File name to create on the remote endpoint
+        :param str infp: File data to put on the remote endpoint
+        :param str remote_filename: File name to create on the remote endpoint
         :return: None
         """
         data = {"name": "put file", "object": remote_filename}
@@ -149,8 +150,32 @@ class LiveResponseSession(object):
         """
         List the contents of a directory
 
-        :param dir_name: Directory to list.  This parameter should end with '\'
+        :Example:
+
+        >>> with c.select(Sensor, 1).lr_session() as lr_session:
+        >>>     pprint.pprint(lr_session.list_directory('C:\\\\temp\\\\'))
+        [{u'attributes': [u'DIRECTORY'],
+          u'create_time': 1471897244,
+          u'filename': u'.',
+          u'last_access_time': 1476390670,
+          u'last_write_time': 1476390670,
+          u'size': 0},
+         {u'attributes': [u'DIRECTORY'],
+          u'create_time': 1471897244,
+          u'filename': u'..',
+          u'last_access_time': 1476390670,
+          u'last_write_time': 1476390670,
+          u'size': 0},
+         {u'attributes': [u'ARCHIVE'],
+          u'create_time': 1476390668,
+          u'filename': u'test.txt',
+          u'last_access_time': 1476390668,
+          u'last_write_time': 1476390668,
+          u'size': 0}]
+
+        :param str dir_name: Directory to list.  This parameter should end with '\'
         :return: Returns a directory listing
+        :rtype: list
         """
         data = {"name": "directory list", "object": dir_name}
         resp = self._lr_post_command(data).json()
@@ -161,7 +186,7 @@ class LiveResponseSession(object):
         """
         Create a directory on the remote endpoint
 
-        :param dir_name: New directory name
+        :param str dir_name: New directory name
         :return: None
         """
         data = {"name": "create directory", "object": dir_name}
@@ -185,20 +210,21 @@ class LiveResponseSession(object):
         """
         Perform a full directory walk with recursion into subdirectories
 
-        Example:
+        :Example:
 
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         >>>     for entry in lr_session.walk(directory_name):
         >>>         print(entry)
 
-        :param top: Directory to recurse
-        :param topdown: if True, start output from top level directory
-        :param onerror: Callback if an error occurs.
+        :param str top: Directory to recurse
+        :param bool topdown: if True, start output from top level directory
+        :param bool onerror: Callback if an error occurs.
                         This function is called with one argument (the exception that occurred)
-        :param followlinks: Follow symbolic links
+        :param bool followlinks: Follow symbolic links
         :return: Returns output in the follow format.
 
                  (Directory Name, [dirnames], [filenames])
+        :rtype: tuple
         """
         try:
             allfiles = self.list_directory(self.path_join(top, "*"))
@@ -238,6 +264,7 @@ class LiveResponseSession(object):
 
         :param pid: Process ID to terminate
         :return: True if success, False if failure
+        :rtype: bool
         """
         data = {"name": "kill", "object": pid}
         resp = self._lr_post_command(data).json()
@@ -252,6 +279,23 @@ class LiveResponseSession(object):
 
     def create_process(self, command_string, wait_for_output=True, remote_output_file_name=None,
                        working_directory=None, wait_timeout=30):
+        """
+        Create a new process with the specified command string.
+
+        :Example:
+        >>> with c.select(Sensor, 1).lr_session() as lr_session:
+        >>>     print(lr_session.create_process(r'cmd.exe /c "ping.exe 192.168.1.1"'))
+        Pinging 192.168.1.1 with 32 bytes of data:
+        Reply from 192.168.1.1: bytes=32 time<1ms TTL=64
+
+        :param str command_string: command string used for the create process operation
+        :param bool wait_for_output: Block on output from the new process
+        :param str remote_output_file_name: The remote output file name used for process output
+        :param str working_directory: The working directory of the create process operation
+        :param int wait_timeout: Time out used for this live response command
+        :return: returns the output of the command string
+        :rtype: str
+        """
         # process is:
         # - create a temporary file name
         # - create the process, writing output to a temporary file
@@ -286,6 +330,26 @@ class LiveResponseSession(object):
             return file_content
 
     def list_processes(self):
+        """
+        List currently running processes
+
+        :Example:
+
+        >>> with c.select(Sensor, 1).lr_session() as lr_session:
+        >>>     print(lr_session.list_processes()[0])
+        {u'command_line': u'',
+         u'create_time': 1476260500,
+         u'parent': 0,
+         u'parent_guid': u'00000001-0000-0000-0000-000000000000',
+         u'path': u'',
+         u'pid': 4,
+         u'proc_guid': u'00000001-0000-0004-01d2-2461a85e4546',
+         u'sid': u's-1-5-18',
+         u'username': u'NT AUTHORITY\\SYSTEM'}
+
+        :return: returns a list of running processes
+        :rtype: list
+        """
         data = {"name": "process list"}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
