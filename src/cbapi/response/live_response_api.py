@@ -100,6 +100,12 @@ class LiveResponseSession(object):
         return response.raw
 
     def get_file(self, file_name):
+        """
+        Retrieve contents of the specified file name
+
+        :param file_name: Name of the file
+        :return: Content of the specified file name
+        """
         fp = self.get_raw_file(file_name)
         content = fp.read()
         fp.close()
@@ -107,12 +113,30 @@ class LiveResponseSession(object):
         return content
 
     def delete_file(self, filename):
+        """
+        Delete the specified file name
+
+        :param filename: Name of the file
+        :return: None
+        """
         data = {"name": "delete file", "object": filename}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
         self._poll_command(command_id)
 
     def put_file(self, infp, remote_filename):
+        """
+        Create a new file on the remote endpoint with the specified data
+
+        Example:
+
+        >>> with c.select(Sensor, 1).lr_session() as lr_session:
+        >>>     lr_session.put_file('File Data', new_remote_file)
+
+        :param infp: File data to put on the remote endpoint
+        :param remote_filename: File name to create on the remote endpoint
+        :return: None
+        """
         data = {"name": "put file", "object": remote_filename}
         file_id = self._upload_file(infp)
         data["file_id"] = file_id
@@ -122,12 +146,24 @@ class LiveResponseSession(object):
         self._poll_command(command_id)
 
     def list_directory(self, dir_name):
+        """
+        List the contents of a directory
+
+        :param dir_name: Directory to list.  This parameter should end with '\'
+        :return: Returns a directory listing
+        """
         data = {"name": "directory list", "object": dir_name}
         resp = self._lr_post_command(data).json()
         command_id = resp.get("id")
         return self._poll_command(command_id).get("files", [])
 
     def create_directory(self, dir_name):
+        """
+        Create a directory on the remote endpoint
+
+        :param dir_name: New directory name
+        :return: None
+        """
         data = {"name": "create directory", "object": dir_name}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
@@ -146,6 +182,24 @@ class LiveResponseSession(object):
         return False
 
     def walk(self, top, topdown=True, onerror=None, followlinks=False):
+        """
+        Perform a full directory walk with recursion into subdirectories
+
+        Example:
+
+        >>> with c.select(Sensor, 1).lr_session() as lr_session:
+        >>>     for entry in lr_session.walk(directory_name):
+        >>>         print(entry)
+
+        :param top: Directory to recurse
+        :param topdown: if True, start output from top level directory
+        :param onerror: Callback if an error occurs.
+                        This function is called with one argument (the exception that occurred)
+        :param followlinks: Follow symbolic links
+        :return: Returns output in the follow format.
+
+                 (Directory Name, [dirnames], [filenames])
+        """
         try:
             allfiles = self.list_directory(self.path_join(top, "*"))
         except Exception as err:
@@ -179,6 +233,12 @@ class LiveResponseSession(object):
     # Process operations
     #
     def kill_process(self, pid):
+        """
+        Terminate a process on the remote endpoint
+
+        :param pid: Process ID to terminate
+        :return: True if success, False if failure
+        """
         data = {"name": "kill", "object": pid}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')

@@ -27,7 +27,23 @@ Queries
 
 Models
 ------
-.. automodule:: cbapi.response.models
+.. autoclass:: cbapi.response.models.Process
     :members:
-    :inherited-members:
-    :undoc-members:
+.. autoclass:: cbapi.response.models.Binary
+    :members:
+.. autoclass:: cbapi.response.models.Sensor
+    :members:
+.. autoclass:: cbapi.response.models.Feed
+    :members:
+.. autoclass:: cbapi.response.models.BannedHash
+    :members:
+.. autoclass:: cbapi.response.models.Watchlist
+    :members:
+.. autoclass:: cbapi.response.models.Alert
+    :members:
+
+
+Live Response
+-------------
+.. autoclass:: cbapi.response.live_response_api.LiveResponseSession
+    :members:
