@@ -2,6 +2,7 @@ type: "object"
 required:
 - action_type
 - group_id
+- watchlist_id
 properties:
   action_data:
     type: "string"
@@ -10,4 +11,6 @@ properties:
   group_id:
     type: "integer"
   id:
+    type: "integer"
+  watchlist_id:
     type: "integer"

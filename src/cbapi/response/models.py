@@ -224,6 +224,8 @@ class Feed(MutableBaseModel, CreatableModelMixin):
     def create_action(self):
         new_action = self._cb.create(FeedAction)
         new_action.group_id = int(self._model_unique_id)
+        # Cb Response requires the watchlist_id field to be filled in; the UI uses -1 for this
+        new_action.watchlist_id = -1
         return new_action
 
 
