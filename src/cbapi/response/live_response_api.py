@@ -215,15 +215,14 @@ class LiveResponseSession(object):
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         >>>     for entry in lr_session.walk(directory_name):
         >>>         print(entry)
+        ('C:\\temp\\', [u'dir1', u'dir2'], [u'file1.txt'])
 
         :param str top: Directory to recurse
         :param bool topdown: if True, start output from top level directory
         :param bool onerror: Callback if an error occurs.
                         This function is called with one argument (the exception that occurred)
         :param bool followlinks: Follow symbolic links
-        :return: Returns output in the follow format.
-
-                 (Directory Name, [dirnames], [filenames])
+        :return: Returns output in the follow tuple format: (Directory Name, [dirnames], [filenames])
         :rtype: tuple
         """
         try:
@@ -363,6 +362,43 @@ class LiveResponseSession(object):
     #  "values" is a list containing a dictionary for each registry value in the key
     #  "sub_keys" is a list containing one entry for each sub_key
     def list_registry_keys_and_values(self, regkey):
+        """
+        Enumerate subkeys and values of the specified registry key.
+
+        :Example:
+
+        >>> with c.select(Sensor, 1).lr_session() as lr_session:
+        >>>    pprint.pprint(lr_session.list_registry_keys_and_values('HKLM\\SYSTEM\\CurrentControlSet\\services\\ACPI'))
+        {'sub_keys': [u'Parameters', u'Enum'],
+         'values': [{u'value_data': 0,
+                     u'value_name': u'Start',
+                     u'value_type': u'REG_DWORD'},
+                    {u'value_data': 1,
+                     u'value_name': u'Type',
+                     u'value_type': u'REG_DWORD'},
+                    {u'value_data': 3,
+                     u'value_name': u'ErrorControl',
+                     u'value_type': u'REG_DWORD'},
+                    {u'value_data': u'system32\\drivers\\ACPI.sys',
+                     u'value_name': u'ImagePath',
+                     u'value_type': u'REG_EXPAND_SZ'},
+                    {u'value_data': u'Microsoft ACPI Driver',
+                     u'value_name': u'DisplayName',
+                     u'value_type': u'REG_SZ'},
+                    {u'value_data': u'Boot Bus Extender',
+                     u'value_name': u'Group',
+                     u'value_type': u'REG_SZ'},
+                    {u'value_data': u'acpi.inf_x86_neutral_ddd3c514822f1b21',
+                     u'value_name': u'DriverPackageId',
+                     u'value_type': u'REG_SZ'},
+                    {u'value_data': 1,
+                     u'value_name': u'Tag',
+                     u'value_type': u'REG_DWORD'}]}
+
+        :param str regkey: The registry key to enumerate
+        :return: returns a dictionary with 2 keys (sub_keys and values)
+        :rtype: dict
+        """
         data = {"name": "reg enum key", "object": regkey}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
@@ -373,6 +409,13 @@ class LiveResponseSession(object):
 
     # returns a list containing a dictionary for each registry value in the key
     def list_registry_keys(self, regkey):
+        """
+        Enumerate all registry values from the specified registry key.
+
+        :param regkey: The registry key to enumearte
+        :return: returns a list of values
+        :rtype: list
+        """
         data = {"name": "reg enum key", "object": regkey}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
@@ -381,6 +424,19 @@ class LiveResponseSession(object):
 
     # returns a dictionary with the registry value
     def get_registry_value(self, regkey):
+        """
+        Returns the associated value of the specified registry key
+
+        :Example:
+
+        >>> with c.select(Sensor, 1).lr_session() as lr_session:
+        >>>     pprint.pprint(lr_session.get_registry_value('HKLM\\SYSTEM\\CurrentControlSet\\services\\ACPI\\Start'))
+        {u'value_data': 0, u'value_name': u'Start', u'value_type': u'REG_DWORD'}
+
+        :param str regkey: The registry key to retrieve
+        :return: Returns a dictionary with keys of: value_data, value_name, value_type
+        :rtype: dict
+        """
         data = {"name": "reg query value", "object": regkey}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
@@ -388,6 +444,19 @@ class LiveResponseSession(object):
         return self._poll_command(command_id).get("value", {})
 
     def set_registry_value(self, regkey, value, overwrite=True, value_type=None):
+        """
+        Set a registry value of the specified registry key
+
+        :Example:
+
+        >>> lr_session.set_registry_value('HKLM\\\\SYSTEM\\\\CurrentControlSet\\\\services\\\\ACPI\\\\testvalue', 1)
+
+        :param str regkey: They registry key to set
+        :param obj value: The value data
+        :param bool overwrite: Overwrite value if True
+        :param str value_type: The type of value.  Examples: REG_DWORD, REG_MULTI_SZ, REG_SZ
+        :return: None
+        """
         if value_type is None:
             if type(value) == int:
                 value_type = "REG_DWORD"
@@ -406,18 +475,36 @@ class LiveResponseSession(object):
         self._poll_command(command_id)
 
     def create_registry_key(self, regkey):
+        """
+        Create a new registry
+
+        :param str regkey: The registry key to create
+        :return: None
+        """
         data = {"name": "reg create key", "object": regkey}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
         self._poll_command(command_id)
 
     def delete_registry_key(self, regkey):
+        """
+        Delete a registry key
+
+        :param str regkey: The registry key to delete
+        :return: None
+        """
         data = {"name": "reg delete key", "object": regkey}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
         self._poll_command(command_id)
 
     def delete_registry_value(self, regkey):
+        """
+        Delete a registry value
+
+        :param str regkey: the registry value to delete
+        :return: None
+        """
         data = {"name": "reg delete value", "object": regkey}
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
