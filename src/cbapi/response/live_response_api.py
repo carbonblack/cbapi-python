@@ -282,6 +282,7 @@ class LiveResponseSession(object):
         Create a new process with the specified command string.
 
         :Example:
+
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         >>>     print(lr_session.create_process(r'cmd.exe /c "ping.exe 192.168.1.1"'))
         Pinging 192.168.1.1 with 32 bytes of data:
