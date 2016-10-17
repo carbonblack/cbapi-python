@@ -340,6 +340,9 @@ class Sensor(MutableBaseModel):
 
     @property
     def group(self):
+        """
+        Returns the sensor's group id.  This attribute can also be set.
+        """
         return self._join(SensorGroup, "group_id")
 
     @group.setter
@@ -348,14 +351,24 @@ class Sensor(MutableBaseModel):
 
     @property
     def dns_name(self):
+        """
+        Returns the DNS name associated with this sensor object.  This is the same as 'computer_dns_name'.
+        """
         return getattr(self, 'computer_dns_name', None)
 
     @property
     def hostname(self):
+        """
+        Returns the hostname associated with this sensor object.  This is the same as 'computer_name'
+        :return:
+        """
         return getattr(self, 'computer_name', None)
 
     @property
     def network_interfaces(self):
+        """
+        Returns a list of networks adapters on the sensor
+        """
         out = []
         for adapter in getattr(self, 'network_adapters', '').split('|'):
             parts = adapter.split(',')
@@ -366,10 +379,16 @@ class Sensor(MutableBaseModel):
 
     @property
     def os(self):
+        """
+        Returns the operating system display string of the sensor
+        """
         return getattr(self, 'os_environment_display_string', None)
 
     @property
     def registration_time(self):
+        """
+        Returns the time the sensor registered with the Cb Response Server
+        """
         return convert_from_cb(getattr(self, 'registration_time', -1))
 
     @property
@@ -514,6 +533,9 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
 
     @property
     def query(self):
+        """
+        Returns the query associated with this watchlist.  This attribute can also be set.
+        """
         queryparams = [(k, v) for k, v in self._query if k == "q" or k.startswith("cb.q.")]
         queryparts = []
         for k, v in queryparams:
@@ -844,7 +866,7 @@ class Binary(TaggedModel):
     @property
     def frequency(self):
         """
-        Returns frequency information about the binary.
+        Returns :class:`.FrequencyData` information about the binary.
 
         :example:
 
@@ -921,7 +943,7 @@ class Binary(TaggedModel):
     @property
     def version_info(self):
         """
-        Returns a VersionInfo object containing detailed information: File Descritpion, File Version, Product Name,
+        Returns a :class:`.VersionInfo` object containing detailed information: File Descritpion, File Version, Product Name,
         Product Version, Company Name, Legal Copyright, and Original FileName
         """
         return Binary.VersionInfo._make([self._attribute('file_desc', ""), self._attribute('file_version', ""),
@@ -945,7 +967,7 @@ class Binary(TaggedModel):
     @property
     def signing_data(self):
         """
-        Returns SigningData object which contains: Digital Signature Result, Digital Signature publisher,
+        Returns :class:`.SigningData` object which contains: Digital Signature Result, Digital Signature publisher,
         Issuer, Subject, Signing Time, Program Name
         """
         digsig_sign_time = self._attribute('digsig_sign_time', "")
@@ -1011,7 +1033,7 @@ class Binary(TaggedModel):
     @property
     def virustotal(self):
         """
-        Returns a Binary.VirusTotal object containing detailed Virus Total information about this binary.
+        Returns a :class:`.VirusTotal` object containing detailed Virus Total information about this binary.
         """
         virustotal_score = self._attribute('alliance_score_virustotal', 0)
         if virustotal_score:
