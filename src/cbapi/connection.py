@@ -166,6 +166,7 @@ class BaseAPI(object):
     def __init__(self, *args, **kwargs):
         product_name = kwargs.pop("product_name", None)
         credential_file = kwargs.pop("credential_file", None)
+        integration_name = kwargs.pop("integration_name", None)
 
         self.credential_store = CredentialStore(product_name, credential_file=credential_file)
 
@@ -182,7 +183,7 @@ class BaseAPI(object):
             self.credential_profile_name = kwargs.pop("profile", None)
             self.credentials = self.credential_store.get_credentials(self.credential_profile_name)
 
-        self.session = Connection(self.credentials)
+        self.session = Connection(self.credentials, integration_name=integration_name)
 
     def raise_unless_json(self, ret, expected):
         if ret.status_code == 200:
