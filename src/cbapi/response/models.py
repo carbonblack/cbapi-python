@@ -892,10 +892,16 @@ class Binary(TaggedModel):
 
     @property
     def observed_filenames(self):
+        """
+        Returns a list of all observed file names associated with this Binary
+        """
         return self._attribute('observed_filename', [])
 
     @property
     def size(self):
+        """
+        Returns the size of the Binary
+        """
         return long(self._attribute('orig_mod_len', 0))
 
     @property
@@ -904,6 +910,9 @@ class Binary(TaggedModel):
 
     @property
     def endpoints(self):
+        """
+        Return a list of endpoints this binary resides
+        """
         endpoint_list = self._attribute('endpoint', [])
         return [self._cb.select(Sensor, int(endpoint.split("|")[1]),
                                 initial_data={"computer_name": endpoint.split("|")[0]})
@@ -911,6 +920,10 @@ class Binary(TaggedModel):
 
     @property
     def version_info(self):
+        """
+        Returns a VersionInfo object containing detailed information: File Descritpion, File Version, Product Name,
+        Product Version, Company Name, Legal Copyright, and Original FileName
+        """
         return Binary.VersionInfo._make([self._attribute('file_desc', ""), self._attribute('file_version', ""),
                                          self._attribute('product_name', ""), self._attribute('product_version', ""),
                                          self._attribute('company_name', ""), self._attribute('legal_copyright', ""),
@@ -921,6 +934,9 @@ class Binary(TaggedModel):
     # distrusted.
     @property
     def signed(self):
+        """
+        Returns True if the binary is signed.
+        """
         if self._attribute('digsig_result') == 'Signed':
             return True
         else:
@@ -928,6 +944,10 @@ class Binary(TaggedModel):
 
     @property
     def signing_data(self):
+        """
+        Returns SigningData object which contains: Digital Signature Result, Digital Signature publisher,
+        Issuer, Subject, Signing Time, Program Name
+        """
         digsig_sign_time = self._attribute('digsig_sign_time', "")
         if digsig_sign_time:
             digsig_sign_time = convert_from_cb(digsig_sign_time)
@@ -941,34 +961,58 @@ class Binary(TaggedModel):
 
     @property
     def digsig_publisher(self):
+        """
+        Returns the Digital Signature Publisher
+        """
         return self._attribute('digsig_publisher', "")
 
     @property
     def digsig_issuer(self):
+        """
+        Returns the Digital Signature Issuer
+        """
         return self._attribute('digsig_issuer', "")
 
     @property
     def digsig_subject(self):
+        """
+        Returns the Digital Signature subject
+        """
         return self._attribute('digsig_subject', "")
 
     @property
     def digsig_sign_time(self):
+        """
+        Returns the Digital Signature signing time
+        """
         return self._attribute('digsig_sign_time', "")
 
     @property
     def digsig_prog_name(self):
+        """
+        Returns the Digital Signature Program Name
+        """
         return self._attribute('digsig_prog_name', "")
 
     @property
     def is_64bit(self):
+        """
+        Returns True if the Binary is an AMD64 or x64 (64-bit) Executable
+        """
         return self._attribute('is_64bit', False)
 
     @property
     def is_executable_image(self):
+        """
+        Returns True if the Binary is executable
+        """
         return self._attribute('is_executable_image', False)
 
     @property
     def virustotal(self):
+        """
+        Returns a Binary.VirusTotal object containing detailed Virus Total information about this binary.
+        """
         virustotal_score = self._attribute('alliance_score_virustotal', 0)
         if virustotal_score:
             ret = Binary.VirusTotal._make([int(virustotal_score), self._attribute('alliance_link_virustotal', "")])
@@ -978,6 +1022,9 @@ class Binary(TaggedModel):
 
     @property
     def icon(self):
+        """
+        Returns the raw icon of this Binary. This data is not encoded.
+        """
         icon = ''
         try:
             icon = self._attribute('icon')
@@ -990,6 +1037,9 @@ class Binary(TaggedModel):
 
     @property
     def banned(self):
+        """
+        Returns *BannedHash* object if this Binary's hash has been whitelisted (Banned), otherwise returns *False*
+        """
         try:
             bh = self._cb.select(BannedHash, self.md5sum.lower())
             bh.refresh()
