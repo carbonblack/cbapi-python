@@ -74,12 +74,14 @@ class Query(PaginatedQuery):
 
         self._sort_by = None
         self._group_by = None
+        self._batch_size = 1000
 
     def _clone(self):
         nq = self.__class__(self._doc_class, self._cb)
         nq._query = self._query[::]
         nq._sort_by = self._sort_by
         nq._group_by = self._group_by
+        nq._batch_size = self._batch_size
         return nq
 
     def where(self, q):
@@ -127,7 +129,7 @@ class Query(PaginatedQuery):
         self._count_valid = True
         return self._total_results
 
-    def _search(self, start=0, rows=0, perpage=1000):
+    def _search(self, start=0, rows=0):
         # iterate over total result set, 1000 at a time
         args = {}
         args['offset'] = start
@@ -136,7 +138,7 @@ class Query(PaginatedQuery):
         if rows:
             args['limit'] = start + rows
         else:
-            args['limit'] = start + perpage
+            args['limit'] = start + self._batch_size
 
         current = start
         numrows = 0
@@ -163,5 +165,5 @@ class Query(PaginatedQuery):
 
             args['offset'] = current + 1
 
-            if len(result) < perpage:
+            if len(result) < self._batch_size:
                 break

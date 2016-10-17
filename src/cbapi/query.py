@@ -146,9 +146,11 @@ class PaginatedQuery(BaseQuery):
         # TODO: this should be subject to a TTL
         self._total_results = 0
         self._count_valid = False
+        self._batch_size = 100
 
     def _clone(self):
         nq = self.__class__(self._doc_class, self._cb, query=self._query)
+        nq._batch_size = self._batch_size
         return nq
 
     def __len__(self):
@@ -207,3 +209,8 @@ class PaginatedQuery(BaseQuery):
     def _perform_query(self, start=0, numrows=0):
         for item in self._search(start=start, rows=numrows):
             yield self._doc_class.new_object(self._cb, item)
+
+    def batch_size(self, new_batch_size):
+        nq = self._clone()
+        nq._batch_size = new_batch_size
+        return nq
