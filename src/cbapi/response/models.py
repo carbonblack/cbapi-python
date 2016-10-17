@@ -836,10 +836,23 @@ class Binary(TaggedModel):
 
     @property
     def webui_link(self):
+        """
+        Returns the Cb Response Web UI link associated with this Binary object
+        """
         return '{0:s}/#binary/{1:s}'.format(self._cb.url, self.md5sum)
 
     @property
     def frequency(self):
+        """
+        Returns frequency information about the binary.
+
+        :example:
+
+        >>> process_obj = c.select(Process).where('process_name:svch0st.exe').first()
+        >>> binary_obj = process_obj.binary
+        >>> print(binary_obj.frequency)
+        FrequencyData(computer_count=1, process_count=5, all_process_count=4429, module_frequency=0.001128923007450892)
+        """
         if not self._frequency:
             r = self._cb.get_object('/api/v1/process/host/count',
                                     query_parameters=(('cb.freqver', 1), ('name', 'md5'), ('md5', self.md5sum)))
@@ -860,6 +873,16 @@ class Binary(TaggedModel):
 
     @property
     def file(self):
+        """
+        Returns a file pointer to this binary
+
+        :example:
+
+        >>> process_obj = c.select(Process).where("process_name:svch0st.exe").first()
+        >>> binary_obj = process_obj.binary
+        >>> print(binary_obj.file.read(2))
+        MZ
+        """
         # TODO: I don't like reaching through to the session...
         with closing(self._cb.session.get("/api/v1/binary/{0:s}".format(self.md5sum), stream=True)) as r:
             z = StringIO(r.content)
@@ -1261,6 +1284,30 @@ class Process(TaggedModel):
         self._info = obj.get('process', {})
 
     def walk_parents(self, callback, max_depth=0, depth=0):
+        """
+        Walk up the execution chain while calling the specified callback function at each depth.
+
+        :Example:
+
+        >>> def proc_callback(parent_proc, depth):
+        >>>    print(parent_proc.cmdline, depth)
+        >>>
+        >>> process = c.select(Process).where('process_name:ipconfig.exe')[0]
+        >>> process.walk_parents(proc_callback)
+        (u'cmd.exe /c ipconfig.exe', 0)
+        (u'c:\\windows\\carbonblack\\cb.exe', 1)
+        (u'C:\\Windows\\system32\\services.exe', 2)
+        (u'wininit.exe', 3)
+        (u'\\SystemRoot\\System32\\smss.exe 00000000 00000040 ', 4)
+        (u'\\SystemRoot\\System32\\smss.exe', 5)
+        (u'', 6)
+
+        :param func callback: Callback function used for execution at each depth.
+            This function is executed with the parent process object and depth as parameters.
+        :param int max_depth: Max number of iterations up the execution chain
+        :param int depth: Number of iterations up the execution chain.
+        :return: None
+        """
         if max_depth and depth > max_depth:
             return
 
@@ -1276,6 +1323,33 @@ class Process(TaggedModel):
                 parent_proc.walk_parents(callback, max_depth=max_depth, depth=depth+1)
 
     def walk_children(self, callback, max_depth=0, depth=0):
+        """
+        Walk down the execution chain while calling the specified callback function at each depth.
+
+        :example:
+
+        >>> def proc_callback(parent_proc, depth):
+        >>> print(parent_proc.cmdline, depth)
+        >>>
+        >>> process = c.select(Process).where('process_name:svch0st.exe')[0]
+        >>> process.walk_children(proc_callback, depth=2)
+        (u'cmd.exe \\c ipconfig', 2)
+        (u'cmd.exe \\\\c ipconfig', 2)
+        (u'cmd.exe /c ipconfig', 2)
+        (u'ipconfig', 3)
+        (u'cmd.exe /c ipconfig.exe /all', 2)
+        (u'cmd.exe \\c ipconfig', 2)
+        (u'cmd.exe \\\\c ipconfig', 2)
+        (u'cmd.exe /c ipconfig', 2)
+        (u'ipconfig', 3)
+        (u'cmd.exe /c ipconfig.exe /all', 2)
+
+        :param func callback: Callback function used for execution at each depth.
+            This function is executed with the parent process object and depth as parameters.
+        :param int max_depth: Max number of iterations down the execution chain.
+        :param int depth: Number of iterations down the execution chain
+        :return: None
+        """
         if max_depth and depth > max_depth:
             return
 
@@ -1294,11 +1368,16 @@ class Process(TaggedModel):
 
     @property
     def start(self):
+        """
+        Returns the start time of the process
+        """
         return convert_from_solr(self._attribute('start', -1))
 
     @property
     def modloads(self):
-        """Generator that returns `:py:class:CbModLoadEvent` associated with this process"""
+        """
+        Generator that returns `:py:class:CbModLoadEvent` associated with this process
+        """
         i = 0
         for raw_modload in self._attribute('modload_complete', []):
             yield self._event_parser.parse_modload(i, raw_modload)
@@ -1306,11 +1385,16 @@ class Process(TaggedModel):
 
     @property
     def unsigned_modloads(self):
+        """
+        Returns all unsigned module loads.  This is useful to filter out all Microsoft signed DLLs
+        """
         return [m for m in self.modloads if not m.is_signed]
 
     @property
     def filemods(self):
-        """Generator that returns :py:class:`CbFileModEvent` objects associated with this process"""
+        """
+        Generator that returns :py:class:`CbFileModEvent` objects associated with this process
+        """
         i = 0
         for raw_filemod in self._attribute('filemod_complete', []):
             yield self._event_parser.parse_filemod(i, raw_filemod)
@@ -1318,7 +1402,9 @@ class Process(TaggedModel):
 
     @property
     def netconns(self):
-        """Generator that returns :py:class:`CbNetConnEvent` objects associated with this process"""
+        """
+        Generator that returns :py:class:`CbNetConnEvent` objects associated with this process
+        """
         i = 0
         for raw_netconn in self._attribute('netconn_complete', []):
             yield self._event_parser.parse_netconn(i, raw_netconn)
@@ -1326,7 +1412,9 @@ class Process(TaggedModel):
 
     @property
     def regmods(self):
-        """Generator that returns :py:class:`CbRegModEvent` objects associated with this process"""
+        """
+        Generator that returns :py:class:`CbRegModEvent` objects associated with this process
+        """
         i = 0
         for raw_regmod in self._attribute('regmod_complete', []):
             yield self._event_parser.parse_regmod(i, raw_regmod)
@@ -1334,7 +1422,9 @@ class Process(TaggedModel):
 
     @property
     def crossprocs(self):
-        """Generator that returns :py:class:`CbCrossProcEvent` objects associated with this process"""
+        """
+        Generator that returns :py:class:`CbCrossProcEvent` objects associated with this process
+        """
         i = 0
         for raw_crossproc in self._attribute('crossproc_complete', []):
             yield self._event_parser.parse_crossproc(i, raw_crossproc)
@@ -1342,7 +1432,9 @@ class Process(TaggedModel):
 
     @property
     def children(self):
-        """Generator that returns :py:class:`CbChildProcEvent` objects associated with this process"""
+        """
+        Generator that returns :py:class:`CbChildProcEvent` objects associated with this process
+        """
         i = 0
         for raw_childproc in self._attribute('childproc_complete', []):
             yield self._event_parser.parse_childproc(i, raw_childproc)
@@ -1350,7 +1442,9 @@ class Process(TaggedModel):
 
     @property
     def all_events(self):
-        """Returns a list of all events associated with this process, sorted by timestamp"""
+        """
+        Returns a list of all events associated with this process, sorted by timestamp
+        """
         return sorted(list(self.modloads) + list(self.netconns) + list(self.filemods) + \
                       list(self.children) + list(self.regmods) + list(self.crossprocs))
 
@@ -1359,10 +1453,27 @@ class Process(TaggedModel):
         return [e for e in self.all_events if e.tamper_event]
 
     def find_file_writes(self, filename):
+        """
+        Returns a list of file writes with the specified filename
+        :param str filename: filename to match on file writes
+        :return: Returns a list of file writes with the specified filename
+        :rtype: list
+        """
         return [filemod for filemod in self.filemods if filemod.path == filename]
 
     @property
     def binary(self):
+        """
+        Joins this attribute with the Binary object associated with this Process object
+
+        :example:
+
+        >>> process_obj = c.select(Process).where('process_name:svch0st.exe')[0]
+        >>> binary_obj = process_obj.binary
+        >>> print(binary_obj.signed)
+        False
+
+        """
         binary_md5 = self.get('process_md5')
         if binary_md5:
             return self._cb.select(Binary, binary_md5)
@@ -1371,10 +1482,16 @@ class Process(TaggedModel):
 
     @property
     def comms_ip(self):
+        """
+        Returns ascii representation of the ip address used to communicate with the Cb Response Server
+        """
         return socket.inet_ntoa(struct.pack('>i', self._attribute('comms_ip', 0)))
 
     @property
     def parent(self):
+        """
+        Returns the parent Process object if one exists
+        """
         parent_unique_id = self.get('parent_unique_id', None)
         parent_id = self.get('parent_id', None)
 
@@ -1387,6 +1504,10 @@ class Process(TaggedModel):
 
     @property
     def cmdline(self):
+        """
+        :return: Returns the command line of the process
+        :rtype: string
+        """
         cmdline = self.get('cmdline')
         if not cmdline:
             return self.path
@@ -1395,6 +1516,16 @@ class Process(TaggedModel):
 
     @property
     def sensor(self):
+        """
+        Joins this attribute with the Sensor object associated with this Process object
+
+        :example:
+
+        >>> process_obj = c.select(Process).where('process_name:svch0st.exe')[0]
+        >>> sensor_obj = process.sensor
+        >>> print(sensor_obj.computer_dns_name)
+        hyperv-win7-x86
+        """
         sensor_id = self.get("sensor_id")
         if sensor_id:
             return self._cb.select(Sensor, int(sensor_id))
@@ -1403,6 +1534,9 @@ class Process(TaggedModel):
 
     @property
     def webui_link(self):
+        """
+        Returns the Cb Response Web UI link associated with this process
+        """
         return '%s/#analyze/%s/%s' % (self._cb.url, self.id, self.segment)
 
     def get_correct_unique_id(self, old_style_id, new_style_id):
@@ -1415,10 +1549,16 @@ class Process(TaggedModel):
 
     @property
     def last_update(self):
+        """
+        Returns a pretty version of when this process last updated
+        """
         return convert_from_solr(self.get('last_update', -1))
 
     @property
     def username(self):
+        """
+        Returns the username of the owner of this process
+        """
         return self.get("username", None)
 
 
