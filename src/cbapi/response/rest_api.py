@@ -223,7 +223,12 @@ class Query(PaginatedQuery):
             self._raw_query = None
 
         self._sort_by = getattr(self._doc_class, 'default_sort', None)
-        self._default_args = {"cb.urlver": 1, 'facet': 'false'}
+        self._default_args = {"cb.urlver": 1}
+
+        # FIX: Cb Response server version 5.1.0-3 throws an exception after returning HTTP 504 when facet=false in the
+        # HTTP request. Work around this by only setting facet=false on 5.1.1 and above server versions.
+        if self._cb.cb_server_version >= LooseVersion('5.1.1'):
+            self._default_args["facet"] = "false"
 
     def _clone(self):
         nq = self.__class__(self._doc_class, self._cb)
