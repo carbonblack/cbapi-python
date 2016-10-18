@@ -1440,7 +1440,7 @@ class Process(TaggedModel):
         :Example:
 
         >>> def proc_callback(parent_proc, depth):
-        >>>    print(parent_proc.cmdline, depth)
+        ...    print(parent_proc.cmdline, depth)
         >>>
         >>> process = c.select(Process).where('process_name:ipconfig.exe')[0]
         >>> process.walk_parents(proc_callback)
@@ -1479,7 +1479,7 @@ class Process(TaggedModel):
         :example:
 
         >>> def proc_callback(parent_proc, depth):
-        >>> print(parent_proc.cmdline, depth)
+        ...     print(parent_proc.cmdline, depth)
         >>>
         >>> process = c.select(Process).where('process_name:svch0st.exe')[0]
         >>> process.walk_children(proc_callback, depth=2)
@@ -1605,6 +1605,7 @@ class Process(TaggedModel):
     def find_file_writes(self, filename):
         """
         Returns a list of file writes with the specified filename
+
         :param str filename: filename to match on file writes
         :return: Returns a list of file writes with the specified filename
         :rtype: list

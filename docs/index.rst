@@ -68,14 +68,14 @@ Major Features
 --------------
 
 - **Consistent API for both Cb Response and Protection platforms**
-    We now support Cb Enterprise Response and Protection users in the same API layer. Even better,
+    We now support Cb Response and Protection users in the same API layer. Even better,
     the object model is the same for both; if you know one API you can easily transition to the other. cbapi
     hides all the differences between the two REST APIs behind a single, consistent Python-like interface.
 
 - **Enhanced Performance**
     cbapi now provides a built in caching layer to reduce the query load on the Carbon Black server. This is especially
     useful when taking advantage of cbapi's new "joining" features. You can transparently access, for example, the
-    binary associated with a given process in Carbon Black Enterprise Protection. Since many processes may be associated
+    binary associated with a given process in Cb Protection. Since many processes may be associated
     with the same binary, it does not make sense to repeatedly request the same binary information from the server
     over and over again. Therefore cbapi now caches this information to avoid unnecessary requests.
 
@@ -87,7 +87,7 @@ Major Features
 
 - **Better support for multiple Cb servers**
     cbapi now introduces the concept of Credential Profiles; named collections of URL, API keys, and optional proxy
-    configuration for connecting to any number of Carbon Black Enterprise Protection or Response servers.
+    configuration for connecting to any number of Cb Protection or Response servers.
 
 
 API Credentials
@@ -102,7 +102,7 @@ on the Developer Network website on how to acquire the API token for
 
 Once you acquire your API token, place it in one of the default credentials file locations:
 
-* ``/etc/carbonblack/credentials.response`` (or ``.protection`` for Cb Enterprise Protection)
+* ``/etc/carbonblack/credentials.response`` (or ``.protection`` for Cb Protection)
 * ``~/.carbonblack/credentials.response``
 * (current working directory) ``.carbonblack/credentials.response``
 

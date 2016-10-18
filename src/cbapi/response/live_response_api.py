@@ -132,7 +132,7 @@ class LiveResponseSession(object):
         :Example:
 
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
-        >>>     lr_session.put_file('File Data', new_remote_file)
+        ...     lr_session.put_file('File Data', new_remote_file)
 
         :param str infp: File data to put on the remote endpoint
         :param str remote_filename: File name to create on the remote endpoint
@@ -153,7 +153,7 @@ class LiveResponseSession(object):
         :Example:
 
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
-        >>>     pprint.pprint(lr_session.list_directory('C:\\\\temp\\\\'))
+        ...     pprint.pprint(lr_session.list_directory('C:\\\\temp\\\\'))
         [{u'attributes': [u'DIRECTORY'],
           u'create_time': 1471897244,
           u'filename': u'.',
@@ -213,8 +213,8 @@ class LiveResponseSession(object):
         :Example:
 
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
-        >>>     for entry in lr_session.walk(directory_name):
-        >>>         print(entry)
+        ...     for entry in lr_session.walk(directory_name):
+        ...         print(entry)
         ('C:\\temp\\', [u'dir1', u'dir2'], [u'file1.txt'])
 
         :param str top: Directory to recurse
@@ -284,7 +284,7 @@ class LiveResponseSession(object):
         :Example:
 
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
-        >>>     print(lr_session.create_process(r'cmd.exe /c "ping.exe 192.168.1.1"'))
+        ...     print(lr_session.create_process(r'cmd.exe /c "ping.exe 192.168.1.1"'))
         Pinging 192.168.1.1 with 32 bytes of data:
         Reply from 192.168.1.1: bytes=32 time<1ms TTL=64
 
@@ -336,7 +336,7 @@ class LiveResponseSession(object):
         :Example:
 
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
-        >>>     print(lr_session.list_processes()[0])
+        ...     print(lr_session.list_processes()[0])
         {u'command_line': u'',
          u'create_time': 1476260500,
          u'parent': 0,
@@ -450,7 +450,8 @@ class LiveResponseSession(object):
 
         :Example:
 
-        >>> lr_session.set_registry_value('HKLM\\\\SYSTEM\\\\CurrentControlSet\\\\services\\\\ACPI\\\\testvalue', 1)
+        >>> with c.select(Sensor, 1).lr_session() as lr_session:
+        ...     lr_session.set_registry_value('HKLM\\\\SYSTEM\\\\CurrentControlSet\\\\services\\\\ACPI\\\\testvalue', 1)
 
         :param str regkey: They registry key to set
         :param obj value: The value data
