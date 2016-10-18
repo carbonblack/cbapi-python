@@ -393,23 +393,50 @@ class Sensor(MutableBaseModel):
 
     @property
     def sid(self):
+        """
+        Security Identifier being used by the Cb Response Sensor
+        """
         return getattr(self, 'computer_sid')
 
     @property
     def webui_link(self):
+        """
+        Returns the Cb Response Web UI link associated with this Sensor
+        """
         return '{0:s}/#/host/{1}'.format(self._cb.url, self._model_unique_id)
 
     # TODO: properly handle the stats api routes
     @property
     def queued_stats(self):
+        """
+        Returns a list of status and size of the queued event logs from the associated Cb Response Sensor
+
+        :example:
+
+        >>> sensor_obj = c.select(Sensor).where("ip:192.168").first()
+        >>> pprint.pprint(sensor_obj.queued_stats)
+        [{u'id': u'355509',
+          u'num_eventlog_bytes': u'0',
+          u'num_eventlogs': u'0',
+          u'num_storefile_bytes': u'0',
+          u'num_storefiles': 0,
+          u'sensor_id': 1,
+          u'timestamp': u'2016-10-17 19:08:09.645294-05:00'}]
+        """
         return self._cb.get_object("{0}/queued".format(self._build_api_request_uri()), default=[])
 
     @property
     def activity_stats(self):
+        """
+        Returns a list of activity statistics from the associated Cb Response Sensor
+        """
         return self._cb.get_object("{0}/activity".format(self._build_api_request_uri()), default=[])
 
     @property
     def resource_status(self):
+        """
+        Returns a list of memory statistics used by the Cb Response Sensor
+        """
         return self._cb.get_object("{0}/resourcestatus".format(self._build_api_request_uri()), default=[])
 
     def lr_session(self):
@@ -426,6 +453,11 @@ class Sensor(MutableBaseModel):
         return self._cb._request_lr_session(self._model_unique_id)
 
     def flush_events(self):
+        """
+        Performs a flush of events for this Cb Response Sensor
+
+        :warning: This may cause a significant amount of network traffic from this sensor to the Cb Response Server
+        """
         self.event_log_flush_time = datetime.now() + timedelta(days=1)
         self.save()
 
