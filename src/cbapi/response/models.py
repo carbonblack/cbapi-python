@@ -78,6 +78,9 @@ class BannedHash(MutableBaseModel, CreatableModelMixin):
 
     @property
     def binary(self):
+        """
+        Joins this attribute with the :class:`.Binary` object associated with this Banned Hash object
+        """
         return self._join(Binary, "md5hash")
 
     def _update_object(self):
@@ -208,13 +211,32 @@ class Feed(MutableBaseModel, CreatableModelMixin):
                                                                                          min_score, max_score))
 
     def search_processes(self, min_score=None, max_score=None):
+        """
+        Perform a *Process* search within this feed that satisfies min_score and max_score
+
+        :param min_score: minimum feed score
+        :param max_score: maximum feed score
+        :return: Returns a :py:class:`response.rest_api.Query` object with the appropriate search parameters for processes
+        :rtype: :py:class:`response.rest_api.Query`
+        """
         return self._search(Process, min_score, max_score)
 
     def search_binaries(self, min_score=None, max_score=None):
+        """
+        Perform a *Binary* search within this feed that satisfies min_score and max_score
+        :param min_score: minimum feed score
+        :param max_score: maximum feed score
+        :return: Returns a :py:class:`response.rest_api.Query` object within the appropriate search parameters for binaries
+        :rtype: :py:class:`response.rest_api.Query`
+        """
         return self._search(Binary, min_score, max_score)
 
     @property
     def actions(self):
+        """
+        :return: Returns all :class:`.FeedAction` objects associated with this feed
+        :rtype: :py:class:`response.rest_api.Query`
+        """
         return self._cb.select(FeedAction).where("group_id:{0}".format(int(self._model_unique_id)))
 
     @property
@@ -341,7 +363,13 @@ class Sensor(MutableBaseModel):
     @property
     def group(self):
         """
-        Returns the sensor's group id.  This attribute can also be set.
+        :getter:
+
+        Returns the sensor's group id.
+
+        :setter:
+
+        Allows access to set the sensor's group id
         """
         return self._join(SensorGroup, "group_id")
 
@@ -360,7 +388,6 @@ class Sensor(MutableBaseModel):
     def hostname(self):
         """
         Returns the hostname associated with this sensor object.  This is the same as 'computer_name'
-        :return:
         """
         return getattr(self, 'computer_name', None)
 
@@ -446,6 +473,7 @@ class Sensor(MutableBaseModel):
         :return: Live Response session object
         :rtype: :py:class:`cbapi.live_response_api.LiveResponseSession`
         :raises ApiError: if there is an error establishing a Live Response session for this Sensor
+
         """
         if not getattr(self, "supports_cblr", False):
             raise ApiError("Sensor does not support Cb Live Response")
@@ -566,7 +594,13 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
     @property
     def query(self):
         """
-        Returns the query associated with this watchlist.  This attribute can also be set.
+        :getter:
+
+        Returns the query associated with this watchlist.
+
+        :setter:
+
+        Allows access to set the query associated with this watchlist
         """
         queryparams = [(k, v) for k, v in self._query if k == "q" or k.startswith("cb.q.")]
         queryparts = []
@@ -606,6 +640,12 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
 
     @property
     def facets(self):
+        """
+        Returns facets from the search associated with the watchlist query
+
+        :return: dictionary of facets as keys
+        :rtype: dict
+        """
         facets = {}
         for k, v in self._query:
             if k.startswith("cb.fq."):
@@ -614,6 +654,12 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
         return facets
 
     def search(self):
+        """
+        Creates a search based on the watchlist's search parameter
+
+        :return: a `Process` :py:class:`.response.rest_api.Query` or Binary :py:class:`.response.rest_api.Query`
+        :rtype: :py:class:`.response.rest_api.Query`
+        """
         search_query = getattr(self, "search_query", "")
         index_type = getattr(self, "index_type", "events")
 
@@ -1568,7 +1614,7 @@ class Process(TaggedModel):
     @property
     def binary(self):
         """
-        Joins this attribute with the Binary object associated with this Process object
+        Joins this attribute with the :class:`.Binary` object associated with this Process object
 
         :example:
 
@@ -1621,7 +1667,7 @@ class Process(TaggedModel):
     @property
     def sensor(self):
         """
-        Joins this attribute with the Sensor object associated with this Process object
+        Joins this attribute with the :class:`.Sensor` object associated with this Process object
 
         :example:
 

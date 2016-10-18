@@ -6,48 +6,69 @@
 cbapi: Carbon Black API for Python
 ==================================
 
-Release v\ |version|.
+Release v\ |release|.
 
-cbapi provides a straightforward interface to the Carbon Black Enterprise Protection and Enterprise Response REST APIs.
+cbapi provides a straightforward interface to the Cb Protection and Response REST APIs.
 This library provides a Pythonic layer to access the raw power of the REST APIs of both products, making it trivial
 to do the easy stuff and handling all of the "sharp corners" behind the scenes for you. Take a look:
 
-    >>> from cbapi.response import CbEnterpriseResponseAPI, Process, Binary, Sensor
-    >>> c=CbEnterpriseResponseAPI()
-    >>> # take the first process that ran notepad.exe, download the binary and read the first two bytes
-    >>> c.select(Process).where('process_name:notepad.exe').first().binary.file.read(2)
-    'MZ'
-    >>> # if you want a specific ID, you can put it straight into the .select() call:
-    >>> binary = c.select(Binary, "24DA05ADE2A978E199875DA0D859E7EB")
-    >>> # isolate all sensors who ran notepad.exe
-    >>> sensors = set()
-    >>> for proc in c.select(Process).where('process_name:notepad.exe'):
-    ...     sensors.add(proc.sensor)
-    >>> for s in sensors:
-    ...     s.network_isolation_enabled = True
-    ...     s.save()
+   >>> from cbapi.response import CbEnterpriseResponseAPI, Process, Binary, Sensor
+   >>> #
+   >>> # Create our CbAPI object
+   >>> #
+   >>> c = CbEnterpriseResponseAPI()
+   >>> #
+   >>> # take the first process that ran notepad.exe, download the binary and read the first two bytes
+   >>> #
+   >>> c.select(Process).where('process_name:notepad.exe').first().binary.file.read(2)
+   'MZ'
+   >>> #
+   >>> # if you want a specific ID, you can put it straight into the .select() call:
+   >>> #
+   >>> binary = c.select(Binary, "24DA05ADE2A978E199875DA0D859E7EB")
+   >>> #
+   >>> # select all sensors that have ran notepad
+   >>> #
+   >>> sensors = set()
+   >>> for proc in c.select(Process).where('process_name:notepad.exe'):
+   ...     sensors.add(proc.sensor)
+   >>> #
+   >>> # iterate over all sensors and isolate
+   >>> #
+   >>> for s in sensors:
+   ...     s.network_isolation_enabled = True
+   ...     s.save()
 
-If you're more a Cb Enterprise Protection fellow, then you're in luck as well:
+If you're more a Cb Protection fellow, then you're in luck as well:
 
-    >>> from cbapi.protection.models import FileInstance
-    >>> from cbapi.protection import CbEnterpriseProtectionAPI
-    >>> p=CbEnterpriseProtectionAPI()
-    >>> # Select the first file instance
-    >>> fi = p.select(FileInstance).first()
-    >>> # print that computer's hostname. This automatically "joins" with the Computer API object.
-    >>> fi.computer.name
-    u'DOMAIN\\MYHOSTNAME'
-    >>> # change the policy ID
-    >>> fi.computer.policyId = 3
-    >>> fi.computer.save()
+   >>> from cbapi.protection.models import FileInstance
+   >>> from cbapi.protection import CbEnterpriseProtectionAPI
+   >>> #
+   >>> # Create our Cb Protection API object
+   >>> #
+   >>> p = CbEnterpriseProtectionAPI()
+   >>> #
+   >>> # Select the first file instance
+   >>> #
+   >>> fi = p.select(FileInstance).first()
+   >>> #
+   >>> # print that computer's hostname. This automatically "joins" with the Computer API object.
+   >>> #
+   >>> fi.computer.name
+   u'DOMAIN\\MYHOSTNAME'
+   >>> #
+   >>> # change the policy ID
+   >>> #
+   >>> fi.computer.policyId = 3
+   >>> fi.computer.save()
 
 
 
 Major Features
 --------------
 
-- **Consistent API for both Cb Enterprise Response and Protection platforms**
-    We now support Carbon Black Enterprise Response and Enterprise Protection users in the same API layer. Even better,
+- **Consistent API for both Cb Response and Protection platforms**
+    We now support Cb Enterprise Response and Protection users in the same API layer. Even better,
     the object model is the same for both; if you know one API you can easily transition to the other. cbapi
     hides all the differences between the two REST APIs behind a single, consistent Python-like interface.
 
@@ -76,8 +97,8 @@ The new cbapi as of version 0.9.0 enforces the use of credential files.
 
 In order to perform any queries via the API, you will need to get the API token for your Cb user. See the documentation
 on the Developer Network website on how to acquire the API token for
-`Enterprise Response <http://developer.carbonblack.com/reference/enterprise-response/authentication/>`_ or
-`Enterprise Protection <http://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_.
+`Cb Response <http://developer.carbonblack.com/reference/enterprise-response/authentication/>`_ or
+`Cb Protection <http://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_.
 
 Once you acquire your API token, place it in one of the default credentials file locations:
 
@@ -136,8 +157,8 @@ legacy scripts cannot run under Python 3.
 Once cbapi 1.0.0 is released, the old :py:mod:`cbapi.legacy.CbApi` will be deprecated and removed entirely no earlier
 than January 2017.
 New scripts should use the :py:mod:`cbapi.response.rest_api.CbEnterpriseResponseAPI`
-(for Carbon Black Enterprise Response) and :py:mod:`cbapi.protection.rest_api.CbEnterpriseProtectionAPI`
-(for Carbon Black Enterprise Protection / former Bit9 Parity) API entry points.
+(for Cb Response) and :py:mod:`cbapi.protection.rest_api.CbEnterpriseProtectionAPI`
+(for Cb Protection) API entry points.
 
 
 Forwards Compatibility
@@ -147,7 +168,8 @@ Forwards Compatibility
 will be documented in the changelog. The API will be frozen as of version 1.0; afterward, any changes in the 1.x version branch
 will be additions/bug fixes only. Breaking changes to the API will increment the major version number (2.x).
 
-Contents:
+Full Documentation
+------------------
 
 .. toctree::
    :maxdepth: 2
@@ -155,8 +177,6 @@ Contents:
    enterprise-response
    enterprise-protection
    exceptions
-
-
 
 Indices and tables
 ==================

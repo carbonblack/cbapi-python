@@ -1,6 +1,6 @@
 .. _protection_api:
 
-Carbon Black Protection REST API
+Cb Protection API
 ================================
 
 This page documents the public interfaces exposed by cbapi when communicating with a Carbon Black Enterprise
