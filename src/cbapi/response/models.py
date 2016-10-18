@@ -898,12 +898,51 @@ class ThreatReport(MutableBaseModel):
 
 @immutable
 class Binary(TaggedModel):
-    VirusTotal = namedtuple('VirusTotal', ['score', 'link'])
-    SigningData = namedtuple('SigningData', ['result', 'publisher', 'issuer', 'subject', 'sign_time', 'program_name'])
-    VersionInfo = namedtuple('VersionInfo', ['file_desc', 'file_version', 'product_name', 'product_version',
-                                             'company_name', 'legal_copyright', 'original_filename'])
-    FrequencyData = namedtuple('FrequencyData', ['computer_count', 'process_count', 'all_process_count',
-                                                 'module_frequency'])
+
+    class VirusTotal(namedtuple('VirusTotal', 'score link')):
+        """
+        Class containing information associated with a Virus Total Score
+
+        :param int score: Virus Total score
+        :param str link: Virus Total link for this md5
+        """
+
+    class SigningData(namedtuple('SigningData', 'result' 'publisher' 'issuer' 'subject' 'sign_time' 'program_name')):
+        """
+        Class containing binary signing information
+
+        :param str result: Signed or Unsigned
+        :param str publisher: Singnature publisher
+        :param str issuer: Signature issuer
+        :param str subject: Signing subject
+        :param str sign_time: Binary signed time
+        :param str program_name: Binary program name
+        """
+
+    class VersionInfo(namedtuple('VersionInfo', 'file_desc' 'file_version' 'product_name' 'product_version'
+                                                'company_name' 'legal_copyright' 'original_filename')):
+        """
+        Class containing versioning information about a binary
+
+        :param str file_desc: File description
+        :param str file_version: File version
+        :param str product_name: Product Name
+        :param str product_version: Product version
+        :param str company_name: Company Name
+        :param str legal_copyright: Copyright
+        :param str original_filename: Original File name of this binary
+        """
+
+    class FrequencyData(namedtuple('FrequencyData', 'computer_count' 'process_count' 'all_process_count'
+                                                    'module_frequency')):
+        """
+        Class containing frequency information about a binary
+
+        :param int computer_count: Number of endpoints this binary resides
+        :param int process_count: Number of executions
+        :param int all_process_count: Number of all process documents
+        :param int module_frequency: process_count / all_process_count
+        """
 
     urlobject = '/api/v1/binary'
 
