@@ -28,7 +28,7 @@ else:
 
 from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
 from ..oldmodels import BaseModel, immutable
-from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time
+from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time, convert_to_cb
 from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
 from ..query import SimpleQuery
 
@@ -1318,13 +1318,15 @@ class ProcessV1Parser(object):
         new_childproc['pid'] = parts[4]
 
         # TODO: better handling of process start/terminate
-        new_childproc['terminated'] = False
+        new_childproc['terminated'] = True
         if parts[5] == 'true':
-            new_childproc['terminated'] = True
+            new_childproc['terminated'] = False
 
         new_childproc['tamper_flag'] = False
         if len(parts) > 6 and parts[6] == 'true':
             new_childproc['tamper_flag'] = True
+
+        new_childproc['suppressed'] = False
 
         return CbChildProcEvent(self.process_model, timestamp, seq, new_childproc)
 
@@ -1422,6 +1424,35 @@ class ProcessV2Parser(ProcessV1Parser):
         return CbNetConnEvent(self.process_model, timestamp, seq, new_conn, version=2)
 
 
+class ProcessV3Parser(ProcessV2Parser):
+    def __init__(self, process_model):
+        super(ProcessV3Parser, self).__init__(process_model)
+
+    def parse_childproc(self, seq, childproc):
+        new_childproc = {}
+        new_childproc["procguid"] = childproc.get("processId", None)
+        new_childproc["md5"] = childproc.get("md5", None)
+        new_childproc["path"] = childproc.get("path", None)
+        new_childproc["pid"] = childproc.get("pid", None)
+        is_terminated = childproc.get("type", "start") == "end"
+        new_childproc["terminated"] = is_terminated
+        if is_terminated:
+            timestamp = convert_event_time(childproc.get("end", None))
+        else:
+            timestamp = convert_event_time(childproc.get("start", None))
+
+        new_childproc["tamper_flag"] = childproc.get("is_tampered", False)
+
+        suppressed_flag = childproc.get("is_suppressed", False)
+        proc_data = None
+        if suppressed_flag:
+            proc_data = {"cmdline": childproc.get("commandLine", None),
+                         "username": childproc.get("userName", None)}
+
+        return CbChildProcEvent(self.process_model, timestamp, seq, new_childproc, is_suppressed=suppressed_flag,
+                                proc_data=proc_data)
+
+
 class Process(TaggedModel):
     urlobject = '/api/v1/process'
     default_sort = 'last_update desc'
@@ -1432,8 +1463,12 @@ class Process(TaggedModel):
         # TODO: is there a better way to handle this? (see how this is called from Query._search())
         return cb.select(Process, item['id'], long(item['segment_id']), initial_data=item)
 
-    def __init__(self, cb, procguid, segment=None, initial_data=None, force_init=False):
+    def __init__(self, cb, procguid, segment=None, initial_data=None, force_init=False, suppressed_process=False):
         self.segment = segment
+        self.suppressed_process = suppressed_process
+        if suppressed_process:
+            self._full_init = True
+
         try:
             # old 4.x process IDs are integers.
             self.id = int(procguid)
@@ -1450,7 +1485,10 @@ class Process(TaggedModel):
 
         super(Process, self).__init__(cb, "%s-%08x" % (self.id, self.segment))
 
-        if cb.cb_server_version >= LooseVersion('5.1.0'):
+        if cb.cb_server_version >= LooseVersion('5.2.0'):
+            self._process_event_api = 'v3'
+            self._event_parser = ProcessV3Parser(self)
+        elif cb.cb_server_version >= LooseVersion('5.1.0'):
             # CbER 5.1.0 introduced an extended event API
             self._process_event_api = 'v2'
             self._event_parser = ProcessV2Parser(self)
@@ -1465,9 +1503,35 @@ class Process(TaggedModel):
         if force_init:
             self.refresh()
 
+    def _attribute(self, attrname, default=None):
+        # workaround for Cb Response where parent_unique_id is returned as null
+        # string as part of a query result. in this case we need to do a
+        # full_init.
+        #
+        # As of Cb Response 5.2.0, parent_md5 may still be "00000000000000000000000000000000"
+        # in a query result, therefore keeping this workaround.
+        #
+        # Relaxing this a bit to allow for cases where the information is there
+        if attrname in ['parent_unique_id',
+                        'parent_name',
+                        'parent_md5'] and not self._full_init:
+            if attrname in self._info and self._info[attrname] != None and self._info[attrname] != "" \
+             and self._info[attrname] != "0"*32:
+                return self._info[attrname]
+            else:
+                self._retrieve_cb_info()
+
+        return super(Process, self)._attribute(attrname, default=default)
+
     def _build_api_request_uri(self):
         # TODO: how do we handle process segments?
         return "/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id, self.segment)
+
+    def _retrieve_cb_info(self):
+        if self.suppressed_process:
+            return
+        else:
+            super(Process, self)._retrieve_cb_info()
 
     def _parse(self, obj):
         self._info = obj.get('process', {})
@@ -1682,15 +1746,7 @@ class Process(TaggedModel):
         """
         Returns the parent Process object if one exists
         """
-        parent_unique_id = self.get('parent_unique_id', None)
-        parent_id = self.get('parent_id', None)
-
-        if parent_unique_id:
-            return self._cb.select(self.__class__, self.get_correct_unique_id(parent_id, parent_unique_id), 1)
-        elif parent_id:
-            return self._cb.select(self.__class__, parent_id, 1)
-        else:
-            return None  # no parent, top of the tree
+        return self._cb.select(self.__class__, self.get_correct_unique_id(), 1)
 
     @property
     def cmdline(self):
@@ -1727,15 +1783,22 @@ class Process(TaggedModel):
         """
         Returns the Cb Response Web UI link associated with this process
         """
-        return '%s/#analyze/%s/%s' % (self._cb.url, self.id, self.segment)
-
-    def get_correct_unique_id(self, old_style_id, new_style_id):
-        # this is required for the new 4.2 style GUIDs...
-        (sensor_id, proc_pid, proc_createtime) = parse_42_guid(new_style_id)
-        if sensor_id != self.sensor.id:
-            return old_style_id
+        if not self.suppressed_process:
+            return '%s/#analyze/%s/%s' % (self._cb.url, self.id, self.segment)
         else:
-            return new_style_id
+            return None
+
+    def get_correct_unique_id(self):
+        # this is required for the new 4.2 style GUIDs...
+        parent_unique_id = self.get('parent_unique_id', None)
+        if not parent_unique_id:
+            return self.get('parent_id', None)
+
+        (sensor_id, proc_pid, proc_createtime) = parse_42_guid(parent_unique_id)
+        if sensor_id != self.sensor.id:
+            return self.get('parent_id', None)
+        else:
+            return parent_unique_id
 
     @property
     def last_update(self):
@@ -1853,14 +1916,42 @@ class CbNetConnEvent(CbEvent):
 
 
 class CbChildProcEvent(CbEvent):
-    def __init__(self, parent_process, timestamp, sequence, event_data):
+    def __init__(self, parent_process, timestamp, sequence, event_data, is_suppressed=False, proc_data=None):
         super(CbChildProcEvent,self).__init__(parent_process, timestamp, sequence, event_data)
         self.event_type = u'Cb Child Process event'
         self.stat_titles.extend(['procguid', 'pid', 'path', 'md5'])
+        self.is_suppressed = is_suppressed
+        if proc_data:
+            self.proc_data = proc_data
+        else:
+            self.proc_data = {}
 
     @property
     def process(self):
-        return self.parent._cb.select(Process, self.procguid, 1)
+        proc_data = self.proc_data
+        md5sum = self.__dict__.get("md5", None)
+        if md5sum:
+            proc_data["process_md5"] = md5sum
+        pid = self.__dict__.get("pid", None)
+        if pid:
+            proc_data["pid"] = pid
+        path = self.__dict__.get("path", None)
+        if path:
+            proc_data["path"] = path
+
+        try:
+            (sensor_id, proc_pid, proc_createtime) = parse_42_guid(self.parent.id)
+            proc_data["parent_unique_id"] = self.parent._model_unique_id
+            proc_data["parent_id"] = self.parent.id
+            proc_data["sensor_id"] = sensor_id
+            # TODO: set process start time to the proc_createtime
+            # proc_data["start"] =
+        except Exception:
+            # silently fail if the GUID is not able to be parsed
+            pass
+
+        return self.parent._cb.select(Process, self.procguid, initial_data=proc_data,
+                                      suppressed_process=self.is_suppressed)
 
 
 class CbCrossProcEvent(CbEvent):
