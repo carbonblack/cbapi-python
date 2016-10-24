@@ -1566,14 +1566,11 @@ class Process(TaggedModel):
 
         try:
             parent_proc = self.parent
-        except:
+            callback(parent_proc, depth=depth)
+        except ObjectNotFoundError:
             return
         else:
-            # TODO: this is a crude hack to find a "valid" process.
-            # We should investigate a better way of doing this.
-            if getattr(parent_proc, 'process_pid', None):
-                callback(parent_proc, depth=depth)
-                parent_proc.walk_parents(callback, max_depth=max_depth, depth=depth+1)
+            parent_proc.walk_parents(callback, max_depth=max_depth, depth=depth+1)
 
     def walk_children(self, callback, max_depth=0, depth=0):
         """
@@ -1610,14 +1607,11 @@ class Process(TaggedModel):
             if not cpevent.terminated:
                 try:
                     proc = cpevent.process
-                except:
+                    callback(proc, depth=depth)
+                except ObjectNotFoundError:
                     continue
                 else:
-                    # TODO: this is a crude hack to find a "valid" process.
-                    # We should investigate a better way of doing this.
-                    if getattr(proc, 'process_pid', None):
-                        callback(proc, depth=depth)
-                        proc.walk_children(callback, max_depth=max_depth, depth=depth+1)
+                    proc.walk_children(callback, max_depth=max_depth, depth=depth+1)
 
     @property
     def start(self):
