@@ -132,15 +132,7 @@ class BaseModel(object):
 
     def _attribute(self, attrname, default=None):
         if attrname in self._info:
-            # workaround for CbER where parent_unique_id is returned as null
-            # string as part of a query result. in this case we need to do a
-            # full_init. TODO: add this to quirks when this is fixed by Cb.
-            if attrname in ['parent_unique_id',
-                            'parent_name',
-                            'parent_md5'] and not self._full_init:
-                self._retrieve_cb_info()
-            else:
-                return self._info[attrname]
+            return self._info[attrname]
 
         if not self._full_init:
             # fill in info from Cb
