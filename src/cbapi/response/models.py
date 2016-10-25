@@ -1736,6 +1736,32 @@ class Process(TaggedModel):
         return socket.inet_ntoa(struct.pack('>i', self._attribute('comms_ip', 0)))
 
     @property
+    def process_md5(self):
+        # Some processes don't have an MD5 associated with them. Try and use the first modload as the MD5
+        # otherwise, return None. (tested with Cb Response server 5.2.0.161004.1206)
+        md5 = self._attribute("process_md5", "")
+        if md5:
+            return md5
+        elif self._attribute("modload_count", 0) > 0:
+            md5 = self.modloads.next().md5
+            return md5
+        else:
+            return None
+
+    @property
+    def path(self):
+        # Some processes don't have a path associated with them. Try and use the first modload as the file path
+        # otherwise, return None. (tested with Cb Response server 5.2.0.161004.1206)
+        md5 = self._attribute("path", "")
+        if md5:
+            return md5
+        elif self._attribute("modload_count", 0) > 0:
+            md5 = self.modloads.next().path
+            return md5
+        else:
+            return None
+
+    @property
     def parent(self):
         """
         Returns the parent Process object if one exists
