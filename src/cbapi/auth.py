@@ -45,7 +45,7 @@ class Credentials(attrdict.AttrDict):
 
 class CredentialStore(object):
     def __init__(self, product_name, **kwargs):
-        if product_name not in ("response", "protection"):
+        if product_name not in ("response", "protection", "defense"):
             raise CredentialError("Product name {0:s} not valid")
 
         self.credential_search_path = [
