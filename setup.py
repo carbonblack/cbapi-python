@@ -18,7 +18,8 @@ install_requires=[
     'pika',
     'prompt_toolkit',
     'pygments',
-    'python-dateutil'
+    'python-dateutil',
+    'protobuf'
 ]
 if sys.version_info < (2, 7):
     install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])
