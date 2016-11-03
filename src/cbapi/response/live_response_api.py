@@ -11,7 +11,7 @@ import shutil
 
 from cbapi.errors import TimeoutError, ObjectNotFoundError, ApiError, ServerError
 from six import itervalues
-from concurrent.futures import ThreadPoolExecutor, as_completed, _base
+from concurrent.futures import ThreadPoolExecutor, as_completed, _base, wait
 from cbapi import winerror
 
 from six.moves.queue import Queue
@@ -919,10 +919,9 @@ if __name__ == "__main__":
 
     c = CbEnterpriseResponseAPI()
     j = GetFileJob(r"c:\test.txt")
-    with c.select(Sensor, 9).lr_session() as lr_session:
+    with c.select(Sensor, 3).lr_session() as lr_session:
         file_contents = lr_session.get_file(r"c:\test.txt")
 
-    c.live_response.submit_job("test", j.run, [9, ])
-    for x in c.live_response.job_results("test"):
-        print(x.result())
-
+    future = c.live_response.submit_job(j.run, 3)
+    wait([future, ])
+    print(future.result())
