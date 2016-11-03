@@ -36,6 +36,7 @@ import sys
 import time
 import json
 import threading
+from concurrent.futures import as_completed
 
 
 autoruns_regex = re.compile("|".join("""\\registry\\machine\\system\\currentcontrolset\\control\\session manager\\bootexecute(.*)
@@ -76,36 +77,32 @@ class GetRegistryValue(object):
 
 @on_event("ingress.event.regmod")
 def process_callback(cb, event_type, event_data):
-    print("got callback")
     x = sensor_events.CbEventMsg()
     x.ParseFromString(event_data)
 
-    print("Parsed regmod")
     regmod_path = str(x.regmod.utf8_regpath)
-    print(regmod_path)
 
     if autoruns_regex.match(regmod_path):
-        print("Match found! Starting job")
         regmod_path = regmod_path.replace("\\registry\\machine\\", "HKLM\\")
         regmod_path = regmod_path.replace("\\registry\\user\\", "HKEY_USERS\\")
         regmod_path = regmod_path.strip()
         job = GetRegistryValue(regmod_path)
-        cb.live_response.submit_job("regmod", job.run, [x.env.endpoint.SensorId, ])
+        cb.live_response.submit_job(job.run, x.env.endpoint.SensorId)
 
 
-class ResultPrinter(threading.Thread):
-    daemon = True
-
-    def __init__(self, cb):
-        self.cb = cb
-        super(ResultPrinter, self).__init__()
-
-    def run(self):
-        while True:
-            for x in self.cb.live_response.job_results("regmod"):
-                print(x.result())
-            time.sleep(1)
-
+# class ResultPrinter(threading.Thread):
+#     daemon = True
+#
+#     def __init__(self, cb):
+#         self.cb = cb
+#         super(ResultPrinter, self).__init__()
+#
+#     def run(self):
+#         while True:
+#             for x in self.cb.live_response.job_results("regmod"):
+#                 print(x.result())
+#             time.sleep(1)
+#
 
 def main():
     parser = build_cli_parser("Get value from any new regmods to autorun keys")
@@ -118,8 +115,8 @@ def main():
 
     print("Listening on the event bus for regmods")
 
-    print_thread = ResultPrinter(cb)
-    print_thread.start()
+    # print_thread = ResultPrinter(cb)
+    # print_thread.start()
 
     try:
         while True:

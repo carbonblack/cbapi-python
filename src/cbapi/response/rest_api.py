@@ -11,7 +11,7 @@ from ..errors import UnauthorizedError, ApiError
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
 from ..errors import CredentialError
-from .live_response_api import LiveResponseScheduler
+from .live_response_api import LiveResponseSessionManager
 
 import requests
 
@@ -76,7 +76,7 @@ class CbEnterpriseResponseAPI(BaseAPI):
         if self._lr_scheduler is None:
             if not self.server_info.get("cblrEnabled", False):
                 raise ApiError("Cb server does not support Live Response")
-            self._lr_scheduler = LiveResponseScheduler(self)
+            self._lr_scheduler = LiveResponseSessionManager(self)
 
         return self._lr_scheduler
 
