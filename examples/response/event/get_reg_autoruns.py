@@ -22,11 +22,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-# -----------------------------------------------------------------------------
-#
-#  last updated 2016-10-03 by Jon Ross jross@carbonblack.com
-#  2015-10-23 by Jason McFarland jmcfarland@bit9.com
-#
 
 from cbapi.event import on_event, registry
 from cbapi.example_helpers import get_cb_response_object, build_cli_parser
@@ -34,9 +29,6 @@ import re
 from cbapi.response import sensor_events, event
 import sys
 import time
-import json
-import threading
-from concurrent.futures import as_completed
 
 
 autoruns_regex = re.compile("|".join("""\\registry\\machine\\system\\currentcontrolset\\control\\session manager\\bootexecute(.*)
@@ -71,7 +63,6 @@ class GetRegistryValue(object):
 
     def run(self, session):
         reg_info = session.get_registry_value(self.registry_key)
-        print(reg_info)
         return time.time(), session.sensor_id, self.registry_key, reg_info["value_data"]
 
 
@@ -87,22 +78,19 @@ def process_callback(cb, event_type, event_data):
         regmod_path = regmod_path.replace("\\registry\\user\\", "HKEY_USERS\\")
         regmod_path = regmod_path.strip()
         job = GetRegistryValue(regmod_path)
-        cb.live_response.submit_job(job.run, x.env.endpoint.SensorId)
+        registry_job = cb.live_response.submit_job(job.run, x.env.endpoint.SensorId)
+        registry_job.add_done_callback(print_result)
 
 
-# class ResultPrinter(threading.Thread):
-#     daemon = True
-#
-#     def __init__(self, cb):
-#         self.cb = cb
-#         super(ResultPrinter, self).__init__()
-#
-#     def run(self):
-#         while True:
-#             for x in self.cb.live_response.job_results("regmod"):
-#                 print(x.result())
-#             time.sleep(1)
-#
+def print_result(registry_job):
+    try:
+        timestamp, sensor_id, registry_key, registry_value = registry_job.result()
+    except:
+        print("Error encountered when pulling registry key: {0}".format(registry_job.exception()))
+    else:
+        print("Got result for sensor ID {0} registry key {1}: value is {2}".format(sensor_id, registry_key,
+                                                                                   registry_value))
+
 
 def main():
     parser = build_cli_parser("Get value from any new regmods to autorun keys")
