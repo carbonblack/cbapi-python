@@ -9,10 +9,10 @@ Protection server.
 Main Interface
 --------------
 
-To use cbapi with Carbon Black Protection, you will be using the CbEnterpriseProtectionAPI.
-The CbEnterpriseProtectionAPI object then exposes two main methods to select data on the Carbon Black server:
+To use cbapi with Carbon Black Protection, you will be using the CbProtectionAPI.
+The CbProtectionAPI object then exposes two main methods to select data on the Carbon Black server:
 
-.. autoclass:: cbapi.protection.rest_api.CbEnterpriseProtectionAPI
+.. autoclass:: cbapi.protection.rest_api.CbProtectionAPI
     :members:
     :inherited-members:
 
