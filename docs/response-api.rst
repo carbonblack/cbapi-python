@@ -1,7 +1,7 @@
 .. _response_api:
 
 Cb Response API
-==============================
+===============
 
 This page documents the public interfaces exposed by cbapi when communicating with a Carbon Black Enterprise
 Response server.

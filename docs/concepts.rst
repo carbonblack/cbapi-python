@@ -90,4 +90,194 @@ Queries
 
 Now that we've covered how to get data out of a specific Model Object, we now need to learn how to obtain Model
 Objects in the first place! To do this, we have to create and execute a Query. cbapi Queries use the same query
-syntax accepted by Cb Response or Protection's APIs, but also add the capability to filter result sets
+syntax accepted by Cb Response or Protection's APIs, and add a few little helpful features along the way.
+
+To create a query in cbapi, use the ``.select()`` method on the CbResponseAPI or CbProtectionAPI object. Pass the
+Model Object type as a parameter to the ``.select()`` call and optionally add filtering criteria with ``.where()``
+clauses.
+
+Let's start with a simple query for Cb Response::
+
+    >>> from cbapi.response import *
+    >>> cb = CbResponseAPI()
+    >>> cb.select(Process).where("process_name:cmd.exe")
+    <cbapi.response.rest_api.Query object at 0x1068815d0>
+
+This returns a prepared Query object with the query string ``process_name:cmd.exe``.
+Note that at this point no API calls have been made. The cbapi Query objects are "lazy" in that they are only
+evaluated when you use them. If you create a Query object but never attempt to retrieve any results, no API call is
+ever made (I suppose that answers the age-old question; if a Query object is created, but nobody uses it, it does
+not make a sound, after all).
+
+What can we do with a Query? The first thing we can do is compose new Queries. Most Query types in cbapi can be
+"composed"; that is, you can create a new query from more than one query string. This can be useful if you have a
+"base" query and want to add additional filtering criteria. For example, if we take the query above and add the
+additional filtering criteria ``(filemod:*.exe or filemod:*.dll)``, we can write::
+
+    >>> base_query = cb.select(Process).where("process_name:cmd.exe")
+    >>> composed_query = base_query.where("(filemod:*.exe or filemod:*.dll")
+
+Now the ``composed_query`` is equivalent to a query of ``process_name:cmd.exe (filemod:*.exe or filemod:*.dll)``.
+You can also add sorting criteria to a query::
+
+    >>> sorted_query = composed_query.sort("last_update asc")
+
+Now when we execute the ``sorted_query``, the results will be sorted by the last server update time in ascending order.
+
+Ok, now we're ready to actually execute a query and retrieve the results. You can think of a Query as a kind of
+"infinite" Python list. Generally speaking, you can use all the familiar ways to access a Python list to access the
+results of a cbapi query. For example::
+
+    >>> len(base_query)    # How many results were returned for the query?
+    3
+
+    >>> base_query[:2]     # I want the first two results
+    [<cbapi.response.models.Process: id 00000003-0000-036c-01d2-2efd3af51186-00000001> @ https://cbserver,
+    <cbapi.response.models.Process: id 00000003-0000-07d4-01d2-2efcd4949dfc-00000001> @ https://cbserver]
+
+    >>> base_query[-1:]    # I want the last result
+    [<cbapi.response.models.Process: id 00000002-0000-0f2c-01d2-2a57625ca0dd-00000001> @ https://cbserver]
+
+    >>> for proc in base_query:  # Loop over all the results
+    >>>     print(proc.cmdline)
+    "C:\Windows\system32\cmd.exe"
+    "C:\Windows\system32\cmd.exe"
+    "C:\Windows\system32\cmd.exe"
+
+    >>> procs = list(base_query) # Just make a list of all the results
+
+In addition to using a Query object as an array, two helper methods are provided as common shortcuts. The first
+method is ``.one()``. The ``.one()`` method is useful when you know only one result should match your query; it
+will throw a :py:mod:`MoreThanOneResultError` exception if there are zero or more than one results for the query. The
+second method is ``.first()``, which will return the first result from the result set, or None if there are no results.
+
+Every time you access a Query object, it will perform a REST API query to the Carbon Black server. For large result
+sets, the results are retrieved in batches- by default, 100 results per API request on Cb Response and 1,000 results
+per API request on Cb Protection. The search queries themselves are not cached, but the resulting Model Objects are.
+
+Retrieving Objects by ID
+------------------------
+
+Every Model Object (and in fact any object addressable via the REST API) has a unique ID associated with it. If you
+already have a unique ID for a given Model Object, for example, a Process GUID for Cb Response, or a Computer ID
+for Cb Protection, you can ask cbapi to give you the associated Model Object for that ID by passing that ID to the
+``.select()`` call. For example::
+
+    >>> binary = cb.select(Binary, "CA4FAFFA957C71C006B59E29DFE3EB8B")
+    >>> print(binary.file_desc)
+    PNRP Name Space Provider
+
+Note that retrieving an object via ``.select()`` with the ID does not automatically request the object from the server
+via the API. If the Model Object is already in the local cache, the locally cached version is returned. If it is not,
+a "blank" Model Object is created and is initialized only when an attempt is made to read a property. Therefore,
+assuming an empty cache, in the example above, the REST API query would not happen until the second line
+(the ``print`` statement). If you want to ensure that an object exists at the time you call ``.select()``, add the
+``force_init=True`` keyword parameter to the ``.select()`` call. This will cause cbapi to force a refresh of the
+object and if it does not exist, cbapi will throw a :py:mod:`ObjectNotFoundError` exception.
+
+Creating New Objects
+--------------------
+
+The Cb Response and Protection REST APIs provide the ability to insert new data under certain circumstances. For
+example, the Cb Response REST API allows you to insert a new banned hash into its database. Model Objects that
+represent these data types can be "created" in cbapi by using the ``create()`` method::
+
+    >>> bh = cb.create(BannedHash)
+
+If you attempt to create a Model Object that cannot be created, you will receive a :py:mod:`ApiError` exception.
+
+Once a Model Object is created, it's blank (it has no data). You will need to set the required properties and then call the
+``.save()`` method::
+
+    >>> bh = cb.create(BannedHash)
+    >>> bh.text = "Banned from API"
+    >>> bh.md5sum = "CA4FAFFA957C71C006B59E29DFE3EB8B"
+    >>> bh.save()
+
+If you don't fill out all the properties required by the API, then you will receive an :py:mod:`InvalidObjectError`
+exception with a list of the properties that are required and not currently set.
+
+Once the ``.save()`` method is called, the appropriate REST API call is made to create the object. The Model Object
+is then updated to the current state returned by the API, which may include additional data properties initialized
+by Cb Response or Protection.
+
+Modifying Existing Objects
+--------------------------
+
+The same ``.save()`` method can be used to modify existing Model Objects if the REST API provides that capability.
+If you attempt to modify a Model Object that cannot be changed, you will receive a :py:mod:`ApiError` exception.
+
+For example, if you want to change the "jgarman" user's password to "cbisawesome"::
+
+    >>> user = cb.select(User, "jgarman")
+    >>> user.password = "cbisawesome"
+    >>> user.save()
+
+Deleting Objects
+----------------
+
+Simply call the ``.delete()`` method on a Model Object to delete it (again, if you attempt to delete a Model Object
+that cannot be deleted, you will receive a :py:mod:`ApiError` exception).
+
+Example::
+
+    >>> user = cb.select(User, "jgarman")
+    >>> user.delete()
+
+Tracking Changes to Objects
+---------------------------
+
+Internally, Model Objects track all changes between when they were last refreshed from the server up until ``.save()``
+is called. If you're interested in what properties have been changed or added, simply ``print`` the Model Object.
+
+You will see a display like the following::
+
+    >>> user = cb.create(User)
+    >>> user.username = "jgarman"
+    >>> user.password = "cbisawesome"
+    >>> user.first_name = "Jason"
+    >>> user.last_name = "Garman"
+    >>> user.teams = []
+    >>> user.global_admin = False
+    >>> print(user)
+    User object, bound to https://cbserver.
+     Partially initialized. Use .refresh() to load all attributes
+    -------------------------------------------------------------------------------
+
+    (+)                email: jgarman@carbonblack.com
+    (+)           first_name: Jason
+    (+)         global_admin: False
+                          id: None
+    (+)            last_name: Garman
+    (+)             password: cbisawesome
+    (+)                teams: []
+    (+)             username: jgarman
+
+Here, the ``(+)`` symbol before a property name means that the property will be added the next time that ``.save()``
+is called. Let's call ``.save()`` and modify one of the Model Object's properties::
+
+    >>> user.save()
+    >>> user.first_name = "J"
+    >>> print(user)
+    print(user)
+    User object, bound to https://cbserver.
+     Last refreshed at Mon Nov  7 16:54:00 2016
+    -------------------------------------------------------------------------------
+
+                  auth_token: 8b2dcf9d59b7da1a0b2b4ec50a77d8ca3d7dcb9c
+                       email: jgarman@carbonblack.com
+    (*)           first_name: J
+                global_admin: False
+                          id: jgarman
+                   last_name: Garman
+                       teams: []
+                    username: jgarman
+
+The ``(*)`` symbol means that a property value will be changed the next time that ``.save()`` is called. This time,
+let's forget about our changes by calling ``.reset()`` instead::
+
+    >>> user.reset()
+    >>> print(user.first_name)
+    Jason
+
+Now the user Model Object has been restored to the original state as it was retrieved from the server.

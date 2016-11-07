@@ -1,4 +1,6 @@
 type: "object"
+required:
+- md5sum
 properties:
   username:
     type: "string"

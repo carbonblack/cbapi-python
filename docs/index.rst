@@ -180,6 +180,8 @@ Documentation (below) for detailed information on the objects and methods expose
    installation
    getting-started
    concepts
+   logging
+
    live-response
    event-api
 
@@ -194,8 +196,8 @@ documenting all of the methods available to you.
 .. toctree::
    :maxdepth: 2
 
-   enterprise-response
-   enterprise-protection
+   response-api
+   protection-api
    exceptions
 
 Indices and tables

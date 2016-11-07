@@ -13,4 +13,5 @@ Exception Classes
 .. autoexception:: cbapi.errors.ServerError
 .. autoexception:: cbapi.errors.ObjectNotFoundError
 .. autoexception:: cbapi.errors.MoreThanOneResultError
-
+.. autoexception:: cbapi.errors.InvalidObjectError
+.. autoexception:: cbapi.response.live_response_api.LiveResponseError
