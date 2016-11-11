@@ -47,17 +47,20 @@ class ObjectNotFoundError(ApiError):
 
 
 class TimeoutError(ApiError):
-    def __init__(self, uri, error_code=None, message=None, original_exception=None):
+    def __init__(self, uri=None, error_code=None, message=None, original_exception=None):
         super(TimeoutError, self).__init__(message=message, original_exception=original_exception)
         self.uri = uri
         self.error_code = error_code
 
     def __str__(self):
-        msg = "Timed out when requesting {0:s} from API".format(self.uri)
-        if self.error_code:
-            msg += " with HTTP status code {0:d}".format(self.error_code)
-        if self.message:
-            msg += ": {0:s}".format(self.message)
+        if self.uri:
+            msg = "Timed out when requesting {0:s} from API".format(self.uri)
+            if self.error_code:
+                msg += " with HTTP status code {0:d}".format(self.error_code)
+            if self.message:
+                msg += ": {0:s}".format(self.message)
+        else:
+            msg = self.message
 
         return msg
 

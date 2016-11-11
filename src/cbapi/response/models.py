@@ -15,9 +15,10 @@ import struct
 from six.moves import urllib
 import six
 import logging
+import time
 
 from cbapi.utils import convert_query_params
-from ..errors import InvalidObjectError, ApiError
+from ..errors import InvalidObjectError, ApiError, TimeoutError
 from ..oldmodels import BaseModel, MutableModel, immutable
 
 if six.PY3:
@@ -488,6 +489,56 @@ class Sensor(MutableBaseModel):
         """
         self.event_log_flush_time = datetime.now() + timedelta(days=1)
         self.save()
+
+    def isolate(self, timeout=None):
+        """
+        Turn on network isolation for this Cb Response Sensor.
+
+        This function will block and only return when the isolation is complete, or if a timeout is reached. By default,
+        there is no timeout. You can specify a timeout period (in seconds) in the "timeout" parameter to this
+        function. If a timeout is specified and reached before the sensor is confirmed isolated, then this function
+        will throw a TimeoutError.
+
+        :return: True if sensor is isolated
+        :raises TimeoutError: if sensor does not isolate before timeout is reached
+        """
+        self.network_isolation_enabled = True
+        self.save()
+
+        start_time = time.time()
+
+        while not self.is_isolating:
+            if timeout and time.time() - start_time > timeout:
+                raise TimeoutError(message="timed out waiting for isolation to become active")
+            time.sleep(1)
+            self.refresh()
+
+        return True
+
+    def unisolate(self, timeout=None):
+        """
+        Turn off network isolation for this Cb Response Sensor.
+
+        This function will block and only return when the isolation is removed, or if a timeout is reached. By default,
+        there is no timeout. You can specify a timeout period (in seconds) in the "timeout" parameter to this
+        function. If a timeout is specified and reached before the sensor is confirmed unisolated, then this function
+        will throw a TimeoutError.
+
+        :return: True if sensor is unisolated
+        :raises TimeoutError: if sensor does not unisolate before timeout is reached
+        """
+        self.network_isolation_enabled = False
+        self.save()
+
+        start_time = time.time()
+
+        while self.is_isolating:
+            if timeout and time.time() - start_time > timeout:
+                raise TimeoutError(message="timed out waiting for isolation to be removed")
+            time.sleep(1)
+            self.refresh()
+
+        return True
 
 
 class SensorGroup(MutableBaseModel, CreatableModelMixin):

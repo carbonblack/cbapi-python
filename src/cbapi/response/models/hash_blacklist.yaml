@@ -1,6 +1,6 @@
 type: "object"
 required:
-- md5sum
+- md5hash
 properties:
   username:
     type: "string"

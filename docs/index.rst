@@ -10,7 +10,7 @@ Release v\ |release|.
 
 cbapi provides a straightforward interface to the Cb Protection and Response REST APIs.
 This library provides a Pythonic layer to access the raw power of the REST APIs of both products, making it trivial
-to do the easy stuff and handling all of the "sharp corners" behind the scenes for you. Take a look:
+to do the easy stuff and handling all of the "sharp corners" behind the scenes for you. Take a look::
 
    >>> from cbapi.response import CbResponseAPI, Process, Binary, Sensor
    >>> #
@@ -39,7 +39,7 @@ to do the easy stuff and handling all of the "sharp corners" behind the scenes f
    ...     s.network_isolation_enabled = True
    ...     s.save()
 
-If you're more a Cb Protection fellow, then you're in luck as well:
+If you're more a Cb Protection fellow, then you're in luck as well::
 
    >>> from cbapi.protection.models import FileInstance
    >>> from cbapi.protection import CbProtectionAPI
@@ -181,6 +181,8 @@ Documentation (below) for detailed information on the objects and methods expose
    getting-started
    concepts
    logging
+   response-examples
+   protection-examples
 
    live-response
    event-api
