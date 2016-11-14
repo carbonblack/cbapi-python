@@ -1617,7 +1617,10 @@ class Process(TaggedModel):
 
         try:
             parent_proc = self.parent
-            callback(parent_proc, depth=depth)
+            if parent_proc and parent_proc.get("process_pid", -1) != -1:
+                callback(parent_proc, depth=depth)
+            else:
+                return
         except ObjectNotFoundError:
             return
         else:
@@ -1817,7 +1820,11 @@ class Process(TaggedModel):
         """
         Returns the parent Process object if one exists
         """
-        return self._cb.select(self.__class__, self.get_correct_unique_id(), 1)
+        parent_unique_id = self.get_correct_parent_unique_id()
+        if not parent_unique_id:
+            return None
+
+        return self._cb.select(self.__class__, parent_unique_id, 1)
 
     @property
     def cmdline(self):
@@ -1859,7 +1866,7 @@ class Process(TaggedModel):
         else:
             return None
 
-    def get_correct_unique_id(self):
+    def get_correct_parent_unique_id(self):
         # this is required for the new 4.2 style GUIDs...
         parent_unique_id = self.get('parent_unique_id', None)
         if not parent_unique_id:

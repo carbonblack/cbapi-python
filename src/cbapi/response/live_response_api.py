@@ -573,7 +573,7 @@ class LiveResponseSession(object):
             else:
                 return resp
 
-        raise ApiError("Command {0} failed after {1} retries".format(data["name"], self.MAX_RETRY_COUNT))
+        raise TimeoutError(message="Command {0} failed after {1} retries".format(data["name"], self.MAX_RETRY_COUNT))
 
 
 class LiveResponseMemdump(object):

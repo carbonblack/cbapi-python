@@ -107,4 +107,55 @@ Now, let's do some queries into the Cb Response database. The true power of Cb R
 and powerful query language that allows you to go back in time and track the root cause of any security incident on
 your endpoints. Let's start with a simple query to find instances of a specific behavioral IOC, where our attacker
 used the built-in Windows tool ``net.exe`` to mount an internal network share. We will iterate over all uses
-of ``net.exe`` to mount our target share::
+of ``net.exe`` to mount our target share, printing out the parent processes that led to the execution of the offending
+command::
+
+    >>> query = cb.select(Process).where("process_name:net.exe").and_(r"cmdline:\\test\blah")
+    >>> def print_details(proc, depth):
+    ...     print("%s%s: %s ran %s" % (" "*depth, proc.start, proc.username, proc.cmdline))
+    ...
+    >>> for proc in query:
+    ...     print_details(proc, 0)
+    ...     proc.walk_parents(print_details)
+    ...
+    HTTP GET /api/v1/process?cb.urlver=1&facet=false&q=process_name%3Anet.exe+cmdline%3A%5C%5Ctest%5Cblah&rows=100&sort=last_update+desc&start=0 took 0.462s (response 200)
+    2016-11-11 20:59:31.631000: WIN-IA9NQ1GN8OI\bit9rad ran net  use y: \\test\blah
+    HTTP GET /api/v3/process/00000003-0000-036c-01d2-2efd3af51186/1/event took 0.036s (response 200)
+    2016-10-25 20:20:29.790000: WIN-IA9NQ1GN8OI\bit9rad ran "C:\Windows\system32\cmd.exe"
+    HTTP GET /api/v3/process/00000003-0000-0c34-01d2-2ec94f09cae6/1/event took 0.213s (response 200)
+     2016-10-25 14:08:49.651000: WIN-IA9NQ1GN8OI\bit9rad ran C:\Windows\Explorer.EXE
+    HTTP GET /api/v3/process/00000003-0000-0618-01d2-2ec94edef208/1/event took 0.013s (response 200)
+      2016-10-25 14:08:49.370000: WIN-IA9NQ1GN8OI\bit9rad ran C:\Windows\system32\userinit.exe
+    HTTP GET /api/v3/process/00000003-0000-02ec-01d2-2ec9412b4b70/1/event took 0.017s (response 200)
+       2016-10-25 14:08:26.382000: SYSTEM ran winlogon.exe
+    HTTP GET /api/v3/process/00000003-0000-02b0-01d2-2ec94115df7a/1/event took 0.012s (response 200)
+        2016-10-25 14:08:26.242000: SYSTEM ran \SystemRoot\System32\smss.exe 00000001 00000030
+    HTTP GET /api/v3/process/00000003-0000-0218-01d2-2ec93f813429/1/event took 0.021s (response 200)
+         2016-10-25 14:08:23.590000: SYSTEM ran \SystemRoot\System32\smss.exe
+    HTTP GET /api/v3/process/00000003-0000-0004-01d2-2ec93f7c7181/1/event took 0.081s (response 200)
+          2016-10-25 14:08:23.559000: SYSTEM ran c:\windows\system32\ntoskrnl.exe
+    HTTP GET /api/v3/process/00000003-0000-0000-01d2-2ec93f6051ee/1/event took 0.011s (response 200)
+           2016-10-25 14:08:23.374000:  ran c:\windows\system32\ntoskrnl.exe
+    HTTP GET /api/v3/process/00000003-0000-0004-01d2-2ec93f6051ee/1/event took 0.011s (response 200)
+    2016-11-11 20:59:25.667000: WIN-IA9NQ1GN8OI\bit9rad ran net  use z: \\test\blah
+    2016-10-25 20:20:29.790000: WIN-IA9NQ1GN8OI\bit9rad ran "C:\Windows\system32\cmd.exe"
+     2016-10-25 14:08:49.651000: WIN-IA9NQ1GN8OI\bit9rad ran C:\Windows\Explorer.EXE
+      2016-10-25 14:08:49.370000: WIN-IA9NQ1GN8OI\bit9rad ran C:\Windows\system32\userinit.exe
+       2016-10-25 14:08:26.382000: SYSTEM ran winlogon.exe
+        2016-10-25 14:08:26.242000: SYSTEM ran \SystemRoot\System32\smss.exe 00000001 00000030
+         2016-10-25 14:08:23.590000: SYSTEM ran \SystemRoot\System32\smss.exe
+          2016-10-25 14:08:23.559000: SYSTEM ran c:\windows\system32\ntoskrnl.exe
+           2016-10-25 14:08:23.374000:  ran c:\windows\system32\ntoskrnl.exe
+
+That was a lot in one code sample, so let's break it down part-by-part.
+
+First, we set up the ``query`` variable by creating a new ``Query`` object using the ``.where()`` and ``.and_()``
+methods. Next, we define a function that will get called on each parent process all the way up the chain to the system
+kernel loading during the boot process. This function, ``print_details``, will print a few data points about each
+process: namely, the local endpoint time when that process started, the user who spawned the process, and the
+command line for the process.
+
+Finally, we execute our query by looping over the result set with a Python for loop. For each process that matches
+the query, first we print details of the process itself (the process that called ``net.exe`` with a command line
+argument of our target share ``\\test\blah``), then calls the ``.walk_parents()`` helper method to walk up the chain
+of all parent processes.
