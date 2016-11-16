@@ -226,8 +226,8 @@ for each process:
 * The hostname the process was executed on
 * The sensor group that host belongs to
 * If the binary was signed, also print out:
-  * The number of days between when the binary was signed and it was executed on the endpoint
-  * The verified publisher name from the digital signature
+    * The number of days between when the binary was signed and it was executed on the endpoint
+    * The verified publisher name from the digital signature
 
 We can transparently "join" between the Process Model Object and the Sensor, Sensor Group, and Binary Model Objects
 using the appropriately named helper properties. Here's the new function::
