@@ -59,6 +59,77 @@ There are four classes of errors that you will commonly encounter when working w
 Job-Based API
 -------------
 
-The basic synchronous API described above in the Getting Started section works well for small tasks, targeting one
+The basic Synchronous API described above in the Getting Started section works well for small tasks, targeting one
 sensor at a time. However, if you want to execute the same set of Live Response commands across a larger number of
-sensors
+sensors, the cbapi provides a Job-Based Live Response API. The Job-Based Live Response API provides a straightforward
+API to submit Live Response jobs to a scheduler, schedule those Live Response jobs on individual endpoints concurrently,
+and return results and any errors back to you when the jobs complete. The Job-Based Live Response API is a natural
+fit with the Event-Based API to create IFTTT-style pipelines; if an event is received via the Event API, then perform
+Live Response actions on the affected endpoint via the Live Response Job-Based API.
+
+The Job-Based API works by first defining a reusable "job" to perform on the endpoint. The Job is simply a class or
+function that takes a Live Response session object as input and performs a series of commands. Jobs can be as simple
+as retrieving a registry key, or as complex as collecting the Chrome browser history for any currently logged-in users.
+
+Let's look at an example Job to retrieve a registry key. This example job is pulled from the ``get_reg_autoruns.py``
+example script::
+
+    class GetRegistryValue(object):
+        def __init__(self, registry_key):
+            self.registry_key = registry_key
+
+        def run(self, session):
+            reg_info = session.get_registry_value(self.registry_key)
+            return time.time(), session.sensor_id, self.registry_key, reg_info["value_data"]
+
+To submit this job, you instantiate an instance of a ``GetRegistryValue`` class with the registry key you want to pull
+back from the endpoint, and submit the ``.run()`` method to the Live Response Job API::
+
+    >>> job = GetRegistryValue(regmod_path)
+    >>> registry_job = cb.live_response.submit_job(job.run, sensor_id)
+
+Your script resumes execution immediately after the call to ``.submit_job()``. The job(s) that you've submitted will
+be executed in a set of background threads managed by cbapi.
+
+
+
+Here's an example::
+
+    import shutil
+    from tempfile import NamedTemporaryFile
+    import sqlite3
+    from datetime import datetime
+    from collections import defaultdict
+
+    def chrome_history(lr_session):
+        """Retrieve the 10 recent URLs from Chrome for every logged-in user's session"""
+
+        running_processes = lr_session.list_processes()
+
+        # get list of logged in users
+        users = set([proc['username'].split('\\')[-1]
+                     for proc in running_processes if proc['path'].find('explorer.exe') != -1])
+
+        chrome_history_urls = defaultdict(list)
+
+        for user in users:
+            with NamedTemporaryFile(delete=False) as tf:
+                try:
+                    history_fp = lr_session.get_raw_file(
+                        "c:\\users\\%s\\appdata\\local\\google\\chrome\\user data\\default\\history" % user)
+                    shutil.copyfileobj(history_fp, tf.file)
+                    tf.close()
+                    db = sqlite3.connect(tf.name)
+                    db.row_factory = sqlite3.Row
+                    cur = db.cursor()
+                    cur.execute(
+                        "SELECT url, title, datetime(last_visit_time / 1000000 + (strftime('%s', '1601-01-01')), 'unixepoch') as last_visit_time FROM urls ORDER BY last_visit_time DESC LIMIT 10")
+                    urls = [dict(u) for u in cur.fetchall()]
+                except:
+                    pass
+                else:
+                    chrome_history_urls[user] = urls
+
+        return chrome_history_urls
+
+There's a lot to that example, I'll admit. But

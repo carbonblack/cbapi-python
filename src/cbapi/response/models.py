@@ -376,7 +376,7 @@ class Sensor(MutableBaseModel):
 
     @group.setter
     def group(self, new_group):
-        self.group_id = new_group
+        self.group_id = new_group.id
 
     @property
     def dns_name(self):
@@ -957,8 +957,9 @@ class Binary(TaggedModel):
         :param int score: Virus Total score
         :param str link: Virus Total link for this md5
         """
+        pass
 
-    class SigningData(namedtuple('SigningData', 'result' 'publisher' 'issuer' 'subject' 'sign_time' 'program_name')):
+    class SigningData(namedtuple('SigningData', 'result publisher issuer subject sign_time program_name')):
         """
         Class containing binary signing information
 
@@ -969,9 +970,10 @@ class Binary(TaggedModel):
         :param str sign_time: Binary signed time
         :param str program_name: Binary program name
         """
+        pass
 
-    class VersionInfo(namedtuple('VersionInfo', 'file_desc' 'file_version' 'product_name' 'product_version'
-                                                'company_name' 'legal_copyright' 'original_filename')):
+    class VersionInfo(namedtuple('VersionInfo', 'file_desc file_version product_name product_version '
+                                                'company_name legal_copyright original_filename')):
         """
         Class containing versioning information about a binary
 
@@ -983,8 +985,9 @@ class Binary(TaggedModel):
         :param str legal_copyright: Copyright
         :param str original_filename: Original File name of this binary
         """
+        pass
 
-    class FrequencyData(namedtuple('FrequencyData', 'computer_count' 'process_count' 'all_process_count'
+    class FrequencyData(namedtuple('FrequencyData', 'computer_count process_count all_process_count '
                                                     'module_frequency')):
         """
         Class containing frequency information about a binary
@@ -994,6 +997,7 @@ class Binary(TaggedModel):
         :param int all_process_count: Number of all process documents
         :param int module_frequency: process_count / all_process_count
         """
+        pass
 
     urlobject = '/api/v1/binary'
 

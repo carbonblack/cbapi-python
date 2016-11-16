@@ -158,4 +158,146 @@ command line for the process.
 Finally, we execute our query by looping over the result set with a Python for loop. For each process that matches
 the query, first we print details of the process itself (the process that called ``net.exe`` with a command line
 argument of our target share ``\\test\blah``), then calls the ``.walk_parents()`` helper method to walk up the chain
-of all parent processes.
+of all parent processes. Each level of parent process (the "depth") is represented by an extra space; therefore, reading
+backwards, you can see that ``ntoskrnl.exe`` spawned ``smss.exe``, which in turn spawned ``winlogon.exe``, and so on.
+You can see the full backwards chain of events that ultimately led to the execution of each of these ``net.exe`` calls.
+
+Remember that we have logging turned on for these examples, so you see each of the HTTP GET requests to retrieve process
+event details as they happen. Astute observers will note that walking the parents of the second ``net.exe`` command,
+where the ``\\test\blah`` share was mounted on the ``z:`` drive, did not trigger additional HTTP GET requests. This
+is thanks to cbapi's caching layer. Since both ``net.exe`` commands ran as part of the same command shell session, the
+parent processes are shared between the two executions. Since the parent processes were already requested as part of
+the previous walk up the chain of parent processes, cbapi did not re-request the data from the server, instead using its
+internal cache to satisfy the process information requests from this script.
+
+Feed and Watchlist Maintenance
+------------------------------
+
+The cbapi provides several helper functions to assist in creating watchlists and
+
+Watchlists are simply saved Queries that are automatically run on the Cb Response server on a periodic basis. Results
+of the watchlist are tagged in the database and optionally trigger alerts. Therefore, a cbapi Query can easily be
+converted into a watchlist through the Query ``.create_watchlist()`` function::
+
+    >>> new_watchlist = query.create_watchlist("[WARN] Attempts to mount internal share")
+    Creating a new Watchlist object
+    Sending HTTP POST /api/v1/watchlist with {"id": null, "index_type": "events", "name": "[WARN] Attempts to mount internal share", "search_query": "facet=false&q=process_name%3Anet.exe+cmdline%3A%5C%5Ctest%5Cblah&cb.urlver=1&sort=last_update+desc"}
+    HTTP POST /api/v1/watchlist took 0.510s (response 200)
+    Received response: {u'id': 222}
+    Only received an ID back from the server, forcing a refresh
+    HTTP GET /api/v1/watchlist/222 took 0.034s (response 200)
+
+This helper function will automatically create a watchlist from the Query object with the given name.
+
+If you have a watchlist that already exists, the Watchlist Model Object can help you extract the human-readable
+query from the watchlist. Just select the watchlist and access the ``.query`` property on the Watchlist Model Object::
+
+    >>> my_watchlist = cb.select(Watchlist).where("name:[WARN] Attempts to mount internal share").one()
+    >>> print(my_watchlist.query)
+    process_name:net.exe cmdline:\\test\blah
+
+You can also execute the query straight from the Watchlist Model Object::
+
+    >>> len(my_watchlist.search())
+    HTTP GET /api/v1/process?cb.urlver=1&facet=false&q=process_name%3Anet.exe+cmdline%3A%5C%5Ctest%5Cblah&rows=0&start=0 took 0.477s (response 200)
+    2
+
+And finally, you can of course enable and disable Watchlists::
+
+    >>> my_watchlist.enabled = False
+    >>> my_watchlist.save()
+    Updating Watchlist with unique ID 222
+    Sending HTTP PUT /api/v1/watchlist/222 with {"alliance_id": null, "date_added": "2016-11-15 23:48:27.615993-05:00", "enabled": false, "from_alliance": false, "group_id": -1, "id": "222", "index_type": "events", "last_hit": "2016-11-15 23:50:08.448685-05:00", "last_hit_count": 2, "name": "[WARN] Attempts to mount internal share", "readonly": false, "search_query": "facet=false&q=process_name%3Anet.exe%20cmdline%3A%5C%5Ctest%5Cblah&cb.urlver=1", "search_timestamp": "2016-11-16T04:50:01.750240Z", "total_hits": "2", "total_tags": "2"}
+    HTTP PUT /api/v1/watchlist/222 took 0.036s (response 200)
+    Received response: {u'result': u'success'}
+    HTTP GET /api/v1/watchlist/222 took 0.029s (response 200)
+
+You can see more examples of Feed and Watchlist maintenance in the ``feed_operations.py`` and ``watchlist_operations.py``
+example scripts.
+
+Joining Everything Together
+---------------------------
+
+Now that we've examined how to request information on binaries, sensors, and processes through cbapi, let's chain
+this all together using the "join" functionality of cbapi's Model Objects. Let's just tweak the ``print_details``
+function from above to add a few more contextual details about the binary and host that the process executed on::
+
+    >>> import pytz
+
+    >>> def print_details(proc, depth):
+    ...     print("On host {0} (part of sensor group {1}):".format(proc.hostname, proc.sensor.group.name))
+    ...     print("- At {0}, process {1} was executed by {2}".format(proc.start, proc.cmdline, proc.username))
+    ...     if proc.binary.signed:
+    ...         # force local timestamp into UTC, we're just looking for an estimate here.
+    ...         utc_timestamp = proc.start.replace(tzinfo=pytz.timezone("UTC"))
+    ...         days_since_signed = (utc_timestamp - proc.binary.signing_data.sign_time).days
+    ...         print("- That binary ({0}) was signed by {1} {2} days before it was executed.".format(proc.process_md5,
+    ...             proc.binary.signing_data.publisher, days_since_signed))
+
+Now if we run our for loop from above again::
+
+    >>> for proc in query:
+    ...     print_details(proc, 0)
+    ...     proc.walk_parents(print_details)
+    ...
+    HTTP GET /api/v1/process?cb.urlver=1&facet=false&q=process_name%3Anet.exe+cmdline%3A%5C%5Ctest%5Cblah&rows=100&sort=last_update+desc&start=0 took 0.487s (response 200)
+    HTTP GET /api/v1/sensor/3 took 0.037s (response 200)
+    HTTP GET /api/group/1 took 0.022s (response 200)
+    On host WIN-IA9NQ1GN8OI (part of sensor group Default Group):
+    - At 2016-11-11 20:59:31.631000, process net  use y: \\test\blah was executed by WIN-IA9NQ1GN8OI\bit9rad
+    HTTP GET /api/v1/binary/79B6D4C5283FC806387C55B8D7C8B762/summary took 0.016s (response 200)
+    - That binary (79b6d4c5283fc806387c55b8d7c8b762) was signed by Microsoft Corporation 1569 days before it was executed.
+    HTTP GET /api/v3/process/00000003-0000-036c-01d2-2efd3af51186/1/event took 0.045s (response 200)
+    On host WIN-IA9NQ1GN8OI (part of sensor group Default Group):
+    - At 2016-10-25 20:20:29.790000, process "C:\Windows\system32\cmd.exe"  was executed by WIN-IA9NQ1GN8OI\bit9rad
+    HTTP GET /api/v1/binary/BF93A2F9901E9B3DFCA8A7982F4A9868/summary took 0.015s (response 200)
+    - That binary (bf93a2f9901e9b3dfca8a7982f4a9868) was signed by Microsoft Corporation 1552 days before it was executed.
+
+    .... and so forth
+
+Those few lines of Python above are jam-packed with functionality. Now for each process execution, we have added
+contextual information on the source host, the group that host is part of, and details about the signing status of the
+binary that was executed. The magic is performed behind the scenes when we use the ``.binary`` and ``.sensor`` properties
+on the Process Model Object. Just like our previous example, cbapi's caching layer ensures that we do not overload
+the Cb Response server with duplicate requests for the same data. In this example, multiple redundant requests for sensor,
+sensor group, and binary data are all eliminated by cbapi's cache.
+
+Administrative Tasks
+--------------------
+
+In addition to querying data, you can also perform various administrative tasks using cbapi.
+
+Let's create a user on our Cb Response server::
+
+    >>> user = cb.create(User)
+    >>> user.username = "jgarman"
+    >>> user.password = "cbisawesome"
+    >>> user.first_name = "Jason"
+    >>> user.last_name = "Garman"
+    >>> user.teams = []
+    >>> user.global_admin = False
+    Creating a new User object
+    Sending HTTP POST /api/user with {"email": "jgarman@carbonblack.com", "first_name": "Jason", "global_admin": false, "id": null, "last_name": "Garman", "password": "cbisawesome", "teams": [], "username": null}
+    HTTP POST /api/user took 0.608s (response 200)
+    Received response: {u'result': u'success'}
+
+How about moving a sensor to a new Sensor Group::
+
+    >>> sg = cb.create(SensorGroup)
+    >>> sg.name = "Critical Endpoints"
+    >>> sg.site = 1
+    >>> sg.save()
+    Creating a new SensorGroup object
+    Sending HTTP POST /api/group with {"id": null, "name": "Critical Endpoints", "site_id": 1}
+    HTTP POST /api/group took 0.282s (response 200)
+    Received response: {u'id': 2}
+    Only received an ID back from the server, forcing a refresh
+    HTTP GET /api/group/2 took 0.011s (response 200)
+    >>> sensor = cb.select(Sensor).where("hostname:WIN-IA9NQ1GN8OI").first()
+    >>> sensor.group = sg
+    >>> sensor.save()
+    Updating Sensor with unique ID 3
+    Sending HTTP PUT /api/v1/sensor/3 with {"boot_id": "2", "build_id": 2, "build_version_string": "005.002.000.60922", ...
+    HTTP PUT /api/v1/sensor/3 took 0.087s (response 204)
+    HTTP GET /api/v1/sensor/3 took 0.030s (response 200)
+

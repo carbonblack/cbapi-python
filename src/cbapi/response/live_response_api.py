@@ -612,7 +612,8 @@ class WorkItem(object):
         if isinstance(sensor_id, Sensor):
             self.sensor_id = sensor_id.id
         else:
-            self.sensor_id = sensor_id
+            self.sensor_id = int(sensor_id)
+
         self.future = _base.Future()
 
 
