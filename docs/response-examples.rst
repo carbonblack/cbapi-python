@@ -220,7 +220,17 @@ Joining Everything Together
 
 Now that we've examined how to request information on binaries, sensors, and processes through cbapi, let's chain
 this all together using the "join" functionality of cbapi's Model Objects. Let's just tweak the ``print_details``
-function from above to add a few more contextual details about the binary and host that the process executed on::
+function from above to add a few more contextual details. Our new function will now include the following data points
+for each process:
+
+* The hostname the process was executed on
+* The sensor group that host belongs to
+* If the binary was signed, also print out:
+  * The number of days between when the binary was signed and it was executed on the endpoint
+  * The verified publisher name from the digital signature
+
+We can transparently "join" between the Process Model Object and the Sensor, Sensor Group, and Binary Model Objects
+using the appropriately named helper properties. Here's the new function::
 
     >>> import pytz
 
@@ -253,14 +263,40 @@ Now if we run our for loop from above again::
     HTTP GET /api/v1/binary/BF93A2F9901E9B3DFCA8A7982F4A9868/summary took 0.015s (response 200)
     - That binary (bf93a2f9901e9b3dfca8a7982f4a9868) was signed by Microsoft Corporation 1552 days before it was executed.
 
-    .... and so forth
-
 Those few lines of Python above are jam-packed with functionality. Now for each process execution, we have added
 contextual information on the source host, the group that host is part of, and details about the signing status of the
 binary that was executed. The magic is performed behind the scenes when we use the ``.binary`` and ``.sensor`` properties
 on the Process Model Object. Just like our previous example, cbapi's caching layer ensures that we do not overload
 the Cb Response server with duplicate requests for the same data. In this example, multiple redundant requests for sensor,
 sensor group, and binary data are all eliminated by cbapi's cache.
+
+Facets
+------
+
+The cbapi also provides functionality to pull facet information from the database. You can use the ``.facet()`` method
+on a Query object to retrieve facet (ie. "group") information for a given query result set. Here's an example that
+pulls the most common process names for our sample host::
+
+    >>> def print_facet_histogram(facets):
+    ...     for entry in facets:
+    ...         print("%15s: %5s%% %s" % (entry["name"][:15], entry["ratio"], u"\u25A0"*(int(entry["percent"])/2)))
+    ...
+
+    >>> facet_query = cb.select(Process).where("hostname:WIN-IA9NQ1GN8OI").and_("username:bit9rad")
+    >>> print_facet_histogram(facet_query.facets("process_name")["process_name"])
+
+    HTTP GET /api/v1/process?cb.urlver=1&facet=true&facet.field=process_name&facet.field=username&q=hostname%3AWIN-IA9NQ1GN8OI+username%3Abit9rad&rows=0&start=0 took 0.024s (response 200)
+         chrome.exe:  23.4% ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+    thumbnailextrac:  15.4% ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+       adobearm.exe:   8.6% ■■■■■■■■■■■■■■■■■■
+       taskhost.exe:   6.0% ■■■■■■■■■■■■
+        conhost.exe:   4.7% ■■■■■■■■■
+           ping.exe:   4.0% ■■■■■■■■
+         wermgr.exe:   3.5% ■■■■■■■
+
+In the above example, we just pulled one facet: the ``process_name``; you can ask the server for faceting on multiple
+fields in one query by simply listing the fields in the call to ``.facet()``: for example, ``.facet("username", "process_name")``
+will produce a dictionary with two top-level keys: ``username`` and ``process_name``.
 
 Administrative Tasks
 --------------------
