@@ -31,7 +31,7 @@ from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
 from ..oldmodels import BaseModel, immutable
 from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time, convert_to_cb
 from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
-from ..query import SimpleQuery
+from ..query import SimpleQuery, PaginatedQuery
 
 try:
     from functools import total_ordering
@@ -349,6 +349,117 @@ class WatchlistAction(MutableBaseModel, CreatableModelMixin):
         self.action_type = ActionTypes.type_for_string(s)
 
 
+class SensorPaginatedQuery(PaginatedQuery):
+    valid_field_names = ['ip', 'hostname', 'groupid']
+
+    def __init__(self, doc_class, cb, query=None):
+        super(SensorPaginatedQuery, self).__init__(doc_class, cb, query)
+        if not self._query:
+            self._query = {}
+
+    def _clone(self):
+        nq = self.__class__(self._doc_class, self._cb)
+        nq._query = self._query
+        nq._batch_size = self._batch_size
+        return nq
+
+    def where(self, new_query):
+        if self._query:
+            raise ApiError("Cannot have multiple 'where' clauses")
+
+        nq = self._clone()
+        field, value = new_query.split(':', 1)
+        nq._query = {}
+        nq._query[field] = value
+        nq._full_init = False
+
+        for k, v in iteritems(nq._query):
+            if k not in SensorQuery.valid_field_names:
+                nq._query = {}
+                raise ValueError("Field name must be one of: {0:s}".format(", ".join(SensorQuery.valid_field_names)))
+
+        return nq
+
+    def _count(self):
+        if self._count_valid:
+            return self._total_results
+
+        if self._query:
+            args = self._query.copy()
+        else:
+            args = {}
+
+        args['start'] = 0
+        args['rows'] = 0
+
+        qargs = convert_query_params(args)
+
+        self._total_results = self._cb.get_object("/api/v2/sensor", query_parameters=qargs).get('total_results', 0)
+
+        self._count_valid = True
+        return self._total_results
+
+    def _search(self, start=0, rows=0):
+        # iterate over total result set, 100 at a time
+
+        if self._query:
+            args = self._query.copy()
+        else:
+            args = {}
+
+        args['start'] = 0
+        args['rows'] = 0
+
+        if rows:
+            args['rows'] = min(rows, self._batch_size)
+        else:
+            args['rows'] = self._batch_size
+
+        still_querying = True
+        current = start
+        numrows = 0
+
+        while still_querying:
+            qargs = convert_query_params(args)
+            result = self._cb.get_object("/api/v2/sensor", query_parameters=qargs)
+
+            self._total_results = result.get('total_results')
+            self._count_valid = True
+
+            for item in result.get('results'):
+                yield item
+                current += 1
+                numrows += 1
+                if rows and numrows == rows:
+                    still_querying = False
+                    break
+
+            args['start'] = current
+
+            if current >= self._total_results:
+                break
+
+    def facets(self, *args):
+        """Retrieve a dictionary with the facets for this query.
+
+        :param args: Any number of fields to use as facets
+        :return: Facet data
+        :rtype: dict
+        """
+
+        qargs = self._query.copy()
+        qargs['facet'] = 'true'
+        qargs['start'] = 0
+        qargs['rows'] = 100       # TODO: unlike solr, we need to actually retrieve the results to calculate the facets.
+        qargs['facet.field'] = list(args)
+
+        if self._query:
+            qargs['q'] = self._query
+
+        query_params = convert_query_params(qargs)
+        return self._cb.get_object("/api/v2/sensor", query_parameters=query_params).get('facets', {})
+
+
 class Sensor(MutableBaseModel):
     swagger_meta_file = "response/models/sensorObject.yaml"
     urlobject = '/api/v1/sensor'
@@ -359,7 +470,10 @@ class Sensor(MutableBaseModel):
 
     @classmethod
     def _query_implementation(cls, cb):
-        return SensorQuery(cls, cb)
+        if cb.cb_server_version >= LooseVersion("5.2.0"):
+            return SensorPaginatedQuery(cls, cb)
+        else:
+            return SensorQuery(cls, cb)
 
     @property
     def group(self):
