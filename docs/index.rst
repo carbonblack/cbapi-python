@@ -142,8 +142,8 @@ The possible options for each credential profile are:
 Future versions of cbapi will also provide the ability to "pin" the TLS certificate so as to provide certificate
 verification on self-signed or internal CA signed certificates.
 
-Backwards Compatibility
------------------------
+Backwards & Forwards Compatibility
+----------------------------------
 
 The previous versions (0.8.x and earlier) of cbapi and bit9Api are now deprecated and will no longer receive updates.
 However, existing scripts will work without change as cbapi includes both in its legacy package.
@@ -160,12 +160,7 @@ New scripts should use the :py:mod:`cbapi.response.rest_api.CbResponseAPI`
 (for Cb Response) and :py:mod:`cbapi.protection.rest_api.CbProtectionAPI`
 (for Cb Protection) API entry points.
 
-
-Forwards Compatibility
-----------------------
-
-*The new API is still in development and may change subtly during the 0.9 release process.* Any breaking changes
-will be documented in the changelog. The API will be frozen as of version 1.0; afterward, any changes in the 1.x version branch
+The API is frozen as of version 1.0; afterward, any changes in the 1.x version branch
 will be additions/bug fixes only. Breaking changes to the API will increment the major version number (2.x).
 
 User Guide
