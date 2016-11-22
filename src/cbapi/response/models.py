@@ -407,8 +407,7 @@ class SensorPaginatedQuery(PaginatedQuery):
         else:
             args = {}
 
-        args['start'] = 0
-        args['rows'] = 0
+        args['start'] = start
 
         if rows:
             args['rows'] = min(rows, self._batch_size)
