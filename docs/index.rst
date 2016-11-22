@@ -10,13 +10,13 @@ Release v\ |release|.
 
 cbapi provides a straightforward interface to the Cb Protection and Response REST APIs.
 This library provides a Pythonic layer to access the raw power of the REST APIs of both products, making it trivial
-to do the easy stuff and handling all of the "sharp corners" behind the scenes for you. Take a look:
+to do the easy stuff and handling all of the "sharp corners" behind the scenes for you. Take a look::
 
-   >>> from cbapi.response import CbEnterpriseResponseAPI, Process, Binary, Sensor
+   >>> from cbapi.response import CbResponseAPI, Process, Binary, Sensor
    >>> #
    >>> # Create our CbAPI object
    >>> #
-   >>> c = CbEnterpriseResponseAPI()
+   >>> c = CbResponseAPI()
    >>> #
    >>> # take the first process that ran notepad.exe, download the binary and read the first two bytes
    >>> #
@@ -39,14 +39,14 @@ to do the easy stuff and handling all of the "sharp corners" behind the scenes f
    ...     s.network_isolation_enabled = True
    ...     s.save()
 
-If you're more a Cb Protection fellow, then you're in luck as well:
+If you're more a Cb Protection fellow, then you're in luck as well::
 
    >>> from cbapi.protection.models import FileInstance
-   >>> from cbapi.protection import CbEnterpriseProtectionAPI
+   >>> from cbapi.protection import CbProtectionAPI
    >>> #
    >>> # Create our Cb Protection API object
    >>> #
-   >>> p = CbEnterpriseProtectionAPI()
+   >>> p = CbProtectionAPI()
    >>> #
    >>> # Select the first file instance
    >>> #
@@ -156,8 +156,8 @@ legacy scripts cannot run under Python 3.
 
 Once cbapi 1.0.0 is released, the old :py:mod:`cbapi.legacy.CbApi` will be deprecated and removed entirely no earlier
 than January 2017.
-New scripts should use the :py:mod:`cbapi.response.rest_api.CbEnterpriseResponseAPI`
-(for Cb Response) and :py:mod:`cbapi.protection.rest_api.CbEnterpriseProtectionAPI`
+New scripts should use the :py:mod:`cbapi.response.rest_api.CbResponseAPI`
+(for Cb Response) and :py:mod:`cbapi.protection.rest_api.CbProtectionAPI`
 (for Cb Protection) API entry points.
 
 
@@ -168,14 +168,38 @@ Forwards Compatibility
 will be documented in the changelog. The API will be frozen as of version 1.0; afterward, any changes in the 1.x version branch
 will be additions/bug fixes only. Breaking changes to the API will increment the major version number (2.x).
 
-Full Documentation
-------------------
+User Guide
+----------
+
+Let's get started with cbapi. Once you've mastered the concepts here, then you can always hop over to the API
+Documentation (below) for detailed information on the objects and methods exposed by cbapi.
 
 .. toctree::
    :maxdepth: 2
 
-   enterprise-response
-   enterprise-protection
+   installation
+   getting-started
+   concepts
+   logging
+   response-examples
+   protection-examples
+
+   live-response
+   event-api
+
+API Documentation
+-----------------
+
+Once you've taken a look at the User Guide, read through some of the
+`examples on GitHub <https://github.com/carbonblack/cbapi-python/tree/master/examples>`_,
+and maybe even written some code of your own, the API documentation can help you get the most out of cbapi by
+documenting all of the methods available to you.
+
+.. toctree::
+   :maxdepth: 2
+
+   response-api
+   protection-api
    exceptions
 
 Indices and tables

@@ -77,7 +77,7 @@ class LiveResponseSession(object):
         self.close()
 
     def close(self):
-        self._lr_scheduler.close_session(self.sensor_id)
+        self._lr_scheduler.close_session(self.sensor_id, self.session_id)
         self._closed = True
 
     def get_session_archive(self):
@@ -573,7 +573,7 @@ class LiveResponseSession(object):
             else:
                 return resp
 
-        raise ApiError("Command {0} failed after {1} retries".format(data["name"], self.MAX_RETRY_COUNT))
+        raise TimeoutError(message="Command {0} failed after {1} retries".format(data["name"], self.MAX_RETRY_COUNT))
 
 
 class LiveResponseMemdump(object):
@@ -612,7 +612,8 @@ class WorkItem(object):
         if isinstance(sensor_id, Sensor):
             self.sensor_id = sensor_id.id
         else:
-            self.sensor_id = sensor_id
+            self.sensor_id = int(sensor_id)
+
         self.future = _base.Future()
 
 
@@ -768,24 +769,30 @@ class LiveResponseJobScheduler(threading.Thread):
 
         schedule_max = self._max_workers - len(self._job_workers)
 
-        sensors = [s for s in self._cb.select(Sensor) if s.id in self._unscheduled_jobs and s.status == "Online"]
+        sensors = [s for s in self._cb.select(Sensor) if s.id in self._unscheduled_jobs
+                   and s.id not in self._job_workers
+                   and s.status == "Online"]
         sensors_to_schedule = sorted(sensors, key=lambda x: x.next_checkin_time)[:schedule_max]
 
+        log.debug("Spawning new workers to handle these sensors: {0}".format(sensors_to_schedule))
         for sensor in sensors_to_schedule:
+            log.debug("Spawning new JobWorker for sensor id {0}".format(sensor.id))
             self._job_workers[sensor.id] = JobWorker(self._cb, sensor.id, self.schedule_queue)
             self._job_workers[sensor.id].start()
 
 
 class LiveResponseSessionManager(object):
-    def __init__(self, cb, timeout=30):
+    def __init__(self, cb, timeout=30, keepalive_sessions=False):
         self._timeout = timeout
         self._cb = cb
         self._sessions = {}
         self._session_lock = threading.RLock()
+        self._keepalive_sessions = keepalive_sessions
 
-        self._cleanup_thread = threading.Thread(target=self._session_keepalive_thread)
-        self._cleanup_thread.daemon = True
-        self._cleanup_thread.start()
+        if keepalive_sessions:
+            self._cleanup_thread = threading.Thread(target=self._session_keepalive_thread)
+            self._cleanup_thread.daemon = True
+            self._cleanup_thread.start()
 
         self._job_scheduler = None
 
@@ -822,35 +829,34 @@ class LiveResponseSessionManager(object):
                             delete_list.append(session.sensor_id)
 
                 for sensor_id in delete_list:
-                    try:
-                        session_data = self._cb.get_object("/api/v1/cblr/session/{0}"
-                                                           .format(self._sessions[sensor_id].session_id))
-                        session_data["status"] = "close"
-                        self._cb.put_object("/api/v1/cblr/session/{0}".format(self._sessions[sensor_id].session_id),
-                                            session_data)
-                    except:
-                        pass
-                    finally:
-                        del self._sessions[sensor_id]
+                    self._close_session(self._sessions[sensor_id].session_id)
+                    del self._sessions[sensor_id]
 
     def request_session(self, sensor_id):
-        with self._session_lock:
-            if sensor_id in self._sessions:
-                session = self._sessions[sensor_id]
-                self._sessions[sensor_id]._refcount += 1
-            else:
-                session_id, session_data = self._get_or_create_session(sensor_id)
-                session = LiveResponseSession(self, session_id, sensor_id, session_data=session_data)
-                self._sessions[sensor_id] = session
+        if self._keepalive_sessions:
+            with self._session_lock:
+                if sensor_id in self._sessions:
+                    session = self._sessions[sensor_id]
+                    self._sessions[sensor_id]._refcount += 1
+                else:
+                    session_id, session_data = self._get_or_create_session(sensor_id)
+                    session = LiveResponseSession(self, session_id, sensor_id, session_data=session_data)
+                    self._sessions[sensor_id] = session
+        else:
+            session_id, session_data = self._get_or_create_session(sensor_id)
+            session = LiveResponseSession(self, session_id, sensor_id, session_data=session_data)
 
         return session
 
-    def close_session(self, sensor_id):
-        with self._session_lock:
-            try:
-                self._sessions[sensor_id]._refcount -= 1
-            except KeyError:
-                pass
+    def close_session(self, sensor_id, session_id):
+        if self._keepalive_sessions:
+            with self._session_lock:
+                try:
+                    self._sessions[sensor_id]._refcount -= 1
+                except KeyError:
+                    pass
+        else:
+            self._close_session(session_id)
 
     def _send_keepalive(self, session_id):
         log.debug("Sending keepalive message for session id {0}".format(session_id))
@@ -869,9 +875,19 @@ class LiveResponseSessionManager(object):
             res = poll_status(self._cb, "/api/v1/cblr/session/{0}".format(session_id), desired_status="active")
         except ObjectNotFoundError:
             # the Cb server will return a 404 if we don't establish a session in time, so convert this to a "timeout"
-            raise TimeoutError("Could not establish session with sensor {0}".format(sensor_id))
+            raise TimeoutError(uri="/api/v1/cblr/session/{0}".format(session_id),
+                               message="Could not establish session with sensor {0}".format(sensor_id),
+                               error_code=404)
         else:
             return session_id, res
+
+    def _close_session(self, session_id):
+        try:
+            session_data = self._cb.get_object("/api/v1/cblr/session/{0}".format(session_id))
+            session_data["status"] = "close"
+            self._cb.put_object("/api/v1/cblr/session/{0}".format(session_id), session_data)
+        except:
+            pass
 
     def _create_session(self, sensor_id):
         response = self._cb.post_object("/api/v1/cblr/session", {"sensor_id": sensor_id}).json()
@@ -906,7 +922,7 @@ def poll_status(cb, url, desired_status="complete", timeout=None, delay=None):
         else:
             time.sleep(delay)
 
-    raise TimeoutError(url, message="timeout polling for Live Response")
+    raise TimeoutError(uri=url, message="timeout polling for Live Response")
 
 
 if __name__ == "__main__":

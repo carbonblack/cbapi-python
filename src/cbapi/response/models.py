@@ -15,9 +15,10 @@ import struct
 from six.moves import urllib
 import six
 import logging
+import time
 
 from cbapi.utils import convert_query_params
-from ..errors import InvalidObjectError, ApiError
+from ..errors import InvalidObjectError, ApiError, TimeoutError
 from ..oldmodels import BaseModel, MutableModel, immutable
 
 if six.PY3:
@@ -30,7 +31,7 @@ from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
 from ..oldmodels import BaseModel, immutable
 from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time, convert_to_cb
 from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
-from ..query import SimpleQuery
+from ..query import SimpleQuery, PaginatedQuery
 
 try:
     from functools import total_ordering
@@ -348,6 +349,116 @@ class WatchlistAction(MutableBaseModel, CreatableModelMixin):
         self.action_type = ActionTypes.type_for_string(s)
 
 
+class SensorPaginatedQuery(PaginatedQuery):
+    valid_field_names = ['ip', 'hostname', 'groupid']
+
+    def __init__(self, doc_class, cb, query=None):
+        super(SensorPaginatedQuery, self).__init__(doc_class, cb, query)
+        if not self._query:
+            self._query = {}
+
+    def _clone(self):
+        nq = self.__class__(self._doc_class, self._cb)
+        nq._query = self._query
+        nq._batch_size = self._batch_size
+        return nq
+
+    def where(self, new_query):
+        if self._query:
+            raise ApiError("Cannot have multiple 'where' clauses")
+
+        nq = self._clone()
+        field, value = new_query.split(':', 1)
+        nq._query = {}
+        nq._query[field] = value
+        nq._full_init = False
+
+        for k, v in iteritems(nq._query):
+            if k not in SensorQuery.valid_field_names:
+                nq._query = {}
+                raise ValueError("Field name must be one of: {0:s}".format(", ".join(SensorQuery.valid_field_names)))
+
+        return nq
+
+    def _count(self):
+        if self._count_valid:
+            return self._total_results
+
+        if self._query:
+            args = self._query.copy()
+        else:
+            args = {}
+
+        args['start'] = 0
+        args['rows'] = 0
+
+        qargs = convert_query_params(args)
+
+        self._total_results = self._cb.get_object("/api/v2/sensor", query_parameters=qargs).get('total_results', 0)
+
+        self._count_valid = True
+        return self._total_results
+
+    def _search(self, start=0, rows=0):
+        # iterate over total result set, 100 at a time
+
+        if self._query:
+            args = self._query.copy()
+        else:
+            args = {}
+
+        args['start'] = start
+
+        if rows:
+            args['rows'] = min(rows, self._batch_size)
+        else:
+            args['rows'] = self._batch_size
+
+        still_querying = True
+        current = start
+        numrows = 0
+
+        while still_querying:
+            qargs = convert_query_params(args)
+            result = self._cb.get_object("/api/v2/sensor", query_parameters=qargs)
+
+            self._total_results = result.get('total_results')
+            self._count_valid = True
+
+            for item in result.get('results'):
+                yield item
+                current += 1
+                numrows += 1
+                if rows and numrows == rows:
+                    still_querying = False
+                    break
+
+            args['start'] = current
+
+            if current >= self._total_results:
+                break
+
+    def facets(self, *args):
+        """Retrieve a dictionary with the facets for this query.
+
+        :param args: Any number of fields to use as facets
+        :return: Facet data
+        :rtype: dict
+        """
+
+        qargs = self._query.copy()
+        qargs['facet'] = 'true'
+        qargs['start'] = 0
+        qargs['rows'] = 100       # TODO: unlike solr, we need to actually retrieve the results to calculate the facets.
+        qargs['facet.field'] = list(args)
+
+        if self._query:
+            qargs['q'] = self._query
+
+        query_params = convert_query_params(qargs)
+        return self._cb.get_object("/api/v2/sensor", query_parameters=query_params).get('facets', {})
+
+
 class Sensor(MutableBaseModel):
     swagger_meta_file = "response/models/sensorObject.yaml"
     urlobject = '/api/v1/sensor'
@@ -358,7 +469,10 @@ class Sensor(MutableBaseModel):
 
     @classmethod
     def _query_implementation(cls, cb):
-        return SensorQuery(cls, cb)
+        if cb.cb_server_version >= LooseVersion("5.2.0"):
+            return SensorPaginatedQuery(cls, cb)
+        else:
+            return SensorQuery(cls, cb)
 
     @property
     def group(self):
@@ -375,7 +489,7 @@ class Sensor(MutableBaseModel):
 
     @group.setter
     def group(self, new_group):
-        self.group_id = new_group
+        self.group_id = new_group.id
 
     @property
     def dns_name(self):
@@ -488,6 +602,56 @@ class Sensor(MutableBaseModel):
         """
         self.event_log_flush_time = datetime.now() + timedelta(days=1)
         self.save()
+
+    def isolate(self, timeout=None):
+        """
+        Turn on network isolation for this Cb Response Sensor.
+
+        This function will block and only return when the isolation is complete, or if a timeout is reached. By default,
+        there is no timeout. You can specify a timeout period (in seconds) in the "timeout" parameter to this
+        function. If a timeout is specified and reached before the sensor is confirmed isolated, then this function
+        will throw a TimeoutError.
+
+        :return: True if sensor is isolated
+        :raises TimeoutError: if sensor does not isolate before timeout is reached
+        """
+        self.network_isolation_enabled = True
+        self.save()
+
+        start_time = time.time()
+
+        while not self.is_isolating:
+            if timeout and time.time() - start_time > timeout:
+                raise TimeoutError(message="timed out waiting for isolation to become active")
+            time.sleep(1)
+            self.refresh()
+
+        return True
+
+    def unisolate(self, timeout=None):
+        """
+        Turn off network isolation for this Cb Response Sensor.
+
+        This function will block and only return when the isolation is removed, or if a timeout is reached. By default,
+        there is no timeout. You can specify a timeout period (in seconds) in the "timeout" parameter to this
+        function. If a timeout is specified and reached before the sensor is confirmed unisolated, then this function
+        will throw a TimeoutError.
+
+        :return: True if sensor is unisolated
+        :raises TimeoutError: if sensor does not unisolate before timeout is reached
+        """
+        self.network_isolation_enabled = False
+        self.save()
+
+        start_time = time.time()
+
+        while self.is_isolating:
+            if timeout and time.time() - start_time > timeout:
+                raise TimeoutError(message="timed out waiting for isolation to be removed")
+            time.sleep(1)
+            self.refresh()
+
+        return True
 
 
 class SensorGroup(MutableBaseModel, CreatableModelMixin):
@@ -906,8 +1070,9 @@ class Binary(TaggedModel):
         :param int score: Virus Total score
         :param str link: Virus Total link for this md5
         """
+        pass
 
-    class SigningData(namedtuple('SigningData', 'result' 'publisher' 'issuer' 'subject' 'sign_time' 'program_name')):
+    class SigningData(namedtuple('SigningData', 'result publisher issuer subject sign_time program_name')):
         """
         Class containing binary signing information
 
@@ -918,9 +1083,10 @@ class Binary(TaggedModel):
         :param str sign_time: Binary signed time
         :param str program_name: Binary program name
         """
+        pass
 
-    class VersionInfo(namedtuple('VersionInfo', 'file_desc' 'file_version' 'product_name' 'product_version'
-                                                'company_name' 'legal_copyright' 'original_filename')):
+    class VersionInfo(namedtuple('VersionInfo', 'file_desc file_version product_name product_version '
+                                                'company_name legal_copyright original_filename')):
         """
         Class containing versioning information about a binary
 
@@ -932,8 +1098,9 @@ class Binary(TaggedModel):
         :param str legal_copyright: Copyright
         :param str original_filename: Original File name of this binary
         """
+        pass
 
-    class FrequencyData(namedtuple('FrequencyData', 'computer_count' 'process_count' 'all_process_count'
+    class FrequencyData(namedtuple('FrequencyData', 'computer_count process_count all_process_count '
                                                     'module_frequency')):
         """
         Class containing frequency information about a binary
@@ -943,6 +1110,7 @@ class Binary(TaggedModel):
         :param int all_process_count: Number of all process documents
         :param int module_frequency: process_count / all_process_count
         """
+        pass
 
     urlobject = '/api/v1/binary'
 
@@ -1566,7 +1734,10 @@ class Process(TaggedModel):
 
         try:
             parent_proc = self.parent
-            callback(parent_proc, depth=depth)
+            if parent_proc and parent_proc.get("process_pid", -1) != -1:
+                callback(parent_proc, depth=depth)
+            else:
+                return
         except ObjectNotFoundError:
             return
         else:
@@ -1766,7 +1937,11 @@ class Process(TaggedModel):
         """
         Returns the parent Process object if one exists
         """
-        return self._cb.select(self.__class__, self.get_correct_unique_id(), 1)
+        parent_unique_id = self.get_correct_parent_unique_id()
+        if not parent_unique_id:
+            return None
+
+        return self._cb.select(self.__class__, parent_unique_id, 1)
 
     @property
     def cmdline(self):
@@ -1808,7 +1983,7 @@ class Process(TaggedModel):
         else:
             return None
 
-    def get_correct_unique_id(self):
+    def get_correct_parent_unique_id(self):
         # this is required for the new 4.2 style GUIDs...
         parent_unique_id = self.get('parent_unique_id', None)
         if not parent_unique_id:

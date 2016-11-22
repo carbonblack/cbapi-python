@@ -37,6 +37,7 @@ import json
 import shutil
 from tempfile import NamedTemporaryFile
 import sqlite3
+from collections import defaultdict
 
 
 def isolate_sensor(cb, sensor_id):
@@ -54,18 +55,17 @@ def blacklist_binary(cb, md5hash):
     print("Successfully banned binary MD5sum {} based on watchlist hit".format(md5hash))
 
 
-def perform_liveresponse(cb, sensor_id):
-    sensor = cb.select(Sensor, sensor_id)
-    with sensor.lr_session() as lr_session:
-        running_processes = lr_session.list_processes()
+def perform_liveresponse(lr_session):
+    running_processes = lr_session.list_processes()
 
-        # get list of logged in users
-        users = set([proc['username'].split('\\')[-1]
-                     for proc in running_processes if proc['path'].find('explorer.exe') != -1])
+    results = defaultdict(list)
 
-        for user in users:
-            print("10 Most Recent URLs visited in Chrome for user {0} on {1}:".format(user, sensor.hostname))
+    # get list of logged in users
+    users = set([proc['username'].split('\\')[-1]
+                 for proc in running_processes if proc['path'].find('explorer.exe') != -1])
 
+    for user in users:
+        try:
             with NamedTemporaryFile(delete=False) as tf:
                 history_fp = lr_session.get_raw_file(
                     "c:\\users\\%s\\appdata\\local\\google\\chrome\\user data\\default\\history" % user)
@@ -75,19 +75,31 @@ def perform_liveresponse(cb, sensor_id):
                 db.row_factory = sqlite3.Row
                 cur = db.cursor()
                 cur.execute(
-                    "SELECT url, title, datetime(last_visit_time / 1000000 + (strftime('%s', '1601-01-01')), 'unixepoch') as last_visit_time FROM urls ORDER BY last_visit_time DESC")
+                    "SELECT url, title, datetime(last_visit_time / 1000000 + (strftime('%s', '1601-01-01')), 'unixepoch') as last_visit_time FROM urls ORDER BY last_visit_time DESC LIMIT 10")
                 urls = [dict(u) for u in cur.fetchall()]
+        except:
+            pass
+        else:
+            results[user] = urls
 
-                for url in urls[:10]:
-                    print(url["url"])
+    running_services = lr_session.create_process("c:\\windows\\system32\\net.exe start")
 
-        print("")
-        print("Services running on {0}:".format(sensor.hostname))
+    return lr_session.sensor_id, running_services, results
 
-        running_services = lr_session.create_process("c:\\windows\\system32\\net.exe start")
 
+def print_result(lr_job):
+    try:
+        sensor_id, running_services, urls = lr_job.result()
+    except:
+        print("Error encountered when pulling Live Response data: {0}".format(lr_job.exception()))
+    else:
+        print("Running services for sensor ID {0}:".format(sensor_id))
         print(running_services)
-        print("")
+
+        for user in urls:
+            print("Last 10 URLs for user {0}:".format(user))
+            for url_entry in urls[user]:
+                print("{0}".format(url_entry["url"]))
 
 
 @on_event("watchlist.hit.binary")
@@ -121,10 +133,10 @@ def process_callback(cb, event_type, event_data):
         for item in docs:
             blacklist_binary(cb, item["process_md5"])
     if watchlist_name.startswith("LIVERESPONSE:"):
-        # TODO: this is currently executed synchronously, blocking the receipt of further events until the
-        # Live Response session is done... a proper solution would spawn a background thread to do the LR session.
         for item in docs:
-            perform_liveresponse(cb, item["sensor_id"])
+            print("Spawning for sensor id {0}".format(item["sensor_id"]))
+            job = cb.live_response.submit_job(perform_liveresponse, item["sensor_id"])
+            job.add_done_callback(print_result)
 
 
 def main():
