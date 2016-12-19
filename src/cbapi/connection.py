@@ -11,8 +11,10 @@ from requests.adapters import HTTPAdapter
 try:
     from requests.packages.urllib3 import Retry
     MAX_RETRIES = Retry(total=5, status_forcelist=[502, 504], backoff_factor=0.5)
+    ZERO_RETRIES = Retry(0, False)
 except ImportError:
     MAX_RETRIES = 5
+    ZERO_RETRIES = 0
 
 from requests.packages.urllib3.poolmanager import PoolManager
 
@@ -62,7 +64,7 @@ class ConnectionError(Exception):
 
 
 class Connection(object):
-    def __init__(self, credentials, integration_name=None):
+    def __init__(self, credentials, integration_name=None, timeout=None):
         if not credentials.url or not credentials.url.startswith(("https://", "http://")):
             raise ConnectionError("Server URL must be a URL: eg. https://localhost")
 
@@ -94,8 +96,10 @@ class Connection(object):
         if not credentials.ssl_verify_hostname:
             self.session.mount(self.server, HostNameIgnoringAdapter())
 
+        self._timeout = timeout
+
         # TODO: apply this to the ssl_verify_hostname case as well
-        self.session.mount(self.server, HTTPAdapter(max_retries=MAX_RETRIES))
+        self.session.mount(self.server, HTTPAdapter(max_retries=ZERO_RETRIES if self._timeout else MAX_RETRIES))
 
         self.proxies = {}
         if credentials.ignore_system_proxy:         # see https://github.com/kennethreitz/requests/issues/879
@@ -126,7 +130,7 @@ class Connection(object):
             raw_data = kwargs.get("data", None)
             if raw_data:
                 log.debug("Sending HTTP {0} {1} with {2}".format(method, url, raw_data))
-            r = self.session.request(method, uri, headers=headers, verify=verify_ssl, proxies=proxies, **kwargs)
+            r = self.session.request(method, uri, headers=headers, verify=verify_ssl, proxies=proxies, timeout=self._timeout, **kwargs)
             log.debug('HTTP {0:s} {1:s} took {2:.3f}s (response {3:d})'.format(method, url,
                                                                                calculate_elapsed_time(r.elapsed),
                                                                                r.status_code))
@@ -183,7 +187,9 @@ class BaseAPI(object):
             self.credential_profile_name = kwargs.pop("profile", None)
             self.credentials = self.credential_store.get_credentials(self.credential_profile_name)
 
-        self.session = Connection(self.credentials, integration_name=integration_name)
+        timeout = kwargs.pop("timeout", None)
+
+        self.session = Connection(self.credentials, integration_name=integration_name, timeout=timeout)
 
     def raise_unless_json(self, ret, expected):
         if ret.status_code == 200:
