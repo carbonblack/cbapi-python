@@ -29,7 +29,8 @@ else:
 
 from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
 from ..oldmodels import BaseModel, immutable
-from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time, convert_to_cb
+from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time, parse_process_guid, \
+    convert_to_solr
 from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
 from ..query import SimpleQuery, PaginatedQuery
 
@@ -1637,16 +1638,23 @@ class Process(TaggedModel):
         if suppressed_process:
             self._full_init = True
 
+        self.valid_process = True
+        self._overrides = {}
+
         try:
             # old 4.x process IDs are integers.
             self.id = int(procguid)
         except ValueError:
             # new 5.x process IDs are hex strings with optional segment IDs.
-            if len(procguid) == 36:
-                self.id = procguid
-            elif len(procguid) == 45:
+            if len(procguid) == 45:
                 self.id = procguid[:36]
                 self.segment = int(procguid[38:], 16)
+            else:
+                self.id = procguid
+                if len(procguid) != 36:
+                    log.debug("Invalid process GUID: %s, declaring this process as invalid" % procguid)
+                    self.valid_process = False
+                    self._full_init = True
 
         if not self.segment:
             self.segment = 1
@@ -1666,12 +1674,15 @@ class Process(TaggedModel):
 
         if initial_data:
             # fill in data object for performance
-            self._info = dict(initial_data)
+            self._parse({"process": copy.deepcopy(initial_data)})
 
         if force_init:
             self.refresh()
 
     def _attribute(self, attrname, default=None):
+        if attrname in self._overrides:
+            return self._overrides[attrname]
+
         # workaround for Cb Response where parent_unique_id is returned as null
         # string as part of a query result. in this case we need to do a
         # full_init.
@@ -1696,13 +1707,31 @@ class Process(TaggedModel):
         return "/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id, self.segment)
 
     def _retrieve_cb_info(self):
-        if self.suppressed_process:
+        if self.suppressed_process or not self.valid_process:
             return
         else:
             super(Process, self)._retrieve_cb_info()
 
     def _parse(self, obj):
         self._info = obj.get('process', {})
+
+        if self._info and (self._info.get("start", -1) == -1 or self._info.get("process_pid", -1) == -1):
+            log.debug("Process ID %s is invalid; start time or process PID are empty or -1." % self.id)
+            log.debug("Attempting to reverse-engineer start time and process PID from process GUID")
+
+            try:
+                sensor_id, proc_pid, start_time = parse_process_guid(self.id)
+                if proc_pid > 0 and proc_pid != -1:
+                    self._overrides["sensor_id"] = sensor_id
+                    self._overrides["process_pid"] = proc_pid
+                    self._overrides["start"] = convert_to_solr(start_time)
+                    log.debug("Recovered start time and process PID from GUID for process %s" % self.id)
+                else:
+                    log.debug("Unable to recover start time and process PID for process %s, marking invalid" % self.id)
+                    self.valid_process = False
+            except Exception as e:
+                log.exception("Unable to parse process GUID %s, marking invalid" % self.id)
+                self.valid_process = False
 
     def walk_parents(self, callback, max_depth=0, depth=0):
         """
@@ -2135,12 +2164,11 @@ class CbChildProcEvent(CbEvent):
             proc_data["path"] = path
 
         try:
-            (sensor_id, proc_pid, proc_createtime) = parse_42_guid(self.parent.id)
+            (sensor_id, proc_pid, proc_createtime) = parse_process_guid(self.parent.id)
             proc_data["parent_unique_id"] = self.parent._model_unique_id
             proc_data["parent_id"] = self.parent.id
             proc_data["sensor_id"] = sensor_id
-            # TODO: set process start time to the proc_createtime
-            # proc_data["start"] =
+            proc_data["start"] = proc_createtime
         except Exception:
             # silently fail if the GUID is not able to be parsed
             pass

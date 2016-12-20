@@ -75,7 +75,7 @@ class LRUCacheDict(object):
     set to true. Note that the cache will always be concurrent if a background cleanup thread
     is used.
     """
-    def __init__(self, max_size=1024, expiration=15*60, thread_clear=False, thread_clear_min_check=60, concurrent=False):
+    def __init__(self, max_size=1024, expiration=15*60, thread_clear=False, thread_clear_min_check=60, concurrent=True):
         self.max_size = max_size
         self.expiration = expiration
 
