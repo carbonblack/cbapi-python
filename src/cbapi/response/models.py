@@ -1730,7 +1730,7 @@ class Process(TaggedModel):
                     log.debug("Unable to recover start time and process PID for process %s, marking invalid" % self.id)
                     self.valid_process = False
             except Exception as e:
-                log.exception("Unable to parse process GUID %s, marking invalid" % self.id)
+                log.debug("Unable to parse process GUID %s, marking invalid" % self.id)
                 self.valid_process = False
 
     def walk_parents(self, callback, max_depth=0, depth=0):
