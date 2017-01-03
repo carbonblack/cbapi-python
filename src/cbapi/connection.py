@@ -11,10 +11,8 @@ from requests.adapters import HTTPAdapter
 try:
     from requests.packages.urllib3 import Retry
     MAX_RETRIES = Retry(total=5, status_forcelist=[502, 504], backoff_factor=0.5)
-    ZERO_RETRIES = Retry(0, False)
 except ImportError:
     MAX_RETRIES = 5
-    ZERO_RETRIES = 0
 
 from requests.packages.urllib3.poolmanager import PoolManager
 
@@ -64,7 +62,7 @@ class ConnectionError(Exception):
 
 
 class Connection(object):
-    def __init__(self, credentials, integration_name=None, timeout=None):
+    def __init__(self, credentials, integration_name=None, timeout=None, max_retries=None):
         if not credentials.url or not credentials.url.startswith(("https://", "http://")):
             raise ConnectionError("Server URL must be a URL: eg. https://localhost")
 
@@ -99,7 +97,10 @@ class Connection(object):
         self._timeout = timeout
 
         # TODO: apply this to the ssl_verify_hostname case as well
-        self.session.mount(self.server, HTTPAdapter(max_retries=ZERO_RETRIES if self._timeout else MAX_RETRIES))
+        if max_retries is None:
+            max_retries = MAX_RETRIES
+
+        self.session.mount(self.server, HTTPAdapter(max_retries=max_retries))
 
         self.proxies = {}
         if credentials.ignore_system_proxy:         # see https://github.com/kennethreitz/requests/issues/879
@@ -188,8 +189,10 @@ class BaseAPI(object):
             self.credentials = self.credential_store.get_credentials(self.credential_profile_name)
 
         timeout = kwargs.pop("timeout", None)
+        max_retries = kwargs.pop("max_retries", None)
 
-        self.session = Connection(self.credentials, integration_name=integration_name, timeout=timeout)
+        self.session = Connection(self.credentials, integration_name=integration_name, timeout=timeout,
+                                  max_retries=max_retries)
 
     def raise_unless_json(self, ret, expected):
         if ret.status_code == 200:
