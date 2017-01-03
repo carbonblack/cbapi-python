@@ -1,6 +1,6 @@
 # Python bindings for Carbon Black REST API
 
-**Current version: 1.0.0**
+**Current version: 1.0.1**
 
 [![Build Status](https://travis-ci.org/carbonblack/cbapi-python.svg?branch=master)](https://travis-ci.org/carbonblack/cbapi-python)
 
@@ -19,9 +19,7 @@ Also review the documentation and guides available on the
 
 ## Requirements
 
-The new cbapi is designed to work on Python 2.6.6 and above (including 3.x). We rely on one third-party library that
-has some incompatibility with Python 3.5, but this will be fixed no later than the 1.0.0 release.
-
+The new cbapi is designed to work on Python 2.6.6 and above (including 3.x). 
 All requirements are installed as part of `pip install`. 
 The legacy cbapi (`cbapi.CbApi`) and legacy bit9api (`cbapi.bit9Api`) are still compatible with Python 2.x only.
 
