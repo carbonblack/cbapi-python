@@ -18,7 +18,11 @@ The CbResponseAPI object then exposes two main methods to select data on the Car
 Queries
 -------
 
-.. autoclass:: cbapi.response.rest_api.Query
+.. autoclass:: cbapi.response.query.Query
+    :members:
+.. autoclass:: cbapi.response.models.ThreatReportQuery
+    :members:
+.. autoclass:: cbapi.response.models.AlertQuery
     :members:
 
 Models

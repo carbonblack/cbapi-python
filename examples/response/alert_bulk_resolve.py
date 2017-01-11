@@ -16,22 +16,18 @@ def main():
 
     cb = get_cb_response_object(args)
 
-    alert_query = cb.select(Alert).where("-status:Resolved " + args.query)
-    resolved_alerts = 0
-    for alert in alert_query:
-        try:
-            alert.status = "Resolved"
-            alert.save()
-        except ApiError as e:
-            print("Error resolving {0:s}: {1:s}".format(alert.unique_id, str(e)))
-        else:
-            resolved_alerts += 1
-            print("Resolved {0:s}".format(alert.unique_id))
+    alert_query = cb.select(Alert).where("-status:Resolved")
+    alert_query = alert_query.where(args.query)
 
-    if resolved_alerts:
+    alert_count = len(alert_query)
+    print("Resolving {0:d} alerts...".format(len(alert_query)))
+
+    if alert_count > 0:
+        alert_query.change_status("Resolved")
+
         print("Waiting for alert changes to take effect...")
         time.sleep(25)
-        print("Complete. Resolved {0:d} alerts.".format(resolved_alerts))
+        print("Complete. Resolved {0:d} alerts.".format(alert_count))
     else:
         print("Congratulations! You have no unresolved alerts!")
 

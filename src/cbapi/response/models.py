@@ -33,6 +33,7 @@ from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_ev
     convert_to_solr
 from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
 from ..query import SimpleQuery, PaginatedQuery
+from .query import Query
 
 try:
     from functools import total_ordering
@@ -149,11 +150,36 @@ class ThrottleRule(NewBaseModel):
         return self._join(Site, "site_id")
 
 
+class AlertQuery(Query):
+    def _format_query(self):
+        qt = (("cb.urlver", "1"), ("q", self._query))
+        return "&".join(("{0}={1}".format(k, urllib.parse.quote(v)) for k, v in qt))
+
+    def set_ignored(self, ignored_flag=True):
+        search_query = self._format_query()
+        payload = {"updates": {"is_ignored": ignored_flag}, "query": search_query}
+        self._cb.post_object("/api/v1/alerts", payload)
+
+    def assign(self, target):
+        search_query = self._format_query()
+        payload = {"query": search_query, "assigned_to": target}
+        self._cb.post_object("/api/v1/alerts", payload)
+
+    def change_status(self, new_status):
+        search_query = self._format_query()
+        payload = {"query": search_query, "requested_stats": new_status}
+        self._cb.post_object("/api/v1/alerts", payload)
+
+
 class Alert(MutableBaseModel):
     urlobject = "/api/v1/alert"
     swagger_meta_file = "response/models/alert.yaml"
     _change_object_http_method = "POST"
     primary_key = "unique_id"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return AlertQuery(cls, cb)
 
     def __init__(self, cb, alert_id, initial_data=None):
         super(Alert, self).__init__(cb, alert_id, initial_data)
@@ -981,9 +1007,25 @@ class TaggedModel(BaseModel):
         return self._tags.get(tag_name, {})
 
 
+class ThreatReportQuery(Query):
+    def set_ignored(self, ignored_flag=True):
+        qt = (("cb.urlver", "1"), ("q", self._query))
+        search_query = "&".join(("{0}={1}".format(k, urllib.parse.quote(v)) for k,v in qt))
+
+        payload = {"updates": {"is_ignored": ignored_flag}, "query": search_query}
+        self._cb.post_object("/api/v1/threat_report", payload)
+
+
 class ThreatReport(MutableBaseModel):
     urlobject = '/api/v1/threat_report'
     primary_key = "_internal_id"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        if cb.cb_server_version >= LooseVersion('5.1.0'):
+            return ThreatReportQuery(cls, cb)
+        else:
+            return Query(cls, cb)
 
     @property
     def _model_unique_id(self):
@@ -1061,6 +1103,37 @@ class ThreatReport(MutableBaseModel):
         return self._model_unique_id
 
 
+class WatchlistEnabledQuery(Query):
+    def create_watchlist(self, watchlist_name):
+        """Create a watchlist based on this query.
+
+        :param str watchlist_name: name of the new watchlist
+        :return: new Watchlist object
+        :rtype: :py:class:`Watchlist`
+        """
+        if self._raw_query:
+            args = self._raw_query.copy()
+        else:
+            args = self._default_args.copy()
+
+            if self._query:
+                args['q'] = self._query
+            else:
+                args['q'] = ''
+
+        if self._sort_by:
+            args['sort'] = self._sort_by
+
+        new_watchlist = self._cb.create(Watchlist, data={"name": watchlist_name})
+        new_watchlist.search_query = urllib.parse.urlencode(args)
+        if self._doc_class == Binary:
+            new_watchlist.index_type = "modules"
+        else:
+            new_watchlist.index_type = "events"
+
+        return new_watchlist.save()
+
+
 @immutable
 class Binary(TaggedModel):
 
@@ -1125,6 +1198,10 @@ class Binary(TaggedModel):
     @classmethod
     def new_object(cls, cb, item):
         return cb.select(Binary, item['md5'], initial_data=item)
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return WatchlistEnabledQuery(cls, cb)
 
     def __init__(self, cb, md5sum, initial_data=None, force_init=False):
         md5sum = md5sum.upper()
@@ -1625,6 +1702,10 @@ class ProcessV3Parser(ProcessV2Parser):
 class Process(TaggedModel):
     urlobject = '/api/v1/process'
     default_sort = 'last_update desc'
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return WatchlistEnabledQuery(cls, cb)
 
     @classmethod
     def new_object(cls, cb, item):

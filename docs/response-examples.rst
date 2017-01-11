@@ -215,6 +215,25 @@ And finally, you can of course enable and disable Watchlists::
 You can see more examples of Feed and Watchlist maintenance in the ``feed_operations.py`` and ``watchlist_operations.py``
 example scripts.
 
+Managing Threat Reports & Alerts
+--------------------------------
+
+The cbapi provides helper functions to manage alerts and threat reports in bulk. The Query objects associated with
+the ThreatReport and Alert Model Objects provide a few bulk operations to help manage large numbers of Threat Reports
+and Alerts, respectively.
+
+To mark a large number of Threat Reports as false positives, create a query that matches the Reports you're interested in.
+For example, if every Report from the Feed named "SOC" that contains the word "FUZZYWOMBAT" in the report title should be
+considered a false positive (and no longer trigger Alerts), you can write the following code to do so::
+
+    >>> feed = c.select(Feed).where("name:SOC").one()
+    >>> report_query = feed.reports.where("title:FUZZYWOMBAT")
+    >>> report_query.set_ignored()
+
+Similar actions can be taken on Alerts. The AlertQuery object exposes three helper methods to perform bulk operations
+on sets of Alerts: ``.set_ignored()``, ``.assign_to()``, and ``.change_status()``.
+
+
 Joining Everything Together
 ---------------------------
 
