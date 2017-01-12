@@ -151,24 +151,25 @@ class ThrottleRule(NewBaseModel):
 
 
 class AlertQuery(Query):
-    def _format_query(self):
-        qt = (("cb.urlver", "1"), ("q", self._query))
-        return "&".join(("{0}={1}".format(k, urllib.parse.quote(v)) for k, v in qt))
+    def _bulk_update(self, payload):
+        # Using IDs for Alerts, since queries don't quite work as planned, and an "empty" query doesn't work.
+        alert_ids = [a["unique_id"] for a in self._search()]
+        payload["alert_ids"] = alert_ids
+
+        self._cb.post_object("/api/v1/alerts", payload)
+        return None
 
     def set_ignored(self, ignored_flag=True):
-        search_query = self._format_query()
-        payload = {"updates": {"is_ignored": ignored_flag}, "query": search_query}
-        self._cb.post_object("/api/v1/alerts", payload)
+        payload = {"updates": {"is_ignored": ignored_flag, "requested_status": "False Positive"}}
+        return self._bulk_update(payload)
 
     def assign(self, target):
-        search_query = self._format_query()
-        payload = {"query": search_query, "assigned_to": target}
-        self._cb.post_object("/api/v1/alerts", payload)
+        payload = {"assigned_to": target, "requested_status": "In Progress"}
+        return self._bulk_update(payload)
 
     def change_status(self, new_status):
-        search_query = self._format_query()
-        payload = {"query": search_query, "requested_stats": new_status}
-        self._cb.post_object("/api/v1/alerts", payload)
+        payload = {"requested_status": new_status}
+        return self._bulk_update(payload)
 
 
 class Alert(MutableBaseModel):
@@ -1969,12 +1970,74 @@ class Process(TaggedModel):
             i += 1
 
     @property
+    def all_events_segment(self):
+        """
+        Returns a list of all events associated with this process segment, sorted by timestamp
+
+        :return: list of CbEvent objects
+        """
+        segment_events = list(self.modloads) + list(self.netconns) + list(self.filemods) + \
+                         list(self.children) + list(self.regmods) + list(self.crossprocs)
+        segment_events.sort()
+        return segment_events
+
+    @property
     def all_events(self):
         """
-        Returns a list of all events associated with this process, sorted by timestamp
+        Returns a list of all events associated with this process across all segments, sorted by timestamp
+
+        :return: list of CbEvent objects
         """
-        return sorted(list(self.modloads) + list(self.netconns) + list(self.filemods) + \
-                      list(self.children) + list(self.regmods) + list(self.crossprocs))
+
+        all_events = []
+
+        # first let's find the list of segments
+        proclist = self._cb.select(Process).where("process_id:{0}".format(self.id))[::]
+        proclist.sort(key=lambda x: x.segment)
+        for proc in proclist:
+            all_events += proc.all_events_segment
+
+        return all_events
+
+    @property
+    def depth(self):
+        """
+        Returns the depth of this process from the "root" system process
+
+        :return: integer representing the depth of the process (0 is the root system process). To prevent infinite
+         recursion, a maximum depth of 500 processes is enforced.
+        """
+
+        depth = 0
+        MAX_DEPTH = 500
+
+        proc = self
+        visited = []
+
+        while depth < MAX_DEPTH:
+            try:
+                proc = proc.parent
+            except ObjectNotFoundError:
+                break
+            else:
+                current_proc_id = proc.id
+                depth += 1
+
+            if current_proc_id in visited:
+                raise ApiError("Process cycle detected at depth {0}".format(depth))
+            else:
+                visited.append(current_proc_id)
+
+        return depth
+
+    @property
+    def threat_intel_hits(self):
+        try:
+            hits = self._cb.get_object("/api/v1/process/{0}/{1}/threat_intel_hits".format(self.id, self.segment))
+            return hits
+        except ServerError as e:
+            raise ApiError("Sharing IOCs not set up in Cb server. See {}/#/share for more information."
+                           .format(self._cb.credentials.url))
 
     @property
     def tamper_events(self):

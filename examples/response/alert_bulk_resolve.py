@@ -2,7 +2,6 @@
 
 import sys
 from cbapi.response.models import Alert
-from cbapi.errors import ApiError
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object
 import time
 
@@ -20,9 +19,10 @@ def main():
     alert_query = alert_query.where(args.query)
 
     alert_count = len(alert_query)
-    print("Resolving {0:d} alerts...".format(len(alert_query)))
 
     if alert_count > 0:
+        print("Resolving {0:d} alerts...".format(len(alert_query)))
+
         alert_query.change_status("Resolved")
 
         print("Waiting for alert changes to take effect...")
