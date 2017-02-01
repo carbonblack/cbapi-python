@@ -1,9 +1,8 @@
 from cbapi.response.models import Process, Binary
-from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.errors import ObjectNotFoundError
 import time
 import pefile
-from cbapi.example_helpers import build_cli_parser, disable_insecure_warnings
+from cbapi.example_helpers import build_cli_parser, disable_insecure_warnings, get_cb_response_object
 import sys
 import csv
 from progressbar import ProgressBar, Bar, Percentage
@@ -38,9 +37,9 @@ def main():
         sys.exit(-1)
 
     #
-    # Setup cbapi-ng
-    # TODO get_cb_object
-    cb = CbEnterpriseResponseAPI()
+    # Setup cbapi
+    #
+    cb = get_cb_response_object(opts)
 
     #
     # query for all processes that match our query
@@ -114,14 +113,17 @@ def main():
             #
             number_of_times_executed = len(cb.select(Process).where("process_md5:{0:s}".format(md5)))
 
-            csv_writer.writerow((binary.md5,
-                                 binary.webui_link,
-                                 binary.digsig_result if binary.digsig_result else "UNSIGNED",
-                                 binary.company_name,
-                                 binary.server_added_timestamp,
-                                 binary.host_count,
-                                 binary_timestamp,
-                                 number_of_times_executed))
+            try:
+                csv_writer.writerow((binary.md5,
+                                     binary.webui_link,
+                                     binary.signing_data.result if binary.signing_data.result else "UNSIGNED",
+                                     binary.company_name,
+                                     binary.server_added_timestamp,
+                                     binary.host_count,
+                                     binary_timestamp,
+                                     number_of_times_executed))
+            except:
+                print binary
     pbar.finish()
 
 if __name__ == "__main__":
