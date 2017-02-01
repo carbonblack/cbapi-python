@@ -67,6 +67,11 @@ If you're more a Cb Protection fellow, then you're in luck as well::
 Major Features
 --------------
 
+- **Enhanced Live Response API**
+    The new cbapi now provides a robust interface to the Cb Response Live Response capability.
+    Easily create Live Response sessions, initiate commands on remote hosts, and pull down data as
+    necessary to make your Incident Response process much more efficient and automated.
+
 - **Consistent API for both Cb Response and Protection platforms**
     We now support Cb Response and Protection users in the same API layer. Even better,
     the object model is the same for both; if you know one API you can easily transition to the other. cbapi
@@ -84,6 +89,8 @@ Major Features
     productivity and lowers the bar to entry.
 
 - **Python 3 and Python 2 compatible**
+    Use all the new features and modules available in Python 3 with cbapi. This module is compatible with Python
+    versions 2.6.6 and above, 2.7.x, 3.4.x, and 3.5.x.
 
 - **Better support for multiple Cb servers**
     cbapi now introduces the concept of Credential Profiles; named collections of URL, API keys, and optional proxy
