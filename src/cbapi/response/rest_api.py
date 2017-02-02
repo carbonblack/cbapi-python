@@ -59,7 +59,7 @@ class CbResponseAPI(BaseAPI):
     """
     def __init__(self, *args, **kwargs):
         timeout = kwargs.pop("timeout", 120)   # set default timeout period to two minutes, 2x the default nginx timeout
-        super(CbEnterpriseResponseAPI, self).__init__(product_name="response", timeout=timeout, *args, **kwargs)
+        super(CbResponseAPI, self).__init__(product_name="response", timeout=timeout, *args, **kwargs)
 
         self._parsed_url = urllib.parse.urlparse(self.url)
         try:
