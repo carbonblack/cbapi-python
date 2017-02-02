@@ -41,13 +41,16 @@ def get_api_token(base_url, username, password, **kwargs):
         raise ApiError(message="Error retrieving auth_token: {0:s}".format(r.content))
 
 
-class CbEnterpriseResponseAPI(BaseAPI):
+class CbResponseAPI(BaseAPI):
     """The main entry point into the Carbon Black Enterprise Response API.
     Note that calling this will automatically connect to the Carbon Black server in order to verify
     connectivity and get the server version.
 
     :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server. Uses the
         profile named 'default' when not specified.
+    :param str url: (optional, discouraged) Instead of using a credential profile, pass URL and API token to the constructor.
+    :param str token: (optional, discouraged) API token
+    :param bool ssl_verify: (optional, discouraged) Enable or disable SSL certificate verification
 
     Usage::
 
@@ -174,9 +177,9 @@ class CbEnterpriseResponseAPI(BaseAPI):
     def _close_lr_session(self, sensor_id):
         return self.live_response.close_session(sensor_id)
 
-class CbResponseAPI(CbEnterpriseResponseAPI):
+class CbEnterpriseResponseAPI(CbResponseAPI):
     """
-    Short-hand naming for the Cb Response API.
+    Backwards compatibility for previous scripts
     """
     pass
 
