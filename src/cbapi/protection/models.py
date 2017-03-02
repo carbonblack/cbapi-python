@@ -160,6 +160,7 @@ class FileCatalog(BaseModel):
 
 class FileInstance(MutableBaseModel):
     urlobject = "/api/bit9platform/v1/fileInstance"
+    _change_object_http_method = "POST"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(FileInstance, self).__init__(cb, model_unique_id, initial_data)

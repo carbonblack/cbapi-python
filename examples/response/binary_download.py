@@ -3,6 +3,7 @@
 import sys
 from cbapi.response.models import Binary
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object
+import shutil
 
 
 def main():
@@ -13,10 +14,9 @@ def main():
 
     cb = get_cb_response_object(args)
     binary = cb.select(Binary, args.md5)
-    binary_data = binary.file.read()
-    open(args.filename, "wb").write(binary_data)
+    shutil.copyfileobj(binary.file, open(args.filename, "wb"))
 
-    print("-> Downloaded binary %s [%u bytes]" % (args.md5, len(binary_data)))
+    print("-> Downloaded binary %s [%u bytes]" % (args.md5, binary.size))
 
     return 0
 

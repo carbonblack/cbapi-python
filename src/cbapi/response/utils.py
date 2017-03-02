@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import struct
-from datetime import datetime
+from datetime import datetime, timedelta
 import dateutil.parser
 import socket
+import codecs
 
 
 cb_datetime_format = "%Y-%m-%d %H:%M:%S.%f"
@@ -15,17 +16,21 @@ sign_datetime_format = "%Y-%m-%dT%H:%M:%SZ"
 """Create a Cb 4.2-style GUID from components"""
 
 
-# TODO: Py3 Compatibility (encode/decode hex)
 def create_42_guid(sensor_id, proc_pid, proc_createtime):
-    full_guid = struct.pack('>IIQ', sensor_id, proc_pid, proc_createtime).encode('hex')
+    full_guid = codecs.encode(struct.pack('>IIQ', sensor_id, proc_pid, proc_createtime), "hex")
     return '%s-%s-%s-%s-%s' % (full_guid[:8], full_guid[8:12], full_guid[12:16],
                                full_guid[16:20], full_guid[20:])
 
 
-# TODO: Py3 Compatibility (encode/decode hex)
 def parse_42_guid(guid):
     guid_parts = guid.split('-')
-    return struct.unpack('>IIQ', ''.join(guid_parts)[:32].decode('hex'))
+    guid_int = codecs.decode("".join(guid_parts)[:32], "hex")
+    return struct.unpack('>IIQ', guid_int)
+
+
+def parse_process_guid(guid):
+    sensor_id, proc_pid, proc_createtime = parse_42_guid(guid)
+    return sensor_id, proc_pid, datetime(1601,1,1) + timedelta(microseconds=proc_createtime / 10)
 
 
 def convert_to_solr(dt):

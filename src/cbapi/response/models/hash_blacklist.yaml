@@ -1,4 +1,6 @@
 type: "object"
+required:
+- md5hash
 properties:
   username:
     type: "string"

@@ -15,9 +15,10 @@ import struct
 from six.moves import urllib
 import six
 import logging
+import time
 
 from cbapi.utils import convert_query_params
-from ..errors import InvalidObjectError, ApiError
+from ..errors import InvalidObjectError, ApiError, TimeoutError
 from ..oldmodels import BaseModel, MutableModel, immutable
 
 if six.PY3:
@@ -28,9 +29,11 @@ else:
 
 from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
 from ..oldmodels import BaseModel, immutable
-from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time, convert_to_cb
+from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time, parse_process_guid, \
+    convert_to_solr
 from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
-from ..query import SimpleQuery
+from ..query import SimpleQuery, PaginatedQuery
+from .query import Query
 
 try:
     from functools import total_ordering
@@ -147,11 +150,37 @@ class ThrottleRule(NewBaseModel):
         return self._join(Site, "site_id")
 
 
+class AlertQuery(Query):
+    def _bulk_update(self, payload):
+        # Using IDs for Alerts, since queries don't quite work as planned, and an "empty" query doesn't work.
+        alert_ids = [a["unique_id"] for a in self._search()]
+        payload["alert_ids"] = alert_ids
+
+        self._cb.post_object("/api/v1/alerts", payload)
+        return None
+
+    def set_ignored(self, ignored_flag=True):
+        payload = {"updates": {"is_ignored": ignored_flag, "requested_status": "False Positive"}}
+        return self._bulk_update(payload)
+
+    def assign(self, target):
+        payload = {"assigned_to": target, "requested_status": "In Progress"}
+        return self._bulk_update(payload)
+
+    def change_status(self, new_status):
+        payload = {"requested_status": new_status}
+        return self._bulk_update(payload)
+
+
 class Alert(MutableBaseModel):
     urlobject = "/api/v1/alert"
     swagger_meta_file = "response/models/alert.yaml"
     _change_object_http_method = "POST"
     primary_key = "unique_id"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return AlertQuery(cls, cb)
 
     def __init__(self, cb, alert_id, initial_data=None):
         super(Alert, self).__init__(cb, alert_id, initial_data)
@@ -348,6 +377,116 @@ class WatchlistAction(MutableBaseModel, CreatableModelMixin):
         self.action_type = ActionTypes.type_for_string(s)
 
 
+class SensorPaginatedQuery(PaginatedQuery):
+    valid_field_names = ['ip', 'hostname', 'groupid']
+
+    def __init__(self, doc_class, cb, query=None):
+        super(SensorPaginatedQuery, self).__init__(doc_class, cb, query)
+        if not self._query:
+            self._query = {}
+
+    def _clone(self):
+        nq = self.__class__(self._doc_class, self._cb)
+        nq._query = self._query
+        nq._batch_size = self._batch_size
+        return nq
+
+    def where(self, new_query):
+        if self._query:
+            raise ApiError("Cannot have multiple 'where' clauses")
+
+        nq = self._clone()
+        field, value = new_query.split(':', 1)
+        nq._query = {}
+        nq._query[field] = value
+        nq._full_init = False
+
+        for k, v in iteritems(nq._query):
+            if k not in SensorQuery.valid_field_names:
+                nq._query = {}
+                raise ValueError("Field name must be one of: {0:s}".format(", ".join(SensorQuery.valid_field_names)))
+
+        return nq
+
+    def _count(self):
+        if self._count_valid:
+            return self._total_results
+
+        if self._query:
+            args = self._query.copy()
+        else:
+            args = {}
+
+        args['start'] = 0
+        args['rows'] = 0
+
+        qargs = convert_query_params(args)
+
+        self._total_results = self._cb.get_object("/api/v2/sensor", query_parameters=qargs).get('total_results', 0)
+
+        self._count_valid = True
+        return self._total_results
+
+    def _search(self, start=0, rows=0):
+        # iterate over total result set, 100 at a time
+
+        if self._query:
+            args = self._query.copy()
+        else:
+            args = {}
+
+        args['start'] = start
+
+        if rows:
+            args['rows'] = min(rows, self._batch_size)
+        else:
+            args['rows'] = self._batch_size
+
+        still_querying = True
+        current = start
+        numrows = 0
+
+        while still_querying:
+            qargs = convert_query_params(args)
+            result = self._cb.get_object("/api/v2/sensor", query_parameters=qargs)
+
+            self._total_results = result.get('total_results')
+            self._count_valid = True
+
+            for item in result.get('results'):
+                yield item
+                current += 1
+                numrows += 1
+                if rows and numrows == rows:
+                    still_querying = False
+                    break
+
+            args['start'] = current
+
+            if current >= self._total_results:
+                break
+
+    def facets(self, *args):
+        """Retrieve a dictionary with the facets for this query.
+
+        :param args: Any number of fields to use as facets
+        :return: Facet data
+        :rtype: dict
+        """
+
+        qargs = self._query.copy()
+        qargs['facet'] = 'true'
+        qargs['start'] = 0
+        qargs['rows'] = 100       # TODO: unlike solr, we need to actually retrieve the results to calculate the facets.
+        qargs['facet.field'] = list(args)
+
+        if self._query:
+            qargs['q'] = self._query
+
+        query_params = convert_query_params(qargs)
+        return self._cb.get_object("/api/v2/sensor", query_parameters=query_params).get('facets', {})
+
+
 class Sensor(MutableBaseModel):
     swagger_meta_file = "response/models/sensorObject.yaml"
     urlobject = '/api/v1/sensor'
@@ -358,7 +497,10 @@ class Sensor(MutableBaseModel):
 
     @classmethod
     def _query_implementation(cls, cb):
-        return SensorQuery(cls, cb)
+        if cb.cb_server_version >= LooseVersion("5.2.0"):
+            return SensorPaginatedQuery(cls, cb)
+        else:
+            return SensorQuery(cls, cb)
 
     @property
     def group(self):
@@ -375,7 +517,7 @@ class Sensor(MutableBaseModel):
 
     @group.setter
     def group(self, new_group):
-        self.group_id = new_group
+        self.group_id = new_group.id
 
     @property
     def dns_name(self):
@@ -488,6 +630,56 @@ class Sensor(MutableBaseModel):
         """
         self.event_log_flush_time = datetime.now() + timedelta(days=1)
         self.save()
+
+    def isolate(self, timeout=None):
+        """
+        Turn on network isolation for this Cb Response Sensor.
+
+        This function will block and only return when the isolation is complete, or if a timeout is reached. By default,
+        there is no timeout. You can specify a timeout period (in seconds) in the "timeout" parameter to this
+        function. If a timeout is specified and reached before the sensor is confirmed isolated, then this function
+        will throw a TimeoutError.
+
+        :return: True if sensor is isolated
+        :raises TimeoutError: if sensor does not isolate before timeout is reached
+        """
+        self.network_isolation_enabled = True
+        self.save()
+
+        start_time = time.time()
+
+        while not self.is_isolating:
+            if timeout and time.time() - start_time > timeout:
+                raise TimeoutError(message="timed out waiting for isolation to become active")
+            time.sleep(1)
+            self.refresh()
+
+        return True
+
+    def unisolate(self, timeout=None):
+        """
+        Turn off network isolation for this Cb Response Sensor.
+
+        This function will block and only return when the isolation is removed, or if a timeout is reached. By default,
+        there is no timeout. You can specify a timeout period (in seconds) in the "timeout" parameter to this
+        function. If a timeout is specified and reached before the sensor is confirmed unisolated, then this function
+        will throw a TimeoutError.
+
+        :return: True if sensor is unisolated
+        :raises TimeoutError: if sensor does not unisolate before timeout is reached
+        """
+        self.network_isolation_enabled = False
+        self.save()
+
+        start_time = time.time()
+
+        while self.is_isolating:
+            if timeout and time.time() - start_time > timeout:
+                raise TimeoutError(message="timed out waiting for isolation to be removed")
+            time.sleep(1)
+            self.refresh()
+
+        return True
 
 
 class SensorGroup(MutableBaseModel, CreatableModelMixin):
@@ -816,9 +1008,25 @@ class TaggedModel(BaseModel):
         return self._tags.get(tag_name, {})
 
 
+class ThreatReportQuery(Query):
+    def set_ignored(self, ignored_flag=True):
+        qt = (("cb.urlver", "1"), ("q", self._query))
+        search_query = "&".join(("{0}={1}".format(k, urllib.parse.quote(v)) for k,v in qt))
+
+        payload = {"updates": {"is_ignored": ignored_flag}, "query": search_query}
+        self._cb.post_object("/api/v1/threat_report", payload)
+
+
 class ThreatReport(MutableBaseModel):
     urlobject = '/api/v1/threat_report'
     primary_key = "_internal_id"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        if cb.cb_server_version >= LooseVersion('5.1.0'):
+            return ThreatReportQuery(cls, cb)
+        else:
+            return Query(cls, cb)
 
     @property
     def _model_unique_id(self):
@@ -896,6 +1104,37 @@ class ThreatReport(MutableBaseModel):
         return self._model_unique_id
 
 
+class WatchlistEnabledQuery(Query):
+    def create_watchlist(self, watchlist_name):
+        """Create a watchlist based on this query.
+
+        :param str watchlist_name: name of the new watchlist
+        :return: new Watchlist object
+        :rtype: :py:class:`Watchlist`
+        """
+        if self._raw_query:
+            args = self._raw_query.copy()
+        else:
+            args = self._default_args.copy()
+
+            if self._query:
+                args['q'] = self._query
+            else:
+                args['q'] = ''
+
+        if self._sort_by:
+            args['sort'] = self._sort_by
+
+        new_watchlist = self._cb.create(Watchlist, data={"name": watchlist_name})
+        new_watchlist.search_query = urllib.parse.urlencode(args)
+        if self._doc_class == Binary:
+            new_watchlist.index_type = "modules"
+        else:
+            new_watchlist.index_type = "events"
+
+        return new_watchlist.save()
+
+
 @immutable
 class Binary(TaggedModel):
 
@@ -906,8 +1145,9 @@ class Binary(TaggedModel):
         :param int score: Virus Total score
         :param str link: Virus Total link for this md5
         """
+        pass
 
-    class SigningData(namedtuple('SigningData', 'result' 'publisher' 'issuer' 'subject' 'sign_time' 'program_name')):
+    class SigningData(namedtuple('SigningData', 'result publisher issuer subject sign_time program_name')):
         """
         Class containing binary signing information
 
@@ -918,9 +1158,10 @@ class Binary(TaggedModel):
         :param str sign_time: Binary signed time
         :param str program_name: Binary program name
         """
+        pass
 
-    class VersionInfo(namedtuple('VersionInfo', 'file_desc' 'file_version' 'product_name' 'product_version'
-                                                'company_name' 'legal_copyright' 'original_filename')):
+    class VersionInfo(namedtuple('VersionInfo', 'file_desc file_version product_name product_version '
+                                                'company_name legal_copyright original_filename')):
         """
         Class containing versioning information about a binary
 
@@ -932,8 +1173,9 @@ class Binary(TaggedModel):
         :param str legal_copyright: Copyright
         :param str original_filename: Original File name of this binary
         """
+        pass
 
-    class FrequencyData(namedtuple('FrequencyData', 'computer_count' 'process_count' 'all_process_count'
+    class FrequencyData(namedtuple('FrequencyData', 'computer_count process_count all_process_count '
                                                     'module_frequency')):
         """
         Class containing frequency information about a binary
@@ -943,6 +1185,7 @@ class Binary(TaggedModel):
         :param int all_process_count: Number of all process documents
         :param int module_frequency: process_count / all_process_count
         """
+        pass
 
     urlobject = '/api/v1/binary'
 
@@ -956,6 +1199,10 @@ class Binary(TaggedModel):
     @classmethod
     def new_object(cls, cb, item):
         return cb.select(Binary, item['md5'], initial_data=item)
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return WatchlistEnabledQuery(cls, cb)
 
     def __init__(self, cb, md5sum, initial_data=None, force_init=False):
         md5sum = md5sum.upper()
@@ -1458,6 +1705,10 @@ class Process(TaggedModel):
     default_sort = 'last_update desc'
 
     @classmethod
+    def _query_implementation(cls, cb):
+        return WatchlistEnabledQuery(cls, cb)
+
+    @classmethod
     def new_object(cls, cb, item):
         # TODO: do we ever need to evaluate item['unique_id'] which is the id + segment id?
         # TODO: is there a better way to handle this? (see how this is called from Query._search())
@@ -1469,16 +1720,23 @@ class Process(TaggedModel):
         if suppressed_process:
             self._full_init = True
 
+        self.valid_process = True
+        self._overrides = {}
+
         try:
             # old 4.x process IDs are integers.
             self.id = int(procguid)
         except ValueError:
             # new 5.x process IDs are hex strings with optional segment IDs.
-            if len(procguid) == 36:
-                self.id = procguid
-            elif len(procguid) == 45:
+            if len(procguid) == 45:
                 self.id = procguid[:36]
                 self.segment = int(procguid[38:], 16)
+            else:
+                self.id = procguid
+                if len(procguid) != 36:
+                    log.debug("Invalid process GUID: %s, declaring this process as invalid" % procguid)
+                    self.valid_process = False
+                    self._full_init = True
 
         if not self.segment:
             self.segment = 1
@@ -1498,12 +1756,15 @@ class Process(TaggedModel):
 
         if initial_data:
             # fill in data object for performance
-            self._info = dict(initial_data)
+            self._parse({"process": copy.deepcopy(initial_data)})
 
         if force_init:
             self.refresh()
 
     def _attribute(self, attrname, default=None):
+        if attrname in self._overrides:
+            return self._overrides[attrname]
+
         # workaround for Cb Response where parent_unique_id is returned as null
         # string as part of a query result. in this case we need to do a
         # full_init.
@@ -1528,13 +1789,31 @@ class Process(TaggedModel):
         return "/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id, self.segment)
 
     def _retrieve_cb_info(self):
-        if self.suppressed_process:
+        if self.suppressed_process or not self.valid_process:
             return
         else:
             super(Process, self)._retrieve_cb_info()
 
     def _parse(self, obj):
         self._info = obj.get('process', {})
+
+        if self._info and (self._info.get("start", -1) == -1 or self._info.get("process_pid", -1) == -1):
+            log.debug("Process ID %s is invalid; start time or process PID are empty or -1." % self.id)
+            log.debug("Attempting to reverse-engineer start time and process PID from process GUID")
+
+            try:
+                sensor_id, proc_pid, start_time = parse_process_guid(self.id)
+                if proc_pid > 0 and proc_pid != -1:
+                    self._overrides["sensor_id"] = sensor_id
+                    self._overrides["process_pid"] = proc_pid
+                    self._overrides["start"] = convert_to_solr(start_time)
+                    log.debug("Recovered start time and process PID from GUID for process %s" % self.id)
+                else:
+                    log.debug("Unable to recover start time and process PID for process %s, marking invalid" % self.id)
+                    self.valid_process = False
+            except Exception as e:
+                log.debug("Unable to parse process GUID %s, marking invalid" % self.id)
+                self.valid_process = False
 
     def walk_parents(self, callback, max_depth=0, depth=0):
         """
@@ -1566,7 +1845,10 @@ class Process(TaggedModel):
 
         try:
             parent_proc = self.parent
-            callback(parent_proc, depth=depth)
+            if parent_proc and parent_proc.get("process_pid", -1) != -1:
+                callback(parent_proc, depth=depth)
+            else:
+                return
         except ObjectNotFoundError:
             return
         else:
@@ -1688,12 +1970,74 @@ class Process(TaggedModel):
             i += 1
 
     @property
+    def all_events_segment(self):
+        """
+        Returns a list of all events associated with this process segment, sorted by timestamp
+
+        :return: list of CbEvent objects
+        """
+        segment_events = list(self.modloads) + list(self.netconns) + list(self.filemods) + \
+                         list(self.children) + list(self.regmods) + list(self.crossprocs)
+        segment_events.sort()
+        return segment_events
+
+    @property
     def all_events(self):
         """
-        Returns a list of all events associated with this process, sorted by timestamp
+        Returns a list of all events associated with this process across all segments, sorted by timestamp
+
+        :return: list of CbEvent objects
         """
-        return sorted(list(self.modloads) + list(self.netconns) + list(self.filemods) + \
-                      list(self.children) + list(self.regmods) + list(self.crossprocs))
+
+        all_events = []
+
+        # first let's find the list of segments
+        proclist = self._cb.select(Process).where("process_id:{0}".format(self.id))[::]
+        proclist.sort(key=lambda x: x.segment)
+        for proc in proclist:
+            all_events += proc.all_events_segment
+
+        return all_events
+
+    @property
+    def depth(self):
+        """
+        Returns the depth of this process from the "root" system process
+
+        :return: integer representing the depth of the process (0 is the root system process). To prevent infinite
+         recursion, a maximum depth of 500 processes is enforced.
+        """
+
+        depth = 0
+        MAX_DEPTH = 500
+
+        proc = self
+        visited = []
+
+        while depth < MAX_DEPTH:
+            try:
+                proc = proc.parent
+            except ObjectNotFoundError:
+                break
+            else:
+                current_proc_id = proc.id
+                depth += 1
+
+            if current_proc_id in visited:
+                raise ApiError("Process cycle detected at depth {0}".format(depth))
+            else:
+                visited.append(current_proc_id)
+
+        return depth
+
+    @property
+    def threat_intel_hits(self):
+        try:
+            hits = self._cb.get_object("/api/v1/process/{0}/{1}/threat_intel_hits".format(self.id, self.segment))
+            return hits
+        except ServerError as e:
+            raise ApiError("Sharing IOCs not set up in Cb server. See {}/#/share for more information."
+                           .format(self._cb.credentials.url))
 
     @property
     def tamper_events(self):
@@ -1766,7 +2110,11 @@ class Process(TaggedModel):
         """
         Returns the parent Process object if one exists
         """
-        return self._cb.select(self.__class__, self.get_correct_unique_id(), 1)
+        parent_unique_id = self.get_correct_parent_unique_id()
+        if not parent_unique_id:
+            return None
+
+        return self._cb.select(self.__class__, parent_unique_id, 1)
 
     @property
     def cmdline(self):
@@ -1808,7 +2156,7 @@ class Process(TaggedModel):
         else:
             return None
 
-    def get_correct_unique_id(self):
+    def get_correct_parent_unique_id(self):
         # this is required for the new 4.2 style GUIDs...
         parent_unique_id = self.get('parent_unique_id', None)
         if not parent_unique_id:
@@ -1960,12 +2308,11 @@ class CbChildProcEvent(CbEvent):
             proc_data["path"] = path
 
         try:
-            (sensor_id, proc_pid, proc_createtime) = parse_42_guid(self.parent.id)
+            (sensor_id, proc_pid, proc_createtime) = parse_process_guid(self.parent.id)
             proc_data["parent_unique_id"] = self.parent._model_unique_id
             proc_data["parent_id"] = self.parent.id
             proc_data["sensor_id"] = sensor_id
-            # TODO: set process start time to the proc_createtime
-            # proc_data["start"] =
+            proc_data["start"] = proc_createtime
         except Exception:
             # silently fail if the GUID is not able to be parsed
             pass

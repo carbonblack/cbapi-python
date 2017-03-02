@@ -11,8 +11,10 @@ import shutil
 
 from cbapi.errors import TimeoutError, ObjectNotFoundError, ApiError, ServerError
 from six import itervalues
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, _base, wait
 from cbapi import winerror
+
+from six.moves.queue import Queue
 
 from cbapi.response.models import Sensor
 
@@ -75,7 +77,7 @@ class LiveResponseSession(object):
         self.close()
 
     def close(self):
-        self._lr_scheduler.close_session(self.sensor_id)
+        self._lr_scheduler.close_session(self.sensor_id, self.session_id)
         self._closed = True
 
     def get_session_archive(self):
@@ -571,7 +573,7 @@ class LiveResponseSession(object):
             else:
                 return resp
 
-        raise ApiError("Command {0} failed after {1} retries".format(data["name"], self.MAX_RETRY_COUNT))
+        raise TimeoutError(message="Command {0} failed after {1} retries".format(data["name"], self.MAX_RETRY_COUNT))
 
 
 class LiveResponseMemdump(object):
@@ -604,26 +606,205 @@ def jobrunner(callable, cb, sensor_id):
         return callable(sess)
 
 
-class LiveResponseScheduler(object):
-    def __init__(self, cb, timeout=30, max_workers=10):
+class WorkItem(object):
+    def __init__(self, fn, sensor_id):
+        self.fn = fn
+        if isinstance(sensor_id, Sensor):
+            self.sensor_id = sensor_id.id
+        else:
+            self.sensor_id = int(sensor_id)
+
+        self.future = _base.Future()
+
+
+class CompletionNotification(object):
+    def __init__(self, sensor_id):
+        self.sensor_id = sensor_id
+
+
+class WorkerStatus(object):
+    def __init__(self, sensor_id, status="ready", exception=None):
+        self.sensor_id = sensor_id
+        self.status = status
+        self.exception = exception
+
+
+class JobWorker(threading.Thread):
+    def __init__(self, cb, sensor_id, result_queue):
+        super(JobWorker, self).__init__()
+        self.cb = cb
+        self.sensor_id = sensor_id
+        self.job_queue = Queue()
+        self.lr_session = None
+        self.result_queue = result_queue
+
+    def run(self):
+        try:
+            self.lr_session = self.cb.live_response.request_session(self.sensor_id)
+            self.result_queue.put(WorkerStatus(self.sensor_id, status="ready"))
+
+            while True:
+                work_item = self.job_queue.get(block=True)
+                if not work_item:
+                    self.job_queue.task_done()
+                    return
+
+                self.run_job(work_item)
+                self.result_queue.put(CompletionNotification(self.sensor_id))
+                self.job_queue.task_done()
+        except Exception as e:
+            self.result_queue.put(WorkerStatus(self.sensor_id, status="error", exception=e))
+        finally:
+            if self.lr_session:
+                self.lr_session.close()
+            self.result_queue.put(WorkerStatus(self.sensor_id, status="exiting"))
+
+    def run_job(self, work_item):
+        try:
+            work_item.future.set_result(work_item.fn(self.lr_session))
+        except Exception as e:
+            work_item.future.set_exception(e)
+
+
+class LiveResponseJobScheduler(threading.Thread):
+    daemon = True
+
+    def __init__(self, cb, max_workers=10):
+        super(LiveResponseJobScheduler, self).__init__()
+        self._cb = cb
+        self._job_workers = {}
+        self._idle_workers = set()
+        self._unscheduled_jobs = defaultdict(list)
+        self._max_workers = max_workers
+        self.schedule_queue = Queue()
+
+    def run(self):
+        log.debug("Starting Live Response Job Scheduler")
+
+        while True:
+            log.debug("Waiting for item on Scheduler Queue")
+            item = self.schedule_queue.get(block=True)
+            log.debug("Got item: {0}".format(item))
+            if isinstance(item, WorkItem):
+                # new WorkItem available
+                self._unscheduled_jobs[item.sensor_id].append(item)
+            elif isinstance(item, CompletionNotification):
+                # job completed
+                self._idle_workers.add(item.sensor_id)
+            elif isinstance(item, WorkerStatus):
+                if item.status == "error":
+                    log.error("Error encountered by JobWorker[{0}]: {1}".format(item.sensor_id,
+                                                                                item.exception))
+                elif item.status == "exiting":
+                    log.debug("JobWorker[{0}] has exited, waiting...".format(item.sensor_id))
+                    self._job_workers[item.sensor_id].join()
+                    log.debug("JobWorker[{0}] deleted".format(item.sensor_id))
+                    del self._job_workers[item.sensor_id]
+                    try:
+                        self._idle_workers.remove(item.sensor_id)
+                    except KeyError:
+                        pass
+                elif item.status == "ready":
+                    log.debug("JobWorker[{0}] now ready to accept jobs, session established".format(item.sensor_id))
+                    self._idle_workers.add(item.sensor_id)
+                else:
+                    log.debug("Unknown status from JobWorker[{0}]: {1}".format(item.sensor_id, item.status))
+            else:
+                log.debug("Received unknown item on the scheduler Queue, exiting")
+                # exiting the scheduler if we get None
+                # TODO: wait for all worker threads to exit
+                return
+
+            self._schedule_jobs()
+
+    def _schedule_jobs(self):
+        log.debug("Entering scheduler")
+
+        # First, see if there are new jobs to schedule on idle workers.
+        self._schedule_existing_workers()
+
+        # If we have jobs scheduled to run on sensors with no current associated worker, let's spawn new ones.
+        if set(self._unscheduled_jobs.keys()) - self._idle_workers:
+            self._cleanup_idle_workers()
+            self._spawn_new_workers()
+            self._schedule_existing_workers()
+
+    def _cleanup_idle_workers(self, max=None):
+        if not max:
+            max = self._max_workers
+
+        for sensor in list(self._idle_workers)[:max]:
+            log.debug("asking worker for sensor id {0} to exit".format(sensor))
+            self._job_workers[sensor].job_queue.put(None)
+
+    def _schedule_existing_workers(self):
+        log.debug("There are idle workers for sensor ids {0}".format(self._idle_workers))
+
+        intersection = self._idle_workers.intersection(set(self._unscheduled_jobs.keys()))
+
+        log.debug("{0} jobs ready to execute in existing execution slots".format(len(intersection)))
+
+        for sensor in intersection:
+            item = self._unscheduled_jobs[sensor].pop(0)
+            self._job_workers[sensor].job_queue.put(item)
+            self._idle_workers.remove(item.sensor_id)
+
+        self._cleanup_unscheduled_jobs()
+
+    def _cleanup_unscheduled_jobs(self):
+        marked_for_deletion = []
+        for k in self._unscheduled_jobs.keys():
+            if len(self._unscheduled_jobs[k]) == 0:
+                marked_for_deletion.append(k)
+
+        for k in marked_for_deletion:
+            del self._unscheduled_jobs[k]
+
+    def submit_job(self, work_item):
+        self.schedule_queue.put(work_item)
+
+    def _spawn_new_workers(self):
+        if len(self._job_workers) >= self._max_workers:
+            return
+
+        schedule_max = self._max_workers - len(self._job_workers)
+
+        sensors = [s for s in self._cb.select(Sensor) if s.id in self._unscheduled_jobs
+                   and s.id not in self._job_workers
+                   and s.status == "Online"]
+        sensors_to_schedule = sorted(sensors, key=lambda x: x.next_checkin_time)[:schedule_max]
+
+        log.debug("Spawning new workers to handle these sensors: {0}".format(sensors_to_schedule))
+        for sensor in sensors_to_schedule:
+            log.debug("Spawning new JobWorker for sensor id {0}".format(sensor.id))
+            self._job_workers[sensor.id] = JobWorker(self._cb, sensor.id, self.schedule_queue)
+            self._job_workers[sensor.id].start()
+
+
+class LiveResponseSessionManager(object):
+    def __init__(self, cb, timeout=30, keepalive_sessions=False):
         self._timeout = timeout
         self._cb = cb
         self._sessions = {}
         self._session_lock = threading.RLock()
+        self._keepalive_sessions = keepalive_sessions
 
-        self._cleanup_thread = threading.Thread(target=self._session_keepalive_thread)
-        self._cleanup_thread.daemon = True
-        self._cleanup_thread.start()
+        if keepalive_sessions:
+            self._cleanup_thread = threading.Thread(target=self._session_keepalive_thread)
+            self._cleanup_thread.daemon = True
+            self._cleanup_thread.start()
 
-        self._job_workers = ThreadPoolExecutor(max_workers=max_workers)
-        self._jobs = defaultdict(list)
+        self._job_scheduler = None
 
-    def submit_job(self, tag, job, sensor_list):
-        for s in sensor_list:
-            self._jobs[tag].append(self._job_workers.submit(jobrunner, job, self._cb, s))
+    def submit_job(self, job, sensor):
+        if self._job_scheduler is None:
+            # spawn the scheduler thread
+            self._job_scheduler = LiveResponseJobScheduler(self._cb)
+            self._job_scheduler.start()
 
-    def job_results(self, tag):
-        return as_completed(self._jobs[tag])
+        work_item = WorkItem(job, sensor)
+        self._job_scheduler.submit_job(work_item)
+        return work_item.future
 
     def _session_keepalive_thread(self):
         log.debug("Starting Live Response scheduler cleanup task")
@@ -648,35 +829,34 @@ class LiveResponseScheduler(object):
                             delete_list.append(session.sensor_id)
 
                 for sensor_id in delete_list:
-                    try:
-                        session_data = self._cb.get_object("/api/v1/cblr/session/{0}"
-                                                           .format(self._sessions[sensor_id].session_id))
-                        session_data["status"] = "close"
-                        self._cb.put_object("/api/v1/cblr/session/{0}".format(self._sessions[sensor_id].session_id),
-                                            session_data)
-                    except:
-                        pass
-                    finally:
-                        del self._sessions[sensor_id]
+                    self._close_session(self._sessions[sensor_id].session_id)
+                    del self._sessions[sensor_id]
 
     def request_session(self, sensor_id):
-        with self._session_lock:
-            if sensor_id in self._sessions:
-                session = self._sessions[sensor_id]
-                self._sessions[sensor_id]._refcount += 1
-            else:
-                session_id, session_data = self._get_or_create_session(sensor_id)
-                session = LiveResponseSession(self, session_id, sensor_id, session_data=session_data)
-                self._sessions[sensor_id] = session
+        if self._keepalive_sessions:
+            with self._session_lock:
+                if sensor_id in self._sessions:
+                    session = self._sessions[sensor_id]
+                    self._sessions[sensor_id]._refcount += 1
+                else:
+                    session_id, session_data = self._get_or_create_session(sensor_id)
+                    session = LiveResponseSession(self, session_id, sensor_id, session_data=session_data)
+                    self._sessions[sensor_id] = session
+        else:
+            session_id, session_data = self._get_or_create_session(sensor_id)
+            session = LiveResponseSession(self, session_id, sensor_id, session_data=session_data)
 
         return session
 
-    def close_session(self, sensor_id):
-        with self._session_lock:
-            try:
-                self._sessions[sensor_id]._refcount -= 1
-            except KeyError:
-                pass
+    def close_session(self, sensor_id, session_id):
+        if self._keepalive_sessions:
+            with self._session_lock:
+                try:
+                    self._sessions[sensor_id]._refcount -= 1
+                except KeyError:
+                    pass
+        else:
+            self._close_session(session_id)
 
     def _send_keepalive(self, session_id):
         log.debug("Sending keepalive message for session id {0}".format(session_id))
@@ -695,9 +875,19 @@ class LiveResponseScheduler(object):
             res = poll_status(self._cb, "/api/v1/cblr/session/{0}".format(session_id), desired_status="active")
         except ObjectNotFoundError:
             # the Cb server will return a 404 if we don't establish a session in time, so convert this to a "timeout"
-            raise TimeoutError("Could not establish session with sensor {0}".format(sensor_id))
+            raise TimeoutError(uri="/api/v1/cblr/session/{0}".format(session_id),
+                               message="Could not establish session with sensor {0}".format(sensor_id),
+                               error_code=404)
         else:
             return session_id, res
+
+    def _close_session(self, session_id):
+        try:
+            session_data = self._cb.get_object("/api/v1/cblr/session/{0}".format(session_id))
+            session_data["status"] = "close"
+            self._cb.put_object("/api/v1/cblr/session/{0}".format(session_id), session_data)
+        except:
+            pass
 
     def _create_session(self, sensor_id):
         response = self._cb.post_object("/api/v1/cblr/session", {"sensor_id": sensor_id}).json()
@@ -732,7 +922,7 @@ def poll_status(cb, url, desired_status="complete", timeout=None, delay=None):
         else:
             time.sleep(delay)
 
-    raise TimeoutError(url, message="timeout polling for Live Response")
+    raise TimeoutError(uri=url, message="timeout polling for Live Response")
 
 
 if __name__ == "__main__":
@@ -745,10 +935,9 @@ if __name__ == "__main__":
 
     c = CbEnterpriseResponseAPI()
     j = GetFileJob(r"c:\test.txt")
-    with c.select(Sensor, 9).lr_session() as lr_session:
+    with c.select(Sensor, 3).lr_session() as lr_session:
         file_contents = lr_session.get_file(r"c:\test.txt")
 
-    c.live_response.submit_job("test", j.run, [9, ])
-    for x in c.live_response.job_results("test"):
-        print(x.result())
-
+    future = c.live_response.submit_job(j.run, 3)
+    wait([future, ])
+    print(future.result())

@@ -1,11 +1,13 @@
 from cbapi.response.models import Process, Binary
-from cbapi.response import CbEnterpriseResponseAPI
 import csv
 import time
 import pefile
 import sys
 from progressbar import ProgressBar, Bar, Percentage
-from cbapi.example_helpers import build_cli_parser, disable_insecure_warnings
+from cbapi.example_helpers import build_cli_parser, disable_insecure_warnings, get_cb_response_object
+import logging
+
+logging.getLogger("cbapi").setLevel(logging.DEBUG)
 
 #
 # requirements.txt
@@ -39,7 +41,7 @@ def main():
     # Initalize the cbapi-ng
     # TODO get_cb_object
     #
-    cb = CbEnterpriseResponseAPI()
+    cb = get_cb_response_object(opts)
 
     #
     # Main Query
@@ -96,18 +98,22 @@ def main():
             #
             # Write out the result
             #
-            csv_writer.writerow((process.path,
-                                 process.hostname,
-                                 process.username,
-                                 process.netconn_count,
-                                 process.webui_link,
-                                 binary.webui_link,
-                                 binary.md5,
-                                 binary.digsig_result if binary.digsig_result else "UNSIGNED",
-                                 binary.company_name,
-                                 binary.server_added_timestamp,
-                                 binary.host_count,
-                                 binary_timestamp))
+            try:
+                csv_writer.writerow((process.path,
+                                     process.hostname,
+                                     process.username,
+                                     process.netconn_count,
+                                     process.webui_link,
+                                     binary.webui_link,
+                                     binary.md5,
+                                     binary.signing_data.result if binary.signing_data.result else "UNSIGNED",
+                                     binary.company_name,
+                                     binary.server_added_timestamp,
+                                     binary.host_count,
+                                     binary_timestamp))
+            except:
+                print binary
+
     pbar.finish()
 
 if __name__ == "__main__":

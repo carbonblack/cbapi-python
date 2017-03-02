@@ -18,7 +18,8 @@ install_requires=[
     'pika',
     'prompt_toolkit',
     'pygments',
-    'python-dateutil'
+    'python-dateutil',
+    'protobuf'
 ]
 if sys.version_info < (2, 7):
     install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])
@@ -27,7 +28,7 @@ if sys.version_info < (3, 0):
 
 setup(
     name='cbapi',
-    version='0.9.8',
+    version='1.0.1',
     url='https://github.com/carbonblack/cbapi-python',
     license='MIT',
     author='Carbon Black',
