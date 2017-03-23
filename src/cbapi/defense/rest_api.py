@@ -87,6 +87,7 @@ class Query(PaginatedQuery):
         return self.where(q)
 
     def _count(self):
+        # TODO: FIX
         args = {'limit': -1}
         if self._query:
             args['q'] = self._query
@@ -99,8 +100,9 @@ class Query(PaginatedQuery):
     def _search(self, start=0, rows=0):
         # iterate over total result set, 1000 at a time
         args = {}
-        args['fromRow'] = start
-        args['maxRows'] = self._batch_size
+        if start != 0:
+            args['start'] = start
+        args['rows'] = self._batch_size
 
         current = start
         numrows = 0
@@ -114,10 +116,10 @@ class Query(PaginatedQuery):
             query_args = convert_query_params(args)
             result = self._cb.get_object(self._doc_class.urlobject, query_parameters=query_args)
 
-            if len(result) == 0:
-                break
+            self._total_results = result.get("totalResults", 0)
+            self._count_valid = True
 
-            for item in result:
+            for item in result.get("results", []):
                 yield item
                 current += 1
                 numrows += 1
@@ -125,7 +127,7 @@ class Query(PaginatedQuery):
                     still_querying = False
                     break
 
-            args['offset'] = current + 1
+            args['start'] = current + 1
 
             if len(result) < self._batch_size:
                 break
