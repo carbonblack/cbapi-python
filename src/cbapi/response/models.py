@@ -70,6 +70,32 @@ log = logging.getLogger(__name__)
 #     urlobject = '/api/v1/binary'
 
 
+class IngressFilter(MutableBaseModel, CreatableModelMixin):
+    urlobject = "/api/v1/ingress_whitelist"
+    swagger_meta_file = "response/models/ingress_filter.yaml"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return SimpleQuery(cls, cb)
+
+    def _update_object(self):
+        # when creating a new IngressFilter, we must send it as an array of one:
+        if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
+            log.debug("Creating a new {0:s} object".format(self.__class__.__name__))
+            ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.urlobject,
+                                            data=[self._info])
+            ids = ret.json()
+            self.id = ids[0]
+            self._dirty_attributes = {}
+            self.refresh()
+            return self.id
+        else:
+            log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
+            ret = self._cb.api_json_request(self.__class__._change_object_http_method,
+                                            self._build_api_request_uri(), data=self._info)
+            return self._refresh_if_needed(ret)
+
+
 class BannedHash(MutableBaseModel, CreatableModelMixin):
     urlobject = "/api/v1/banning/blacklist"
     swagger_meta_file = "response/models/hash_blacklist.yaml"
