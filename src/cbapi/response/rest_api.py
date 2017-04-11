@@ -174,8 +174,17 @@ class CbResponseAPI(BaseAPI):
     def _request_lr_session(self, sensor_id):
         return self.live_response.request_session(sensor_id)
 
-    def _close_lr_session(self, sensor_id):
-        return self.live_response.close_session(sensor_id)
+    def create_new_partition(self):
+        """Create a new Solr time partition for event storage. Available in Cb Response 6.1 and above.
+        This will force roll-over current hot partition into warm partition (by renaming it to a time-stamped name)
+        and create a new hot partition ("writer").
+
+        :returns: Nothing if successful.
+        :raises ApiError: if there was an error creating the new partition.
+        :raises ServerError: if there was an error creating the new partition.
+        """
+        self.post_object("/api/v1/storage/events/new_partition", None)
+
 
 class CbEnterpriseResponseAPI(CbResponseAPI):
     """

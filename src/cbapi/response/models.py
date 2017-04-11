@@ -70,6 +70,43 @@ log = logging.getLogger(__name__)
 #     urlobject = '/api/v1/binary'
 
 
+class StoragePartitionQuery(SimpleQuery):
+    @property
+    def results(self):
+        if not self._full_init:
+            self._results = []
+            for k,v in iteritems(self._cb.get_object(self._urlobject, default={})):
+                t = self._doc_class.new_object(self._cb, v, full_doc=True)
+                if self._match_query(t):
+                    self._results.append(t)
+            self._results = self._sort(self._results)
+            self._full_init = True
+
+        return self._results
+
+
+class StoragePartition(NewBaseModel):
+    urlobject = "/api/v1/storage/events/partition"
+    primary_key = "name"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return StoragePartitionQuery(cls, cb)
+
+    def _refresh(self):
+        # there is no GET method for a StoragePartition.
+        return True
+
+    def delete(self):
+        self._cb.delete_object("/api/v1/storage/events/{0}".format(self._model_unique_id))
+
+    def unmount(self):
+        self._cb.post_object("/api/v1/storage/events/{0}/unmount".format(self._model_unique_id), None)
+
+    def mount(self):
+        self._cb.post_object("/api/v1/storage/events/{0}/mount".format(self._model_unique_id), None)
+
+
 class BannedHash(MutableBaseModel, CreatableModelMixin):
     urlobject = "/api/v1/banning/blacklist"
     swagger_meta_file = "response/models/hash_blacklist.yaml"
