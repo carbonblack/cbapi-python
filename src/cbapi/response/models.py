@@ -1620,7 +1620,7 @@ class ProcessV1Parser(object):
             new_crossproc['tamper_flag'] = True
 
         new_crossproc['is_target'] = False
-        if len(parts) > 7:
+        if len(parts) > 8:
             if parts[8] == 'true':
                 new_crossproc['is_target'] = True
 
