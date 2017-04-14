@@ -35,6 +35,7 @@ class UnicodeWriter:
 
     def writerow(self, row):
         if not PY3:
+            row = [s or "" for s in row]
             row = [s.encode(self.encoding) for s in row]
         self.writer.writerow(row)
 
