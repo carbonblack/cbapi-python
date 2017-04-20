@@ -14,6 +14,7 @@ except Exception:
 # New API as of cbapi 0.9.0
 from .response.rest_api import CbEnterpriseResponseAPI, CbResponseAPI
 from .protection.rest_api import CbEnterpriseProtectionAPI, CbProtectionAPI
+from .defense.rest_api import CbDefenseAPI
 
 # LEGACY APIs, will deprecated as of cbapi 2.0.0
 # only import these if the Python version is 2.x
