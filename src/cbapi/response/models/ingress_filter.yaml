@@ -1,0 +1,120 @@
+type: object
+required:
+- id
+- name
+- description
+properties:
+  id:
+    type: string
+    description: "Unique filter identifier, in order to allow future updates. Can be any string, but should contain only alfanumeric digits and dashes (e.g. uuid). This is read-only field and honored only during initial POST."
+  create_timestamp:
+    type: string
+    format: "date-time"
+    description: "Date of creation of this filter. This is read-only field."
+  modify_timestamp:
+    type: string
+    format: "date-time"
+    description: "Date of last modification of this filter. This is read-only field."
+  create_user_id:
+    type: integer
+    description: "ID of user that created this filter.  This is a read-only field."
+  modify_user_id:
+    type: integer
+    description: "ID of user that last modified this filter.  This is a read-only field."
+  version:
+    type: integer
+    description: "Optional version of the filter (not used yet)"
+  priority:
+    type: integer
+    description: "Optional - Priority of the filter. Higher priority filters are guaranteed to be used first. Negative priorities can be used as well. Default priority is 0"
+  internal:
+    type: boolean
+    description: "This field is not used yet. Can be omitted."
+  enabled:
+    type: boolean
+    description: "Optional - True enables the filter (defaults to True)"
+  filter_on_sensor:
+    type: boolean
+    description: "True to push this filter to sensor. Note that, if filter was was pushed to sensor, it will not be enforced on the server. Note that only certain filters can be pushed to sensors today without loss of functionality. Defaults to False."
+  filter_on_server:
+    type: boolean
+    description: "True to filter on server. Defaults to true. If false, server will treat this filter as pass-through (disabled)."
+  track_metrics:
+    type: boolean
+    description: "Optional - True to capture metrics for this filter even when disabled. Defaults to true. Note: If we are metering disabled filter, we will resort to metering small sample set to reduce performance impact"
+  hit_rate:
+    type: float
+    description: "Read Only - measured 15-min hit rate for a given filter as a rate (e.g. 0.01 equals to 1% hit rate). Note that this metrics will be available only for filters that are enabled or have trackMetrics turned on. Also, this metrics counts hit rate of the process, based on pathFilters, commandLineFilters and md5Filters. It doesn't take into the account the individual event hit rate."
+  name:
+    type: string
+    description: "Name of this filter"
+  description:
+    type: string
+    description: "Description of this filter - displayed in the UI"
+  os_mask:
+    type: integer
+    description: "Optional - Which OS should this filter apply to (bitfield mask: 1:windows, 2:osx, 4:linux). Defaults to 7 (all OSs)"
+  global:
+    type: boolean
+    description: "Optional - True to apply to all sensor groups. Defaults to true. If this is true, then sensor_ids and group_ids are ignored."
+  group_ids:
+    type: array
+    description: "Optional - List of sensor group Ids where this filter applies to (if global == false). Defaults to empty list. Ignored if 'global' is true."
+    items:
+      type: integer
+  sensor_ids:
+    type: array
+    description: "Optional - Array of sensor ids where filter applies (applies to all sensors in selected groups if empty). Ignored if 'global' is true."
+    items:
+      type: integer
+  path_filters:
+    type: array
+    description: "Optional - Array of process path filters to use (supports globbing or regex patterns)."
+    items:
+      type: string
+  command_line_filters:
+    type: array
+    description: "Optional - Array of command line filters to use. Can use regex patterns"
+    items:
+      type: string
+  md5_filters:
+    type: array
+    description: "Optional - Array of MD5 checksums. Processes that match these MD5s will be filtered."
+    items:
+      type: string
+  descendant_filtering_level:
+    type: integer
+    description: "Optional - 0 = filter only matched process, 1 = matched process and immediate children, 2 = matched up to second level of descendants etc. Special value -1 matches all descendants. If not provided, defaults to 0 (matched process only)"
+  filter_all_events:
+    type: boolean
+    description: "Optional - If true, all events will be excluded for a given process (respecting descendant levels). If false, filters (below) will be applied to each event type. Defaults to true"
+  regmod_filters:
+    type: array
+    description: "Optional - Filters are applied to the given event field. Can use regex patterns"
+    items:
+      type: string
+  modload_filters:
+    type: array
+    description: "Optional - Filters are applied to the given event field. Can use regex patterns"
+    items:
+      type: string
+  filemod_filters:
+    type: array
+    description: "Optional - Filters are applied to the given event field. Can use regex patterns"
+    items:
+      type: string
+  non_binary_filemod_filters:
+    type: array
+    description: "Optional - Filters are applied to the given event field. Can use regex patterns"
+    items:
+      type: string
+  netconn_filters:
+    type: array
+    description: "Optional - Filters are applied to the given event field. Can use regex patterns"
+    items:
+      type: string
+  crossproc_filters:
+    type: array
+    description: "Optional - Filters are applied to the given event field. Can use regex patterns"
+    items:
+      type: string
