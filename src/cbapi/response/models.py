@@ -86,6 +86,30 @@ class StoragePartitionQuery(SimpleQuery):
 
 
 class StoragePartition(NewBaseModel):
+    """
+    The StoragePartition model object allows you to load and unload Time Paritioning "cores" into the Cb Response server
+    through the API. This model is only available in Cb Response server versions 6.0 and above.
+    Cb Response will roll-over data into new Solr partition periodically (based on configuration) in order to improve
+    performance and data retention.
+
+    Partitions can be:
+
+    Hot: There is always exactly one hot partition. It is called "writer" (configurable).
+    All new data goes to the writer partition. Hot partition can be searched.
+
+    Warm: Warm partition is any mounted partition that is not currently written to. Warm partitions can be searched.
+    Warm partition are named as "cbevents_<timestmp>" where timestamp is time when partition was created in format
+    "YYYY_MM_DD_hhmm". Timestamp can be followed by suffix in format "_<suffix>" which will be ignored and can be used
+    to specify additional partition information. Here are examples of valid partition names:
+    cbevents_2016_06_11_1351
+    cbevents_2016_06_11_1351_foo
+    cbevents_2016_06_11_1351_this_is_partition_from_old_server
+
+    Cold: Cold partition is any partition that is not mounted to Solr, but exists only on disk. Cold partitions can not
+    be searched, but can be mounted (converted into warm partitions)
+
+    Deleted: Deleted partition is removed from disk and can no longer be looked up or restored
+    """
     urlobject = "/api/v1/storage/events/partition"
     primary_key = "name"
 
