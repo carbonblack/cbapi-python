@@ -29,7 +29,7 @@ properties:
     description: "Optional - Priority of the filter. Higher priority filters are guaranteed to be used first. Negative priorities can be used as well. Default priority is 0"
   internal:
     type: boolean
-    description: "Internally provided exclusion (ex. through alliance). Not yet implemented."
+    description: "This field is not used yet. Can be omitted."
   enabled:
     type: boolean
     description: "Optional - True enables the filter (defaults to True)"
@@ -44,10 +44,10 @@ properties:
     description: "Optional - True to capture metrics for this filter even when disabled. Defaults to true. Note: If we are metering disabled filter, we will resort to metering small sample set to reduce performance impact"
   hit_rate:
     type: float
-    description: "measured 15-min hit rate for a given filter as a rate (e.g. 0.01 equals to 1% hit rate). Note that this metrics will be available only for filters that are enabled or have trackMetrics turned on. Also, this metrics counts hit rate of the process, based on pathFilters, commandLineFilters and md5Filters. It doesn't take into the account the individual event hit rate."
+    description: "Read Only - measured 15-min hit rate for a given filter as a rate (e.g. 0.01 equals to 1% hit rate). Note that this metrics will be available only for filters that are enabled or have trackMetrics turned on. Also, this metrics counts hit rate of the process, based on pathFilters, commandLineFilters and md5Filters. It doesn't take into the account the individual event hit rate."
   name:
     type: string
-    description: "Name of this filter - displayed in the UI"
+    description: "Name of this filter"
   description:
     type: string
     description: "Description of this filter - displayed in the UI"
@@ -56,15 +56,15 @@ properties:
     description: "Optional - Which OS should this filter apply to (bitfield mask: 1:windows, 2:osx, 4:linux). Defaults to 7 (all OSs)"
   global:
     type: boolean
-    description: "Optional - True to apply to all sensor groups. Defaults to true"
+    description: "Optional - True to apply to all sensor groups. Defaults to true. If this is true, then sensor_ids and group_ids are ignored."
   group_ids:
     type: array
-    description: "Optional - List of sensor group Ids where this filter applies to (if global == false). Defaults to empty list"
+    description: "Optional - List of sensor group Ids where this filter applies to (if global == false). Defaults to empty list. Ignored if 'global' is true."
     items:
       type: integer
   sensor_ids:
     type: array
-    description: "Optional - Array of sensor ids where filter applies (applies to all sensors in selected groups if empty)."
+    description: "Optional - Array of sensor ids where filter applies (applies to all sensors in selected groups if empty). Ignored if 'global' is true."
     items:
       type: integer
   path_filters:
@@ -79,7 +79,7 @@ properties:
       type: string
   md5_filters:
     type: array
-    description: "Optional - Array of MD5sums to filter."
+    description: "Optional - Array of MD5 checksums. Processes that match these MD5s will be filtered."
     items:
       type: string
   descendant_filtering_level:
