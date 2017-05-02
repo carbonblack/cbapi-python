@@ -1222,6 +1222,13 @@ class WatchlistEnabledQuery(Query):
         return new_watchlist.save()
 
 
+class ProcessQuery(WatchlistEnabledQuery):
+    def __init__(self, doc_class, cb, query=None, raw_query=None):
+        super(ProcessQuery, self).__init__(doc_class, cb, query, raw_query)
+        if cb.cb_server_version >= LooseVersion("6.0.0"):
+            self._default_args["cb.legacy_5x_mode"] = "false"
+
+
 @immutable
 class Binary(TaggedModel):
 
@@ -1787,13 +1794,39 @@ class ProcessV3Parser(ProcessV2Parser):
                                 proc_data=proc_data)
 
 
+class ProcessV4Parser(ProcessV3Parser):
+    def __init__(self, process_model):
+        super(ProcessV4Parser, self).__init__(process_model)
+
+    def parse_netconn(self, seq, netconn):
+        new_conn = {}
+        timestamp = convert_event_time(netconn.get("timestamp", None))
+        direction = netconn.get("direction", "true")
+
+        if direction == 'true':
+            new_conn['direction'] = 'Outbound'
+        else:
+            new_conn['direction'] = 'Inbound'
+
+        for ipfield in ('remote_ip', 'local_ip', 'proxy_ip'):
+            new_conn[ipfield] = netconn.get(ipfield, '0.0.0.0')
+
+        for portfield in ('remote_port', 'local_port', 'proxy_port'):
+            new_conn[portfield] = int(netconn.get(portfield, 0))
+
+        new_conn['proto'] = protocols.get(int(netconn.get('proto', 0)), "Unknown")
+        new_conn['domain'] = netconn.get('domain', '')
+
+        return CbNetConnEvent(self.process_model, timestamp, seq, new_conn, version=2)
+
+
 class Process(TaggedModel):
     urlobject = '/api/v1/process'
     default_sort = 'last_update desc'
 
     @classmethod
     def _query_implementation(cls, cb):
-        return WatchlistEnabledQuery(cls, cb)
+        return ProcessQuery(cls, cb)
 
     @classmethod
     def new_object(cls, cb, item):
@@ -1810,12 +1843,18 @@ class Process(TaggedModel):
         self.valid_process = True
         self._overrides = {}
 
+        self._events_loaded = False
+        self._segments = []
+
         try:
             # old 4.x process IDs are integers.
             self.id = int(procguid)
         except ValueError:
             # new 5.x process IDs are hex strings with optional segment IDs.
             if len(procguid) == 45:
+                self.id = procguid[:36]
+                self.segment = int(procguid[38:], 16)
+            elif len(procguid) == 49 and cb.cb_server_version >= LooseVersion('6.0.0'):
                 self.id = procguid[:36]
                 self.segment = int(procguid[38:], 16)
             else:
@@ -1826,11 +1865,23 @@ class Process(TaggedModel):
                     self._full_init = True
 
         if not self.segment:
-            self.segment = 1
+            if cb.cb_server_version < LooseVersion('6.0.0'):
+                self.segment = 1
+            else:
+                self.segment = 0
 
-        super(Process, self).__init__(cb, "%s-%08x" % (self.id, self.segment))
+        if cb.cb_server_version < LooseVersion('6.0.0'):
+            super(Process, self).__init__(cb, "%s-%08x" % (self.id, self.segment))
+        else:
+            super(Process, self).__init__(cb, "%s-%012x" % (self.id, self.segment))
 
-        if cb.cb_server_version >= LooseVersion('5.2.0'):
+        self._process_summary_api = 'v1'
+
+        if cb.cb_server_version >= LooseVersion('6.0.0'):
+            self._process_summary_api = 'v2'
+            self._process_event_api = 'v4'
+            self._event_parser = ProcessV4Parser(self)
+        elif cb.cb_server_version >= LooseVersion('5.2.0'):
             self._process_event_api = 'v3'
             self._event_parser = ProcessV3Parser(self)
         elif cb.cb_server_version >= LooseVersion('5.1.0'):
@@ -1872,8 +1923,7 @@ class Process(TaggedModel):
         return super(Process, self)._attribute(attrname, default=default)
 
     def _build_api_request_uri(self):
-        # TODO: how do we handle process segments?
-        return "/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id, self.segment)
+        return "/api/{0}/process/{1}/{2}".format(self._process_summary_api, self.id, self.segment)
 
     def _retrieve_cb_info(self):
         if self.suppressed_process or not self.valid_process:
@@ -1882,7 +1932,10 @@ class Process(TaggedModel):
             super(Process, self)._retrieve_cb_info()
 
     def _parse(self, obj):
-        self._info = obj.get('process', {})
+        if "process" in obj:
+            self._info = obj.get("process", {})
+        else:
+            self._info = obj.copy()
 
         if self._info and (self._info.get("start", -1) == -1 or self._info.get("process_pid", -1) == -1):
             log.debug("Process ID %s is invalid; start time or process PID are empty or -1." % self.id)
@@ -1989,11 +2042,19 @@ class Process(TaggedModel):
         """
         return convert_from_solr(self._attribute('start', -1))
 
+    def require_events(self):
+        if not self._events_loaded:
+            self._parse(self._cb.get_object("/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id,
+                                                                                    self.segment)))
+            self._events_loaded = True
+
     @property
     def modloads(self):
         """
         Generator that returns `:py:class:CbModLoadEvent` associated with this process
         """
+        self.require_events()
+
         i = 0
         for raw_modload in self._attribute('modload_complete', []):
             yield self._event_parser.parse_modload(i, raw_modload)
@@ -2011,6 +2072,8 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbFileModEvent` objects associated with this process
         """
+        self.require_events()
+
         i = 0
         for raw_filemod in self._attribute('filemod_complete', []):
             yield self._event_parser.parse_filemod(i, raw_filemod)
@@ -2021,6 +2084,8 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbNetConnEvent` objects associated with this process
         """
+        self.require_events()
+
         i = 0
         for raw_netconn in self._attribute('netconn_complete', []):
             yield self._event_parser.parse_netconn(i, raw_netconn)
@@ -2031,6 +2096,8 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbRegModEvent` objects associated with this process
         """
+        self.require_events()
+
         i = 0
         for raw_regmod in self._attribute('regmod_complete', []):
             yield self._event_parser.parse_regmod(i, raw_regmod)
@@ -2041,6 +2108,8 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbCrossProcEvent` objects associated with this process
         """
+        self.require_events()
+
         i = 0
         for raw_crossproc in self._attribute('crossproc_complete', []):
             yield self._event_parser.parse_crossproc(i, raw_crossproc)
@@ -2051,6 +2120,8 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbChildProcEvent` objects associated with this process
         """
+        self.require_events()
+
         i = 0
         for raw_childproc in self._attribute('childproc_complete', []):
             yield self._event_parser.parse_childproc(i, raw_childproc)
@@ -2068,6 +2139,19 @@ class Process(TaggedModel):
         segment_events.sort()
         return segment_events
 
+    def get_segments(self):
+        if not self._segments:
+            if self._cb.cb_server_version < LooseVersion('6.0.0'):
+                proclist = self._cb.select(Process).where("process_id:{0}".format(self.id))[::]
+                proclist.sort(key=lambda x: x.segment)
+            else:
+                res = self._cb.get_object("/api/v1/process/{0}/segment".format(self.id))["process"]["segments"]
+                proclist = [self._cb.select(Process, x["unique_id"]) for x in res]
+
+            self._segments = proclist
+
+        return self._segments
+
     @property
     def all_events(self):
         """
@@ -2079,8 +2163,7 @@ class Process(TaggedModel):
         all_events = []
 
         # first let's find the list of segments
-        proclist = self._cb.select(Process).where("process_id:{0}".format(self.id))[::]
-        proclist.sort(key=lambda x: x.segment)
+        proclist = self.get_segments()
         for proc in proclist:
             all_events += proc.all_events_segment
 
