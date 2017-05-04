@@ -12,6 +12,7 @@ if sys.version_info < (3, 0):
 install_requires=[
     'py-lru-cache',
     'requests',
+    'requests[security]',
     'attrdict',
     'cachetools',
     'six',
