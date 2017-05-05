@@ -11,6 +11,7 @@ if sys.version_info < (3, 0):
 
 install_requires=[
     'requests',
+    'requests[security]',
     'attrdict',
     'cachetools',
     'six',
