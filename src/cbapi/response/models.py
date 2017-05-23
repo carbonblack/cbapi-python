@@ -279,7 +279,7 @@ class Alert(MutableBaseModel):
     @property
     def process(self):
         if 'process' in self.alert_type:
-            return self._cb.select(Process, self.process_id, getattr(self, "segment_id", 1))
+            return self._cb.select(Process, self.process_id, getattr(self, "segment_id", None))
         return None
 
     @property
@@ -1022,7 +1022,7 @@ class TaggedEvent(MutableBaseModel, CreatableModelMixin):
     @property
     def process(self):
         process_guid = getattr(self, "unique_id", None)
-        process_segment = getattr(self, "segment_id", 1)
+        process_segment = getattr(self, "segment_id", None)
         if process_guid:
             return self._cb.select(Process, process_guid, process_segment)
         else:
@@ -1225,6 +1225,15 @@ class WatchlistEnabledQuery(Query):
 class ProcessQuery(WatchlistEnabledQuery):
     def __init__(self, doc_class, cb, query=None, raw_query=None):
         super(ProcessQuery, self).__init__(doc_class, cb, query, raw_query)
+
+    def group_by(self, field_name):
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            nq = self._clone()
+            nq._default_args["cb.group"] = field_name
+            return nq
+        else:
+            log.debug("group_by only supported in Cb Response 6.1+")
+            return self
 
 
 @immutable
@@ -2052,14 +2061,39 @@ class Process(TaggedModel):
         return convert_from_solr(self._attribute('start', -1))
 
     def require_events(self):
+        event_key_list = ['filemod_complete', 'regmod_complete', 'modload_complete', 'netconn_complete',
+                      'crossproc_complete', 'childproc_complete']
+
         if self.current_segment not in self._events:
             self._events[self.current_segment] = {}
             res = self._cb.get_object("/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id,
                                                                                                 self.current_segment)).get("process", {})
-            for k in ['filemod_complete', 'regmod_complete', 'modload_complete', 'netconn_complete',
-                      'crossproc_complete', 'childproc_complete']:
+            for k in event_key_list:
                 self._events[self.current_segment][k] = res.get(k, [])
+
+            if not self._full_init:
+                for k in event_key_list:
+                    try:
+                        del res[k]
+                    except KeyError:
+                        pass
+
+                self._parse(res)
+                self._full_init = True
+
             self._events_loaded = True
+
+    def refresh(self):
+        # when refreshing a process, also zero out all the events
+        self._events = {}
+        self._events_loaded = False
+        self._segments = []
+        super(Process, self).refresh()
+
+    @property
+    def segment(self):
+        log.debug("The .segment attribute will be deprecated in future versions of the cbapi Python module.")
+        return self.current_segment
 
     @property
     def modloads(self):
@@ -2155,10 +2189,11 @@ class Process(TaggedModel):
     def get_segments(self):
         if not self._segments:
             if self._cb.cb_server_version < LooseVersion('6.0.0'):
-                raise Exception("XXXXX NOT IMPLEMENTED")
-#                proclist = self._cb.select(Process).where("process_id:{0}".format(self.id))[::]
-#                proclist.sort(key=lambda x: x.segment)
+                log.debug("using process_id search for cb response server < 6.0")
+                segment_query = Query(Process, self._cb, query="process_id:{0}".format(self.id)).sort("")
+                proclist = sorted([res["segment_id"] for res in segment_query._search()])
             else:
+                log.debug("using segment API route for cb response server >= 6.0")
                 res = self._cb.get_object("/api/v1/process/{0}/segment".format(self.id))\
                     .get("process", {}).get("segments", {})
                 proclist = [self.parse_guid(x["unique_id"])[1] for x in res]
@@ -2300,7 +2335,7 @@ class Process(TaggedModel):
         if not parent_unique_id:
             return None
 
-        return self._cb.select(self.__class__, parent_unique_id, 1)
+        return self._cb.select(self.__class__, parent_unique_id)
 
     @property
     def cmdline(self):
