@@ -66,9 +66,9 @@ will be adding more samples over time. For a quick start, see the following code
     # if you want a specific ID, you can put it straight into the .select() call:
     binary = c.select(Binary, "24DA05ADE2A978E199875DA0D859E7EB")
     
-    # isolate all sensors who ran notepad.exe
+    # isolate all sensors who ran executable_name.exe
     sensors = set()
-    for proc in c.select(Process).where('process_name:notepad.exe'):
+    for proc in c.select(Process).where('process_name:executable_name.exe'):
         sensors.add(proc.sensor)
     
     for s in sensors:
