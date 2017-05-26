@@ -1859,6 +1859,7 @@ class Process(TaggedModel):
         self.suppressed_process = suppressed_process
         if suppressed_process:
             self._full_init = True
+            log.debug("{0} is suppressed".format(procguid))
 
         self.valid_process = True
         self._overrides = {}
@@ -2063,6 +2064,9 @@ class Process(TaggedModel):
     def require_events(self):
         event_key_list = ['filemod_complete', 'regmod_complete', 'modload_complete', 'netconn_complete',
                       'crossproc_complete', 'childproc_complete']
+
+        if not self.valid_process or self.suppressed_process:
+            return
 
         if self.current_segment not in self._events:
             self._events[self.current_segment] = {}
@@ -2334,6 +2338,10 @@ class Process(TaggedModel):
         parent_unique_id = self.get_correct_parent_unique_id()
         if not parent_unique_id:
             return None
+
+        if isinstance(parent_unique_id, six.string_types):
+            # strip off the segment number since we're just looking for the parent process, not a specific event
+            parent_unique_id = "-".join(parent_unique_id.split("-")[:5])
 
         return self._cb.select(self.__class__, parent_unique_id)
 
