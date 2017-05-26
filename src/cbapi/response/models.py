@@ -2546,7 +2546,13 @@ class CbChildProcEvent(CbEvent):
             # silently fail if the GUID is not able to be parsed
             pass
 
-        return self.parent._cb.select(Process, self.procguid, initial_data=proc_data,
+        if isinstance(self.procguid, six.string_types):
+            # strip off the segment number since we're just looking for the parent process, not a specific event
+            child_unique_id = "-".join(self.procguid.split("-")[:5])
+        else:
+            child_unique_id = self.procguid
+
+        return self.parent._cb.select(Process, child_unique_id, initial_data=proc_data,
                                       suppressed_process=self.is_suppressed)
 
 
