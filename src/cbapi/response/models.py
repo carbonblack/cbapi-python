@@ -2302,7 +2302,25 @@ class Process(TaggedModel):
         """
         Returns ascii representation of the ip address used to communicate with the Cb Response Server
         """
-        return socket.inet_ntoa(struct.pack('>i', self._attribute('comms_ip', 0)))
+        try:
+            ip_address = socket.inet_ntoa(struct.pack('>i', self._attribute('comms_ip', 0)))
+        except:
+            ip_address = self._attribute('comms_ip', 0)
+
+        return ip_address
+
+    @property
+    def interface_ip(self):
+        """
+        Returns ascii representation of the ip address of the interface used to communicate with the Cb Response server.
+        If using NAT, this will be the "internal" IP address of the sensor.
+        """
+        try:
+            ip_address = socket.inet_ntoa(struct.pack('>i', self._attribute('interface_ip', 0)))
+        except:
+            ip_address = self._attribute('interface_ip', 0)
+
+        return ip_address
 
     @property
     def process_md5(self):
@@ -2403,6 +2421,13 @@ class Process(TaggedModel):
         Returns a pretty version of when this process last updated
         """
         return convert_from_solr(self.get('last_update', -1))
+
+    @property
+    def last_server_update(self):
+        """
+        Returns a pretty version of when this process last updated
+        """
+        return convert_from_solr(self.get('last_server_update', -1))
 
     @property
     def username(self):
