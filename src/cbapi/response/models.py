@@ -1944,11 +1944,11 @@ class Process(TaggedModel):
     def _build_api_request_uri(self):
         return "/api/{0}/process/{1}/{2}".format(self._process_summary_api, self.id, self.current_segment)
 
-    def _retrieve_cb_info(self):
+    def _retrieve_cb_info(self, query_parameters=None):
         if self.suppressed_process or not self.valid_process:
             return
         else:
-            super(Process, self)._retrieve_cb_info()
+            super(Process, self)._retrieve_cb_info(query_parameters)
 
     def _parse(self, obj):
         if "process" in obj:
