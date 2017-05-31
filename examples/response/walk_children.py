@@ -35,7 +35,7 @@ def main():
             print("Encountered unknown error retrieving process: {0:s}".format(str(e)))
             return 1
     elif args.query:
-        procs = c.select(Process).where(args.query)
+        procs = c.select(Process).where(args.query).group_by("id")
     else:
         print("Requires either a --process or --query argument")
         parser.print_usage()
