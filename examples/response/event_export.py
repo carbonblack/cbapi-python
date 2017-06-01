@@ -106,10 +106,10 @@ def main():
             # interpret as a Process ID
             proc = cb.select(Process, args.processid)
 
-        write_csv(proc, "{0}.{1}.csv".format(proc.id,proc.segment))
+        write_csv(proc, "{0}.csv".format(proc.id))
     else:
-        for proc in cb.select(Process).where(args.query):
-            write_csv(proc, "{0}.{1}.csv".format(proc.id, proc.segment))
+        for proc in cb.select(Process).where(args.query).group_by("id"):
+            write_csv(proc, "{0}.csv".format(proc.id))
 
 
 if __name__ == "__main__":

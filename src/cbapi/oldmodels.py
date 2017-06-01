@@ -87,10 +87,10 @@ class BaseModel(object):
         """
         self._retrieve_cb_info()
 
-    def _retrieve_cb_info(self):
+    def _retrieve_cb_info(self, query_parameters=None):
         if self._model_unique_id is not None:
             request_uri = self._build_api_request_uri()
-            self._parse(self._cb.get_object(request_uri))
+            self._parse(self._cb.get_object(request_uri, query_parameters=query_parameters))
             self._full_init = True
             self._last_refresh_time = time.time()
 

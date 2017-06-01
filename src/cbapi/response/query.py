@@ -5,6 +5,10 @@ from distutils.version import LooseVersion
 from ..errors import ApiError
 from ..utils import convert_query_params
 
+import logging
+
+log = logging.getLogger(__name__)
+
 
 class Query(PaginatedQuery):
     """Represents a prepared query to the Carbon Black Enterprise Response server.
@@ -183,7 +187,9 @@ class Query(PaginatedQuery):
             self._total_results = result.get('total_results')
             self._count_valid = True
 
-            for item in result.get('results'):
+            results = result.get('results', [])
+
+            for item in results:
                 yield item
                 current += 1
                 numrows += 1
@@ -194,4 +200,10 @@ class Query(PaginatedQuery):
             args['start'] = current
 
             if current >= self._total_results:
+                break
+            if not results:
+                log.debug("server reported total_results overestimated the number of results for this query by {0}"
+                          .format(self._total_results - current))
+                log.debug("resetting total_results for this query to {0}".format(current))
+                self._total_results = current
                 break

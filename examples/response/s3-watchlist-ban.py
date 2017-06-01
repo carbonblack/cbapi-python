@@ -35,16 +35,16 @@ def process_events(data):
             #
             md5sum = event_json.get('docs', [])[0].get('process_md5', '')
             if event_json.get('watchlist_name', '').lower() == watchlist_name.lower():
-                print "[+]: Banning Hash: {}".format(md5sum)
+                print("[+]: Banning Hash: {}".format(md5sum))
 
                 try:
                     bh = cb.create(BannedHash)
                     bh.md5hash = md5sum
                     bh.text = "Auto-Blacklist from s3-watchlist-ban.py"
                     bh.save()
-                    print bh
+                    print(bh)
                 except Exception as e:
-                    print e.message
+                    print(e.message)
 
 
 
@@ -84,12 +84,12 @@ def listen_mode(bucket):
             else:
                 pass
 
-        print "Sleeping for 1 min"
+        print("Sleeping for 1 min")
         time.sleep(60)
 
 
 if __name__ == "__main__":
-    print "Starting s3-watchlist-ban script..."
+    print("Starting s3-watchlist-ban script...")
     #
     # Argument parsing
     #
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         # Check to see if we have already processed this file
         #
         if key not in processed_list:
-            print "[+]: Processing file: {}".format(key)
+            print("[+]: Processing file: {}".format(key))
             #
             # We have not processed this file.
             #
@@ -166,7 +166,7 @@ if __name__ == "__main__":
             processed_list.add(key)
             save_progress(processed_list)
         else:
-            print "[+]: We have already processed file: {}".format(key)
+            print("[+]: We have already processed file: {}".format(key))
 
     print("[+]: saving progess to file script_progress.log")
     save_progress(processed_list)

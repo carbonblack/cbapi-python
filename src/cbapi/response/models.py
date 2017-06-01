@@ -279,7 +279,7 @@ class Alert(MutableBaseModel):
     @property
     def process(self):
         if 'process' in self.alert_type:
-            return self._cb.select(Process, self.process_id, getattr(self, "segment_id", 1))
+            return self._cb.select(Process, self.process_id, getattr(self, "segment_id", None))
         return None
 
     @property
@@ -1022,7 +1022,7 @@ class TaggedEvent(MutableBaseModel, CreatableModelMixin):
     @property
     def process(self):
         process_guid = getattr(self, "unique_id", None)
-        process_segment = getattr(self, "segment_id", 1)
+        process_segment = getattr(self, "segment_id", None)
         if process_guid:
             return self._cb.select(Process, process_guid, process_segment)
         else:
@@ -1220,6 +1220,134 @@ class WatchlistEnabledQuery(Query):
             new_watchlist.index_type = "events"
 
         return new_watchlist.save()
+
+
+class ProcessQuery(WatchlistEnabledQuery):
+    def __init__(self, doc_class, cb, query=None, raw_query=None):
+        super(ProcessQuery, self).__init__(doc_class, cb, query, raw_query)
+
+    def group_by(self, field_name):
+        """Set the group-by field name for this query. Typically, you will want to set this to 'id' if you only want
+        one result per process.
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :param str field_name: Field name to group the result set by.
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            nq = self._clone()
+            nq._default_args["cb.group"] = field_name
+            return nq
+        else:
+            log.debug("group_by only supported in Cb Response 6.1+")
+            return self
+
+    def min_last_update(self, v):
+        """Set the minimum last update time (relative to sensor) for this query. The timestamp can be expressed either
+        as a ``datetime`` like object or as an ISO 8601 string formatted timestamp such as 2017-04-29T04:21:18Z.
+        If a ``datetime`` like object is provided, it is assumed to be in GMT time zone.
+
+        This option will limit the number of Solr cores that need to be searched for events that match the query.
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :param str v: Timestamp (either string or datetime object).
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            nq = self._clone()
+            try:
+                v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except AttributeError:
+                v = str(v)
+            nq._default_args["cb.min_last_update"] = v
+            return nq
+        else:
+            log.debug("min_last_update only supported in Cb Response 6.1+")
+            return self
+
+    def min_last_server_update(self, v):
+        """Set the minimum last update time (relative to server) for this query. The timestamp can be expressed either
+        as a ``datetime`` like object or as an ISO 8601 string formatted timestamp such as 2017-04-29T04:21:18Z.
+        If a ``datetime`` like object is provided, it is assumed to be in GMT time zone.
+
+        This option will limit the number of Solr cores that need to be searched for events that match the query.
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :param str v: Timestamp (either string or datetime object).
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            nq = self._clone()
+            try:
+                v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except AttributeError:
+                v = str(v)
+            nq._default_args["cb.min_last_server_update"] = v
+            return nq
+        else:
+            log.debug("min_last_server_update only supported in Cb Response 6.1+")
+            return self
+
+    def max_last_update(self, v):
+        """Set the maximum last update time (relative to sensor) for this query. The timestamp can be expressed either
+        as a ``datetime`` like object or as an ISO 8601 string formatted timestamp such as 2017-04-29T04:21:18Z.
+        If a ``datetime`` like object is provided, it is assumed to be in GMT time zone.
+
+        This option will limit the number of Solr cores that need to be searched for events that match the query.
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :param str v: Timestamp (either string or datetime object).
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            nq = self._clone()
+            try:
+                v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except AttributeError:
+                v = str(v)
+            nq._default_args["cb.max_last_update"] = v
+            return nq
+        else:
+            log.debug("max_last_update only supported in Cb Response 6.1+")
+            return self
+
+    def max_last_server_update(self, v):
+        """Set the maximum last update time (relative to server) for this query. The timestamp can be expressed either
+        as a ``datetime`` like object or as an ISO 8601 string formatted timestamp such as 2017-04-29T04:21:18Z.
+        If a ``datetime`` like object is provided, it is assumed to be in GMT time zone.
+
+        This option will limit the number of Solr cores that need to be searched for events that match the query.
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :param str v: Timestamp (either string or datetime object).
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            nq = self._clone()
+            try:
+                v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except AttributeError:
+                v = str(v)
+            nq._default_args["cb.max_last_server_update"] = v
+            return nq
+        else:
+            log.debug("max_last_server_update only supported in Cb Response 6.1+")
+            return self
 
 
 @immutable
@@ -1787,13 +1915,39 @@ class ProcessV3Parser(ProcessV2Parser):
                                 proc_data=proc_data)
 
 
+class ProcessV4Parser(ProcessV3Parser):
+    def __init__(self, process_model):
+        super(ProcessV4Parser, self).__init__(process_model)
+
+    def parse_netconn(self, seq, netconn):
+        new_conn = {}
+        timestamp = convert_event_time(netconn.get("timestamp", None))
+        direction = netconn.get("direction", "true")
+
+        if direction == 'true':
+            new_conn['direction'] = 'Outbound'
+        else:
+            new_conn['direction'] = 'Inbound'
+
+        for ipfield in ('remote_ip', 'local_ip', 'proxy_ip'):
+            new_conn[ipfield] = netconn.get(ipfield, '0.0.0.0')
+
+        for portfield in ('remote_port', 'local_port', 'proxy_port'):
+            new_conn[portfield] = int(netconn.get(portfield, 0))
+
+        new_conn['proto'] = protocols.get(int(netconn.get('proto', 0)), "Unknown")
+        new_conn['domain'] = netconn.get('domain', '')
+
+        return CbNetConnEvent(self.process_model, timestamp, seq, new_conn, version=2)
+
+
 class Process(TaggedModel):
     urlobject = '/api/v1/process'
     default_sort = 'last_update desc'
 
     @classmethod
     def _query_implementation(cls, cb):
-        return WatchlistEnabledQuery(cls, cb)
+        return ProcessQuery(cls, cb)
 
     @classmethod
     def new_object(cls, cb, item):
@@ -1801,14 +1955,32 @@ class Process(TaggedModel):
         # TODO: is there a better way to handle this? (see how this is called from Query._search())
         return cb.select(Process, item['id'], long(item['segment_id']), initial_data=item)
 
+    def parse_guid(self, procguid):
+        try:
+            # old 4.x process IDs are integers.
+            return int(procguid), None
+        except ValueError:
+            # new 5.x process IDs are hex strings with optional segment IDs.
+            if len(procguid) == 45:
+                return procguid[:36], int(procguid[38:], 16)
+            elif len(procguid) == 49 and self._cb.cb_server_version >= LooseVersion('6.0.0'):
+                return procguid[:36], int(procguid[38:], 16)
+            else:
+                return None, None
+
     def __init__(self, cb, procguid, segment=None, initial_data=None, force_init=False, suppressed_process=False):
-        self.segment = segment
+        self.current_segment = segment
         self.suppressed_process = suppressed_process
         if suppressed_process:
             self._full_init = True
+            log.debug("{0} is suppressed".format(procguid))
 
         self.valid_process = True
         self._overrides = {}
+
+        self._events_loaded = False
+        self._events = {}
+        self._segments = []
 
         try:
             # old 4.x process IDs are integers.
@@ -1817,7 +1989,10 @@ class Process(TaggedModel):
             # new 5.x process IDs are hex strings with optional segment IDs.
             if len(procguid) == 45:
                 self.id = procguid[:36]
-                self.segment = int(procguid[38:], 16)
+                self.current_segment = int(procguid[38:], 16)
+            elif len(procguid) == 49 and cb.cb_server_version >= LooseVersion('6.0.0'):
+                self.id = procguid[:36]
+                self.current_segment = int(procguid[38:], 16)
             else:
                 self.id = procguid
                 if len(procguid) != 36:
@@ -1825,12 +2000,21 @@ class Process(TaggedModel):
                     self.valid_process = False
                     self._full_init = True
 
-        if not self.segment:
-            self.segment = 1
+        if not self.current_segment:
+            if cb.cb_server_version < LooseVersion('6.0.0'):
+                self.current_segment = 1
+            else:
+                self.current_segment = 0
 
-        super(Process, self).__init__(cb, "%s-%08x" % (self.id, self.segment))
+        super(Process, self).__init__(cb, self.id)
 
-        if cb.cb_server_version >= LooseVersion('5.2.0'):
+        self._process_summary_api = 'v1'
+
+        if cb.cb_server_version >= LooseVersion('6.0.0'):
+            self._process_summary_api = 'v2'
+            self._process_event_api = 'v4'
+            self._event_parser = ProcessV4Parser(self)
+        elif cb.cb_server_version >= LooseVersion('5.2.0'):
             self._process_event_api = 'v3'
             self._event_parser = ProcessV3Parser(self)
         elif cb.cb_server_version >= LooseVersion('5.1.0'):
@@ -1872,17 +2056,19 @@ class Process(TaggedModel):
         return super(Process, self)._attribute(attrname, default=default)
 
     def _build_api_request_uri(self):
-        # TODO: how do we handle process segments?
-        return "/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id, self.segment)
+        return "/api/{0}/process/{1}/{2}".format(self._process_summary_api, self.id, self.current_segment)
 
-    def _retrieve_cb_info(self):
+    def _retrieve_cb_info(self, query_parameters=None):
         if self.suppressed_process or not self.valid_process:
             return
         else:
-            super(Process, self)._retrieve_cb_info()
+            super(Process, self)._retrieve_cb_info(query_parameters)
 
     def _parse(self, obj):
-        self._info = obj.get('process', {})
+        if "process" in obj:
+            self._info = obj.get("process", {})
+        else:
+            self._info = obj.copy()
 
         if self._info and (self._info.get("start", -1) == -1 or self._info.get("process_pid", -1) == -1):
             log.debug("Process ID %s is invalid; start time or process PID are empty or -1." % self.id)
@@ -1989,13 +2175,53 @@ class Process(TaggedModel):
         """
         return convert_from_solr(self._attribute('start', -1))
 
+    def require_events(self):
+        event_key_list = ['filemod_complete', 'regmod_complete', 'modload_complete', 'netconn_complete',
+                      'crossproc_complete', 'childproc_complete']
+
+        if not self.valid_process or self.suppressed_process:
+            return
+
+        if self.current_segment not in self._events:
+            self._events[self.current_segment] = {}
+            res = self._cb.get_object("/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id,
+                                                                                                self.current_segment)).get("process", {})
+            for k in event_key_list:
+                self._events[self.current_segment][k] = res.get(k, [])
+
+            if not self._full_init:
+                for k in event_key_list:
+                    try:
+                        del res[k]
+                    except KeyError:
+                        pass
+
+                self._parse(res)
+                self._full_init = True
+
+            self._events_loaded = True
+
+    def refresh(self):
+        # when refreshing a process, also zero out all the events
+        self._events = {}
+        self._events_loaded = False
+        self._segments = []
+        super(Process, self).refresh()
+
+    @property
+    def segment(self):
+        log.debug("The .segment attribute will be deprecated in future versions of the cbapi Python module.")
+        return self.current_segment
+
     @property
     def modloads(self):
         """
         Generator that returns `:py:class:CbModLoadEvent` associated with this process
         """
+        self.require_events()
+
         i = 0
-        for raw_modload in self._attribute('modload_complete', []):
+        for raw_modload in self._events.get(self.current_segment, {}).get('modload_complete', []):
             yield self._event_parser.parse_modload(i, raw_modload)
             i += 1
 
@@ -2011,8 +2237,10 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbFileModEvent` objects associated with this process
         """
+        self.require_events()
+
         i = 0
-        for raw_filemod in self._attribute('filemod_complete', []):
+        for raw_filemod in self._events.get(self.current_segment, {}).get('filemod_complete', []):
             yield self._event_parser.parse_filemod(i, raw_filemod)
             i += 1
 
@@ -2021,8 +2249,10 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbNetConnEvent` objects associated with this process
         """
+        self.require_events()
+
         i = 0
-        for raw_netconn in self._attribute('netconn_complete', []):
+        for raw_netconn in self._events.get(self.current_segment, {}).get('netconn_complete', []):
             yield self._event_parser.parse_netconn(i, raw_netconn)
             i += 1
 
@@ -2031,8 +2261,10 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbRegModEvent` objects associated with this process
         """
+        self.require_events()
+
         i = 0
-        for raw_regmod in self._attribute('regmod_complete', []):
+        for raw_regmod in self._events.get(self.current_segment, {}).get('regmod_complete', []):
             yield self._event_parser.parse_regmod(i, raw_regmod)
             i += 1
 
@@ -2041,8 +2273,10 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbCrossProcEvent` objects associated with this process
         """
+        self.require_events()
+
         i = 0
-        for raw_crossproc in self._attribute('crossproc_complete', []):
+        for raw_crossproc in self._events.get(self.current_segment, {}).get('crossproc_complete', []):
             yield self._event_parser.parse_crossproc(i, raw_crossproc)
             i += 1
 
@@ -2051,8 +2285,10 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbChildProcEvent` objects associated with this process
         """
+        self.require_events()
+
         i = 0
-        for raw_childproc in self._attribute('childproc_complete', []):
+        for raw_childproc in self._events.get(self.current_segment, {}).get('childproc_complete', []):
             yield self._event_parser.parse_childproc(i, raw_childproc)
             i += 1
 
@@ -2068,6 +2304,22 @@ class Process(TaggedModel):
         segment_events.sort()
         return segment_events
 
+    def get_segments(self):
+        if not self._segments:
+            if self._cb.cb_server_version < LooseVersion('6.0.0'):
+                log.debug("using process_id search for cb response server < 6.0")
+                segment_query = Query(Process, self._cb, query="process_id:{0}".format(self.id)).sort("")
+                proclist = sorted([res["segment_id"] for res in segment_query._search()])
+            else:
+                log.debug("using segment API route for cb response server >= 6.0")
+                res = self._cb.get_object("/api/v1/process/{0}/segment".format(self.id))\
+                    .get("process", {}).get("segments", {})
+                proclist = [self.parse_guid(x["unique_id"])[1] for x in res]
+
+            self._segments = proclist
+
+        return self._segments
+
     @property
     def all_events(self):
         """
@@ -2079,10 +2331,10 @@ class Process(TaggedModel):
         all_events = []
 
         # first let's find the list of segments
-        proclist = self._cb.select(Process).where("process_id:{0}".format(self.id))[::]
-        proclist.sort(key=lambda x: x.segment)
-        for proc in proclist:
-            all_events += proc.all_events_segment
+        segmentlist = self.get_segments()
+        for segment in segmentlist:
+            self.current_segment = segment
+            all_events += self.all_events_segment
 
         return all_events
 
@@ -2120,7 +2372,7 @@ class Process(TaggedModel):
     @property
     def threat_intel_hits(self):
         try:
-            hits = self._cb.get_object("/api/v1/process/{0}/{1}/threat_intel_hits".format(self.id, self.segment))
+            hits = self._cb.get_object("/api/v1/process/{0}/{1}/threat_intel_hits".format(self.id, self.current_segment))
             return hits
         except ServerError as e:
             raise ApiError("Sharing IOCs not set up in Cb server. See {}/#/share for more information."
@@ -2164,7 +2416,25 @@ class Process(TaggedModel):
         """
         Returns ascii representation of the ip address used to communicate with the Cb Response Server
         """
-        return socket.inet_ntoa(struct.pack('>i', self._attribute('comms_ip', 0)))
+        try:
+            ip_address = socket.inet_ntoa(struct.pack('>i', self._attribute('comms_ip', 0)))
+        except:
+            ip_address = self._attribute('comms_ip', 0)
+
+        return ip_address
+
+    @property
+    def interface_ip(self):
+        """
+        Returns ascii representation of the ip address of the interface used to communicate with the Cb Response server.
+        If using NAT, this will be the "internal" IP address of the sensor.
+        """
+        try:
+            ip_address = socket.inet_ntoa(struct.pack('>i', self._attribute('interface_ip', 0)))
+        except:
+            ip_address = self._attribute('interface_ip', 0)
+
+        return ip_address
 
     @property
     def process_md5(self):
@@ -2201,7 +2471,11 @@ class Process(TaggedModel):
         if not parent_unique_id:
             return None
 
-        return self._cb.select(self.__class__, parent_unique_id, 1)
+        if isinstance(parent_unique_id, six.string_types):
+            # strip off the segment number since we're just looking for the parent process, not a specific event
+            parent_unique_id = "-".join(parent_unique_id.split("-")[:5])
+
+        return self._cb.select(self.__class__, parent_unique_id)
 
     @property
     def cmdline(self):
@@ -2239,7 +2513,7 @@ class Process(TaggedModel):
         Returns the Cb Response Web UI link associated with this process
         """
         if not self.suppressed_process:
-            return '%s/#analyze/%s/%s' % (self._cb.url, self.id, self.segment)
+            return '%s/#analyze/%s/%s' % (self._cb.url, self.id, self.current_segment)
         else:
             return None
 
@@ -2261,6 +2535,13 @@ class Process(TaggedModel):
         Returns a pretty version of when this process last updated
         """
         return convert_from_solr(self.get('last_update', -1))
+
+    @property
+    def last_server_update(self):
+        """
+        Returns a pretty version of when this process last updated
+        """
+        return convert_from_solr(self.get('last_server_update', -1))
 
     @property
     def username(self):
@@ -2404,7 +2685,13 @@ class CbChildProcEvent(CbEvent):
             # silently fail if the GUID is not able to be parsed
             pass
 
-        return self.parent._cb.select(Process, self.procguid, initial_data=proc_data,
+        if isinstance(self.procguid, six.string_types):
+            # strip off the segment number since we're just looking for the parent process, not a specific event
+            child_unique_id = "-".join(self.procguid.split("-")[:5])
+        else:
+            child_unique_id = self.procguid
+
+        return self.parent._cb.select(Process, child_unique_id, initial_data=proc_data,
                                       suppressed_process=self.is_suppressed)
 
 
