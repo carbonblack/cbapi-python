@@ -1227,12 +1227,126 @@ class ProcessQuery(WatchlistEnabledQuery):
         super(ProcessQuery, self).__init__(doc_class, cb, query, raw_query)
 
     def group_by(self, field_name):
+        """Set the group-by field name for this query. Typically, you will want to set this to 'id' if you only want
+        one result per process.
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :param str field_name: Field name to group the result set by.
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
         if self._cb.cb_server_version >= LooseVersion('6.0.0'):
             nq = self._clone()
             nq._default_args["cb.group"] = field_name
             return nq
         else:
             log.debug("group_by only supported in Cb Response 6.1+")
+            return self
+
+    def min_last_update(self, v):
+        """Set the minimum last update time (relative to sensor) for this query. The timestamp can be expressed either
+        as a ``datetime`` like object or as an ISO 8601 string formatted timestamp such as 2017-04-29T04:21:18Z.
+        If a ``datetime`` like object is provided, it is assumed to be in GMT time zone.
+
+        This option will limit the number of Solr cores that need to be searched for events that match the query.
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :param str v: Timestamp (either string or datetime object).
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            nq = self._clone()
+            try:
+                v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except AttributeError:
+                v = str(v)
+            nq._default_args["cb.min_last_update"] = v
+            return nq
+        else:
+            log.debug("min_last_update only supported in Cb Response 6.1+")
+            return self
+
+    def min_last_server_update(self, v):
+        """Set the minimum last update time (relative to server) for this query. The timestamp can be expressed either
+        as a ``datetime`` like object or as an ISO 8601 string formatted timestamp such as 2017-04-29T04:21:18Z.
+        If a ``datetime`` like object is provided, it is assumed to be in GMT time zone.
+
+        This option will limit the number of Solr cores that need to be searched for events that match the query.
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :param str v: Timestamp (either string or datetime object).
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            nq = self._clone()
+            try:
+                v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except AttributeError:
+                v = str(v)
+            nq._default_args["cb.min_last_server_update"] = v
+            return nq
+        else:
+            log.debug("min_last_server_update only supported in Cb Response 6.1+")
+            return self
+
+    def max_last_update(self, v):
+        """Set the maximum last update time (relative to sensor) for this query. The timestamp can be expressed either
+        as a ``datetime`` like object or as an ISO 8601 string formatted timestamp such as 2017-04-29T04:21:18Z.
+        If a ``datetime`` like object is provided, it is assumed to be in GMT time zone.
+
+        This option will limit the number of Solr cores that need to be searched for events that match the query.
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :param str v: Timestamp (either string or datetime object).
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            nq = self._clone()
+            try:
+                v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except AttributeError:
+                v = str(v)
+            nq._default_args["cb.max_last_update"] = v
+            return nq
+        else:
+            log.debug("max_last_update only supported in Cb Response 6.1+")
+            return self
+
+    def max_last_server_update(self, v):
+        """Set the maximum last update time (relative to server) for this query. The timestamp can be expressed either
+        as a ``datetime`` like object or as an ISO 8601 string formatted timestamp such as 2017-04-29T04:21:18Z.
+        If a ``datetime`` like object is provided, it is assumed to be in GMT time zone.
+
+        This option will limit the number of Solr cores that need to be searched for events that match the query.
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :param str v: Timestamp (either string or datetime object).
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            nq = self._clone()
+            try:
+                v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
+            except AttributeError:
+                v = str(v)
+            nq._default_args["cb.max_last_server_update"] = v
+            return nq
+        else:
+            log.debug("max_last_server_update only supported in Cb Response 6.1+")
             return self
 
 

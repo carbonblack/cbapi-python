@@ -188,6 +188,7 @@ Documentation (below) for detailed information on the objects and methods expose
 
    live-response
    event-api
+   changelog
 
 API Documentation
 -----------------

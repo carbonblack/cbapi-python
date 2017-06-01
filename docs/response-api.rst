@@ -20,6 +20,8 @@ Queries
 
 .. autoclass:: cbapi.response.query.Query
     :members:
+.. autoclass:: cbapi.response.models.ProcessQuery
+    :members:
 .. autoclass:: cbapi.response.models.ThreatReportQuery
     :members:
 .. autoclass:: cbapi.response.models.AlertQuery
