@@ -10,10 +10,11 @@ Main Interface
 --------------
 
 To use cbapi with Carbon Black Response, you will be using the CbResponseAPI.
-The CbResponseAPI object then exposes two main methods to select data on the Carbon Black server:
+The CbResponseAPI object then exposes two main methods to access data on the Carbon Black server: ``select`` and ``create``.
 
 .. autoclass:: cbapi.response.rest_api.CbResponseAPI
     :members:
+    :inherited-members:
 
 Queries
 -------
