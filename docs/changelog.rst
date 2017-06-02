@@ -1,7 +1,7 @@
 CbAPI Changelog
 ===============
 
-CbAPI 1.1.0 - Released June 1, 2017
+CbAPI 1.1.1 - Released June 2, 2017
 -----------------------------------
 
 This release includes compatibility fixes for Cb Response 6.1. Changes from 1.0.1 include:
