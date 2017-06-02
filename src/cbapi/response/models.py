@@ -2537,11 +2537,39 @@ class Process(TaggedModel):
         return convert_from_solr(self.get('last_update', -1))
 
     @property
+    def min_last_update(self):
+        """
+        Returns a pretty version of the earliest event in this process segment
+        """
+        return convert_from_solr(self.get('last_update', -1))
+
+    @property
+    def max_last_update(self):
+        """
+        Returns a pretty version of the latest event in this process segment
+        """
+        return convert_from_solr(self.get('last_update', -1))
+
+    @property
     def last_server_update(self):
         """
         Returns a pretty version of when this process last updated
         """
         return convert_from_solr(self.get('last_server_update', -1))
+
+    @property
+    def min_last_server_update(self):
+        """
+        Returns a pretty version of the earliest event in this process segment
+        """
+        return convert_from_solr(self.get('min_last_server_update', -1))
+
+    @property
+    def max_last_server_update(self):
+        """
+        Returns a pretty version of the latest event in this process segment
+        """
+        return convert_from_solr(self.get('max_last_server_update', -1))
 
     @property
     def username(self):
