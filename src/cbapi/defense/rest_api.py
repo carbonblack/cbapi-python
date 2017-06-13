@@ -7,6 +7,11 @@ import logging
 log = logging.getLogger(__name__)
 
 
+def convert_to_kv_pairs(q):
+    k, v = q.split(':', 1)
+    return k, v
+
+
 class CbDefenseAPI(BaseAPI):
     """The main entry point into the Cb Defense API.
 
@@ -69,7 +74,7 @@ class Query(PaginatedQuery):
     def where(self, q):
         """Add a filter to this query.
 
-        :param str q: Query string - see the Enterprise Protection API reference <http://developer.carbonblack.com/reference/enterprise-protection/7.2/rest-api/#searching:ec3e4958451e5256ed16afd222059e6d>`_.
+        :param str q: Query string
         :return: Query object
         :rtype: :py:class:`Query`
         """
@@ -80,17 +85,23 @@ class Query(PaginatedQuery):
     def and_(self, q):
         """Add a filter to this query. Equivalent to calling :py:meth:`where` on this object.
 
-        :param str q: Query string - see the Enterprise Protection API reference <http://developer.carbonblack.com/reference/enterprise-protection/7.2/rest-api/#searching:ec3e4958451e5256ed16afd222059e6d>`_.
+        :param str q: Query string
         :return: Query object
         :rtype: :py:class:`Query`
         """
         return self.where(q)
 
-    def _count(self):
-        # TODO: FIX
-        args = {'limit': -1}
+    def prepare_query(self, args):
         if self._query:
-            args['q'] = self._query
+            for qe in self._query:
+                k, v = convert_to_kv_pairs(qe)
+                args[k] = v
+
+        return args
+
+    def _count(self):
+        args = {'limit': -1}
+        args = self.prepare_query(args)
 
         query_args = convert_query_params(args)
         self._total_results = int(self._cb.get_object(self._doc_class.urlobject, query_parameters=query_args).get("count", 0))
@@ -107,9 +118,7 @@ class Query(PaginatedQuery):
         current = start
         numrows = 0
 
-        if self._query:
-            args['q'] = self._query
-
+        args = self.prepare_query(args)
         still_querying = True
 
         while still_querying:

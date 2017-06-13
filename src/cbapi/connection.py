@@ -223,7 +223,7 @@ class BaseAPI(object):
         headers = kwargs.pop("headers", {})
         raw_data = None
 
-        if method in ("POST", "PUT"):
+        if method in ("POST", "PUT", "PATCH"):
             if "Content-Type" not in headers:
                 headers["Content-Type"] = "application/json"
                 raw_data = kwargs.pop("data", {})
