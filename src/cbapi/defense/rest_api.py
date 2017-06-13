@@ -3,6 +3,7 @@ from ..query import PaginatedQuery
 
 from cbapi.connection import BaseAPI
 import logging
+import time
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +29,16 @@ class CbDefenseAPI(BaseAPI):
 
     def _perform_query(self, cls, query_string=None):
         return Query(cls, self, query_string)
+
+    def notification_listener(self, interval=60):
+        while True:
+            for notification in self.get_notifications():
+                yield notification
+            time.sleep(interval)
+
+    def get_notifications(self):
+        res = self.get_object("/integrationServices/v3/notification")
+        return res.get("notifications", [])
 
 
 class Query(PaginatedQuery):
@@ -100,11 +111,12 @@ class Query(PaginatedQuery):
         return args
 
     def _count(self):
-        args = {'limit': -1}
+        args = {'limit': 0}
         args = self.prepare_query(args)
 
         query_args = convert_query_params(args)
-        self._total_results = int(self._cb.get_object(self._doc_class.urlobject, query_parameters=query_args).get("count", 0))
+        self._total_results = int(self._cb.get_object(self._doc_class.urlobject, query_parameters=query_args)
+                                  .get("totalResults", 0))
         self._count_valid = True
         return self._total_results
 
@@ -128,7 +140,9 @@ class Query(PaginatedQuery):
             self._total_results = result.get("totalResults", 0)
             self._count_valid = True
 
-            for item in result.get("results", []):
+            results = result.get('results', [])
+
+            for item in results:
                 yield item
                 current += 1
                 numrows += 1
@@ -136,7 +150,13 @@ class Query(PaginatedQuery):
                     still_querying = False
                     break
 
-            args['start'] = current + 1
+            args['start'] = current + 1     # as of 6/2017, the indexing on the Cb Defense backend is still 1-based
 
-            if len(result) < self._batch_size:
+            if current >= self._total_results:
+                break
+            if not results:
+                log.debug("server reported total_results overestimated the number of results for this query by {0}"
+                          .format(self._total_results - current))
+                log.debug("resetting total_results for this query to {0}".format(current))
+                self._total_results = current
                 break

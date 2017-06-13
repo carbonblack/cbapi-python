@@ -16,9 +16,12 @@ class DefenseMutableModel(MutableBaseModel):
             ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.urlobject,
                                             data=self._info)
         else:
+            updates = {}
+            for k in self._dirty_attributes.keys():
+                updates[k] = self._info[k]
             log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
             ret = self._cb.api_json_request(self.__class__._change_object_http_method,
-                                            self._build_api_request_uri(), data=self._dirty_attributes)
+                                            self._build_api_request_uri(), data=updates)
 
         return self._refresh_if_needed(ret)
 
