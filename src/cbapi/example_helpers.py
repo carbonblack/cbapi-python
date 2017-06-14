@@ -1,6 +1,7 @@
 import argparse
 from cbapi.response import CbEnterpriseResponseAPI
 from cbapi.protection import CbEnterpriseProtectionAPI
+from cbapi.defense import CbDefenseAPI
 import codecs
 import sys
 
@@ -53,6 +54,21 @@ def get_cb_protection_object(args):
         cb = CbEnterpriseProtectionAPI(args.cburl, args.apitoken)
     else:
         cb = CbEnterpriseProtectionAPI(profile=args.profile)
+
+    return cb
+
+
+def get_cb_defense_object(args):
+    if args.verbose:
+        import logging
+        logging.basicConfig()
+        logging.getLogger("cbapi").setLevel(logging.DEBUG)
+        logging.getLogger("__main__").setLevel(logging.DEBUG)
+
+    if args.cburl and args.apitoken:
+        cb = CbDefenseAPI(url=args.cburl, token=args.apitoken, ssl_verify=(not args.no_ssl_verify))
+    else:
+        cb = CbDefenseAPI(profile=args.profile)
 
     return cb
 
