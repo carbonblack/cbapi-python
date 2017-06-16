@@ -1,0 +1,96 @@
+type: "object"
+required:
+  - name
+properties:
+  id:
+    type: "integer"
+    description: "Unique id of this fileRule"
+  fileCatalogId:
+    type: "integer"
+    description: "Id of fileCatalog entry associated with this fileRule. Can be null if file hasn't been seen on any endpoints yet. This is foreign key and can be expanded to expose fields from the related fileCatalog object"
+  name:
+    type: "string"
+    description: "Name of this rule."
+  description:
+    type: "string"
+    description: "Description of this rule."
+  fileState:
+    type: "integer"
+    description: "File state for this rule. Can be one of: 1=Unapproved 2=Approved 3=Banned"
+  sourceType:
+    type: "integer"
+    description: "Mechanism that created this rule. Can be one of: 1 = Manual 2 = Trusted Directory 3 = Reputation 4 = Imported 5 = External (API) 6 = Event Rule 7 = Application Template 8 = Unified Management"
+  sourceId:
+    type: "integer"
+    description: "Id of source of this rule. Can be event rule id or trusted directory id"
+  reportOnly:
+    type: "boolean"
+    description: "True if this has a report-only ban"
+  reputationApprovalsEnabled:
+    type: "boolean"
+    description: "True if reputation approvals are enabled for this file"
+  forceInstaller:
+    type: "boolean"
+    description: "True if this file is forced to act as installer, even if product detected it as 'not installer'"
+  forceNotInstaller:
+    type: "boolean"
+    description: "True if this file is forced to act as 'not installer', even if product detected it as installer"
+  policyIds:
+    type: "string"
+    description: "List of IDs of policies where this rule applies. Value will be empty if this is a global rule"
+  hash:
+    type: "string"
+    description: "Hash associated with this rule. Note that hash will be available only if rule was created through md5 or sha-1 hash. If rule was created through fileName, fileCatalogId or sha-256 hash that exists in the catalog, this field will be empty."
+  fileName:
+    type: "string"
+    description: "File name associated with this rule. Note that file name will be available only if rule was created through file name. If rule was created through fileCatalogId or hash, this field will be empty."
+  lazyApproval:
+    type: "boolean"
+    description: "This filed is valid only when creating approvals. When set to true, it will cause approval to be sent to agent only if file is marked as installer or if it blocked on any agent. This is useful when proactively creating lot of approvals that might or might not be required, since it is using less resources. Note that, as soone as lazy approval is sent to agents, this field will changed to 'false'."
+  platformFlags:
+    type: "integer"
+    description: "Set of platform flags where this file rule will be valid. combination of: 1 = Windows 2 = Mac 4 = Linux"
+  dateCreated:
+    type: "string"
+    format: "date-time"
+    description: "Date/time when this rule was created (UTC)"
+  createdBy:
+    type: "string"
+    description: "User that created this object"
+  createdByUserId:
+    type: "string"
+    description: "Id of user that created this object"
+  dateModified:
+    type: "string"
+    format: "date-time"
+    description: "Date/time when this object was last modified (UTC)"
+  modifiedBy:
+    type: "string"
+    description: "User that last modified this object"
+  modifiedByUserId:
+    type: "integer"
+    description: "Id of user that last modified this object"
+  clVersion:
+    type: "integer"
+    description: "CL version associated with this file rule"
+  idUnique:
+    type: "string"
+    description: "Unique GUID of this rule"
+  origIdUnique:
+    type: "string"
+    description: "Unique GUID of the original rule"
+  unifiedFlag:
+    type: "integer"
+    description: "Local override flag for unified rule (0 - if rule is not unified, 1 - no override allowed, 3 - local override allowed)"
+  unifiedSource:
+    type: "string"
+    description: "Unified server name that created this rule"
+  fileRuleType:
+    type: "string"
+    description: "Text description of file rule type"
+  version:
+    type: "integer"
+    description: "Version of this file rule"
+  visible:
+    type: "boolean"
+    description: "If rule should be visible in the UI or not"

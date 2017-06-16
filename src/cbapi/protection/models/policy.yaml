@@ -1,0 +1,82 @@
+type: "object"
+required:
+  - name
+properties:
+  id:
+    type: "integer"
+    description: "Unique id of this policy"
+  name:
+    type: "string"
+    description: "Name of this policy."
+  description:
+    type: "string"
+    description: "Description of this policy."
+  packageName:
+    type: "string"
+    description: "Name of installer package for this policy"
+  enforcementLevel:
+    type: "integer"
+    description: "Target enforcement level. Can be one of: 20=High (Block Unapproved) 30=Medium (Prompt Unapproved) 40=Low (Monitor Unapproved) 60=None (Visibility) 80=None (Disabled)"
+  disconnectedEnforcementLevel:
+    type: "integer"
+    description: "Target enforcement level for disconnected computers. Can be one of: 20=High (Block Unapproved) 30=Medium (Prompt Unapproved) 40=Low (Monitor Unapproved) 60=None (Visibility) 80=None (Disabled)"
+  helpDeskUrl:
+    type: "string"
+    description: "Helpdesk URL for notifiers in this policy"
+  imageUrl:
+    type: "string"
+    description: "Image logo URL for notifiers in this policy"
+  dateCreated:
+    type: "string"
+    format: "date-time"
+    description: "Date/time when this rule was created (UTC)"
+  createdByUserId:
+    type: "integer"
+    description: "Id of user that created this object"
+  dateModified:
+    type: "string"
+    format: "date-time"
+    description: "Date/time when this object was last modified (UTC)"
+  modifiedByUserId:
+    type: "integer"
+    description: "Id of user that last modified this object"
+  readOnly:
+    type: "boolean"
+    description: "True if this policy is read-only"
+  hidden:
+    type: "boolean"
+    description: "True if this policy is hidden in the UI"
+  automatic:
+    type: "boolean"
+    description: "True if AD mapping is enabled for this policy"
+  loadAgentInSafeMode:
+    type: "boolean"
+    description: "True if agents in this policy will be loaded when machine is booted in 'safe mode'"
+  reputationEnabled:
+    type: "boolean"
+    description: "True if reputation approvals are enabled in this policy"
+  fileTrackingEnabled:
+    type: "boolean"
+    description: "True if file tracking enabled in this policy"
+  customLogo:
+    type: "boolean"
+    description: "True if notifiers in this policy use custom logo"
+  automaticApprovalsOnTransition:
+    type: "boolean"
+    description: "True if agents in this policy will automatically locally approve files when transitioning into High Enforcement"
+  allowAgentUpgrades:
+    type: "boolean"
+    description: "True if agents can be upgraded for this policy"
+  totalComputers:
+    type: "integer"
+    description: "Total number of computers in this policy"
+  connectedComputers:
+    type: "integer"
+    description: "Number of connected computers in this policy"
+  atEnforcementComputers:
+    type: "integer"
+    description: "Number of computers that are at target enforcement level in this policy"
+  clVersionMax:
+    type: "integer"
+    description: "Max target CL version for agents in this policy"
+

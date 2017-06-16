@@ -190,11 +190,37 @@ class FileInstanceGroup(BaseModel):
         super(FileInstanceGroup, self).__init__(cb, model_unique_id, initial_data)
 
 
-class FileRule(MutableModel):
+class FileRule(MutableBaseModel):
     urlobject = "/api/bit9platform/v1/fileRule"
+    swagger_meta_file = "protection/models/fileRule.yaml"
+
+    StateUnapproved = 1
+    StateApproved = 2
+    StateBanned = 3
+
+    SourceTypeManual = 1
+    SourceTypeTrustedDirectory = 2
+    SourceTypeReputation = 3
+    SourceTypeImported = 4
+    SourceTypeExternal = 5
+    SourceTypeEventRule = 6
+    SourceTypeApplicationTemplate = 7
+    SourceTypeUnifiedManagement = 8
+
+    PlatformWindows = 1
+    PlatformMac = 2
+    PlatformLinux = 4
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(FileRule, self).__init__(cb, model_unique_id, initial_data)
+
+    @property
+    def fileCatalog(self):
+        return self._join(FileCatalog, "fileCatalogId")
+
+    # @property
+    # def createdByUser(self):
+    #     return self._join(User, "createdByUserId")
 
 
 class FileUpload(MutableModel):
@@ -286,8 +312,9 @@ class PendingAnalysis(MutableModel):
         return getattr(self, "md5", None) or getattr(self, "sha1", None) or getattr(self, "sha256", None)
 
 
-class Policy(NewBaseModel):
+class Policy(MutableBaseModel):
     urlobject = "/api/bit9platform/v1/policy"
+    swagger_meta_file = "protection/models/policy.yaml"
 
 
 class Publisher(MutableModel):
