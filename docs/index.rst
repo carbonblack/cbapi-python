@@ -30,7 +30,7 @@ to do the easy stuff and handling all of the "sharp corners" behind the scenes f
    >>> # select all sensors that have ran notepad
    >>> #
    >>> sensors = set()
-   >>> for proc in c.select(Process).where('process_name:notepad.exe'):
+   >>> for proc in c.select(Process).where('process_name:evil.exe'):
    ...     sensors.add(proc.sensor)
    >>> #
    >>> # iterate over all sensors and isolate
@@ -62,6 +62,24 @@ If you're more a Cb Protection fellow, then you're in luck as well::
    >>> fi.computer.policyId = 3
    >>> fi.computer.save()
 
+As of version 1.2, cbapi now provides support for Cb Defense too!
+
+   >>> from cbapi.defense.models import Device
+   >>> from cbapi.defense import CbDefenseAPI
+   >>> #
+   >>> # Create our Cb Defense API object
+   >>> #
+   >>> p = CbDefenseAPI()
+   >>> #
+   >>> # Select any devices that have the hostname WIN-IA9NQ1GN8OI and an internal IP address of 192.168.215.150
+   >>> #
+   >>> devices = c.select(Device).where('hostNameExact:WIN-IA9NQ1GN8OI').and_("ipAddress:192.168.215.150").first()
+   >>> #
+   >>> # Change those devices' policy into the Windows_Restrictive_Workstation policy.
+   >>> #
+   >>> for dev in devices:
+   >>>     dev.policyName = "Restrictive_Windows_Workstation"
+   >>>     dev.save()
 
 
 Major Features
@@ -72,15 +90,15 @@ Major Features
     Easily create Live Response sessions, initiate commands on remote hosts, and pull down data as
     necessary to make your Incident Response process much more efficient and automated.
 
-- **Consistent API for both Cb Response and Protection platforms**
-    We now support Cb Response and Protection users in the same API layer. Even better,
+- **Consistent API for Cb Response, Protection and Defense platforms**
+    We now support Cb Response, Protection and Defense users in the same API layer. Even better,
     the object model is the same for both; if you know one API you can easily transition to the other. cbapi
-    hides all the differences between the two REST APIs behind a single, consistent Python-like interface.
+    hides all the differences between the three REST APIs behind a single, consistent Python-like interface.
 
 - **Enhanced Performance**
     cbapi now provides a built in caching layer to reduce the query load on the Carbon Black server. This is especially
     useful when taking advantage of cbapi's new "joining" features. You can transparently access, for example, the
-    binary associated with a given process in Cb Protection. Since many processes may be associated
+    binary associated with a given process in Cb Response. Since many processes may be associated
     with the same binary, it does not make sense to repeatedly request the same binary information from the server
     over and over again. Therefore cbapi now caches this information to avoid unnecessary requests.
 
@@ -94,7 +112,7 @@ Major Features
 
 - **Better support for multiple Cb servers**
     cbapi now introduces the concept of Credential Profiles; named collections of URL, API keys, and optional proxy
-    configuration for connecting to any number of Cb Protection or Response servers.
+    configuration for connecting to any number of Cb Protection, Defense, or Response servers.
 
 
 API Credentials
@@ -104,12 +122,13 @@ The new cbapi as of version 0.9.0 enforces the use of credential files.
 
 In order to perform any queries via the API, you will need to get the API token for your Cb user. See the documentation
 on the Developer Network website on how to acquire the API token for
-`Cb Response <http://developer.carbonblack.com/reference/enterprise-response/authentication/>`_ or
-`Cb Protection <http://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_.
+`Cb Response <http://developer.carbonblack.com/reference/enterprise-response/authentication/>`_,
+`Cb Protection <http://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_, or
+`Cb Defense <http://developer.carbonblack.com/reference/cb-defense/authentication/>`_.
 
 Once you acquire your API token, place it in one of the default credentials file locations:
 
-* ``/etc/carbonblack/credentials.response`` (or ``.protection`` for Cb Protection)
+* ``/etc/carbonblack/credentials.response`` (``credentials.protection`` for Cb Protection, or ``credentials.defense`` for Cb Defense)
 * ``~/.carbonblack/credentials.response``
 * (current working directory) ``.carbonblack/credentials.response``
 
@@ -164,8 +183,8 @@ legacy scripts cannot run under Python 3.
 Once cbapi 1.0.0 is released, the old :py:mod:`cbapi.legacy.CbApi` will be deprecated and removed entirely no earlier
 than January 2017.
 New scripts should use the :py:mod:`cbapi.response.rest_api.CbResponseAPI`
-(for Cb Response) and :py:mod:`cbapi.protection.rest_api.CbProtectionAPI`
-(for Cb Protection) API entry points.
+(for Cb Response), :py:mod:`cbapi.protection.rest_api.CbProtectionAPI`
+(for Cb Protection), or :py:mod:`cbapi.defense.rest_api.CbDefenseAPI` API entry points.
 
 The API is frozen as of version 1.0; afterward, any changes in the 1.x version branch
 will be additions/bug fixes only. Breaking changes to the API will increment the major version number (2.x).
@@ -203,6 +222,7 @@ documenting all of the methods available to you.
 
    response-api
    protection-api
+   defense-api
    exceptions
 
 Indices and tables

@@ -31,12 +31,20 @@ class CbDefenseAPI(BaseAPI):
         return Query(cls, self, query_string)
 
     def notification_listener(self, interval=60):
+        """Generator to continually poll the Cb Defense server for notifications (alerts). Note that this can only
+        be used with a 'SIEM' key generated in the Cb Defense console.
+        """
         while True:
             for notification in self.get_notifications():
                 yield notification
             time.sleep(interval)
 
     def get_notifications(self):
+        """Retrieve queued notifications (alerts) from the Cb Defense server. Note that this can only be used
+        with a 'SIEM' key generated in the Cb Defense console.
+
+        :returns: list of dictionary objects representing the notifications, or an empty list if none available.
+        """
         res = self.get_object("/integrationServices/v3/notification")
         return res.get("notifications", [])
 
