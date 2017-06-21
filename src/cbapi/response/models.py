@@ -366,6 +366,16 @@ class Feed(MutableBaseModel, CreatableModelMixin):
         new_action.watchlist_id = -1
         return new_action
 
+    def synchronize(self, full_sync=True):
+        try:
+            self._cb.post_object("/api/v1/feed/{0}/synchronize".format(self._model_unique_id),
+                                 data={"full_sync": full_sync})
+        except ServerError as e:
+            if e.error_code == 409:
+                raise ApiError("Cannot synchronize feed {0}: feed is disabled".format(self._model_unique_id))
+            else:
+                raise
+
 
 class ActionTypes(object):
     TYPE_MAP = {
