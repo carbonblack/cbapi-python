@@ -369,7 +369,7 @@ class Feed(MutableBaseModel, CreatableModelMixin):
     def synchronize(self, full_sync=True):
         try:
             self._cb.post_object("/api/v1/feed/{0}/synchronize".format(self._model_unique_id),
-                                 data={"full_sync": full_sync})
+                                 {"full_sync": full_sync})
         except ServerError as e:
             if e.error_code == 409:
                 raise ApiError("Cannot synchronize feed {0}: feed is disabled".format(self._model_unique_id))
