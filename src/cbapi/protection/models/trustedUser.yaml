@@ -1,0 +1,45 @@
+type: "object"
+required:
+  - name
+  - userSid
+  - description
+  - platformId
+properties:
+  id:
+    type: "integer"
+    description: "Unique id of this trustedUser"
+  name:
+    type: "string"
+    description: "Name of the user as it will appear on the console. This is not the name that will be enforced on the endpoint"
+  userSid:
+    type: "string"
+    description: "Id of the user that will be trusted on the endpoint. This field can be user name, user SID (Security identifier) on Windows platforms or user’s ID on Linux and Mac platforms"
+  description:
+    type: "string"
+    description: "Description of this rule"
+  platformId:
+    type: "integer"
+    description: "Platform where this trustedUser will be valid. it is one of: 1 = Windows, 2 = Mac, 4 = Linux"
+  dateCreated:
+    type: "string"
+    format: "date-time"
+    description: "Date/time when this object was created (UTC)"
+  createdByUserId:
+    type: "integer"
+    description: "Id of user that created this object. This is foreign key and can be expanded to expose fields from the related user object"
+  createdBy:
+    type: "string"
+    description: "User that created this object"
+  dateModified:
+    type: "string"
+    format: "date-time"
+    description: "Date/time when this object was last modified (UTC)"
+  modifiedByUserId:
+    type: "integer"
+    description: "Id of user that last modified this object. This is foreign key and can be expanded to expose fields from the related user object"
+  modifiedBy:
+    type: "string"
+    description: "User that last modified this object"
+  clVersion:
+    type: "integer"
+    description: "CL version associated with this trustedUser"

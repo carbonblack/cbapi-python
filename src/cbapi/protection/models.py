@@ -413,6 +413,7 @@ class TrustedDirectory(MutableBaseModel):
 
 class TrustedUser(MutableBaseModel, CreatableModelMixin):
     urlobject = "/api/bit9platform/v1/trustedUser"
+    swagger_meta_file = "protection/models/trustedUser.yaml"
 
     @classmethod
     def _minimum_server_version(cls):
