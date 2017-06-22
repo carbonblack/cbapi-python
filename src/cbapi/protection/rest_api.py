@@ -1,5 +1,8 @@
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
+from ..errors import UnauthorizedError, ApiError
+from distutils.version import LooseVersion
+
 
 from cbapi.connection import BaseAPI
 import logging
@@ -7,7 +10,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class CbEnterpriseProtectionAPI(BaseAPI):
+class CbProtectionAPI(BaseAPI):
     """The main entry point into the Carbon Black Enterprise Protection API.
 
     :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server.
@@ -19,14 +22,53 @@ class CbEnterpriseProtectionAPI(BaseAPI):
     >>> cb = CbEnterpriseProtectionAPI(profile="production")
     """
     def __init__(self, *args, **kwargs):
-        super(CbEnterpriseProtectionAPI, self).__init__(product_name="protection", *args, **kwargs)
+        super(CbProtectionAPI, self).__init__(product_name="protection", *args, **kwargs)
 
-    def _perform_query(self, cls, query_string=None):
-        return Query(cls, self, query_string)
+        self._server_info = None
+        try:
+            self._populate_server_info()
+        except UnauthorizedError:
+            raise UnauthorizedError(uri=self.url, message="Invalid API token for server {0:s}.".format(self.url))
 
-class CbProtectionAPI(CbEnterpriseProtectionAPI):
+        log.debug('Connected to Cb server version %s at %s' % (self._server_info['ParityServerVersion'], self.session.server))
+        self.cb_server_version = LooseVersion(self._server_info['ParityServerVersion'])
+
+    def _perform_query(self, cls, **kwargs):
+        if hasattr(cls, "_query_implementation"):
+            return cls._query_implementation(self)
+        else:
+            return Query(cls, self, **kwargs)
+
+    def _populate_server_info(self):
+        self._server_info = dict((sc['name'], sc['value']) for sc in self.get_object("/api/bit9platform/v1/serverConfig"))
+
+    @property
+    def info(self):
+        return self._server_info
+
+    def select(self, cls, unique_id=None, *args, **kwargs):
+        """Prepares a query against the Carbon Black data store.
+
+        :param class cls: The Model class (for example, Computer, Process, Binary, FileInstance) to query
+        :param unique_id: (optional) The unique id of the object to retrieve, to retrieve a single object by ID
+
+        :returns: An instance of the Model class if a unique_id is provided, otherwise a Query object
+        """
+
+        try:
+            min_server_version = cls._minimum_server_version()
+            if self.cb_server_version < min_server_version:
+                raise ApiError(
+                    "{0} API requires at least server version {1}".format(cls.__name__, min_server_version))
+        except AttributeError:
+            pass
+
+        return super(CbProtectionAPI, self).select(cls, unique_id=unique_id, *args, **kwargs)
+
+
+class CbEnterpriseProtectionAPI(CbProtectionAPI):
     """
-    Short-hand naming for the Cb Protection API.
+    Backwards compatibility for previous scripts
     """
     pass
 
@@ -67,6 +109,7 @@ class Query(PaginatedQuery):
     """
     def __init__(self, doc_class, cb, query=None):
         super(Query, self).__init__(doc_class, cb, None)
+
         if query:
             self._query = [query]
         else:

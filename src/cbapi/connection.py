@@ -248,7 +248,7 @@ class BaseAPI(object):
 
         :returns: An instance of the Model class if a unique_id is provided, otherwise a Query object
         """
-        if unique_id:
+        if unique_id is not None:
             return select_instance(self, cls, unique_id, *args, **kwargs)
         else:
             return self._perform_query(cls, **kwargs)
