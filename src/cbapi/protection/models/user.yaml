@@ -1,0 +1,80 @@
+type: "object"
+required:
+  - name
+properties:
+  id:
+    type: "integer"
+    description: "Unique id of this user"
+  name:
+    type: "string"
+    description: "Name of the user"
+  userGroupIds:
+    type: "string"
+    description: "Comma-separated list of IDs of corresponding userGroup objects"
+  eMailAddress:
+    type: "string"
+    description: "EMail address of this user"
+  firstName:
+    type: "string"
+    description: "First name of this user"
+  lastName:
+    type: "string"
+    description: "Last name of this user"
+  title:
+    type: "string"
+    description: "Title of this user"
+  salutation:
+    type: "string"
+    description: "Salutation of this user"
+  department:
+    type: "string"
+    description: "Department this user belongs to"
+  homePhone:
+    type: "string"
+    description: "User's home phone"
+  cellPhone:
+    type: "string"
+    description: "User's cell phone"
+  backupCellPhone:
+    type: "string"
+    description: "User's secondary cell phone"
+  pager:
+    type: "string"
+    description: "User's pager number"
+  backupPager:
+    type: "string"
+    description: "User's secondary pager number"
+  comments:
+    type: "string"
+    description: "Comments for this user"
+  adminComments:
+    type: "string"
+    description: "Administrator's comments for this user"
+  registrationDate:
+    type: "string"
+    format: "date-time"
+    description: "Date this user was first registered (UTC)"
+  readOnly:
+    type: "boolean"
+    description: "True if this user is one of internal users (System or Cb Collective Defense Cloud Service) or AD user. These users cannot be modified through the API"
+  external:
+    type: "boolean"
+    description: "True if this is externally generated user (e.g. from AD)"
+  automatic:
+    type: "boolean"
+    description: "True if this user’s roles are assigned automatically through mappings (valid only for external users)"
+  unified:
+    type: "boolean"
+    description: "True if this user’s token is already connected to a remote unified environment (token should not be changed)"
+  enabled:
+    type: "boolean"
+    description: "True if this user is enabled"
+  passwordHash:
+    type: "string"
+    description: "Hash of user password"
+  passwordSalt:
+    type: "string"
+    description: "Salt used to generate password hash"
+  apiToken:
+    type: "string"
+    description: "API token for this user"

@@ -1,0 +1,51 @@
+type: "object"
+required:
+  - name
+properties:
+  id:
+    type: "integer"
+    description: "Unique id of this user group"
+  name:
+    type: "string"
+    description: "Name of the user group"
+  description:
+    type: "string"
+    description: "Description of this user group"
+  permissions:
+    type: "string"
+    description: "Permissions associated with users of this user group as a hexadecimal string. See https://developer.carbonblack.com/reference/enterprise-protection/8.0/rest-api/#usergroup for more information."
+  policyIds:
+    type: "string"
+    description: "List of IDs of policies where this user group applies. Value will be empty if this is a global user group"
+  enabled:
+    type: "boolean"
+    description: "True if this userGroup is enabled"
+  editable:
+    type: "boolean"
+    description: "True if this userGroup is editable"
+  dateCreated:
+    type: "string"
+    format: "date-time"
+    description: "Date/time when this object was created (UTC)"
+  createdByUserId:
+    type: "integer"
+    description: "Id of user that created this object. This is foreign key and can be expanded to expose fields from the related user object"
+  createdBy:
+    type: "string"
+    description: "User that created this object"
+  dateModified:
+    type: "string"
+    format: "date-time"
+    description: "Date/time when this object was last modified (UTC)"
+  modifiedByUserId:
+    type: "integer"
+    description: "Id of user that last modified this object. This is foreign key and can be expanded to expose fields from the related user object"
+  modifiedBy:
+    type: "string"
+    description: "User that last modified this object"
+  automaticCount:
+    type: "integer"
+    description: "Number of users that belong to this group and have been assigned through AD rule (doesn’t include internal users)"
+  manualCount:
+    type: "integer"
+    description: "Number of users that belong to this group and have been assigned manually (doesn’t include internal users)"

@@ -422,6 +422,7 @@ class TrustedUser(MutableBaseModel, CreatableModelMixin):
 
 class User(MutableBaseModel, CreatableModelMixin):
     urlobject = "/api/bit9platform/v1/user"
+    swagger_meta_file = "protection/models/user.yaml"
 
     @classmethod
     def _minimum_server_version(cls):
@@ -430,6 +431,7 @@ class User(MutableBaseModel, CreatableModelMixin):
 
 class UserGroup(MutableBaseModel, CreatableModelMixin):
     urlobject = "/api/bit9platform/v1/userGroup"
+    swagger_meta_file = "protection/models/userGroup.yaml"
 
     @classmethod
     def _minimum_server_version(cls):
