@@ -1,6 +1,17 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.2.0 - Released June 22, 2017
+------------------------------------
+
+This release introduces compatibility with our new product, Cb Defense, as well as adding new Model Objects introduced
+in the Cb Protection 8.0 APIs.
+
+Other changes:
+
+* New method ``synchronize()`` added to the ``Feed`` Model Object
+* Bug fixes and documentation improvements
+
 CbAPI 1.1.1 - Released June 2, 2017
 -----------------------------------
 

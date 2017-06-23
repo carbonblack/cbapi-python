@@ -86,8 +86,7 @@ class Query(PaginatedQuery):
     the query.
 
     The syntax for query :py:meth:where and :py:meth:sort methods can be found in the
-    `Enterprise Protection API reference <http://developer.carbonblack.com/reference/enterprise-protection/7.2/rest-api/#searching:ec3e4958451e5256ed16afd222059e6d>`_
-    posted on the Carbon Black Developer Network website.
+    `Enterprise Protection API reference`_ posted on the Carbon Black Developer Network website.
 
     Examples::
 
@@ -106,6 +105,9 @@ class Query(PaginatedQuery):
           ``[1:2:-1]`` is not.
         - You can chain where clauses together to create AND queries; only objects that match all ``where`` clauses
           will be returned.
+
+    .. _Enterprise Protection API reference:
+        https://developer.carbonblack.com/reference/enterprise-protection/8.0/rest-api/
     """
     def __init__(self, doc_class, cb, query=None):
         super(Query, self).__init__(doc_class, cb, None)
@@ -130,9 +132,12 @@ class Query(PaginatedQuery):
     def where(self, q):
         """Add a filter to this query.
 
-        :param str q: Query string - see the Enterprise Protection API reference <http://developer.carbonblack.com/reference/enterprise-protection/7.2/rest-api/#searching:ec3e4958451e5256ed16afd222059e6d>`_.
+        :param str q: Query string - see the `Enterprise Protection API reference`_.
         :return: Query object
         :rtype: :py:class:`Query`
+
+        .. _Enterprise Protection API reference:
+            https://developer.carbonblack.com/reference/enterprise-protection/8.0/rest-api/
         """
         nq = self._clone()
         nq._query.append(q)
@@ -141,18 +146,24 @@ class Query(PaginatedQuery):
     def and_(self, q):
         """Add a filter to this query. Equivalent to calling :py:meth:`where` on this object.
 
-        :param str q: Query string - see the Enterprise Protection API reference <http://developer.carbonblack.com/reference/enterprise-protection/7.2/rest-api/#searching:ec3e4958451e5256ed16afd222059e6d>`_.
+        :param str q: Query string - see the `Enterprise Protection API reference`_.
         :return: Query object
         :rtype: :py:class:`Query`
+
+        .. _Enterprise Protection API reference:
+            https://developer.carbonblack.com/reference/enterprise-protection/8.0/rest-api/
         """
         return self.where(q)
 
     def sort(self, new_sort):
         """Set the sort order for this query.
 
-        :param str new_sort: Sort order - see the Enterprise Protection API reference <http://developer.carbonblack.com/reference/enterprise-protection/7.2/rest-api/#searching:ec3e4958451e5256ed16afd222059e6d>`_.
+        :param str new_sort: Sort order - see the `Enterprise Protection API reference`_.
         :return: Query object
         :rtype: :py:class:`Query`
+
+        .. _Enterprise Protection API reference:
+            https://developer.carbonblack.com/reference/enterprise-protection/8.0/rest-api/
         """
         new_sort = new_sort.strip()
         nq = self._clone()
