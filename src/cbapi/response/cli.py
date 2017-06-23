@@ -101,6 +101,12 @@ def main(args):
 
     opts = parser.parse_args(args)
     command = command_map.get(opts.command_name)
+    if not command:
+        parser.print_usage()
+        return
+
     command_method = command.get("method", None)
     if command_method:
         return command_method(opts)
+    else:
+        parser.print_usage()
