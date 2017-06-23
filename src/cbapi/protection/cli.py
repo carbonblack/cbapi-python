@@ -9,7 +9,7 @@ import os
 import getpass
 import six
 if six.PY3:
-    from io import BytesIO as StringIO
+    from io import StringIO as StringIO
 else:
     from cStringIO import StringIO
 
@@ -56,7 +56,7 @@ def configure(opts):
     token = input("API token: ")
 
     config = RawConfigParser()
-    config.readfp(StringIO(b'[default]'))
+    config.readfp(StringIO('[default]'))
     config.set("default", "url", url)
     config.set("default", "token", token)
     config.set("default", "ssl_verify", ssl_verify)

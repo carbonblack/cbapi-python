@@ -9,7 +9,7 @@ import os
 import getpass
 import six
 if six.PY3:
-    from io import BytesIO as StringIO
+    from io import StringIO as StringIO
 else:
     from cStringIO import StringIO
 
@@ -49,7 +49,7 @@ def configure(opts):
     token = input("API key: ")
 
     config = RawConfigParser()
-    config.readfp(StringIO(b'[default]'))
+    config.readfp(StringIO('[default]'))
     config.set("default", "url", url)
     config.set("default", "token", "{0}/{1}".format(token, connector_id))
     config.set("default", "ssl_verify", ssl_verify)
