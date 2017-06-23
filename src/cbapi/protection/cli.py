@@ -56,7 +56,7 @@ def configure(opts):
     token = input("API token: ")
 
     config = RawConfigParser()
-    config.readfp(StringIO('[default]'))
+    config.readfp(StringIO(b'[default]'))
     config.set("default", "url", url)
     config.set("default", "token", token)
     config.set("default", "ssl_verify", ssl_verify)

@@ -49,7 +49,7 @@ def configure(opts):
     token = input("API key: ")
 
     config = RawConfigParser()
-    config.readfp(StringIO('[default]'))
+    config.readfp(StringIO(b'[default]'))
     config.set("default", "url", url)
     config.set("default", "token", "{0}/{1}".format(token, connector_id))
     config.set("default", "ssl_verify", ssl_verify)
