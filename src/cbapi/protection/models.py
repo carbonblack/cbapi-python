@@ -222,7 +222,7 @@ class FileInstanceGroup(BaseModel):
         super(FileInstanceGroup, self).__init__(cb, model_unique_id, initial_data)
 
 
-class FileRule(MutableBaseModel):
+class FileRule(MutableBaseModel, CreatableModelMixin):
     urlobject = "/api/bit9platform/v1/fileRule"
     swagger_meta_file = "protection/models/fileRule.yaml"
 
@@ -242,9 +242,6 @@ class FileRule(MutableBaseModel):
     PlatformWindows = 1
     PlatformMac = 2
     PlatformLinux = 4
-
-    def __init__(self, cb, model_unique_id, initial_data=None):
-        super(FileRule, self).__init__(cb, model_unique_id, initial_data)
 
     @property
     def fileCatalog(self):
@@ -352,7 +349,7 @@ class PendingAnalysis(MutableModel):
         return getattr(self, "md5", None) or getattr(self, "sha1", None) or getattr(self, "sha256", None)
 
 
-class Policy(MutableBaseModel):
+class Policy(MutableBaseModel, CreatableModelMixin):
     urlobject = "/api/bit9platform/v1/policy"
     swagger_meta_file = "protection/models/policy.yaml"
 
