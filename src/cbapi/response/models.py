@@ -1845,7 +1845,7 @@ class ProcessV1Parser(object):
             new_crossproc['tamper_flag'] = True
 
         new_crossproc['is_target'] = False
-        if len(parts) > 7:
+        if len(parts) > 8:
             if parts[8] == 'true':
                 new_crossproc['is_target'] = True
 
@@ -1963,6 +1963,9 @@ class Process(TaggedModel):
     def new_object(cls, cb, item):
         # TODO: do we ever need to evaluate item['unique_id'] which is the id + segment id?
         # TODO: is there a better way to handle this? (see how this is called from Query._search())
+
+        # TODO: need to change item['id'] to item['unique_id'] - 'id' did not exist in some process documents
+        #  from a 5.2 -> 6.1 upgrade
         return cb.select(Process, item['id'], long(item['segment_id']), initial_data=item)
 
     def parse_guid(self, procguid):
