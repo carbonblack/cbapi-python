@@ -1991,6 +1991,14 @@ class Process(TaggedModel):
         self._events_loaded = False
         self._events = {}
         self._segments = []
+        self.__parent_info = None
+        self.__children_info = None
+        self.__sibling_info = None
+
+        if cb.cb_server_version < LooseVersion('6.0.0'):
+            self._default_segment = 1
+        else:
+            self._default_segment = 0
 
         try:
             # old 4.x process IDs are integers.
@@ -2011,10 +2019,7 @@ class Process(TaggedModel):
                     self._full_init = True
 
         if not self.current_segment:
-            if cb.cb_server_version < LooseVersion('6.0.0'):
-                self.current_segment = 1
-            else:
-                self.current_segment = 0
+            self.current_segment = self._default_segment
 
         super(Process, self).__init__(cb, self.id)
 
@@ -2042,6 +2047,24 @@ class Process(TaggedModel):
         if force_init:
             self.refresh()
 
+    @property
+    def _parent_info(self):
+        if not self._full_init:
+            self.refresh()
+        return self.__parent_info
+
+    @property
+    def _children_info(self):
+        if not self._full_init:
+            self.refresh()
+        return self.__children_info
+
+    @property
+    def _sibling_info(self):
+        if not self._full_init:
+            self.refresh()
+        return self.__sibling_info
+
     def _attribute(self, attrname, default=None):
         if attrname in self._overrides:
             return self._overrides[attrname]
@@ -2066,7 +2089,7 @@ class Process(TaggedModel):
         return super(Process, self)._attribute(attrname, default=default)
 
     def _build_api_request_uri(self):
-        return "/api/{0}/process/{1}/{2}".format(self._process_summary_api, self.id, self.current_segment)
+        return "/api/v1/process/{0}/{1}".format(self.id, self._default_segment)
 
     def _retrieve_cb_info(self, query_parameters=None):
         if self.suppressed_process or not self.valid_process:
@@ -2077,6 +2100,9 @@ class Process(TaggedModel):
     def _parse(self, obj):
         if "process" in obj:
             self._info = obj.get("process", {})
+            self.__parent_info = obj.get("parent", {})
+            self.__children_info = obj.get("children", [])
+            self.__sibling_info = obj.get("siblings", [])
         else:
             self._info = obj.copy()
 
@@ -2187,7 +2213,7 @@ class Process(TaggedModel):
 
     def require_events(self):
         event_key_list = ['filemod_complete', 'regmod_complete', 'modload_complete', 'netconn_complete',
-                      'crossproc_complete', 'childproc_complete']
+                          'crossproc_complete', 'childproc_complete']
 
         if not self.valid_process or self.suppressed_process:
             return
@@ -2195,7 +2221,7 @@ class Process(TaggedModel):
         if self.current_segment not in self._events:
             self._events[self.current_segment] = {}
             res = self._cb.get_object("/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id,
-                                                                                                self.current_segment)).get("process", {})
+                                                                              self.current_segment)).get("process", {})
             for k in event_key_list:
                 self._events[self.current_segment][k] = res.get(k, [])
 
@@ -2295,12 +2321,34 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbChildProcEvent` objects associated with this process
         """
-        self.require_events()
 
-        i = 0
-        for raw_childproc in self._events.get(self.current_segment, {}).get('childproc_complete', []):
-            yield self._event_parser.parse_childproc(i, raw_childproc)
-            i += 1
+        # Try and take a shortcut; generate the list of children from the process "summary" rather than the list
+        # of raw events first.
+
+        # This is a little different from how the children() method worked before; the most noticeable differences are:
+        # - only one entry is present per child (before there were up to two; one for the spawn event, one for the
+        #   terminate event)
+        # - the timestamp is derived from the start time of the process, not the timestamp from the spawn event.
+        #   the two timestamps will be off by a few microseconds.
+
+        if self._children_info is not None:
+            for i, child in enumerate(self._children_info):
+                yield CbChildProcEvent(self, convert_event_time(child.get("start") or "1970-01-01T00:00:00Z"), i,
+                                       {
+                                           "procguid": child["unique_id"],
+                                           "md5": child["process_md5"],
+                                           "pid": child["process_pid"],
+                                           "path": child["path"]
+                                       },
+                                       is_suppressed=child.get("is_suppressed", False),
+                                       proc_data=child)
+        else:
+            self.require_events()
+
+            i = 0
+            for raw_childproc in self._events.get(self.current_segment, {}).get('childproc_complete', []):
+                yield self._event_parser.parse_childproc(i, raw_childproc)
+                i += 1
 
     @property
     def all_events_segment(self):
@@ -2485,7 +2533,7 @@ class Process(TaggedModel):
             # strip off the segment number since we're just looking for the parent process, not a specific event
             parent_unique_id = "-".join(parent_unique_id.split("-")[:5])
 
-        return self._cb.select(self.__class__, parent_unique_id)
+        return self._cb.select(self.__class__, parent_unique_id, initial_data=self._parent_info)
 
     @property
     def cmdline(self):
@@ -2696,7 +2744,7 @@ class CbChildProcEvent(CbEvent):
         self.stat_titles.extend(['procguid', 'pid', 'path', 'md5'])
         self.is_suppressed = is_suppressed
         if proc_data:
-            self.proc_data = proc_data
+            self.proc_data = copy.deepcopy(proc_data)
         else:
             self.proc_data = {}
 
