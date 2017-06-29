@@ -1961,12 +1961,8 @@ class Process(TaggedModel):
 
     @classmethod
     def new_object(cls, cb, item):
-        # TODO: do we ever need to evaluate item['unique_id'] which is the id + segment id?
-        # TODO: is there a better way to handle this? (see how this is called from Query._search())
-
-        # TODO: need to change item['id'] to item['unique_id'] - 'id' did not exist in some process documents
-        #  from a 5.2 -> 6.1 upgrade
-        return cb.select(Process, item['id'], long(item['segment_id']), initial_data=item)
+        # 'id' did not exist in some process documents from a 5.2 -> 6.1 upgrade
+        return cb.select(Process, item['id'] or item['unique_id'], long(item['segment_id']), initial_data=item)
 
     def parse_guid(self, procguid):
         try:
@@ -2341,17 +2337,27 @@ class Process(TaggedModel):
                                            "procguid": child["unique_id"],
                                            "md5": child["process_md5"],
                                            "pid": child["process_pid"],
-                                           "path": child["path"]
+                                           "path": child["path"],
+                                           "terminated": False
                                        },
                                        is_suppressed=child.get("is_suppressed", False),
                                        proc_data=child)
         else:
-            self.require_events()
+            for cp in self.childprocs:
+                yield cp
 
-            i = 0
-            for raw_childproc in self._events.get(self.current_segment, {}).get('childproc_complete', []):
-                yield self._event_parser.parse_childproc(i, raw_childproc)
-                i += 1
+    @property
+    def childprocs(self):
+        """
+        Generator that returns :py:class:`CbChildProcEvent` objects associated with this process
+        """
+
+        self.require_events()
+
+        i = 0
+        for raw_childproc in self._events.get(self.current_segment, {}).get('childproc_complete', []):
+            yield self._event_parser.parse_childproc(i, raw_childproc)
+            i += 1
 
     @property
     def all_events_segment(self):
