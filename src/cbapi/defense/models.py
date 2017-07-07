@@ -75,6 +75,17 @@ class Device(DefenseMutableModel):
         if type(obj) == dict and "deviceInfo" in obj:
             return obj["deviceInfo"]
 
+    def lr_session(self):
+        """
+        Retrieve a Live Response session object for this Device.
+
+        :return: Live Response session object
+        :rtype: :py:class:`cbapi.defense.cblr.LiveResponseSession`
+        :raises ApiError: if there is an error establishing a Live Response session for this Device
+
+        """
+        return self._cb._request_lr_session(self._model_unique_id)
+
 
 class Event(NewBaseModel):
     urlobject = "/integrationServices/v3/event"

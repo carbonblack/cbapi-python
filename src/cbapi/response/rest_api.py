@@ -9,7 +9,7 @@ from ..connection import BaseAPI
 from .models import Process, Binary, Watchlist, Investigation, Alert, ThreatReport
 from ..errors import UnauthorizedError, ApiError
 from ..errors import CredentialError
-from .live_response_api import LiveResponseSessionManager
+from .cblr import LiveResponseSessionManager
 from .query import Query
 
 import requests
