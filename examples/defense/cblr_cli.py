@@ -2,8 +2,8 @@
 
 import shutil
 
-from cbapi.response.models import Sensor
-from cbapi.example_helpers import build_cli_parser, get_cb_response_object
+from cbapi.defense import Device
+from cbapi.example_helpers import build_cli_parser, get_cb_defense_object
 
 import sys
 import cmd
@@ -87,6 +87,7 @@ class CblrCli(cmd.Cmd):
         Create a CbLR Command Line class
 
         :param cb: Connection to the Cb Enterprise Response API
+        :type cb: CbEnterpriseResponseAPI
         :return:
         """
         cmd.Cmd.__init__(self)
@@ -290,16 +291,16 @@ class CblrCli(cmd.Cmd):
 
         if not sensor_id:
             print type(line)
-            q = self.cb.select(Sensor).where("hostname:{0}".format(line))
+            q = self.cb.select(Device).where("hostNameExact:{0}".format(line))
             print q
             print q._query
             sensor = q.first()
         else:
-            sensor = self.cb.select(Sensor, sensor_id)
+            sensor = self.cb.select(Device, sensor_id)
 
         self.lr_session = sensor.lr_session()
 
-        print "Session: %d" % self.lr_session.session_id
+        print("Session: {0}".format(self.lr_session.session_id))
         print "  Available Drives: %s" % ' '.join(self.lr_session.session_data.get('drives', []))
 
         # look up supported commands
@@ -744,7 +745,7 @@ def main():
     parser = build_cli_parser()
     parser.add_argument("--log", help="Log activity to a file", default='')
     args = parser.parse_args()
-    cb = get_cb_response_object(args)
+    cb = get_cb_defense_object(args)
     
     if args.log:
         file_handler = logging.FileHandler(args.log)
