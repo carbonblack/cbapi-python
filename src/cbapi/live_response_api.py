@@ -522,7 +522,7 @@ class CbLRSessionBase(object):
     #
     # Physical memory capture
     #
-    def memdump(self, local_filename, remote_filename=None, compress=True):
+    def memdump(self, local_filename, remote_filename=None, compress=False):
         dump_object = self.start_memdump(remote_filename=remote_filename, compress=compress)
         dump_object.wait()
         dump_object.get(local_filename)
