@@ -1,9 +1,12 @@
 from cbapi.live_response_api import CbLRManagerBase, CbLRSessionBase, poll_status
 from cbapi.errors import ObjectNotFoundError, TimeoutError
+from cbapi.response.models import Sensor
 
 
 class LiveResponseSession(CbLRSessionBase):
-    pass
+    def __init__(self, cblr_manager, session_id, sensor_id, session_data=None):
+        super(LiveResponseSession, self).__init__(cblr_manager, session_id, sensor_id, session_data=session_data)
+        self.os_type = self._cb.select(Sensor, self.sensor_id).os_type
 
 
 class LiveResponseSessionManager(CbLRManagerBase):

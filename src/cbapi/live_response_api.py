@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import json
 import random
 import string
 import threading
@@ -68,7 +69,7 @@ class CbLRSessionBase(object):
         self._closed = False
 
         self.session_data = session_data
-        self.os_type = self._cb.select(Sensor, self.sensor_id).os_type
+        self.os_type = None
         self.cblr_base = self._cblr_manager.cblr_base
 
     def __enter__(self):
@@ -543,7 +544,7 @@ class CbLRSessionBase(object):
     def _random_file_name(self):
         randfile = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(12)])
         if self.os_type == 1:
-            workdir = 'c:\\windows\\carbonblack'
+            workdir = 'c:\\windows\\temp'
         else:
             workdir = '/tmp'
 
@@ -576,6 +577,14 @@ class CbLRSessionBase(object):
                     retries -= 1
                     continue
                 else:
+                    try:
+                        error_message = json.loads(e.message)
+                        if error_message["status"] == "NOT_FOUND":
+                            self.session_id, self.session_data = self._cblr_manager._get_or_create_session(self.sensor_id)
+                            retries -= 1
+                            continue
+                    except:
+                        pass
                     raise ApiError("Received 404 error from server: {0}".format(e.message))
             else:
                 return resp
