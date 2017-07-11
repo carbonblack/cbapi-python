@@ -52,7 +52,10 @@ def convert_from_solr(s):
 
 def convert_from_cb(s):
     # Use dateutil.parser to parse incoming dates; flexible on what we receive, strict on what we send.
-    return dateutil.parser.parse(s)
+    if s is None:
+        return dateutil.parser.parse("1970-01-01T00:00:00Z")
+    else:
+       return dateutil.parser.parse(s)
 
 
 def convert_event_time(s):

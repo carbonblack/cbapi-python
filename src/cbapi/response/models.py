@@ -594,10 +594,13 @@ class Sensor(MutableBaseModel):
 
     @classmethod
     def _query_implementation(cls, cb):
-        if cb.cb_server_version >= LooseVersion("5.2.0"):
-            return SensorPaginatedQuery(cls, cb)
-        else:
-            return SensorQuery(cls, cb)
+        # ** Disable the paginated query implementation for now **
+
+        # if cb.cb_server_version >= LooseVersion("5.2.0"):
+        #     return SensorPaginatedQuery(cls, cb)
+        # else:
+        #     return SensorQuery(cls, cb)
+        return SensorQuery(cls, cb)
 
     @property
     def group(self):
