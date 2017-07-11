@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import json
 import random
 import string
 import threading
@@ -55,20 +56,21 @@ class LiveResponseError(Exception):
         return self.message
 
 
-class LiveResponseSession(object):
+class CbLRSessionBase(object):
     MAX_RETRY_COUNT = 5
 
-    def __init__(self, scheduler, session_id, sensor_id, session_data=None):
+    def __init__(self, cblr_manager, session_id, sensor_id, session_data=None):
         self.session_id = session_id
         self.sensor_id = sensor_id
-        self._lr_scheduler = scheduler
-        self._cb = scheduler._cb
+        self._cblr_manager = cblr_manager
+        self._cb = cblr_manager._cb
         # TODO: refcount should be in a different object in the scheduler
         self._refcount = 1
         self._closed = False
 
         self.session_data = session_data
-        self.os_type = self._cb.select(Sensor, self.sensor_id).os_type
+        self.os_type = None
+        self.cblr_base = self._cblr_manager.cblr_base
 
     def __enter__(self):
         return self
@@ -77,11 +79,12 @@ class LiveResponseSession(object):
         self.close()
 
     def close(self):
-        self._lr_scheduler.close_session(self.sensor_id, self.session_id)
+        self._cblr_manager.close_session(self.sensor_id, self.session_id)
         self._closed = True
 
     def get_session_archive(self):
-        response = self._cb.session.get("/api/v1/cblr/session/{0}/archive".format(self.session_id), stream=True)
+        response = self._cb.session.get("{cblr_base}/session/{0}/archive".format(self.session_id,
+                                                                                 cblr_base=self.cblr_base), stream=True)
         response.raw.decode_content = True
         return response.raw
 
@@ -96,8 +99,10 @@ class LiveResponseSession(object):
         command_id = resp.get('id', None)
 
         self._poll_command(command_id, timeout=timeout, delay=delay)
-        response = self._cb.session.get("/api/v1/cblr/session/{0}/file/{1}/content".format(self.session_id,
-                                                                                           file_id), stream=True)
+        response = self._cb.session.get("{cblr_base}/session/{0}/file/{1}/content".format(self.session_id,
+                                                                                          file_id,
+                                                                                          cblr_base=self.cblr_base),
+                                        stream=True)
         response.raw.decode_content = True
         return response.raw
 
@@ -517,7 +522,7 @@ class LiveResponseSession(object):
     #
     # Physical memory capture
     #
-    def memdump(self, local_filename, remote_filename=None, compress=True):
+    def memdump(self, local_filename, remote_filename=None, compress=False):
         dump_object = self.start_memdump(remote_filename=remote_filename, compress=compress)
         dump_object.wait()
         dump_object.get(local_filename)
@@ -539,18 +544,20 @@ class LiveResponseSession(object):
     def _random_file_name(self):
         randfile = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(12)])
         if self.os_type == 1:
-            workdir = 'c:\\windows\\carbonblack'
+            workdir = 'c:\\windows\\temp'
         else:
             workdir = '/tmp'
 
         return self.path_join(workdir, 'cblr.%s.tmp' % (randfile,))
 
     def _poll_command(self, command_id, **kwargs):
-        return poll_status(self._cb, "/api/v1/cblr/session/{0}/command/{1}".format(self.session_id, command_id),
+        return poll_status(self._cb, "{cblr_base}/session/{0}/command/{1}".format(self.session_id, command_id,
+                                                                                  cblr_base=self.cblr_base),
                            **kwargs)
 
     def _upload_file(self, fp):
-        resp = self._cb.session.post("/api/v1/cblr/session/{0}/file".format(self.session_id), files={"file": fp}).json()
+        resp = self._cb.session.post("{cblr_base}/session/{0}/file".format(self.session_id, cblr_base=self.cblr_base),
+                                     files={"file": fp}).json()
         return resp.get('id')
 
     def _lr_post_command(self, data):
@@ -562,13 +569,22 @@ class LiveResponseSession(object):
         while retries:
             try:
                 data["session_id"] = self.session_id
-                resp = self._cb.post_object("/api/v1/cblr/session/{0}/command".format(self.session_id), data)
+                resp = self._cb.post_object("{cblr_base}/session/{0}/command".format(self.session_id,
+                                                                                     cblr_base=self.cblr_base), data)
             except ObjectNotFoundError as e:
                 if e.message.startswith("Sensor") or e.message.startswith("Session"):
-                    self.session_id, self.session_data = self._lr_scheduler._get_or_create_session(self.sensor_id)
+                    self.session_id, self.session_data = self._cblr_manager._get_or_create_session(self.sensor_id)
                     retries -= 1
                     continue
                 else:
+                    try:
+                        error_message = json.loads(e.message)
+                        if error_message["status"] == "NOT_FOUND":
+                            self.session_id, self.session_data = self._cblr_manager._get_or_create_session(self.sensor_id)
+                            retries -= 1
+                            continue
+                    except:
+                        pass
                     raise ApiError("Received 404 error from server: {0}".format(e.message))
             else:
                 return resp
@@ -781,7 +797,10 @@ class LiveResponseJobScheduler(threading.Thread):
             self._job_workers[sensor.id].start()
 
 
-class LiveResponseSessionManager(object):
+class CbLRManagerBase(object):
+    cblr_base = ""                        # override in subclass for each product
+    cblr_session_cls = NotImplemented     # override in subclass for each product
+
     def __init__(self, cb, timeout=30, keepalive_sessions=False):
         self._timeout = timeout
         self._cb = cb
@@ -840,11 +859,11 @@ class LiveResponseSessionManager(object):
                     self._sessions[sensor_id]._refcount += 1
                 else:
                     session_id, session_data = self._get_or_create_session(sensor_id)
-                    session = LiveResponseSession(self, session_id, sensor_id, session_data=session_data)
+                    session = self.cblr_session_cls(self, session_id, sensor_id, session_data=session_data)
                     self._sessions[sensor_id] = session
         else:
             session_id, session_data = self._get_or_create_session(sensor_id)
-            session = LiveResponseSession(self, session_id, sensor_id, session_data=session_data)
+            session = self.cblr_session_cls(self, session_id, sensor_id, session_data=session_data)
 
         return session
 
@@ -860,39 +879,7 @@ class LiveResponseSessionManager(object):
 
     def _send_keepalive(self, session_id):
         log.debug("Sending keepalive message for session id {0}".format(session_id))
-        self._cb.get_object("/api/v1/cblr/session/{0}/keepalive".format(session_id))
-
-    def _get_or_create_session(self, sensor_id):
-        sensor_sessions = [s for s in self._cb.get_object("/api/v1/cblr/session")
-                           if s["sensor_id"] == sensor_id and s["status"] in ("pending", "active")]
-
-        if len(sensor_sessions) > 0:
-            session_id = sensor_sessions[0]["id"]
-        else:
-            session_id = self._create_session(sensor_id)
-
-        try:
-            res = poll_status(self._cb, "/api/v1/cblr/session/{0}".format(session_id), desired_status="active")
-        except ObjectNotFoundError:
-            # the Cb server will return a 404 if we don't establish a session in time, so convert this to a "timeout"
-            raise TimeoutError(uri="/api/v1/cblr/session/{0}".format(session_id),
-                               message="Could not establish session with sensor {0}".format(sensor_id),
-                               error_code=404)
-        else:
-            return session_id, res
-
-    def _close_session(self, session_id):
-        try:
-            session_data = self._cb.get_object("/api/v1/cblr/session/{0}".format(session_id))
-            session_data["status"] = "close"
-            self._cb.put_object("/api/v1/cblr/session/{0}".format(session_id), session_data)
-        except:
-            pass
-
-    def _create_session(self, sensor_id):
-        response = self._cb.post_object("/api/v1/cblr/session", {"sensor_id": sensor_id}).json()
-        session_id = response["id"]
-        return session_id
+        self._cb.get_object("{cblr_base}/session/{0}/keepalive".format(session_id, cblr_base=self.cblr_base))
 
 
 class GetFileJob(object):

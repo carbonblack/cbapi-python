@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from cbapi.example_helpers import build_cli_parser, get_cb_response_object, CblrCli
-from cbapi.response import Sensor
+from cbapi.example_helpers import build_cli_parser, get_cb_defense_object, CblrCli
+from cbapi.defense import Device
 import logging
 import sys
 
@@ -15,20 +15,20 @@ def connect_callback(cb, line):
         sensor_id = None
 
     if not sensor_id:
-        q = cb.select(Sensor).where("hostname:{0}".format(line))
+        q = cb.select(Device).where("hostNameExact:{0}".format(line))
         sensor = q.first()
     else:
-        sensor = cb.select(Sensor, sensor_id)
+        sensor = cb.select(Device, sensor_id)
 
     return sensor
 
 
 def main():
-    parser = build_cli_parser("Cb Response Live Response CLI")
+    parser = build_cli_parser("Cb Defense Live Response CLI")
     parser.add_argument("--log", help="Log activity to a file", default='')
     args = parser.parse_args()
-    cb = get_cb_response_object(args)
-
+    cb = get_cb_defense_object(args)
+    
     if args.log:
         file_handler = logging.FileHandler(args.log)
         file_handler.setLevel(logging.DEBUG)

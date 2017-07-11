@@ -1,5 +1,6 @@
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
+from .cblr import LiveResponseSessionManager
 
 from cbapi.connection import BaseAPI
 import logging
@@ -26,6 +27,7 @@ class CbDefenseAPI(BaseAPI):
     """
     def __init__(self, *args, **kwargs):
         super(CbDefenseAPI, self).__init__(product_name="defense", *args, **kwargs)
+        self._lr_scheduler = None
 
     def _perform_query(self, cls, query_string=None):
         return Query(cls, self, query_string)
@@ -47,6 +49,16 @@ class CbDefenseAPI(BaseAPI):
         """
         res = self.get_object("/integrationServices/v3/notification")
         return res.get("notifications", [])
+
+    @property
+    def live_response(self):
+        if self._lr_scheduler is None:
+            self._lr_scheduler = LiveResponseSessionManager(self)
+
+        return self._lr_scheduler
+
+    def _request_lr_session(self, sensor_id):
+        return self.live_response.request_session(sensor_id)
 
 
 class Query(PaginatedQuery):

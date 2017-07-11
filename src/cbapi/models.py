@@ -303,8 +303,8 @@ class NewBaseModel(object):
         except AttributeError:
             return None
 
-        if not field_value:             # NOTE THAT this is assuming no legitimate object has an ID of 0 (zero)
-            return None                 # - passing 0 to .select() for the field_value will return a Query object
+        if field_value is None:
+            return None
 
         return self._cb.select(join_cls, field_value)
 
