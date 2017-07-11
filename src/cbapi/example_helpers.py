@@ -212,13 +212,13 @@ class CblrCli(cmd.Cmd):
             except KeyboardInterrupt:
                 break
             except CliAttachError as e:
-                print "You must attach to a session"
+                print("You must attach to a session")
                 continue
             except CliArgsException as e:
-                print "Error parsing arguments!\n %s" % e
+                print("Error parsing arguments!\n %s" % e)
                 continue
             except Exception as e:
-                print "Error: %s" % e
+                print("Error: %s" % e)
                 continue
 
         if self.lr_session:
