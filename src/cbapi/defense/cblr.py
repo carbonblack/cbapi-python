@@ -27,7 +27,10 @@ class LiveResponseSessionManager(CbLRManagerBase):
         try:
             res = poll_status(self._cb, "{cblr_base}/session/{0}".format(session_id, cblr_base=self.cblr_base),
                               desired_status="ACTIVE", delay=1, timeout=360)
-        except ObjectNotFoundError:
+        except (ObjectNotFoundError, TimeoutError):
+            # "close" the session, otherwise it will stay in a pending state
+            self._close_session(session_id)
+
             # the Cb server will return a 404 if we don't establish a session in time, so convert this to a "timeout"
             raise TimeoutError(uri="{cblr_base}/session/{0}".format(session_id, cblr_base=self.cblr_base),
                                message="Could not establish session with sensor {0}".format(sensor_id),
