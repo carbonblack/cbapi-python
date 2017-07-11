@@ -2083,7 +2083,7 @@ class Process(TaggedModel):
                         'parent_name',
                         'parent_md5'] and not self._full_init:
             if attrname in self._info and self._info[attrname] != None and self._info[attrname] != "" \
-             and self._info[attrname] != "0"*32:
+             and self._info[attrname] != "0"*32 and self._info[attrname] != "0"*30:
                 return self._info[attrname]
             else:
                 self._retrieve_cb_info()
