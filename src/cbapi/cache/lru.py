@@ -8,7 +8,7 @@ except ImportError:
     # Python 2.6 compatibility
     from ordereddict import OrderedDict
 
-from six import iteritems
+from cbapi.six import iteritems
 from itertools import islice
 import time
 import threading

@@ -1,4 +1,4 @@
-from six import iteritems, add_metaclass
+from cbapi.six import iteritems, add_metaclass
 
 """Error related constants for win32
 

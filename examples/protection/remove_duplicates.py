@@ -2,7 +2,7 @@ from cbapi.example_helpers import get_cb_protection_object, build_cli_parser
 from cbapi.protection.models import Computer
 from collections import defaultdict
 import sys
-from six import iteritems
+from cbapi.six import iteritems
 
 
 def main():

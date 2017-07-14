@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from six import iteritems
+from cbapi.six import iteritems
 
 
 def convert_query_params(qd):

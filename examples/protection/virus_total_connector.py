@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from six import iteritems
+from cbapi.six import iteritems
 from six.moves.configparser import RawConfigParser
 from cbapi.protection import Connector, Notification, PendingAnalysis
 from cbapi.example_helpers import get_cb_protection_object, build_cli_parser

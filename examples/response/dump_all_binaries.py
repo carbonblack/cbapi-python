@@ -3,7 +3,7 @@
 from cbapi.response.models import Binary
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object
 import sys
-from six.moves.queue import Queue
+from cbapi.six.moves.queue import Queue
 import os
 import threading
 import json

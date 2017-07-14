@@ -2,7 +2,7 @@
 #
 
 import sys
-import six
+import cbapi.six as six
 from cbapi.response.models import Watchlist
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object, get_object_by_name_or_id
 from cbapi.errors import ServerError

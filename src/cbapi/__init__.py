@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-import six
+import cbapi.six as six
 
 __title__ = 'cbapi'
 __author__ = 'Carbon Black Developer Network'

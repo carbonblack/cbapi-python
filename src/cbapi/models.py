@@ -4,11 +4,11 @@ from __future__ import absolute_import
 
 from copy import deepcopy
 
-from six import python_2_unicode_compatible
+from cbapi.six import python_2_unicode_compatible
 
 import base64
 import os.path
-from six import iteritems, add_metaclass
+from cbapi.six import iteritems, add_metaclass
 from six.moves import range
 from .response.utils import convert_from_cb, convert_to_cb
 import yaml

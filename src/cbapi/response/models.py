@@ -13,7 +13,7 @@ from zipfile import ZipFile
 from contextlib import closing
 import struct
 from six.moves import urllib
-import six
+import cbapi.six as six
 import logging
 import time
 
@@ -40,7 +40,7 @@ try:
 except ImportError:
     from total_ordering import total_ordering
 
-from six import python_2_unicode_compatible, iteritems
+from cbapi.six import python_2_unicode_compatible, iteritems
 
 # Get constants for decoding the Netconn events
 import socket

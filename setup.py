@@ -14,7 +14,6 @@ install_requires=[
     'requests[security]',
     'attrdict',
     'cachetools',
-    'six',
     'pyyaml',
     'pika',
     'prompt_toolkit',

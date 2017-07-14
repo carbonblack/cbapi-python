@@ -7,7 +7,7 @@ from cbapi.errors import ObjectNotFoundError
 from cbapi.response.models import Process
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object
 import csv
-from six import PY3
+from cbapi.six import PY3
 from cbapi.response.models import CbChildProcEvent, CbFileModEvent, CbNetConnEvent, CbRegModEvent, CbModLoadEvent, CbCrossProcEvent
 
 

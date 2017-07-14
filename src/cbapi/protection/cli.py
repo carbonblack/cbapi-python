@@ -3,11 +3,11 @@
 import argparse
 import contextlib
 
-from six import iteritems
+from cbapi.six import iteritems
 from six.moves import input
 import os
 import getpass
-import six
+import cbapi.six as six
 if six.PY3:
     from io import StringIO as StringIO
 else:

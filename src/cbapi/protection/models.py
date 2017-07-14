@@ -6,7 +6,7 @@ from contextlib import closing
 from distutils.version import LooseVersion
 
 from zipfile import ZipFile
-import six
+import cbapi.six as six
 if six.PY3:
     from io import BytesIO as StringIO
 else:

@@ -6,7 +6,7 @@ from functools import wraps
 import time
 import json
 
-from six import python_2_unicode_compatible, iteritems
+from cbapi.six import python_2_unicode_compatible, iteritems
 
 from .errors import ServerError
 import logging

@@ -2,7 +2,7 @@
 
 from cbapi.response import Process
 from collections import defaultdict
-from six import iteritems
+from cbapi.six import iteritems
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object
 import sys
 

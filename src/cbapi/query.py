@@ -2,9 +2,9 @@
 
 from __future__ import absolute_import
 import copy
-import six
+import cbapi.six as six
 from .errors import ApiError, MoreThanOneResultError
-from six import iteritems
+from cbapi.six import iteritems
 from six.moves import range
 import logging
 

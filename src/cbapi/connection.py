@@ -19,7 +19,7 @@ from requests.packages.urllib3.poolmanager import PoolManager
 import logging
 import json
 
-from six import iteritems
+from cbapi.six import iteritems
 from six.moves import urllib
 
 from .auth import CredentialStore, Credentials

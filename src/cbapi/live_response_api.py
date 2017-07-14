@@ -11,7 +11,7 @@ from collections import defaultdict
 import shutil
 
 from cbapi.errors import TimeoutError, ObjectNotFoundError, ApiError, ServerError
-from six import itervalues
+from cbapi.six import itervalues
 from concurrent.futures import ThreadPoolExecutor, as_completed, _base, wait
 from cbapi import winerror
 

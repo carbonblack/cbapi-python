@@ -1,7 +1,7 @@
 from six.moves.configparser import RawConfigParser
 import os
 import attrdict
-import six
+import cbapi.six as six
 
 from .errors import CredentialError
 
