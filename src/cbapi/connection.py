@@ -3,7 +3,6 @@
 from __future__ import absolute_import
 
 import requests
-import hoverpy
 import sys
 from requests.adapters import HTTPAdapter
 
@@ -63,7 +62,7 @@ class ConnectionError(Exception):
 
 
 class Connection(object):
-    def __init__(self, credentials, integration_name=None, timeout=None, max_retries=None,simulate=False, capture=False,db=None):
+    def __init__(self, credentials, integration_name=None, timeout=None, max_retries=None):
         if not credentials.url or not credentials.url.startswith(("https://", "http://")):
             raise ConnectionError("Server URL must be a URL: eg. https://localhost")
 
@@ -72,19 +71,6 @@ class Connection(object):
 
         if not credentials.token:
             raise ConnectionError("No API token provided")
-
-        self.proxies = {}
-        use_hoverpy_proxy = False
-        if (simulate or capture):
-            use_hoverpy_proxy=True
-            hp = hoverpy.HoverPy(tlsVerification=False,db=db)
-            if (simulate):
-                hp.simulate()
-            elif (capture):
-                hp.capture()
-            else:
-                raise Exception("Cannot capture and simulate at once")
-            self.proxies = {'http':"http://localhost:8500","https":"https://localhost:8500"}
 
         self.server = credentials.url.rstrip("/")
         self.ssl_verify = credentials.ssl_verify
@@ -116,15 +102,15 @@ class Connection(object):
 
         self.session.mount(self.server, HTTPAdapter(max_retries=max_retries))
 
+        self.proxies = {}
         if credentials.ignore_system_proxy:         # see https://github.com/kennethreitz/requests/issues/879
             self.proxies = {
                 'no': 'pass'
             }
-        elif not(use_hoverpy_proxy): #surpress proxy settings when using hoverpy
+        else:
             if credentials.proxy:
                 self.proxies['http'] = credentials.proxy
                 self.proxies['https'] = credentials.proxy
-
 
     def http_request(self, method, url, **kwargs):
         method = method.upper()
@@ -186,9 +172,6 @@ class BaseAPI(object):
         product_name = kwargs.pop("product_name", None)
         credential_file = kwargs.pop("credential_file", None)
         integration_name = kwargs.pop("integration_name", None)
-        capture = kwargs.pop("capture",False)
-        simulate = kwargs.pop("simulate",False)
-        db = kwargs.pop("db",None)
 
         self.credential_store = CredentialStore(product_name, credential_file=credential_file)
 
@@ -209,7 +192,7 @@ class BaseAPI(object):
         max_retries = kwargs.pop("max_retries", None)
 
         self.session = Connection(self.credentials, integration_name=integration_name, timeout=timeout,
-                                  max_retries=max_retries,capture=capture,simulate=simulate,db=db)
+                                  max_retries=max_retries)
 
     def raise_unless_json(self, ret, expected):
         if ret.status_code == 200:
@@ -235,8 +218,6 @@ class BaseAPI(object):
             return default
         else:
             raise ServerError(error_code=result.status_code, message="Unknown error: {0}".format(result.content))
-
-
 
     def api_json_request(self, method, uri, **kwargs):
         headers = kwargs.pop("headers", {})
