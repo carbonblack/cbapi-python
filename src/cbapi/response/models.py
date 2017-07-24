@@ -2268,7 +2268,7 @@ class Process(TaggedModel):
         """
         Returns all unsigned module loads.  This is useful to filter out all Microsoft signed DLLs
         """
-        return [m for m in self.modloads if (not m.is_signed) or (m.is_signed == '(unknown)') ]
+        return [m for m in self.modloads if not m.is_signed ]
 
     @property
     def filemods(self):
@@ -2734,7 +2734,7 @@ class CbModLoadEvent(CbEvent):
 
     @property
     def is_signed(self):
-        return self.binary.signed
+        return False if (not(self.binary.signed) or self.binary.is_signed == '(Unknown)') else True
 
 
 class CbFileModEvent(CbEvent):
