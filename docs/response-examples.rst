@@ -50,6 +50,7 @@ Now let's take this binary and add a Banning rule for it. To do this, we create 
     >>> bh = cb.create(BannedHash)
     >>> bh.md5hash = binary.md5
     >>> bh.text = "Banned from API"
+    >>> bh.enabled = True
     >>> bh.save()
     Creating a new BannedHash object
     Sending HTTP POST /api/v1/banning/blacklist with {"md5hash": "7FB55F5A62E78AF9B58D08AAEEAEF848", "text": "banned from API"}
