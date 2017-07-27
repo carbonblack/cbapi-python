@@ -14,7 +14,7 @@ Other changes:
 
 * Cb Response
   * Added ``watchlist_exporter.py`` and ``watchlist_importer.py`` scripts to the Cb Response examples directory.
-    These scripts
+    These scripts allow you to export Watchlist data in a human- and machine-readable JSON format and then re-import them into another Cb Response server.
   * The ``Sensor`` Model Object now uses the non-paginated (v1) API by default. This fixes any issues encountered when
     iterating over all the sensors and receiving duplicate and/or missing sensors.
   * Fix off-by-one error in ``CbCrossProcess`` object.
