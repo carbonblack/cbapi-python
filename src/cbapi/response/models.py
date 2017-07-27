@@ -2268,7 +2268,7 @@ class Process(TaggedModel):
         """
         Returns all unsigned module loads.  This is useful to filter out all Microsoft signed DLLs
         """
-        return [m for m in self.modloads if not m.is_signed ]
+        return [m for m in self.modloads if not m.is_signed]
 
     @property
     def filemods(self):
@@ -2318,7 +2318,6 @@ class Process(TaggedModel):
             yield self._event_parser.parse_crossproc(i, raw_crossproc)
             i += 1
 
-
     @property
     def parents(self):
         try:
@@ -2329,6 +2328,7 @@ class Process(TaggedModel):
         except:
             return
         return
+
     @property
     def children(self):
         """

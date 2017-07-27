@@ -27,7 +27,7 @@ class LiveResponseSessionManager(CbLRManagerBase):
         try:
             res = poll_status(self._cb, "{cblr_base}/session/{0}".format(session_id, cblr_base=self.cblr_base),
                               desired_status="ACTIVE", delay=1, timeout=360)
-        except (ObjectNotFoundError, TimeoutError):
+        except Exception:
             # "close" the session, otherwise it will stay in a pending state
             self._close_session(session_id)
 

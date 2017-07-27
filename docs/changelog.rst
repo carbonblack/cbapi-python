@@ -1,6 +1,39 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.3.0 - Released July 27, 2017
+------------------------------------
+
+This release introduces the Live Response API for Cb Defense. A sample ``cblr_cli.py`` script is now included in the
+``examples`` directory for both Cb Response and Cb Defense.
+
+Other changes:
+
+* Cb Protection
+  * You can now create new ``FileRule`` and ``Policy`` model objects in cbapi.
+
+* Cb Response
+  * Added ``watchlist_exporter.py`` and ``watchlist_importer.py`` scripts to the Cb Response examples directory.
+    These scripts
+  * The ``Sensor`` Model Object now uses the non-paginated (v1) API by default. This fixes any issues encountered when
+    iterating over all the sensors and receiving duplicate and/or missing sensors.
+  * Fix off-by-one error in ``CbCrossProcess`` object.
+  * Fix issue iterating through ``Process`` Model Objects when accessing processes generated from a 5.2 server
+    after upgrading to 6.1.
+  * Reduce number of API requests required when accessing sibling information (parents, children, and siblings) from the
+    ``Process`` Model Object.
+  * Retrieve all events for a process when using ``segment`` ID of zero on a Cb Response 6.1 server.
+  * Behavior of ``Process.children`` attribute has changed:
+    * Only one entry is present per child (before there were up to two; one for the spawn event, one for the
+      terminate event)
+    * The timestamp is derived from the start time of the process, not the timestamp from the spawn event.
+      the two timestamps will be off by a few microseconds.
+    * The old behavior is still available by using the ``Process.childprocs`` attribute instead. This incurs a
+      performance penalty as another API call will have to be made to collect the childproc information.
+  * ``Binary`` Model Object now returns False for ``.is_signed`` attribute if it is set to ``(Unknown)``.
+
+* Moved the ``six`` Python module into cbapi and removed the external dependency.
+
 CbAPI 1.2.0 - Released June 22, 2017
 ------------------------------------
 
@@ -9,7 +42,9 @@ in the Cb Protection 8.0 APIs.
 
 Other changes:
 
-* New method ``synchronize()`` added to the ``Feed`` Model Object
+* Cb Response
+  * New method ``synchronize()`` added to the ``Feed`` Model Object
+
 * Bug fixes and documentation improvements
 
 CbAPI 1.1.1 - Released June 2, 2017
