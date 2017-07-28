@@ -2320,14 +2320,11 @@ class Process(TaggedModel):
 
     @property
     def parents(self):
-        try:
-            parent_proc = self.parent
-            while (parent_proc and parent_proc.id and parent_proc.process_md5):
-                yield parent_proc
-                parent_proc = parent_proc.parent
-        except:
-            return
-        return
+            #use walk parents to enforce consistency
+            parents = []
+            self.walk_parents(lambda parent, depth: parents.append(parent))
+            for parent in parents:
+                yield parent
 
     @property
     def children(self):
