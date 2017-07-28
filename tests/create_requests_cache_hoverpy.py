@@ -45,6 +45,22 @@ def buildResponseCache():
     watchlists = cb.select(Watchlist)
     print ("Watchlist count = {}\n".format(len(watchlists)))
 
+'''    
+@simulate(tlsVerification=False,dbpath="cber-requests.db") 
+def buildResponseCache():
+    cb = CbResponseAPI(proxies={"https":"https://localhost:8500","http":"http://localhost:8500"})
+    procs = cb.select(Process)
+    print ("Process count = {}\n".format(len(procs)))
+    binaries = cb.select(Binary)
+    print ("Binary count = {}\n".format(len(binaries)))
+    feeds = cb.select(Feed)
+    print ("Feed count = {}\n".format(len(feeds)))
+    sensors = cb.select(Sensor)
+    print ("Sensor count = {}\n".format(len(sensors)))
+    watchlists = cb.select(Watchlist)
+    print ("Watchlist count = {}\n".format(len(watchlists)))
+'''
+
 def main():
     buildResponseCache()
 

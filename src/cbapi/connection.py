@@ -75,7 +75,7 @@ class Connection(object):
         self.server = credentials.url.rstrip("/")
         self.ssl_verify = credentials.ssl_verify
         self.proxies = proxies if proxies else {}
-        proxy_override = False if not proxies else True
+        proxy_override = True if  proxies else False
 
         if not self.ssl_verify:
             try:

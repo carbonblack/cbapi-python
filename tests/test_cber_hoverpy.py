@@ -5,6 +5,7 @@ from hoverpy import simulate
 
 class CberTestSuite(unittest.TestCase):
 
+    @simulate(tlsVerification=False, dbpath="cber-requests.db")
     def setUp(self):
         self.cb = CbResponseAPI(proxies={"https":"https://localhost:8500","http":"http://localhost:8500"})
 
