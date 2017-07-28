@@ -2322,7 +2322,7 @@ class Process(TaggedModel):
     def parents(self):
         try:
             parent_proc = self.parent
-            while (parent_proc and parent_proc.id):
+            while parent_proc and parent_proc.id and parent_proc.get("process_pid", -1) != -1:
                 yield parent_proc
                 parent_proc = parent_proc.parent
         except:
