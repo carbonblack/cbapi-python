@@ -62,7 +62,7 @@ class ConnectionError(Exception):
 
 
 class Connection(object):
-    def __init__(self, credentials, integration_name=None, timeout=None, max_retries=None):
+    def __init__(self, credentials, integration_name=None, timeout=None, proxies=None, max_retries=None):
         if not credentials.url or not credentials.url.startswith(("https://", "http://")):
             raise ConnectionError("Server URL must be a URL: eg. https://localhost")
 
@@ -74,6 +74,8 @@ class Connection(object):
 
         self.server = credentials.url.rstrip("/")
         self.ssl_verify = credentials.ssl_verify
+        self.proxies = proxies if proxies else {}
+        proxy_override = False if not proxies else True
 
         if not self.ssl_verify:
             try:
@@ -102,15 +104,15 @@ class Connection(object):
 
         self.session.mount(self.server, HTTPAdapter(max_retries=max_retries))
 
-        self.proxies = {}
-        if credentials.ignore_system_proxy:         # see https://github.com/kennethreitz/requests/issues/879
-            self.proxies = {
-                'no': 'pass'
-            }
-        else:
-            if credentials.proxy:
-                self.proxies['http'] = credentials.proxy
-                self.proxies['https'] = credentials.proxy
+        if not(proxy_override):
+            if credentials.ignore_system_proxy:         # see https://github.com/kennethreitz/requests/issues/879
+                self.proxies = {
+                    'no': 'pass'
+                }
+            else:
+                if credentials.proxy:
+                    self.proxies['http'] = credentials.proxy
+                    self.proxies['https'] = credentials.proxy
 
     def http_request(self, method, url, **kwargs):
         method = method.upper()
@@ -172,7 +174,8 @@ class BaseAPI(object):
         product_name = kwargs.pop("product_name", None)
         credential_file = kwargs.pop("credential_file", None)
         integration_name = kwargs.pop("integration_name", None)
-
+        proxies = kwargs.pop('proxies',None)
+        
         self.credential_store = CredentialStore(product_name, credential_file=credential_file)
 
         url, token = kwargs.pop("url", None), kwargs.pop("token", None)
@@ -192,7 +195,7 @@ class BaseAPI(object):
         max_retries = kwargs.pop("max_retries", None)
 
         self.session = Connection(self.credentials, integration_name=integration_name, timeout=timeout,
-                                  max_retries=max_retries)
+                                  max_retries=max_retries,proxies=proxies)
 
     def raise_unless_json(self, ret, expected):
         if ret.status_code == 200:
