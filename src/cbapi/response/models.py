@@ -2326,9 +2326,9 @@ class Process(TaggedModel):
                     try : 
                         yield parent
                         parent = parent.parent
-                    except ObjectNotFoundException:
+                    except ObjectNotFoundError:
                         return
-            except ObjectNotFoundException:
+            except ObjectNotFoundError:
                 return
     @property
     def children(self):
