@@ -2320,12 +2320,16 @@ class Process(TaggedModel):
 
     @property
     def parents(self):
-            #use walk parents to enforce consistency
-            parents = []
-            self.walk_parents(lambda parent, depth: parents.append(parent))
-            for parent in parents:
-                yield parent
-
+            parent = self.parent
+            try:
+                while (parent and parent.process_md5 and parent.id):
+                    try : 
+                        yield parent
+                        parent = parent.parent
+                    except ObjectNotFoundException:
+                        return
+            except ObjectNotFoundException:
+                return
     @property
     def children(self):
         """
