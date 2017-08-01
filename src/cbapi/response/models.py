@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from zipfile import ZipFile
 from contextlib import closing
 import struct
-from six.moves import urllib
+from cbapi.six.moves import urllib
 import cbapi.six as six
 import logging
 import time

@@ -15,7 +15,7 @@ from cbapi.six import itervalues
 from concurrent.futures import ThreadPoolExecutor, as_completed, _base, wait
 from cbapi import winerror
 
-from six.moves.queue import Queue
+from cbapi.six.moves.queue import Queue
 
 from cbapi.response.models import Sensor
 

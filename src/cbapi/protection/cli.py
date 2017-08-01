@@ -4,7 +4,7 @@ import argparse
 import contextlib
 
 from cbapi.six import iteritems
-from six.moves import input
+from cbapi.six.moves import input
 import os
 import getpass
 import cbapi.six as six
@@ -14,7 +14,7 @@ else:
     from cStringIO import StringIO
 
 from cbapi.response.rest_api import get_api_token
-from six.moves.configparser import RawConfigParser
+from cbapi.six.moves.configparser import RawConfigParser
 
 
 @contextlib.contextmanager

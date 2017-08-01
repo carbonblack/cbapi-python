@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 
-from six.moves import urllib
+from cbapi.six.moves import urllib
 
 from distutils.version import LooseVersion
 from ..connection import BaseAPI

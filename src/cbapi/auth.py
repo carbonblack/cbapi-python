@@ -1,4 +1,4 @@
-from six.moves.configparser import RawConfigParser
+from cbapi.six.moves.configparser import RawConfigParser
 import os
 import attrdict
 import cbapi.six as six
