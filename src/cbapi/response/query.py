@@ -1,6 +1,6 @@
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
-from six.moves import urllib
+from cbapi.six.moves import urllib
 from distutils.version import LooseVersion
 from ..errors import ApiError
 from ..utils import convert_query_params

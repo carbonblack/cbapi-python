@@ -5,7 +5,7 @@ import copy
 import cbapi.six as six
 from .errors import ApiError, MoreThanOneResultError
 from cbapi.six import iteritems
-from six.moves import range
+from cbapi.six.moves import range
 import logging
 
 

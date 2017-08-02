@@ -9,7 +9,7 @@ from cbapi.six import python_2_unicode_compatible
 import base64
 import os.path
 from cbapi.six import iteritems, add_metaclass
-from six.moves import range
+from cbapi.six.moves import range
 from .response.utils import convert_from_cb, convert_to_cb
 import yaml
 import json

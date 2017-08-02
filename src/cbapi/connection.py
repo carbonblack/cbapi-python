@@ -20,7 +20,7 @@ import logging
 import json
 
 from cbapi.six import iteritems
-from six.moves import urllib
+from cbapi.six.moves import urllib
 
 from .auth import CredentialStore, Credentials
 from .errors import ServerError, TimeoutError, ApiError, ObjectNotFoundError, UnauthorizedError, CredentialError
