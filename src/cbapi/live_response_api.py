@@ -284,7 +284,7 @@ class CbLRSessionBase(object):
         return True
 
     def create_process(self, command_string, wait_for_output=True, remote_output_file_name=None,
-                       working_directory=None, wait_timeout=30):
+                       working_directory=None, wait_timeout=30, wait_for_completion=True):
         """
         Create a new process with the specified command string.
 
@@ -296,10 +296,11 @@ class CbLRSessionBase(object):
         Reply from 192.168.1.1: bytes=32 time<1ms TTL=64
 
         :param str command_string: command string used for the create process operation
-        :param bool wait_for_output: Block on output from the new process
+        :param bool wait_for_output: Block on output from the new process (execute in foreground)
         :param str remote_output_file_name: The remote output file name used for process output
         :param str working_directory: The working directory of the create process operation
         :param int wait_timeout: Time out used for this live response command
+        :param bool wait_for_completion: Wait until the process is completed before returning
         :return: returns the output of the command string
         :rtype: str
         """
@@ -310,7 +311,7 @@ class CbLRSessionBase(object):
         # - get the temporary file from the endpoint
         # - delete the temporary file
 
-        data = {"name": "create process", "object": command_string, "wait": False}
+        data = {"name": "create process", "object": command_string, "wait": wait_for_completion}
 
         if wait_for_output and not remote_output_file_name:
             randfilename = self._random_file_name()
