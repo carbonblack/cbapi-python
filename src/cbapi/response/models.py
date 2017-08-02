@@ -2324,7 +2324,7 @@ class Process(TaggedModel):
             while True:
                     try :
                         parent = current_process.parent
-                        if parent.get('pid',-1) == -1:
+                        if not(parent) or parent.get('process_pid',-1) == -1:
                             break
                         yield parent
                         current_process = parent
