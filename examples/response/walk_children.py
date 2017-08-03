@@ -9,8 +9,8 @@ import sys
 # This function is called for every child of the given process
 def visitor(proc, depth):
     try:
-        start_time = proc.get("start") or "<unknown>"
-        end_time = proc.get("end") or "<unknown>"
+        start_time = proc.start or "<unknown>"
+        end_time = proc.end or "<unknown>"
 
         print("%s%s -- %s: %s %s" % ('  '*(depth + 1), start_time, end_time, proc.cmdline,
                                      "(suppressed)" if proc.suppressed_process else ""))

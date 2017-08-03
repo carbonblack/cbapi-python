@@ -2211,7 +2211,10 @@ class Process(TaggedModel):
         """
         Returns the start time of the process
         """
-        return convert_from_solr(self._attribute('start', -1))
+        if self.get("start") is not None:
+            return convert_from_solr(self._attribute('start', -1))
+        else:
+            return None
 
     @property
     def end(self):
@@ -2221,8 +2224,8 @@ class Process(TaggedModel):
 
         :return: datetime object of the last event received for the process, if it has terminated. Otherwise, None.
         """
-        if self.get("end") is not None:
-            return convert_from_solr(self._attribute('end', -1))
+        if self._info.get("end") is not None:
+            return convert_from_solr(self._info.get('end', -1))
 
         if self.get("terminated", False) == True and self.get("last_update") is not None:
             return convert_from_solr(self._attribute('last_update', -1))
