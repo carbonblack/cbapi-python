@@ -2334,15 +2334,17 @@ class Process(TaggedModel):
 
     @property
     def parents(self):
-        try:
-            parent_proc = self.parent
-            while parent_proc and parent_proc.id and parent_proc.get("process_pid", -1) != -1:
-                yield parent_proc
-                parent_proc = parent_proc.parent
-        except:
+            current_process = self
+            while True:
+                    try :
+                        parent = current_process.parent
+                        if not(parent) or parent.get('process_pid',-1) == -1:
+                            break
+                        yield parent
+                        current_process = parent
+                    except ObjectNotFoundError:
+                        return
             return
-        return
-
     @property
     def children(self):
         """
