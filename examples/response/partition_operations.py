@@ -1,4 +1,6 @@
 import sys
+from distutils.version import LooseVersion
+
 from cbapi.response.models import StoragePartition
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object, get_object_by_name_or_id
 from cbapi.errors import ServerError
@@ -71,6 +73,11 @@ def main():
 
     args = parser.parse_args()
     cb = get_cb_response_object(args)
+
+    if cb.cb_server_version < LooseVersion("6.1.0"):
+        parser.error("This script can only work with server versions >= 6.1.0; {0} is running {1}"
+                     .format(cb.url, cb.cb_server_version))
+        return 1
 
     if args.command_name == "list":
         return list_partitions(cb, parser, args)
