@@ -1,7 +1,7 @@
 CbAPI and Live Response
 =======================
 
-Working with the Cb Response Live Response REST API directly can be difficult. Thankfully, just like the rest of Carbon
+Working with the Cb Live Response REST API directly can be difficult. Thankfully, just like the rest of Carbon
 Black's REST APIs, cbapi provides Pythonic APIs to make working with the Live Response API much easier.
 
 In addition to easy-to-use APIs to call into Live Response, cbapi also provides a "job-based" interface that allows
@@ -34,7 +34,7 @@ As seen in the example above, the ``.lr_session()`` method is context-aware. Cb 
 concurrent Live Response session slots (by default, only ten). By wrapping the ``.lr_session()``
 
 A full listing of methods in the cbapi Live Response API is available in the documentation for
-the :py:mod:`cbapi.response.live_response_api.LiveResponseSession` class.
+the :py:mod:`cbapi.live_response_api.CbLRSessionBase` class.
 
 Live Response Errors
 --------------------
