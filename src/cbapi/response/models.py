@@ -2213,6 +2213,20 @@ class Process(TaggedModel):
         """
         return convert_from_solr(self._attribute('start', -1))
 
+    @property
+    def end(self):
+        """
+        Returns the end time of the process (based on the last event received). If the process has not yet exited,
+        "end" will return None.
+
+        :return: datetime object of the last event received for the process, if it has terminated. Otherwise, None.
+        """
+        if self.get("end") is not None:
+            return convert_from_solr(self._attribute('end', -1))
+
+        if self.get("terminated", False) == True and self.get("last_update") is not None:
+            return convert_from_solr(self._attribute('last_update', -1))
+
     def require_events(self):
         event_key_list = ['filemod_complete', 'regmod_complete', 'modload_complete', 'netconn_complete',
                           'crossproc_complete', 'childproc_complete']
@@ -2346,7 +2360,8 @@ class Process(TaggedModel):
 
         if self._children_info is not None:
             for i, child in enumerate(self._children_info):
-                yield CbChildProcEvent(self, convert_event_time(child.get("start") or "1970-01-01T00:00:00Z"), i,
+                timestamp = convert_event_time(child.get("start") or "1970-01-01T00:00:00Z")
+                yield CbChildProcEvent(self, timestamp, i,
                                        {
                                            "procguid": child["unique_id"],
                                            "md5": child["process_md5"],
@@ -2784,12 +2799,15 @@ class CbChildProcEvent(CbEvent):
         if path:
             proc_data["path"] = path
 
+        proc_data["parent_unique_id"] = self.parent._model_unique_id
+        proc_data["parent_id"] = self.parent.id
+
         try:
             (sensor_id, proc_pid, proc_createtime) = parse_process_guid(self.parent.id)
-            proc_data["parent_unique_id"] = self.parent._model_unique_id
-            proc_data["parent_id"] = self.parent.id
-            proc_data["sensor_id"] = sensor_id
-            proc_data["start"] = proc_createtime
+            if "sensor_id" not in proc_data:
+                proc_data["sensor_id"] = sensor_id
+            if "start" not in proc_data:
+                proc_data["start"] = convert_to_solr(proc_createtime)
         except Exception:
             # silently fail if the GUID is not able to be parsed
             pass
