@@ -844,10 +844,38 @@ class SensorQuery(SimpleQuery):
         return self._results
 
 
+class Team(MutableBaseModel, CreatableModelMixin):
+    swagger_meta_file = "response/models/team.yaml"
+    urlobject = "/api/team"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return SimpleQuery(cls, cb, "/api/teams")
+
+    def _add_access(self, sg, access_type):
+        if isinstance(sg, int):
+            sg = self._cb.select(SensorGroup, sg)
+
+        new_access = [ga for ga in self.group_access if ga.get("group_id") != sg.id]
+        new_access.append({
+            "group_id": sg.id,
+            "access_category": access_type,
+            "group_name": sg.name
+        })
+        self.group_access = new_access
+
+    def add_view_access(self, sg):
+        return self._add_access(sg, "Viewer")
+
+    def add_administrator_access(self, sg):
+        return self._add_access(sg, "Administrator")
+
+
 class User(MutableBaseModel, CreatableModelMixin):
     swagger_meta_file = "response/models/user.yaml"
     urlobject = "/api/user"
     primary_key = "username"
+    _new_object_needs_primary_key = True
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -861,6 +889,14 @@ class User(MutableBaseModel, CreatableModelMixin):
         info = super(User, self)._retrieve_cb_info()
         info["id"] = self._model_unique_id
         return info
+
+    def add_team(self, t):
+        if isinstance(t, int):
+            t = self._cb.select(Team, t)
+
+        new_teams = [team for team in self.teams if team.get("id") != t.id]
+        new_teams.append({"id": t.id, "name": t.name})
+        self.teams = new_teams
 
 
 class Watchlist(MutableBaseModel, CreatableModelMixin):
