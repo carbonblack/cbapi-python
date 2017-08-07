@@ -53,7 +53,7 @@ class BaseQuery(object):
 
 
 class SimpleQuery(BaseQuery):
-    def __init__(self, cls, cb, urlobject=None, returns_fulldoc=False):
+    def __init__(self, cls, cb, urlobject=None, returns_fulldoc=True):
         super(SimpleQuery, self).__init__()
 
         self._doc_class = cls
