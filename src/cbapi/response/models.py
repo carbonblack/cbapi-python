@@ -850,7 +850,7 @@ class Team(MutableBaseModel, CreatableModelMixin):
 
     @classmethod
     def _query_implementation(cls, cb):
-        return SimpleQuery(cls, cb, "/api/teams")
+        return SimpleQuery(cls, cb, urlobject="/api/teams", returns_fulldoc=False)
 
     def _add_access(self, sg, access_type):
         if isinstance(sg, int):
@@ -864,7 +864,7 @@ class Team(MutableBaseModel, CreatableModelMixin):
         })
         self.group_access = new_access
 
-    def add_view_access(self, sg):
+    def add_viewer_access(self, sg):
         return self._add_access(sg, "Viewer")
 
     def add_administrator_access(self, sg):
