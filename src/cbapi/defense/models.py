@@ -11,6 +11,13 @@ log = logging.getLogger(__name__)
 
 class DefenseMutableModel(MutableBaseModel):
     _change_object_http_method = "PATCH"
+    _change_object_key_name = None
+
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=False):
+        super(DefenseMutableModel, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
+                                                  force_init=force_init, full_doc=full_doc)
+        if not self._change_object_key_name:
+            self._change_object_key_name = self.primary_key
 
     def _parse(self, obj):
         if type(obj) == dict and self.info_key in obj:
@@ -79,6 +86,12 @@ class DefenseMutableModel(MutableBaseModel):
                             self._info = message.get(self.info_key)
                             self._full_init = True
                             refresh_required = False
+                        else:
+                            if self._change_object_key_name in message.keys():
+                                # if all we got back was an ID, try refreshing to get the entire record.
+                                log.debug("Only received an ID back from the server, forcing a refresh")
+                                self._info[self.primary_key] = message[self._change_object_key_name]
+                                refresh_required = True
                     else:
                         # "success" is False
                         raise ServerError(request_ret.status_code, message.get("message", ""),
@@ -131,5 +144,6 @@ class Policy(DefenseMutableModel, CreatableModelMixin):
     info_key = "policyInfo"
     swagger_meta_file = "defense/models/policyInfo.yaml"
     _change_object_http_method = "PUT"
+    _change_object_key_name = "policyId"
 
 
