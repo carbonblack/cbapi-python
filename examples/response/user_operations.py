@@ -73,7 +73,16 @@ def add_user(cb, parser, args):
     log.debug("Adding user: {0:s}".format(u.username))
 
     if not args.password:
-        u.password = getpass.getpass("New password for {0}: ".format(u.username))
+        passwords_dont_match = True
+        while passwords_dont_match:
+            pw1 = getpass.getpass("New password for {0}: ".format(u.username))
+            pw2 = getpass.getpass("Re-enter password: ")
+            if pw1 == pw2:
+                passwords_dont_match = False
+            else:
+                print("Passwords don't match; try again")
+
+        u.password = pw1
     else:
         u.password = args.password
 
