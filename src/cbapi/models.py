@@ -312,6 +312,7 @@ class NewBaseModel(object):
 class MutableBaseModel(NewBaseModel):
     _new_object_http_method = "POST"
     _change_object_http_method = "PUT"
+    _new_object_needs_primary_key = False
 
     def __setattr__(self, attrname, val):
         # allow subclasses to define their own property setters
@@ -362,7 +363,8 @@ class MutableBaseModel(NewBaseModel):
         if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
             new_object_info = deepcopy(self._info)
             try:
-                del(new_object_info[self.__class__.primary_key])
+                if not self._new_object_needs_primary_key:
+                    del(new_object_info[self.__class__.primary_key])
             except Exception:
                 pass
             log.debug("Creating a new {0:s} object".format(self.__class__.__name__))

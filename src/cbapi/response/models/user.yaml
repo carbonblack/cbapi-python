@@ -3,7 +3,6 @@ required:
 - username
 - last_name
 - first_name
-- password
 - email
 - teams
 - global_admin

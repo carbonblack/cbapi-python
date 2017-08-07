@@ -13,6 +13,7 @@ from zipfile import ZipFile
 from contextlib import closing
 import struct
 from cbapi.six.moves import urllib
+from copy import deepcopy
 import cbapi.six as six
 import logging
 import time
@@ -844,10 +845,38 @@ class SensorQuery(SimpleQuery):
         return self._results
 
 
+class Team(MutableBaseModel, CreatableModelMixin):
+    swagger_meta_file = "response/models/team.yaml"
+    urlobject = "/api/team"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return SimpleQuery(cls, cb, urlobject="/api/teams", returns_fulldoc=False)
+
+    def _add_access(self, sg, access_type):
+        if isinstance(sg, int):
+            sg = self._cb.select(SensorGroup, sg)
+
+        new_access = [ga for ga in self.group_access if ga.get("group_id") != sg.id]
+        new_access.append({
+            "group_id": sg.id,
+            "access_category": access_type,
+            "group_name": sg.name
+        })
+        self.group_access = new_access
+
+    def add_viewer_access(self, sg):
+        return self._add_access(sg, "Viewer")
+
+    def add_administrator_access(self, sg):
+        return self._add_access(sg, "Administrator")
+
+
 class User(MutableBaseModel, CreatableModelMixin):
     swagger_meta_file = "response/models/user.yaml"
     urlobject = "/api/user"
     primary_key = "username"
+    _new_object_needs_primary_key = True
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -861,6 +890,45 @@ class User(MutableBaseModel, CreatableModelMixin):
         info = super(User, self)._retrieve_cb_info()
         info["id"] = self._model_unique_id
         return info
+
+    def _update_object(self):
+        if self._cb.cb_server_version < LooseVersion("6.1.0"):
+            # only include IDs of the teams and not the entire dictionary
+            if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
+                new_object_info = deepcopy(self._info)
+                try:
+                    del(new_object_info["id"])
+                except KeyError:
+                    pass
+                new_teams = [t.get("id") for t in new_object_info["teams"]]
+                new_teams = [t for t in new_teams if t]
+                new_object_info["teams"] = new_teams
+
+                try:
+                    if not self._new_object_needs_primary_key:
+                        del (new_object_info[self.__class__.primary_key])
+                except Exception:
+                    pass
+                log.debug("Creating a new {0:s} object".format(self.__class__.__name__))
+                ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.urlobject,
+                                                data=new_object_info)
+            else:
+                log.debug(
+                    "Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
+                ret = self._cb.api_json_request(self.__class__._change_object_http_method,
+                                                self._build_api_request_uri(), data=self._info)
+
+            return self._refresh_if_needed(ret)
+        else:
+            return super(User, self)._update_object()
+
+    def add_team(self, t):
+        if isinstance(t, int):
+            t = self._cb.select(Team, t)
+
+        new_teams = [team for team in self.teams if team.get("id") != t.id]
+        new_teams.append({"id": t.id, "name": t.name})
+        self.teams = new_teams
 
 
 class Watchlist(MutableBaseModel, CreatableModelMixin):
