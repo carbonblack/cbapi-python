@@ -83,7 +83,7 @@ def main():
     list_actions_command = commands.add_parser("list-actions", help="List actions associated with a watchlist")
     list_actions_specifier = list_actions_command.add_mutually_exclusive_group(required=True)
     list_actions_specifier.add_argument("-i", "--id", type=int, help="ID of watchlist")
-    list_actions_specifier.add_argument("-f", "--name", help="Name of watchlist")
+    list_actions_specifier.add_argument("-N", "--name", help="Name of watchlist")
 
     add_command = commands.add_parser("add", help="Add new watchlist")
     add_command.add_argument("-N", "--name", help="Name of watchlist", required=True)

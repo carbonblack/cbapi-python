@@ -1,15 +1,17 @@
 #!/usr/bin/env python
+from cbapi.six import python_2_unicode_compatible
 
 
 class ApiError(Exception):
     def __init__(self, message=None, original_exception=None):
         self.original_exception = original_exception
-        self.message = message
+        self.message = str(message)
 
     def __str__(self):
         return self.message
 
 
+@python_2_unicode_compatible
 class ServerError(ApiError):
     """A ServerError is raised when an HTTP error code is returned from the Carbon Black server."""
 
@@ -31,6 +33,7 @@ class ServerError(ApiError):
         return msg
 
 
+@python_2_unicode_compatible
 class ObjectNotFoundError(ApiError):
     """The requested object could not be found in the Carbon Black datastore."""
 
@@ -46,6 +49,7 @@ class ObjectNotFoundError(ApiError):
         return msg
 
 
+@python_2_unicode_compatible
 class TimeoutError(ApiError):
     def __init__(self, uri=None, error_code=None, message=None, original_exception=None):
         super(TimeoutError, self).__init__(message=message, original_exception=original_exception)
@@ -65,6 +69,7 @@ class TimeoutError(ApiError):
         return msg
 
 
+@python_2_unicode_compatible
 class UnauthorizedError(ApiError):
     def __init__(self, uri, message=None, action="read", original_exception=None):
         super(UnauthorizedError, self).__init__(message=message, original_exception=original_exception)
