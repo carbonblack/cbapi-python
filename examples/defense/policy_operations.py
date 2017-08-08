@@ -11,18 +11,24 @@ import json
 log = logging.getLogger(__name__)
 
 
-def get_policy_by_name_or_id(cb, id=None, name=None, return_all_if_none=False):
+def get_policy_by_name_or_id(cb, policy_id=None, name=None, return_all_if_none=False):
     policies = []
 
     try:
-        if id:
-            attempted_to_find = "ID of {0}".format(id)
-            policies = [cb.select(Policy, id, force_init=True)]
+        if policy_id:
+            if isinstance(policy_id, list):
+                attempted_to_find = "IDs of {0}".format(", ".join([str(pid) for pid in policy_id]))
+                policies = [p for p in cb.select(Policy) if p.id in policy_id]
+            else:
+                attempted_to_find = "ID of {0}".format(policy_id)
+                policies = [cb.select(Policy, policy_id, force_init=True)]
         elif name:
-            attempted_to_find = "name {0}".format(name)
-            policies = [p for p in cb.select(Policy) if p.name == name]
-            if not len(policies):
-                raise Exception("No policies match")
+            if isinstance(name, list):
+                attempted_to_find = "names of {0}".format(", ".join(name))
+                policies = [p for p in cb.select(Policy) if p.name in name]
+            else:
+                attempted_to_find = "name {0}".format(name)
+                policies = [p for p in cb.select(Policy) if p.name == name]
         elif return_all_if_none:
             attempted_to_find = "all policies"
             policies = list(cb.select(Policy))
@@ -92,13 +98,12 @@ def add_rule(cb, parser, args):
     policies = get_policy_by_name_or_id(cb, args.id, args.name)
 
     num_matching_policies = len(policies)
-    if num_matching_policies != 1:
-        print("{0:d} policies match. No action taken.".format(num_matching_policies))
+    if num_matching_policies < 1:
+        print("No policies match. No action taken.".format(num_matching_policies))
 
-    policy = policies[0]
-    policy.add_rule(json.load(open(args.rulefile, "r")))
-
-    print("Added rule from {0} to policy {1}.".format(args.rulefile, policy.name))
+    for policy in policies:
+        policy.add_rule(json.load(open(args.rulefile, "r")))
+        print("Added rule from {0} to policy {1}.".format(args.rulefile, policy.name))
 
 
 def del_rule(cb, parser, args):
@@ -156,8 +161,10 @@ def main():
 
     add_rule_command = commands.add_parser("add-rule", help="Add rule to existing policy from JSON rule file")
     add_rule_specifier = add_rule_command.add_mutually_exclusive_group(required=True)
-    add_rule_specifier.add_argument("-i", "--id", type=int, help="ID of policy")
-    add_rule_specifier.add_argument("-N", "--name", help="Name of policy")
+    add_rule_specifier.add_argument("-i", "--id", type=int, help="ID of policy (can specify multiple)",
+                                    action="append", metavar="POLICYID")
+    add_rule_specifier.add_argument("-N", "--name", help="Name of policy (can specify multiple)",
+                                    action="append", metavar="POLICYNAME")
     add_rule_command.add_argument("-f", "--rulefile", help="Filename containing the JSON rule", required=True)
 
     del_rule_command = commands.add_parser("del-rule", help="Delete rule from existing policy")
