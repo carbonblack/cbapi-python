@@ -146,4 +146,19 @@ class Policy(DefenseMutableModel, CreatableModelMixin):
     _change_object_http_method = "PUT"
     _change_object_key_name = "policyId"
 
+    @property
+    def rules(self):
+        return dict([(r.get("id"), r) for r in self.policy.get("rules", [])])
 
+    def add_rule(self, new_rule):
+        self._cb.post_object("{0}/rule".format(self._build_api_request_uri()), {"ruleInfo": new_rule})
+        self.refresh()
+
+    def delete_rule(self, rule_id):
+        self._cb.delete_object("{0}/rule/{1}".format(self._build_api_request_uri(), rule_id))
+        self.refresh()
+
+    def replace_rule(self, rule_id, new_rule):
+        self._cb.put_object("{0}/rule/{1}".format(self._build_api_request_uri(), rule_id),
+                            {"ruleInfo": new_rule})
+        self.refresh()

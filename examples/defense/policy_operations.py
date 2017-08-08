@@ -3,7 +3,7 @@
 
 import sys
 from cbapi.defense import Policy
-from cbapi.example_helpers import build_cli_parser, get_cb_defense_object, get_object_by_name_or_id
+from cbapi.example_helpers import build_cli_parser, get_cb_defense_object
 from cbapi.errors import ServerError
 import logging
 import json
@@ -11,10 +11,35 @@ import json
 log = logging.getLogger(__name__)
 
 
+def get_policy_by_name_or_id(cb, id=None, name=None, return_all_if_none=False):
+    policies = []
+
+    try:
+        if id:
+            attempted_to_find = "ID of {0}".format(id)
+            policies = [cb.select(Policy, id, force_init=True)]
+        elif name:
+            attempted_to_find = "name {0}".format(name)
+            policies = [p for p in cb.select(Policy) if p.name == name]
+            if not len(policies):
+                raise Exception("No policies match")
+        elif return_all_if_none:
+            attempted_to_find = "all policies"
+            policies = list(cb.select(Policy))
+    except Exception as e:
+        print("Could not find policy with {0}: {1}".format(attempted_to_find, str(e)))
+
+    return policies
+
+
 def list_policies(cb, parser, args):
     for p in cb.select(Policy):
-        print("Policy id {0}: {1}".format(p.id, p.name))
-        print(" {0}".format(p.description))
+        print("Policy id {0}: {1} {2}".format(p.id, p.name, "({0})".format(p.description) if p.description else ""))
+        print("Rules:")
+        for r in p.rules.values():
+            print("  {0}: {1} when {2} {3} is {4}".format(r.get('id'), r.get("action"),
+                                                          r.get("application", {}).get("type"),
+                                                          r.get("application", {}).get("value"), r.get("operation")))
 
 
 def import_policy(cb, parser, args):
@@ -37,56 +62,70 @@ def import_policy(cb, parser, args):
 
 
 def delete_policy(cb, parser, args):
-    try:
-        if args.id:
-            attempted_to_find = "ID of {0}".format(args.id)
-            policies = [cb.select(Policy, args.id, force_init=True)]
-        else:
-            attempted_to_find = "name {0}".format(args.name)
-            policies = [p for p in cb.select(Policy) if p.name == args.name]
-            if not len(policies):
-                raise Exception("No policies match")
-    except Exception as e:
-        print("Could not find policy with {0}: {1}".format(attempted_to_find, str(e)))
+    policies = get_policy_by_name_or_id(cb, args.id, args.name)
+    if len(policies) == 0:
         return
 
     num_matching_policies = len(policies)
     if num_matching_policies > 1 and not args.force:
-        print("{0:d} policies match {1:s} and --force not specified. No action taken.".format(num_matching_policies,
-                                                                                              attempted_to_find))
+        print("{0:d} policies match and --force not specified. No action taken.".format(num_matching_policies))
         return
 
     for p in policies:
         try:
             p.delete()
         except Exception as e:
-            print("Could not delete policy with {0}: {1}".format(attempted_to_find, str(e)))
+            print("Could not delete policy: {0}".format(str(e)))
         else:
             print("Deleted policy id {0} with name {1}".format(p.id, p.name))
 
 
 def export_policy(cb, parser, args):
-    try:
-        if args.id:
-            attempted_to_find = "ID of {0}".format(args.id)
-            policies = [cb.select(Policy, args.id, force_init=True)]
-        elif args.name:
-            attempted_to_find = "name {0}".format(args.name)
-            policies = [p for p in cb.select(Policy) if p.name == args.name]
-            if not len(policies):
-                raise Exception("No policies match")
-        else:
-            attempted_to_find = "all policies"
-            policies = list(cb.select(Policy))
-
-    except Exception as e:
-        print("Could not find policy with {0}: {1}".format(attempted_to_find, str(e)))
-        return
+    policies = get_policy_by_name_or_id(cb, args.id, args.name, return_all_if_none=True)
 
     for p in policies:
         json.dump(p.policy, open("policy-{0}.json".format(p.id), "w"), indent=2)
         print("Wrote policy {0} {1} to file policy-{0}.json".format(p.id, p.name))
-        
+
+
+def add_rule(cb, parser, args):
+    policies = get_policy_by_name_or_id(cb, args.id, args.name)
+
+    num_matching_policies = len(policies)
+    if num_matching_policies != 1:
+        print("{0:d} policies match. No action taken.".format(num_matching_policies))
+
+    policy = policies[0]
+    policy.add_rule(json.load(open(args.rulefile, "r")))
+
+    print("Added rule from {0} to policy {1}.".format(args.rulefile, policy.name))
+
+
+def del_rule(cb, parser, args):
+    policies = get_policy_by_name_or_id(cb, args.id, args.name)
+
+    num_matching_policies = len(policies)
+    if num_matching_policies != 1:
+        print("{0:d} policies match. No action taken.".format(num_matching_policies))
+
+    policy = policies[0]
+    policy.delete_rule(args.ruleid)
+
+    print("Removed rule id {0} from policy {1}.".format(args.ruleid, policy.name))
+
+
+def replace_rule(cb, parser, args):
+    policies = get_policy_by_name_or_id(cb, args.id, args.name)
+
+    num_matching_policies = len(policies)
+    if num_matching_policies != 1:
+        print("{0:d} policies match. No action taken.".format(num_matching_policies))
+
+    policy = policies[0]
+    policy.replace_rule(args.ruleid, json.load(open(args.rulefile, "r")))
+
+    print("Replaced rule id {0} from policy {1} with rule from file {2}.".format(args.ruleid, policy.name,
+                                                                                 args.rulefile))
 
 def main():
     parser = build_cli_parser("Policy operations")
@@ -115,6 +154,24 @@ def main():
     del_command.add_argument("--force", help="If NAME matches multiple policies, delete all matching policies",
                              action="store_true", default=False)
 
+    add_rule_command = commands.add_parser("add-rule", help="Add rule to existing policy from JSON rule file")
+    add_rule_specifier = add_rule_command.add_mutually_exclusive_group(required=True)
+    add_rule_specifier.add_argument("-i", "--id", type=int, help="ID of policy")
+    add_rule_specifier.add_argument("-N", "--name", help="Name of policy")
+    add_rule_command.add_argument("-f", "--rulefile", help="Filename containing the JSON rule", required=True)
+
+    del_rule_command = commands.add_parser("del-rule", help="Delete rule from existing policy")
+    del_rule_specifier = del_rule_command.add_mutually_exclusive_group(required=True)
+    del_rule_specifier.add_argument("-i", "--id", type=int, help="ID of policy")
+    del_rule_specifier.add_argument("-N", "--name", help="Name of policy")
+    del_rule_command.add_argument("-r", "--ruleid", type=int, help="ID of rule", required=True)
+
+    replace_rule_command = commands.add_parser("replace-rule", help="Replace existing rule with a new one")
+    replace_rule_specifier = replace_rule_command.add_mutually_exclusive_group(required=True)
+    replace_rule_specifier.add_argument("-i", "--id", type=int, help="ID of policy")
+    replace_rule_specifier.add_argument("-N", "--name", help="Name of policy")
+    replace_rule_command.add_argument("-r", "--ruleid", type=int, help="ID of rule", required=True)
+
     args = parser.parse_args()
     cb = get_cb_defense_object(args)
 
@@ -126,6 +183,12 @@ def main():
         return export_policy(cb, parser, args)
     elif args.command_name == "delete":
         return delete_policy(cb, parser, args)
+    elif args.command_name == "add-rule":
+        return add_rule(cb, parser, args)
+    elif args.command_name == "del-rule":
+        return del_rule(cb, parser, args)
+    elif args.command_name == "replace-rule":
+        return replace_rule(cb, parser, args)
 
 
 if __name__ == "__main__":
