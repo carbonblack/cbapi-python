@@ -1,7 +1,9 @@
 from ..models import MutableBaseModel, CreatableModelMixin, NewBaseModel
 
+from copy import deepcopy
 import logging
 import json
+
 from ..errors import ServerError
 
 log = logging.getLogger(__name__)
@@ -9,8 +11,43 @@ log = logging.getLogger(__name__)
 
 class DefenseMutableModel(MutableBaseModel):
     _change_object_http_method = "PATCH"
+    _change_object_key_name = None
+
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=False):
+        super(DefenseMutableModel, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
+                                                  force_init=force_init, full_doc=full_doc)
+        if not self._change_object_key_name:
+            self._change_object_key_name = self.primary_key
+
+    def _parse(self, obj):
+        if type(obj) == dict and self.info_key in obj:
+            return obj[self.info_key]
 
     def _update_object(self):
+        if self._change_object_http_method != "PATCH":
+            return self._update_entire_object()
+        else:
+            return self._patch_object()
+
+    def _update_entire_object(self):
+        if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
+            new_object_info = deepcopy(self._info)
+            try:
+                if not self._new_object_needs_primary_key:
+                    del(new_object_info[self.__class__.primary_key])
+            except Exception:
+                pass
+            log.debug("Creating a new {0:s} object".format(self.__class__.__name__))
+            ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.urlobject,
+                                            data={self.info_key: new_object_info})
+        else:
+            log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
+            ret = self._cb.api_json_request(self.__class__._change_object_http_method,
+                                            self._build_api_request_uri(), data={self.info_key: self._info})
+
+        return self._refresh_if_needed(ret)
+
+    def _patch_object(self):
         if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
             log.debug("Creating a new {0:s} object".format(self.__class__.__name__))
             ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.urlobject,
@@ -49,6 +86,12 @@ class DefenseMutableModel(MutableBaseModel):
                             self._info = message.get(self.info_key)
                             self._full_init = True
                             refresh_required = False
+                        else:
+                            if self._change_object_key_name in message.keys():
+                                # if all we got back was an ID, try refreshing to get the entire record.
+                                log.debug("Only received an ID back from the server, forcing a refresh")
+                                self._info[self.primary_key] = message[self._change_object_key_name]
+                                refresh_required = True
                     else:
                         # "success" is False
                         raise ServerError(request_ret.status_code, message.get("message", ""),
@@ -71,10 +114,6 @@ class Device(DefenseMutableModel):
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(Device, self).__init__(cb, model_unique_id, initial_data)
 
-    def _parse(self, obj):
-        if type(obj) == dict and "deviceInfo" in obj:
-            return obj["deviceInfo"]
-
     def lr_session(self):
         """
         Retrieve a Live Response session object for this Device.
@@ -90,11 +129,36 @@ class Device(DefenseMutableModel):
 class Event(NewBaseModel):
     urlobject = "/integrationServices/v3/event"
     primary_key = "eventId"
+    info_key = "eventInfo"
+
+    def _parse(self, obj):
+        if type(obj) == dict and self.info_key in obj:
+            return obj[self.info_key]
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(Event, self).__init__(cb, model_unique_id, initial_data)
 
-    def _parse(self, obj):
-        if type(obj) == dict and "eventInfo" in obj:
-            return obj["eventInfo"]
 
+class Policy(DefenseMutableModel, CreatableModelMixin):
+    urlobject = "/integrationServices/v3/policy"
+    info_key = "policyInfo"
+    swagger_meta_file = "defense/models/policyInfo.yaml"
+    _change_object_http_method = "PUT"
+    _change_object_key_name = "policyId"
+
+    @property
+    def rules(self):
+        return dict([(r.get("id"), r) for r in self.policy.get("rules", [])])
+
+    def add_rule(self, new_rule):
+        self._cb.post_object("{0}/rule".format(self._build_api_request_uri()), {"ruleInfo": new_rule})
+        self.refresh()
+
+    def delete_rule(self, rule_id):
+        self._cb.delete_object("{0}/rule/{1}".format(self._build_api_request_uri(), rule_id))
+        self.refresh()
+
+    def replace_rule(self, rule_id, new_rule):
+        self._cb.put_object("{0}/rule/{1}".format(self._build_api_request_uri(), rule_id),
+                            {"ruleInfo": new_rule})
+        self.refresh()

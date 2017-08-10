@@ -116,7 +116,7 @@ class ArrayFieldDescriptor(FieldDescriptor):
 class ObjectFieldDescriptor(FieldDescriptor):
     def __get__(self, instance, instance_type=None):
         ret = super(ObjectFieldDescriptor, self).__get__(instance, instance_type)
-        return json.loads(ret) or {}
+        return ret or {}
 
 
 class DateTimeFieldDescriptor(FieldDescriptor):
