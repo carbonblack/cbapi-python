@@ -1,6 +1,24 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.3.2 - Released August 10, 2017
+--------------------------------------
+
+This release introduces the Policy API for Cb Defense. A sample ``policy_operations.py`` script is now included
+in the ``examples`` directory for Cb Defense.
+
+Other changes:
+
+* Cb Response
+
+  * Bugfixes to the ``User`` Model Object.
+  * New ``user_operations.py`` example script to manage users & teams.
+  * Additional ``Team`` Model Object to add/remove/modify user teams.
+  * New ``check_datasharing.py`` example script to check if third party data sharing is enabled for binaries on any sensor groups.
+  * Documentation fix for the ``User`` Model Object.
+  * Fix to the ``watchlist_operations.py`` example script.
+
+
 CbAPI 1.3.1 - Released August 3, 2017
 -------------------------------------
 
