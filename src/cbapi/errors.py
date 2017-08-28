@@ -2,6 +2,10 @@
 from cbapi.six import python_2_unicode_compatible
 
 
+class ConnectionError(Exception):
+    pass
+
+
 class ApiError(Exception):
     def __init__(self, message=None, original_exception=None):
         self.original_exception = original_exception

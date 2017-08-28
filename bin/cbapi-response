@@ -16,6 +16,7 @@ else:
 
 from cbapi.response.rest_api import get_api_token
 from cbapi.six.moves.configparser import RawConfigParser
+from cbapi.utils import check_python_tls_compatibility
 
 
 @contextlib.contextmanager
@@ -32,6 +33,16 @@ def configure(opts):
     credential_file = os.path.join(credential_path, "credentials.response")
 
     print("Welcome to the CbAPI.")
+
+    # Check this Python version's compatibility with TLSv1.2.
+    max_tls_version = check_python_tls_compatibility()
+
+    if max_tls_version != "TLSv1.2":
+        print("NOTICE: this version of Python and OpenSSL does not support TLSv1.2.")
+        print("TLSv1.2 is *required* to connect to Cb Response server versions >= 6.1.0.")
+        print("It is highly recommended that you upgrade your Python and OpenSSL before using cbapi.")
+        print("")
+
     if os.path.exists(credential_file):
         print("An existing credential file exists at {0}.".format(credential_file))
         resp = input("Do you want to continue and overwrite the existing configuration? [Y/N] ")

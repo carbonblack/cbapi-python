@@ -4,7 +4,10 @@ from __future__ import absolute_import
 
 import requests
 import sys
-from requests.adapters import HTTPAdapter
+from requests.adapters import HTTPAdapter, DEFAULT_POOLBLOCK, DEFAULT_RETRIES
+from requests.packages.urllib3.util.ssl_ import create_urllib3_context
+import ssl
+
 
 # Older versions of requests (such as the one packaged with Splunk) do not have a Retry object
 # in the packaged version of urllib3. Fall back gracefully.
@@ -23,7 +26,8 @@ from cbapi.six import iteritems
 from cbapi.six.moves import urllib
 
 from .auth import CredentialStore, Credentials
-from .errors import ServerError, TimeoutError, ApiError, ObjectNotFoundError, UnauthorizedError, CredentialError
+from .errors import ServerError, TimeoutError, ApiError, ObjectNotFoundError, UnauthorizedError, CredentialError, \
+    ConnectionError
 from . import __version__
 
 from .cache.lru import lru_cache_function
@@ -47,27 +51,36 @@ if sys.version_info < (2, 7):
 else:
     calculate_elapsed_time = calculate_elapsed_time_new
 
-# Provide the ability to validate a Carbon Black server's SSL certificate without validating the hostname
-# (by default Carbon Black certificates are "issued" as CN=Self-signed Carbon Black Enterprise Server HTTPS Certificate)
-class HostNameIgnoringAdapter(HTTPAdapter):
-    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
-        self.poolmanager = PoolManager(num_pools=connections,
-                                       maxsize=maxsize,
-                                       block=block,
-                                       assert_hostname=False, **pool_kwargs)
 
+class CbAPISessionAdapter(HTTPAdapter):
+    def __init__(self, verify_hostname=False, force_tls_1_2=False, max_retries=DEFAULT_RETRIES):
+        self._cbapi_verify_hostname = verify_hostname
+        self._cbapi_force_tls_1_2 = force_tls_1_2
+        super(CbAPISessionAdapter, self).__init__(max_retries=max_retries)
 
-class ConnectionError(Exception):
-    pass
+    def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK, **pool_kwargs):
+        if self._cbapi_force_tls_1_2:
+            # Force the use of TLS v1.2 when talking to this Cb Response server.
+            context = create_urllib3_context(ciphers=('TLSv1.2:!aNULL:!eNULL:!MD5'))
+            context.options |= ssl.OP_NO_SSLv2
+            context.options |= ssl.OP_NO_SSLv3
+            context.options |= ssl.OP_NO_TLSv1
+            context.options |= ssl.OP_NO_TLSv1_1
+            pool_kwargs['ssl_context'] = context
+
+        if not self._cbapi_verify_hostname:
+            # Provide the ability to validate a Carbon Black server's SSL certificate without validating the hostname
+            # (by default Carbon Black certificates are "issued" as CN=Self-signed Carbon Black Enterprise Server
+            # HTTPS Certificate)
+            pool_kwargs["assert_hostname"] = False
+
+        return super(CbAPISessionAdapter, self).init_poolmanager(connections, maxsize, block, **pool_kwargs)
 
 
 class Connection(object):
     def __init__(self, credentials, integration_name=None, timeout=None, max_retries=None):
-        if not credentials.url or not credentials.url.startswith(("https://", "http://")):
+        if not credentials.url or not credentials.url.startswith("https://"):
             raise ConnectionError("Server URL must be a URL: eg. https://localhost")
-
-        if credentials.url.startswith("http://"):
-            log.warning("Connecting to Cb server on unencrypted HTTP")
 
         if not credentials.token:
             raise ConnectionError("No API token provided")
@@ -91,16 +104,22 @@ class Connection(object):
         self.token_header = {'X-Auth-Token': self.token, 'User-Agent': user_agent}
         self.session = requests.Session()
 
-        if not credentials.ssl_verify_hostname:
-            self.session.mount(self.server, HostNameIgnoringAdapter())
-
         self._timeout = timeout
 
-        # TODO: apply this to the ssl_verify_hostname case as well
         if max_retries is None:
             max_retries = MAX_RETRIES
 
-        self.session.mount(self.server, HTTPAdapter(max_retries=max_retries))
+        try:
+            tls_adapter = CbAPISessionAdapter(max_retries=max_retries, force_tls_1_2=credentials.ssl_force_tls_1_2,
+                                              verify_hostname=credentials.ssl_verify_hostname)
+        except ssl.SSLError as e:
+            raise ApiError("This version of Python and OpenSSL do not support TLSv1.2: {}".format(e),
+                           original_exception=e)
+        except Exception as e:
+            raise ApiError("Unknown error establishing cbapi session: {0}: {1}".format(e.__class__.__name__, e),
+                           original_exception=e)
+
+        self.session.mount(self.server, tls_adapter)
 
         self.proxies = {}
         if credentials.ignore_system_proxy:         # see https://github.com/kennethreitz/requests/issues/879

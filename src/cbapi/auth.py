@@ -13,6 +13,7 @@ default_profile = {
     "ssl_verify": "True",
     "ssl_verify_hostname": "True",
     "ssl_cert_file": None,
+    "ssl_force_tls_1_2": "False",
 
     "proxy": None,
     "ignore_system_proxy": "False",
@@ -37,7 +38,7 @@ class Credentials(attrdict.AttrDict):
         if not self.get("token", None):
             raise CredentialError("No API token specified")
 
-        for k in ["ssl_verify", "ssl_verify_hostname", "ignore_system_proxy"]:
+        for k in ["ssl_verify", "ssl_verify_hostname", "ignore_system_proxy", "ssl_force_tls_1_2"]:
             x = self.get(k, default_profile.get(k, "True"))
             if isinstance(x, six.string_types) and x.lower() in _boolean_states:
                 self[k] = _boolean_states[x.lower()]
