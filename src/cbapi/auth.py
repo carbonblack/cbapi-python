@@ -72,7 +72,7 @@ class CredentialStore(object):
 
         retval = {}
         for k, v in six.iteritems(default_profile):
-                retval[k] = self.credentials.get(credential_profile, k)
+            retval[k] = self.credentials.get(credential_profile, k)
 
         if not retval["url"] or not retval["token"]:
             raise CredentialError("Token and/or URL not available for profile %s" % credential_profile)

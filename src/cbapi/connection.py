@@ -94,6 +94,9 @@ class Connection(object):
                 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
             except Exception:
                 pass
+        else:
+            if credentials.ssl_cert_file:
+                self.ssl_verify = credentials.ssl_cert_file
 
         user_agent = "cbapi/{0:s} Python/{1:d}.{2:d}.{3:d}".format(__version__,
                              sys.version_info[0], sys.version_info[1], sys.version_info[2])
@@ -150,7 +153,8 @@ class Connection(object):
             raw_data = kwargs.get("data", None)
             if raw_data:
                 log.debug("Sending HTTP {0} {1} with {2}".format(method, url, raw_data))
-            r = self.session.request(method, uri, headers=headers, verify=verify_ssl, proxies=proxies, timeout=self._timeout, **kwargs)
+            r = self.session.request(method, uri, headers=headers, verify=verify_ssl, proxies=proxies,
+                                     timeout=self._timeout, **kwargs)
             log.debug('HTTP {0:s} {1:s} took {2:.3f}s (response {3:d})'.format(method, url,
                                                                                calculate_elapsed_time(r.elapsed),
                                                                                r.status_code))
