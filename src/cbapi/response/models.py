@@ -1619,7 +1619,7 @@ class Binary(TaggedModel):
         """
         Returns True if the binary is signed.
         """
-        if self._attribute('digsig_result') == 'Signed':
+        if self._attribute('digsig_result', default="Unsigned") == 'Signed':
             return True
         else:
             return False
@@ -2822,7 +2822,7 @@ class CbModLoadEvent(CbEvent):
 
     @property
     def is_signed(self):
-        return False if (not(self.binary.signed) or self.binary.is_signed == '(Unknown)') else True
+        return self.binary.signed
 
 
 class CbFileModEvent(CbEvent):
