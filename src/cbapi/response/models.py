@@ -280,7 +280,9 @@ class Alert(MutableBaseModel):
     @property
     def process(self):
         if 'process' in self.alert_type:
-            return self._cb.select(Process, self.process_id, getattr(self, "segment_id", None))
+            # there is a bug in Cb Response 6.1.x where segment_ids in alerts are truncated, so instead
+            # we will just select the process by its process_id.
+            return self._cb.select(Process, self.process_id)
         return None
 
     @property
