@@ -244,7 +244,7 @@ class NewBaseModel(object):
             return True
         return False
 
-    def _build_api_request_uri(self):
+    def _build_api_request_uri(self, http_method="GET"):
         baseuri = self.__class__.__dict__.get('urlobject', None)
         if self._model_unique_id is not None:
             return baseuri + "/%s" % self._model_unique_id
@@ -372,8 +372,9 @@ class MutableBaseModel(NewBaseModel):
                                             data=new_object_info)
         else:
             log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
-            ret = self._cb.api_json_request(self.__class__._change_object_http_method,
-                                            self._build_api_request_uri(), data=self._info)
+            http_method = self.__class__._change_object_http_method
+            ret = self._cb.api_json_request(http_method,self._build_api_request_uri(http_method=http_method),
+                                            data=self._info)
 
         return self._refresh_if_needed(ret)
 

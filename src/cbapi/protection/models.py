@@ -102,6 +102,23 @@ class Computer(MutableBaseModel):
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(Computer, self).__init__(cb, model_unique_id, initial_data)
 
+    def _build_api_request_uri(self, http_method="GET"):
+        base_uri = super(Computer, self)._build_api_request_uri(http_method=http_method)
+        args = []
+
+        if http_method == "PUT":
+            if any(n in self._dirty_attributes
+                   for n in ["debugLevel", "kernelDebugLevel", "debugFlags", "debugDuration", "ccLevel", "ccFlags"]):
+                args.append("changeDiagnostics=true")
+            if any(n in self._dirty_attributes
+                   for n in ["template", "templateCloneCleanupMode", "templateCloneCleanupTime", "templateCloneCleanupTimeScale", "templateTrackModsOnly"]):
+                args.append("changeTemplate=true")
+
+            if args:
+                base_uri += "?{0}".format("&".join(args))
+
+        return base_uri
+
     @property
     def policy(self):
         return self._join(Policy, "policyId")
@@ -115,13 +132,14 @@ class Computer(MutableBaseModel):
         return self._cb.select(FileInstance).where("computerId:{0:d}".format(self.id))
 
     @property
-    def template(self):
+    def templateComputer(self):
         return self._join(Computer, "templateComputerId")
 
     def resetCLIPassword(self):
-        self._build_api_request_uri()
+        url = self._build_api_request_uri() + "?resetCLIPassword=true"
+        self._cb.put_object(url, {})
         self.refresh()
-        return getattr(self, "cliPassword")
+        return getattr(self, "CLIPassword")
 
 
 class Connector(MutableBaseModel, CreatableModelMixin):
