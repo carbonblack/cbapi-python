@@ -169,11 +169,11 @@ class Connection(object):
                            original_exception=e)
         else:
             if r.status_code == 404:
-                raise ObjectNotFoundError(uri=uri, message=r.content)
+                raise ObjectNotFoundError(uri=uri, message=r.text)
             elif r.status_code == 401:
-                raise UnauthorizedError(uri=uri, action=method, message=r.content)
+                raise UnauthorizedError(uri=uri, action=method, message=r.text)
             elif r.status_code >= 400:
-                raise ServerError(error_code=r.status_code, message=r.content)
+                raise ServerError(error_code=r.status_code, message=r.text)
             return r
 
     def get(self, url, **kwargs):

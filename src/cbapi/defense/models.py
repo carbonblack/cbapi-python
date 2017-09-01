@@ -67,9 +67,9 @@ class DefenseMutableModel(MutableBaseModel):
 
         if request_ret.status_code not in range(200, 300):
             try:
-                message = json.loads(request_ret.content)[0]
+                message = json.loads(request_ret.text)[0]
             except:
-                message = request_ret.content
+                message = request_ret.text
 
             raise ServerError(request_ret.status_code, message,
                               result="Did not update {} record.".format(self.__class__.__name__))

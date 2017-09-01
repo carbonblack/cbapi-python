@@ -33,12 +33,12 @@ def get_api_token(base_url, username, password, **kwargs):
     """
     r = requests.get("{0:s}/api/auth".format(base_url), auth=requests.auth.HTTPDigestAuth(username, password), **kwargs)
     if r.status_code != 200:
-        raise CredentialError(message="Invalid credentials: {0:s}".format(r.content))
+        raise CredentialError(message="Invalid credentials: {0:s}".format(r.text))
 
     try:
         return r.json()["auth_token"]
     except:
-        raise ApiError(message="Error retrieving auth_token: {0:s}".format(r.content))
+        raise ApiError(message="Error retrieving auth_token: {0:s}".format(r.text))
 
 
 class CbResponseAPI(BaseAPI):
