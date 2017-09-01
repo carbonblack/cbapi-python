@@ -1,6 +1,6 @@
 # Python bindings for Carbon Black REST API
 
-**Current version: 1.3.2**
+**Current version: 1.3.3**
 
 [![Build Status](https://travis-ci.org/carbonblack/cbapi-python.svg?branch=master)](https://travis-ci.org/carbonblack/cbapi-python)
 
@@ -29,8 +29,8 @@ Backwards compatibility with old scripts is maintained through the `cbapi.legacy
 `cbapi.CbApi` directly will continue to work. Once cbapi 2.0.0 is released, the old `CbApi` will be deprecated and
 removed entirely no earlier than January 2017.
 
-New scripts should use the `cbapi.CbEnterpriseResponseAPI` (for Carbon Black "Enterprise Response") and 
-`cbapi.CbEnterpriseProtectionAPI` (for Carbon Black "Enterprise Protection" / former Bit9) API entry points.
+New scripts should use the `cbapi.CbResponseAPI` (for Cb Response) and 
+`cbapi.CbProtectionAPI` (for Cb Protection / former Bit9) API entry points.
 
 ## Getting Started
 

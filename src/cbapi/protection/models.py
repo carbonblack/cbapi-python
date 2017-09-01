@@ -20,14 +20,6 @@ class EnforcementLevel:
     LevelNone = 80
 
 
-class AppCatalog(NewBaseModel):
-    urlobject = "/api/bit9platform/v1/appCatalog"
-
-    @classmethod
-    def _minimum_server_version(cls):
-        return LooseVersion("8.0")
-
-
 class ApprovalRequest(MutableModel):
     urlobject = "/api/bit9platform/v1/approvalRequest"
 
@@ -62,14 +54,6 @@ class ApprovalRequest(MutableModel):
     @property
     def computer(self):
         return self._join(Computer, "computerId")
-
-
-class AppTemplate(MutableBaseModel):
-    urlobject = "/api/bit9platform/v1/appTemplate"
-
-    @classmethod
-    def _minimum_server_version(cls):
-        return LooseVersion("8.0")
 
 
 class Certificate(MutableModel):

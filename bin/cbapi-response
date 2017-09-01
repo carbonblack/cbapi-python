@@ -93,21 +93,11 @@ def configure(opts):
     print("Successfully wrote credentials to {0}.".format(credential_file))
 
 
-def check_tls(opts):
-    print("Newest TLS version supported by this install is: {0}.".format(check_python_tls_compatibility()))
-
-
 command_map = {
     "configure": {
         "extra_args": {},
         "help": "Configure CbAPI",
         "method": configure
-    },
-    "check-tls": {
-        "extra_args": {},
-        "help": "Return the latest version of TLS supported by this version of Python and OpenSSL. "
-            "Cb Response versions 6.1+ now require TLSv1.2 support.",
-        "method": check_tls
     }
 }
 

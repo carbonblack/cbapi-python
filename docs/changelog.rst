@@ -1,6 +1,53 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.3.3 - Released September 1, 2017
+----------------------------------------
+
+This release includes security improvements and bugfixes.
+
+Security changes:
+
+* CbAPI enforces the use of HTTPS when connecting to on-premise Cb Response servers.
+* CbAPI can optionally require TLSv1.2 when connecting to Carbon Black servers.
+
+  * Note that some versions of Python and OpenSSL, notably the version of OpenSSL packaged with Mac OS X, do not support
+    TLSv1.2. This will cause CbAPI to fail to connect to Cb Response 6.1+ servers which require TLSv1.2 cipher suites.
+  * A new command, ``cbapi check-tls``, will report the TLS version supported by your platform.
+  * To enforce the use of TLSv1.2 when connecting to a server, add ``ssl_force_tls_1_2=True`` to that server's
+    credential profile.
+
+* Add the ability to "pin" a specific server certificate to a credential profile.
+
+  * You can now force TLS certificate verification on self-signed, on-premise installations of Cb Response or Protection
+    through the ``ssl_cert_file`` option in the credential profile.
+  * To "pin" a server certificate, save the PEM-formatted server certificate to a file, and put the full path to that
+    PEM file in the ``ssl_cert_file`` option of that server's credential profile.
+  * When using this option with on-premise Cb Response servers, you may also have to set
+    ``ssl_verify_hostname=False`` as the hostname in the certificate generated at install time is ``localhost`` and
+    will not match the server's hostname or IP address. This option will still validate that the server's certificate
+    is valid and matches the copy in the ``ssl_cert_file`` option.
+
+Changes for Cb Protection:
+
+* The API now sets the appropriate "GET" query fields when changing fields such as the ``debugFlags`` on the Computer
+  object.
+* The ``.template`` attribute on the Computer model object has been renamed ``.templateComputer``.
+* Remove AppCatalog and AppTemplate model objects.
+
+Changes for Cb Response:
+
+* Added ``.webui_link`` property to Cb Response Query objects.
+
+Bug Fixes:
+
+* Error handling is improved on Python 3. Live Response auto-reconnect functionality is now fixed on Python 3 as
+  a result.
+* Workaround implemented for Cb Response 6.1 where segment_ids are truncated on Alerts. The ``.process`` attribute on
+  an Alert now ignores the ``segment_id`` and links to the first Process segment.
+* Fixed issue with ``Binary.signed`` and ``CbModLoadEvent.is_signed``.
+
+
 CbAPI 1.3.2 - Released August 10, 2017
 --------------------------------------
 
