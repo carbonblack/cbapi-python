@@ -38,6 +38,7 @@ Changes for Cb Protection:
 Changes for Cb Response:
 
 * Added ``.webui_link`` property to Cb Response Query objects.
+* Added ``ban_hash.py`` example.
 
 Bug Fixes:
 
