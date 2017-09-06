@@ -1309,6 +1309,9 @@ class ProcessQuery(WatchlistEnabledQuery):
     def __init__(self, doc_class, cb, query=None, raw_query=None):
         super(ProcessQuery, self).__init__(doc_class, cb, query, raw_query)
 
+        if cb._has_legacy_partitions:
+            self._default_args["cb.legacy_5x_mode"] = True
+
     def group_by(self, field_name):
         """Set the group-by field name for this query. Typically, you will want to set this to 'id' if you only want
         one result per process.
