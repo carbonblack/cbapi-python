@@ -97,6 +97,11 @@ class Computer(MutableBaseModel):
             if any(n in self._dirty_attributes
                    for n in ["template", "templateCloneCleanupMode", "templateCloneCleanupTime", "templateCloneCleanupTimeScale", "templateTrackModsOnly"]):
                 args.append("changeTemplate=true")
+            if "tamperProtectionActive" in self._dirty_attributes:
+                if self.get("tamperProtectionActive", True) == True:
+                    args.append("newTamperProtectionActive=true")
+                else:
+                    args.append("newTamperProtectionActive=false")
 
             if args:
                 base_uri += "?{0}".format("&".join(args))
