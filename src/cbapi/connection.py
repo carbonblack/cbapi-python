@@ -53,7 +53,7 @@ else:
 
 
 class CbAPISessionAdapter(HTTPAdapter):
-    def __init__(self, verify_hostname=False, force_tls_1_2=False, max_retries=DEFAULT_RETRIES):
+    def __init__(self, verify_hostname=True, force_tls_1_2=False, max_retries=DEFAULT_RETRIES):
         self._cbapi_verify_hostname = verify_hostname
         self._cbapi_force_tls_1_2 = force_tls_1_2
         super(CbAPISessionAdapter, self).__init__(max_retries=max_retries)
