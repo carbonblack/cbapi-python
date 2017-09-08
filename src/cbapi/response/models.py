@@ -837,7 +837,6 @@ class SensorQuery(SimpleQuery):
     def results(self):
         if not self._full_init:
             #ZE CB-15681 - REMOVE BLOCK WHEN BUG IS FIXED
-            full_results = False
             try:
                 full_results = self._cb.get_object(self._urlobject, query_parameters=convert_query_params(self._query))
             except ServerError as se:
