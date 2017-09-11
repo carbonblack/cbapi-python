@@ -178,6 +178,7 @@ def main():
     replace_rule_specifier.add_argument("-i", "--id", type=int, help="ID of policy")
     replace_rule_specifier.add_argument("-N", "--name", help="Name of policy")
     replace_rule_command.add_argument("-r", "--ruleid", type=int, help="ID of rule", required=True)
+    replace_rule_command.add_argument("-f", "--rulefile", help="Filename containing the JSON rule", required=True)
 
     args = parser.parse_args()
     cb = get_cb_defense_object(args)
