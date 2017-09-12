@@ -51,7 +51,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'cbapi'
-copyright = u'2016, Carbon Black Developer Network'
+copyright = u'2016-2017, Carbon Black Developer Network'
 author = u'Carbon Black Developer Network'
 
 # The version info for the project you're documenting, acts as replacement for
