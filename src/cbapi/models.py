@@ -218,7 +218,8 @@ class NewBaseModel(object):
         if item in self._info:
             return self._info[item]
         else:
-            raise
+            raise AttributeError("'{0}' object has no attribute '{1}'".format(self.__class__.__name__,
+                                                                              item))
 
     def __setattr__(self, attrname, val):
         if attrname.startswith("_"):
