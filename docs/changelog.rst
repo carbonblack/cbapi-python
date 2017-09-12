@@ -1,6 +1,26 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.3.4 - Released September 12, 2017
+-----------------------------------------
+
+This release includes a critical security fix and small bugfixes.
+
+Security fix:
+
+* The underlying CbAPI connection class erroneously disabled hostname validation by default. This does *not* affect
+  code that uses CbAPI through the public interfaces documented here; it only affects code that accesses the new
+  ``CbAPISessionAdapter`` class directly. This class was introduced in version 1.3.3.
+  Regardless, it is strongly recommended that all users currently using 1.3.3 upgrade to 1.3.4.
+
+Bug fixes:
+
+* Add rule filename parameter to Cb Defense ``policy_operations.py`` script's ``add-rule`` command.
+* Add support for ``tamperProtectionActive`` attribute to Cb Protection's ``Computer`` object.
+* Work around Cb Response issue- the ``/api/v1/sensor`` route incorrectly returns an HTTP 500 if no sensors match the
+  provided query. CbAPI now catches this exception and will instead return an empty set back to the caller.
+
+
 CbAPI 1.3.3 - Released September 1, 2017
 ----------------------------------------
 
