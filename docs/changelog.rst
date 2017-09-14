@@ -1,7 +1,7 @@
 CbAPI Changelog
 ===============
 
-CbAPI 1.3.4 - Released September 12, 2017
+CbAPI 1.3.4 - Released September 14, 2017
 -----------------------------------------
 
 This release includes a critical security fix and small bugfixes.
