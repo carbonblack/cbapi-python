@@ -1,6 +1,6 @@
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
-from six.moves import urllib
+from cbapi.six.moves import urllib
 from distutils.version import LooseVersion
 from ..errors import ApiError
 from ..utils import convert_query_params
@@ -87,6 +87,11 @@ class Query(PaginatedQuery):
             nq._sort_by = new_sort
         return nq
 
+    @property
+    def webui_link(self):
+        return "{0:s}/#/search?{1}".format(self._cb.url, urllib.parse.urlencode(
+            convert_query_params(self._get_query_parameters())))
+
     def and_(self, new_query):
         """Add a filter to this query. Equivalent to calling :py:meth:`where` on this object.
 
@@ -134,17 +139,23 @@ class Query(PaginatedQuery):
         query_params = convert_query_params(qargs)
         return self._cb.get_object(self._doc_class.urlobject, query_parameters=query_params).get('facets', {})
 
-    def _count(self):
-        if self._count_valid:
-            return self._total_results
-
+    def _get_query_parameters(self):
         if self._raw_query:
             args = self._raw_query.copy()
         else:
             args = self._default_args.copy()
             if self._query:
                 args['q'] = self._query
+            else:
+                args['q'] = ''
 
+        return args
+
+    def _count(self):
+        if self._count_valid:
+            return self._total_results
+
+        args = self._get_query_parameters()
         args['start'] = 0
         args['rows'] = 0
 
@@ -158,19 +169,12 @@ class Query(PaginatedQuery):
     def _search(self, start=0, rows=0):
         # iterate over total result set, 100 at a time
 
-        if self._raw_query:
-            args = self._raw_query.copy()
-        else:
-            args = self._default_args.copy()
-            args['start'] = start
-
-            if self._query:
-                args['q'] = self._query
-            else:
-                args['q'] = ''
+        args = self._get_query_parameters()
+        args['start'] = start
 
         if self._sort_by:
             args['sort'] = self._sort_by
+
         if rows:
             args['rows'] = min(rows, self._batch_size)
         else:

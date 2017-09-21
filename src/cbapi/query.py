@@ -5,7 +5,7 @@ import copy
 import cbapi.six as six
 from .errors import ApiError, MoreThanOneResultError
 from cbapi.six import iteritems
-from six.moves import range
+from cbapi.six.moves import range
 import logging
 
 
@@ -53,7 +53,7 @@ class BaseQuery(object):
 
 
 class SimpleQuery(BaseQuery):
-    def __init__(self, cls, cb, urlobject=None):
+    def __init__(self, cls, cb, urlobject=None, returns_fulldoc=True):
         super(SimpleQuery, self).__init__()
 
         self._doc_class = cls
@@ -66,6 +66,7 @@ class SimpleQuery(BaseQuery):
         self._results = []
         self._query = {}
         self._sort_by = None
+        self._returns_full_doc = returns_fulldoc
 
     def _clone(self):
         nq = self.__class__(self._doc_class, self._cb)
@@ -99,7 +100,7 @@ class SimpleQuery(BaseQuery):
         if not self._full_init:
             self._results = []
             for item in self._cb.get_object(self._urlobject, default=[]):
-                t = self._doc_class.new_object(self._cb, item, full_doc=True)
+                t = self._doc_class.new_object(self._cb, item, full_doc=self._returns_full_doc)
                 if self._match_query(t):
                     self._results.append(t)
             self._results = self._sort(self._results)

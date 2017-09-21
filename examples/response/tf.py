@@ -96,7 +96,7 @@ def main():
 
     rows = []
     for parent_proc in processes:
-        process_facets = cb.select(Process).where("parent_name:{}".format(parent_proc)).facets("process_name")
+        process_facets = cb.select(Process).where("parent_name:{0}".format(parent_proc)).facets("process_name")
         for term in reversed(process_facets["process_name"]):
             termratio = int(float(term['ratio']))
             if int(args.percentless) >= termratio:

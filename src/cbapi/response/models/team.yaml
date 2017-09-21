@@ -1,0 +1,27 @@
+type: object
+required:
+- name
+- group_access
+properties:
+  id:
+    type: integer
+    description: 'User team id'
+  name:
+    type: string
+    description: 'User team name'
+  group_access:
+    type: array
+    description: "Sensor group permissions for this team"
+    items:
+      title: teamPermission
+      type: object
+      properties:
+        group_id:
+          type: integer
+          description: ''
+        group_name:
+          type: string
+          description: ''
+        access_category:
+          type: string
+          description: ''

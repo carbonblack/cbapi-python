@@ -9,7 +9,11 @@ import sys
 # This function is called for every child of the given process
 def visitor(proc, depth):
     try:
-        print("%s%s: %s" % ('  '*(depth-1), proc.start, proc.cmdline))
+        start_time = proc.start or "<unknown>"
+        end_time = proc.end or "<unknown>"
+
+        print("%s%s -- %s: %s %s" % ('  '*(depth + 1), start_time, end_time, proc.cmdline,
+                                     "(suppressed)" if proc.suppressed_process else ""))
     except Exception as e:
         print("** Encountered error while walking children: {0:s}".format(str(e)))
 
@@ -42,8 +46,15 @@ def main():
         return 2
 
     for root_proc in procs:
-        print("Process {0:s} on {1:s} executed by {2:s} children:".format(root_proc.path, root_proc.hostname,
+        if not root_proc.terminated:
+            duration = "still running"
+        else:
+            duration = str(root_proc.end - root_proc.start)
+
+        print("Process {0:s} on {1:s} executed by {2:s}:".format(root_proc.cmdline, root_proc.hostname,
                                                                           root_proc.username))
+        print("started at {0} ({1})".format(str(root_proc.start), duration))
+        print("Cb Response console link: {0}".format(root_proc.webui_link))
         root_proc.walk_children(visitor)
         print("")
 

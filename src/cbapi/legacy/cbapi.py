@@ -429,7 +429,7 @@ class CbApi(object):
                 # change all "+" to "%20" (percent-encoding)
                 search_query = search_query.replace("+", "%20")
                 # ensure that "cb.urlver=1" is the first parameter
-                search_query = "cb.urlver=1&{}".format(search_query)
+                search_query = "cb.urlver=1&{0}".format(search_query)
 
             # ensure that the query itself is properly encoded
             # This is now strengthened to enforce url encoding on all parameters

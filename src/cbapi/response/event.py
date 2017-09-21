@@ -11,8 +11,8 @@ import logging
 import json
 from time import sleep
 
-from six.moves import SimpleHTTPServer, BaseHTTPServer
-from six.moves import urllib
+from cbapi.six.moves import SimpleHTTPServer, BaseHTTPServer
+from cbapi.six.moves import urllib
 
 import ssl
 

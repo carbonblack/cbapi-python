@@ -48,35 +48,35 @@ Models
 Live Response
 -------------
 
-.. autoclass:: cbapi.response.live_response_api.LiveResponseSession
+.. autoclass:: cbapi.live_response_api.CbLRSessionBase
 
 File Operations
 ^^^^^^^^^^^^^^^
 
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.get_file
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.delete_file
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.put_file
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.list_directory
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.create_directory
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.walk
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.get_file
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.delete_file
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.put_file
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.list_directory
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.create_directory
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.walk
 
 Registry Operations
 ^^^^^^^^^^^^^^^^^^^
 
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.get_registry_value
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.set_registry_value
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.delete_registry_value
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.create_registry_key
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.delete_registry_key
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.list_registry_keys_and_values
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.list_registry_keys
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.get_registry_value
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.set_registry_value
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.delete_registry_value
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.create_registry_key
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.delete_registry_key
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.list_registry_keys_and_values
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.list_registry_keys
 
 Process Operations
 ^^^^^^^^^^^^^^^^^^
 
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.kill_process
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.create_process
-.. automethod:: cbapi.response.live_response_api.LiveResponseSession.list_processes
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.kill_process
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.create_process
+.. automethod:: cbapi.live_response_api.CbLRSessionBase.list_processes
 
 
 

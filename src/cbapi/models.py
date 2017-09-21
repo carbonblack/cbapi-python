@@ -9,7 +9,7 @@ from cbapi.six import python_2_unicode_compatible
 import base64
 import os.path
 from cbapi.six import iteritems, add_metaclass
-from six.moves import range
+from cbapi.six.moves import range
 from .response.utils import convert_from_cb, convert_to_cb
 import yaml
 import json
@@ -116,7 +116,7 @@ class ArrayFieldDescriptor(FieldDescriptor):
 class ObjectFieldDescriptor(FieldDescriptor):
     def __get__(self, instance, instance_type=None):
         ret = super(ObjectFieldDescriptor, self).__get__(instance, instance_type)
-        return json.loads(ret) or {}
+        return ret or {}
 
 
 class DateTimeFieldDescriptor(FieldDescriptor):
@@ -218,7 +218,8 @@ class NewBaseModel(object):
         if item in self._info:
             return self._info[item]
         else:
-            raise
+            raise AttributeError("'{0}' object has no attribute '{1}'".format(self.__class__.__name__,
+                                                                              item))
 
     def __setattr__(self, attrname, val):
         if attrname.startswith("_"):
@@ -244,7 +245,7 @@ class NewBaseModel(object):
             return True
         return False
 
-    def _build_api_request_uri(self):
+    def _build_api_request_uri(self, http_method="GET"):
         baseuri = self.__class__.__dict__.get('urlobject', None)
         if self._model_unique_id is not None:
             return baseuri + "/%s" % self._model_unique_id
@@ -312,6 +313,7 @@ class NewBaseModel(object):
 class MutableBaseModel(NewBaseModel):
     _new_object_http_method = "POST"
     _change_object_http_method = "PUT"
+    _new_object_needs_primary_key = False
 
     def __setattr__(self, attrname, val):
         # allow subclasses to define their own property setters
@@ -362,7 +364,8 @@ class MutableBaseModel(NewBaseModel):
         if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
             new_object_info = deepcopy(self._info)
             try:
-                del(new_object_info[self.__class__.primary_key])
+                if not self._new_object_needs_primary_key:
+                    del(new_object_info[self.__class__.primary_key])
             except Exception:
                 pass
             log.debug("Creating a new {0:s} object".format(self.__class__.__name__))
@@ -370,8 +373,9 @@ class MutableBaseModel(NewBaseModel):
                                             data=new_object_info)
         else:
             log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
-            ret = self._cb.api_json_request(self.__class__._change_object_http_method,
-                                            self._build_api_request_uri(), data=self._info)
+            http_method = self.__class__._change_object_http_method
+            ret = self._cb.api_json_request(http_method,self._build_api_request_uri(http_method=http_method),
+                                            data=self._info)
 
         return self._refresh_if_needed(ret)
 
@@ -380,9 +384,9 @@ class MutableBaseModel(NewBaseModel):
 
         if request_ret.status_code not in range(200, 300):
             try:
-                message = json.loads(request_ret.content)[0]
+                message = json.loads(request_ret.text)[0]
             except:
-                message = request_ret.content
+                message = request_ret.text
 
             raise ServerError(request_ret.status_code, message,
                               result="Did not update {} record.".format(self.__class__.__name__))
@@ -399,7 +403,7 @@ class MutableBaseModel(NewBaseModel):
                     else:
                         refresh_required = True
                 else:
-                    self._info = json.loads(request_ret.content)
+                    self._info = json.loads(request_ret.text)
                     if message.keys() == ["id"]:
                         # if all we got back was an ID, try refreshing to get the entire record.
                         log.debug("Only received an ID back from the server, forcing a refresh")
@@ -443,9 +447,9 @@ class MutableBaseModel(NewBaseModel):
 
         if ret.status_code not in (200, 204):
             try:
-                message = json.loads(ret.content)[0]
+                message = json.loads(ret.text)[0]
             except:
-                message = ret.content
+                message = ret.text
             raise ServerError(ret.status_code, message, result="Did not delete {0:s}.".format(str(self)))
 
     def validate(self):

@@ -402,6 +402,7 @@ Let's create a user on our Cb Response server::
     >>> user.password = "cbisawesome"
     >>> user.first_name = "Jason"
     >>> user.last_name = "Garman"
+    >>> user.email = "jgarman@carbonblack.com"
     >>> user.teams = []
     >>> user.global_admin = False
     Creating a new User object

@@ -12,7 +12,8 @@ from datetime import datetime, timedelta
 from zipfile import ZipFile
 from contextlib import closing
 import struct
-from six.moves import urllib
+from cbapi.six.moves import urllib
+from copy import deepcopy
 import cbapi.six as six
 import logging
 import time
@@ -279,7 +280,9 @@ class Alert(MutableBaseModel):
     @property
     def process(self):
         if 'process' in self.alert_type:
-            return self._cb.select(Process, self.process_id, getattr(self, "segment_id", None))
+            # there is a bug in Cb Response 6.1.x where segment_ids in alerts are truncated, so instead
+            # we will just select the process by its process_id.
+            return self._cb.select(Process, self.process_id)
         return None
 
     @property
@@ -833,7 +836,12 @@ class SensorQuery(SimpleQuery):
     @property
     def results(self):
         if not self._full_init:
-            full_results = self._cb.get_object(self._urlobject, query_parameters=convert_query_params(self._query))
+            #ZE CB-15681 - REMOVE BLOCK WHEN BUG IS FIXED
+            try:
+                full_results = self._cb.get_object(self._urlobject, query_parameters=convert_query_params(self._query))
+            except ServerError as se:
+                full_results = False
+            #ZE CB-15681 - REMOVE BLOCK WHEN BUG IS FIXED
             if not full_results:
                 self._results = []
             else:
@@ -844,10 +852,38 @@ class SensorQuery(SimpleQuery):
         return self._results
 
 
+class Team(MutableBaseModel, CreatableModelMixin):
+    swagger_meta_file = "response/models/team.yaml"
+    urlobject = "/api/team"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return SimpleQuery(cls, cb, urlobject="/api/teams", returns_fulldoc=False)
+
+    def _add_access(self, sg, access_type):
+        if isinstance(sg, int):
+            sg = self._cb.select(SensorGroup, sg)
+
+        new_access = [ga for ga in self.group_access if ga.get("group_id") != sg.id]
+        new_access.append({
+            "group_id": sg.id,
+            "access_category": access_type,
+            "group_name": sg.name
+        })
+        self.group_access = new_access
+
+    def add_viewer_access(self, sg):
+        return self._add_access(sg, "Viewer")
+
+    def add_administrator_access(self, sg):
+        return self._add_access(sg, "Administrator")
+
+
 class User(MutableBaseModel, CreatableModelMixin):
     swagger_meta_file = "response/models/user.yaml"
     urlobject = "/api/user"
     primary_key = "username"
+    _new_object_needs_primary_key = True
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -861,6 +897,45 @@ class User(MutableBaseModel, CreatableModelMixin):
         info = super(User, self)._retrieve_cb_info()
         info["id"] = self._model_unique_id
         return info
+
+    def _update_object(self):
+        if self._cb.cb_server_version < LooseVersion("6.1.0"):
+            # only include IDs of the teams and not the entire dictionary
+            if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
+                new_object_info = deepcopy(self._info)
+                try:
+                    del(new_object_info["id"])
+                except KeyError:
+                    pass
+                new_teams = [t.get("id") for t in new_object_info["teams"]]
+                new_teams = [t for t in new_teams if t]
+                new_object_info["teams"] = new_teams
+
+                try:
+                    if not self._new_object_needs_primary_key:
+                        del (new_object_info[self.__class__.primary_key])
+                except Exception:
+                    pass
+                log.debug("Creating a new {0:s} object".format(self.__class__.__name__))
+                ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.urlobject,
+                                                data=new_object_info)
+            else:
+                log.debug(
+                    "Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
+                ret = self._cb.api_json_request(self.__class__._change_object_http_method,
+                                                self._build_api_request_uri(), data=self._info)
+
+            return self._refresh_if_needed(ret)
+        else:
+            return super(User, self)._update_object()
+
+    def add_team(self, t):
+        if isinstance(t, int):
+            t = self._cb.select(Team, t)
+
+        new_teams = [team for team in self.teams if team.get("id") != t.id]
+        new_teams.append({"id": t.id, "name": t.name})
+        self.teams = new_teams
 
 
 class Watchlist(MutableBaseModel, CreatableModelMixin):
@@ -1177,9 +1252,9 @@ class ThreatReport(MutableBaseModel):
 
         if ret.status_code not in (200, 204):
             try:
-                message = json.loads(ret.content)[0]
+                message = json.loads(ret.text)[0]
             except:
-                message = ret.content
+                message = ret.text
 
             raise ServerError(ret.status_code, message,
                               result="Did not update {} record.".format(self.__class__.__name__))
@@ -1195,7 +1270,7 @@ class ThreatReport(MutableBaseModel):
                     else:
                         self.refresh()
                 else:
-                    self._info = json.loads(ret.content)
+                    self._info = json.loads(ret.text)
                     self._full_init = True
             except:
                 self.refresh()
@@ -1551,7 +1626,7 @@ class Binary(TaggedModel):
         """
         Returns True if the binary is signed.
         """
-        if self._attribute('digsig_result') == 'Signed':
+        if self._attribute('digsig_result', default="Unsigned") == 'Signed':
             return True
         else:
             return False
@@ -2211,7 +2286,24 @@ class Process(TaggedModel):
         """
         Returns the start time of the process
         """
-        return convert_from_solr(self._attribute('start', -1))
+        if self.get("start") is not None:
+            return convert_from_solr(self._attribute('start', -1))
+        else:
+            return None
+
+    @property
+    def end(self):
+        """
+        Returns the end time of the process (based on the last event received). If the process has not yet exited,
+        "end" will return None.
+
+        :return: datetime object of the last event received for the process, if it has terminated. Otherwise, None.
+        """
+        if self._info.get("end") is not None:
+            return convert_from_solr(self._info.get('end', -1))
+
+        if self.get("terminated", False) == True and self.get("last_update") is not None:
+            return convert_from_solr(self._attribute('last_update', -1))
 
     def require_events(self):
         event_key_list = ['filemod_complete', 'regmod_complete', 'modload_complete', 'netconn_complete',
@@ -2320,15 +2412,17 @@ class Process(TaggedModel):
 
     @property
     def parents(self):
-        try:
-            parent_proc = self.parent
-            while parent_proc and parent_proc.id and parent_proc.get("process_pid", -1) != -1:
-                yield parent_proc
-                parent_proc = parent_proc.parent
-        except:
+            current_process = self
+            while True:
+                    try :
+                        parent = current_process.parent
+                        if not(parent) or parent.get('process_pid',-1) == -1:
+                            break
+                        yield parent
+                        current_process = parent
+                    except ObjectNotFoundError:
+                        return
             return
-        return
-
     @property
     def children(self):
         """
@@ -2346,7 +2440,8 @@ class Process(TaggedModel):
 
         if self._children_info is not None:
             for i, child in enumerate(self._children_info):
-                yield CbChildProcEvent(self, convert_event_time(child.get("start") or "1970-01-01T00:00:00Z"), i,
+                timestamp = convert_event_time(child.get("start") or "1970-01-01T00:00:00Z")
+                yield CbChildProcEvent(self, timestamp, i,
                                        {
                                            "procguid": child["unique_id"],
                                            "md5": child["process_md5"],
@@ -2734,7 +2829,7 @@ class CbModLoadEvent(CbEvent):
 
     @property
     def is_signed(self):
-        return False if (not(self.binary.signed) or self.binary.is_signed == '(Unknown)') else True
+        return self.binary.signed
 
 
 class CbFileModEvent(CbEvent):
@@ -2784,12 +2879,15 @@ class CbChildProcEvent(CbEvent):
         if path:
             proc_data["path"] = path
 
+        proc_data["parent_unique_id"] = self.parent._model_unique_id
+        proc_data["parent_id"] = self.parent.id
+
         try:
             (sensor_id, proc_pid, proc_createtime) = parse_process_guid(self.parent.id)
-            proc_data["parent_unique_id"] = self.parent._model_unique_id
-            proc_data["parent_id"] = self.parent.id
-            proc_data["sensor_id"] = sensor_id
-            proc_data["start"] = proc_createtime
+            if "sensor_id" not in proc_data:
+                proc_data["sensor_id"] = sensor_id
+            if "start" not in proc_data:
+                proc_data["start"] = convert_to_solr(proc_createtime)
         except Exception:
             # silently fail if the GUID is not able to be parsed
             pass

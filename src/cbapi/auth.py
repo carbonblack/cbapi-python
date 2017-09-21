@@ -1,4 +1,4 @@
-from six.moves.configparser import RawConfigParser
+from cbapi.six.moves.configparser import RawConfigParser
 import os
 import attrdict
 import cbapi.six as six
@@ -13,6 +13,7 @@ default_profile = {
     "ssl_verify": "True",
     "ssl_verify_hostname": "True",
     "ssl_cert_file": None,
+    "ssl_force_tls_1_2": "False",
 
     "proxy": None,
     "ignore_system_proxy": "False",
@@ -37,7 +38,7 @@ class Credentials(attrdict.AttrDict):
         if not self.get("token", None):
             raise CredentialError("No API token specified")
 
-        for k in ["ssl_verify", "ssl_verify_hostname", "ignore_system_proxy"]:
+        for k in ["ssl_verify", "ssl_verify_hostname", "ignore_system_proxy", "ssl_force_tls_1_2"]:
             x = self.get(k, default_profile.get(k, "True"))
             if isinstance(x, six.string_types) and x.lower() in _boolean_states:
                 self[k] = _boolean_states[x.lower()]
@@ -71,7 +72,7 @@ class CredentialStore(object):
 
         retval = {}
         for k, v in six.iteritems(default_profile):
-                retval[k] = self.credentials.get(credential_profile, k)
+            retval[k] = self.credentials.get(credential_profile, k)
 
         if not retval["url"] or not retval["token"]:
             raise CredentialError("Token and/or URL not available for profile %s" % credential_profile)

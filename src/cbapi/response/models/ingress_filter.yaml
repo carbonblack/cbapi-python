@@ -72,7 +72,7 @@ properties:
     description: "Optional - Array of process path filters to use (supports globbing or regex patterns)."
     items:
       type: string
-  command_line_filters:
+  cmdline_filters:
     type: array
     description: "Optional - Array of command line filters to use. Can use regex patterns"
     items:

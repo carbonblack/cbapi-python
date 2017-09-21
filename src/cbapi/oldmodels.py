@@ -255,9 +255,9 @@ class MutableModel(BaseModel):
 
         if ret.status_code not in (200, 204):
             try:
-                message = json.loads(ret.content)[0]
+                message = json.loads(ret.text)[0]
             except:
-                message = ret.content
+                message = ret.text
 
             raise ServerError(ret.status_code, message,
                               result="Did not update {} record.".format(self.__class__.__name__))
@@ -274,7 +274,7 @@ class MutableModel(BaseModel):
                     else:
                         self.refresh()
                 else:
-                    self._info = json.loads(ret.content)
+                    self._info = json.loads(ret.text)
                     self._full_init = True
             except:
                 self.refresh()
@@ -297,9 +297,9 @@ class MutableModel(BaseModel):
 
         if ret.status_code not in (200, 204):
             try:
-                message = json.loads(ret.content)[0]
+                message = json.loads(ret.text)[0]
             except:
-                message = ret.content
+                message = ret.text
             raise ServerError(ret.status_code, message, result="Did not delete {0:s}.".format(str(self)))
 
     def save(self):

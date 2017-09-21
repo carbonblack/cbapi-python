@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+
+import argparse
+import contextlib
+
+from cbapi.six import iteritems
+import sys
+from cbapi.utils import check_python_tls_compatibility
+
+
+def check_tls(opts):
+    print("Newest TLS version supported by this platform is: {0}.".format(check_python_tls_compatibility()))
+
+
+command_map = {
+    "check-tls": {
+        "extra_args": {},
+        "help": "Return the latest version of TLS supported by this version of Python and OpenSSL. "
+            "Cb Response versions 6.1+ now require TLSv1.2 support.",
+        "method": check_tls
+    }
+}
+
+
+def main(args):
+    parser = argparse.ArgumentParser()
+    commands = parser.add_subparsers(dest="command_name", help="CbAPI subcommand")
+
+    for cmd_name, cmd_config in iteritems(command_map):
+        cmd_parser = commands.add_parser(cmd_name, help=cmd_config.get("help", None))
+        for cmd_arg_name, cmd_arg_config in iteritems(cmd_config.get("extra_args", {})):
+            cmd_parser.add_argument(cmd_arg_name, **cmd_arg_config)
+
+    opts = parser.parse_args(args)
+    command = command_map.get(opts.command_name)
+    if not command:
+        parser.print_usage()
+        return
+
+    command_method = command.get("method", None)
+    if command_method:
+        return command_method(opts)
+    else:
+        parser.print_usage()
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))
