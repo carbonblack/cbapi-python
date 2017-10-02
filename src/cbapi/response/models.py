@@ -2642,12 +2642,12 @@ class Process(TaggedModel):
     def path(self):
         # Some processes don't have a path associated with them. Try and use the first modload as the file path
         # otherwise, return None. (tested with Cb Response server 5.2.0.161004.1206)
-        md5 = self._attribute("path", "")
-        if md5:
-            return md5
+        path = self._attribute("path", "")
+        if path:
+            return path
         elif self._attribute("modload_count", 0) > 0:
-            md5 = self.modloads.next().path
-            return md5
+            path = self.modloads.next().path
+            return path
         else:
             return None
 
