@@ -141,10 +141,7 @@ class BaseModel(object):
         if attrname in self._info:
             return self._info[attrname]
 
-        if default is not None:
-            return default
-
-        raise AttributeError()
+        return default
 
     def get(self, attrname, default_val=None):
         try:
