@@ -2456,10 +2456,10 @@ class Process(TaggedModel):
                 timestamp = convert_event_time(child.get("start") or "1970-01-01T00:00:00Z")
                 yield CbChildProcEvent(self, timestamp, i,
                                        {
-                                           "procguid": child["unique_id"],
-                                           "md5": child["process_md5"],
-                                           "pid": child["process_pid"],
-                                           "path": child["path"],
+                                           "procguid": child.get("unique_id",None),
+                                           "md5": child.get("process_md5",None),
+                                           "pid": child.get("process_pid",None),
+                                           "path": child.get("path",None),
                                            "terminated": False
                                        },
                                        is_suppressed=child.get("is_suppressed", False),
