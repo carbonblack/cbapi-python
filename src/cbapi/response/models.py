@@ -492,12 +492,15 @@ class SensorPaginatedQuery(PaginatedQuery):
         return nq
 
     def where(self, new_query):
-        if self._query:
-            raise ApiError("Cannot have multiple 'where' clauses")
 
         nq = self._clone()
+
+        if self._query:
+            nq._query = self._query
+        else:
+            nq._query = {}
+
         field, value = new_query.split(':', 1)
-        nq._query = {}
         nq._query[field] = value
         nq._full_init = False
 
