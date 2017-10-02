@@ -566,6 +566,16 @@ class SensorPaginatedQuery(PaginatedQuery):
 
             args['start'] = current
 
+            # If we're getting no more results, this could be due to a big gap between sensor IDs when iterating
+            if len(result.get('results')) == 0:
+                # One last request for 10000 rows should get any remaining sensors
+                if args['rows'] < 10000:
+                    args['rows'] = 10000
+                else:
+                    # If args['rows'] has already been increased, it's time to give up
+                    break
+
+            # Likewise if self._total_results has already been reached, meaning all sensors have been returned
             if current >= self._total_results:
                 break
 
