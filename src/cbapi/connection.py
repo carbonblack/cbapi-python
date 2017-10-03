@@ -126,7 +126,11 @@ class Connection(object):
 
         self.proxies = {}
         if credentials.ignore_system_proxy:         # see https://github.com/kennethreitz/requests/issues/879
+            # Unfortunately, requests will look for any proxy-related environment variables and use those anyway. The
+            # only way to solve this without side effects, is passing in empty strings for 'http' and 'https':
             self.proxies = {
+                'http': '',
+                'https': '',
                 'no': 'pass'
             }
         else:
