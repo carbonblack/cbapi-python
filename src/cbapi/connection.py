@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 import requests
 import sys
-from requests.adapters import HTTPAdapter, DEFAULT_POOLBLOCK, DEFAULT_RETRIES
+from requests.adapters import HTTPAdapter, DEFAULT_POOLBLOCK, DEFAULT_RETRIES, DEFAULT_POOLSIZE
 from requests.packages.urllib3.util.ssl_ import create_urllib3_context
 import ssl
 
@@ -53,10 +53,10 @@ else:
 
 
 class CbAPISessionAdapter(HTTPAdapter):
-    def __init__(self, verify_hostname=True, force_tls_1_2=False, max_retries=DEFAULT_RETRIES):
+    def __init__(self, verify_hostname=True, force_tls_1_2=False, max_retries=DEFAULT_RETRIES, **pool_kwargs):
         self._cbapi_verify_hostname = verify_hostname
         self._cbapi_force_tls_1_2 = force_tls_1_2
-        super(CbAPISessionAdapter, self).__init__(max_retries=max_retries)
+        super(CbAPISessionAdapter, self).__init__(max_retries=max_retries, **pool_kwargs)
 
     def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK, **pool_kwargs):
         if self._cbapi_force_tls_1_2:
@@ -78,7 +78,7 @@ class CbAPISessionAdapter(HTTPAdapter):
 
 
 class Connection(object):
-    def __init__(self, credentials, integration_name=None, timeout=None, max_retries=None):
+    def __init__(self, credentials, integration_name=None, timeout=None, max_retries=None, **pool_kwargs):
         if not credentials.url or not credentials.url.startswith("https://"):
             raise ConnectionError("Server URL must be a URL: eg. https://localhost")
 
@@ -114,7 +114,7 @@ class Connection(object):
 
         try:
             tls_adapter = CbAPISessionAdapter(max_retries=max_retries, force_tls_1_2=credentials.ssl_force_tls_1_2,
-                                              verify_hostname=credentials.ssl_verify_hostname)
+                                              verify_hostname=credentials.ssl_verify_hostname, **pool_kwargs)
         except ssl.SSLError as e:
             raise ApiError("This version of Python and OpenSSL do not support TLSv1.2: {}".format(e),
                            original_exception=e)
@@ -217,9 +217,13 @@ class BaseAPI(object):
 
         timeout = kwargs.pop("timeout", None)
         max_retries = kwargs.pop("max_retries", None)
+        pool_connections = kwargs.pop("pool_connections", DEFAULT_POOLSIZE)
+        pool_maxsize = kwargs.pop("pool_maxsize", DEFAULT_POOLSIZE)
+        pool_block = kwargs.pop("pool_block", DEFAULT_POOLBLOCK)
 
         self.session = Connection(self.credentials, integration_name=integration_name, timeout=timeout,
-                                  max_retries=max_retries)
+                                  max_retries=max_retries, pool_connections=pool_connections,
+                                  pool_maxsize=pool_maxsize, pool_block=pool_block)
 
     def raise_unless_json(self, ret, expected):
         if ret.status_code == 200:
