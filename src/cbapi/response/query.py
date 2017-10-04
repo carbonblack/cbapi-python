@@ -59,6 +59,9 @@ class Query(PaginatedQuery):
         if self._cb.cb_server_version >= LooseVersion('5.1.1'):
             self._default_args["facet"] = "false"
 
+        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            self._default_args["comprehensive_search"] = "true"
+
     def _clone(self):
         nq = self.__class__(self._doc_class, self._cb)
         nq._query = self._query
