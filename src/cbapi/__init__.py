@@ -5,11 +5,7 @@ __title__ = 'cbapi'
 __author__ = 'Carbon Black Developer Network'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2016 Carbon Black'
-
-try:
-    __version__ = __import__('pkg_resources').get_distribution(__name__).version
-except Exception:
-    __version__ = 'dev'
+__version__ = '1.3.4'
 
 # New API as of cbapi 0.9.0
 from .response.rest_api import CbEnterpriseResponseAPI, CbResponseAPI
