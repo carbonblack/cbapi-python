@@ -1,4 +1,6 @@
 import threading
+import logging
+
 from collections import defaultdict
 from cbapi.six.moves.queue import Queue
 
@@ -15,6 +17,7 @@ OS_LIVE_RESPONSE_ENUM = {
     "MAC": 4
 }
 
+log = logging.getLogger(__name__)
 
 class LiveResponseSession(CbLRSessionBase):
     def __init__(self, cblr_manager, session_id, sensor_id, session_data=None):
