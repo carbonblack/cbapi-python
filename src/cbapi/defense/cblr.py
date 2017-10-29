@@ -28,7 +28,7 @@ class WorkItem(object):
 class CompletionNotification(object):
     def __init__(self, sensor_id):
         self.sensor_id = sensor_id
-        
+
 
 class WorkerStatus(object):
     def __init__(self, sensor_id, status="ready", exception=None):
@@ -180,7 +180,7 @@ class LiveResponseJobScheduler(threading.Thread):
             self._spawn_new_workers()
             self._schedule_existing_workers()
 
-     def _cleanup_idle_workers(self, max=None):
+    def _cleanup_idle_workers(self, max=None):
         if not max:
             max = self._max_workers
 
