@@ -1,4 +1,5 @@
 import threading
+from collections import defaultdict
 
 from cbapi.live_response_api import CbLRManagerBase, CbLRSessionBase, poll_status
 from cbapi.errors import ObjectNotFoundError, TimeoutError
