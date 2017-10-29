@@ -228,10 +228,13 @@ class LiveResponseJobScheduler(threading.Thread):
             return
     
         schedule_max = self._max_workers - len(self._job_workers)
-
+        '''
         sensors = [s for s in self._cb.select(Device) if s.deviceId in self._unscheduled_jobs
                     and s.deviceId not in self._job_workers
                     and "AVAILABLE" in s.sensorStates]
+        '''
+        sensors = [s for s in self._cb.select(Device) if s.deviceId in self._unscheduled_jobs
+                    and s.deviceId not in self._job_workers] 
         sensors_to_schedule = sensors[:schedule_max]
         log.debug("Spawning new workers to handle these sensors: {0}".format(sensors_to_schedule))
         for sensor in sensors_to_schedule:
