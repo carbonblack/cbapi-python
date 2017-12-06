@@ -2830,6 +2830,86 @@ class Process(TaggedModel):
         """
         return self.get("username", None)
 
+    def all_childprocs(self, since_epoch=0):
+        self.get_segments()
+        segments = self._segments
+
+        if LooseVersion('6.0.0') <= self._cb.cb_server_version:
+            segments = filter(lambda seg: since_epoch <= seg, self._segments)
+
+        i = 0
+        for segment in segments:
+            self.current_segment = segment
+            self.require_events()
+
+            for raw_childproc in self._events.get(self.current_segment, {}).get('childproc_complete', []):
+                yield self._event_parser.parse_childproc(i, raw_childproc)
+                i += 1
+
+    def all_filemods(self, since_epoch=0):
+        self.get_segments()
+        segments = self._segments
+
+        if LooseVersion('6.0.0') <= self._cb.cb_server_version:
+            segments = filter(lambda seg: since_epoch <= seg, self._segments)
+
+        i = 0
+        for segment in segments:
+            self.current_segment = segment
+            self.require_events()
+
+            for raw_filemod in self._events.get(self.current_segment, {}).get('filemod_complete', []):
+                yield self._event_parser.parse_filemod(i, raw_filemod)
+                i += 1
+
+    def all_netconns(self, since_epoch=0):
+        self.get_segments()
+        segments = self._segments
+
+        if LooseVersion('6.0.0') <= self._cb.cb_server_version:
+            segments = filter(lambda seg: since_epoch <= seg, self._segments)
+
+        i = 0
+        for segment in segments:
+            self.current_segment = segment
+            self.require_events()
+
+            for raw_netconn in self._events.get(self.current_segment, {}).get('netconn_complete', []):
+                yield self._event_parser.parse_netconn(i, raw_netconn)
+                i += 1
+
+    def all_regmods(self, since_epoch=0):
+        self.get_segments()
+        segments = self._segments
+
+        if LooseVersion('6.0.0') <= self._cb.cb_server_version:
+            segments = filter(lambda seg: since_epoch <= seg, self._segments)
+
+        i = 0
+        for segment in segments:
+            self.current_segment = segment
+            self.require_events()
+
+            for raw_regmod in self._events.get(self.current_segment, {}).get('regmod_complete', []):
+                yield self._event_parser.parse_regmod(i, raw_regmod)
+                i += 1
+
+    def all_modloads(self, since_epoch=0):
+        self.get_segments()
+        segments = self._segments
+
+        if LooseVersion('6.0.0') <= self._cb.cb_server_version:
+            segments = filter(lambda seg: since_epoch <= seg, self._segments)
+
+        i = 0
+        for segment in segments:
+            self.current_segment = segment
+            self.require_events()
+
+            for raw_modload in self._events.get(self.current_segment, {}).get('modload_complete', []):
+                yield self._event_parser.parse_modload(i, raw_modload)
+                i += 1
+
 
 def get_constants(prefix):
     return dict((getattr(socket, n), n)
