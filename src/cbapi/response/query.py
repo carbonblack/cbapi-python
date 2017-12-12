@@ -62,6 +62,12 @@ class Query(PaginatedQuery):
         if self._cb.cb_server_version >= LooseVersion('6.0.0'):
             self._default_args["comprehensive_search"] = "true"
 
+        # By default, a process stored as multiple segments is presented as a
+        # number of different processes. This forces the client to perform
+        # multiple API queries instead of a single one, or work with an
+        # incomplete data set.
+        self._default_args["cb.group"] = "id"
+
     def _clone(self):
         nq = self.__class__(self._doc_class, self._cb)
         nq._query = self._query
