@@ -2767,86 +2767,178 @@ class Process(TaggedModel):
         """
         return self.get("username", None)
 
-    def all_childprocs(self, since_epoch=0):
-        self.get_segments()
-        segments = self._segments
+    def require_all_events(self):
+        event_types = {
+                'filemod_count': 'filemod_complete',
+                'regmod_count': 'regmod_complete',
+                'modload_count': 'modload_complete',
+                'netconn_count': 'netconn_complete',
+                'crossproc_count': 'crossproc_complete',
+                'childproc_count': 'childproc_complete'
+                }
 
-        if LooseVersion('6.0.0') <= self._cb.cb_server_version:
-            segments = filter(lambda seg: since_epoch <= seg, self._segments)
+        if not self.valid_process or self.suppressed_process:
+            return
 
-        i = 0
-        for segment in segments:
-            self.current_segment = segment
-            self.require_events()
+        # Get all events
+        res = self._cb.get_object("/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id, 0)).get("process", {})
 
-            for raw_childproc in self._events.get(self.current_segment, {}).get('childproc_complete', []):
+        self._events['all'] = {}
+        for (event_count,event_complete) in event_types.items():
+            complete_events = res.get(event_complete, 0)
+            if complete_events:
+                self._info[event_count] = len(complete_events)
+                self._info[event_complete] = complete_events
+                self._events['all'][event_count] = self._info[event_count]
+                self._events['all'][event_complete] = self._info[event_complete]
+
+        #total_events = sum([self._info[event_count] for event_count in event_types])
+
+        # Delete references in res.
+        if not self._full_init:
+            for k in event_types.keys():
+                try:
+                    del res[k]
+                except KeyError:
+                    pass
+
+            self._parse(res)
+            self._full_init = True
+
+        self.all_events_loaded = True
+
+
+    def all_childprocs(self):
+        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+            self.get_segments()
+            segments = self._segments
+
+            i = 0
+            for segment in segments:
+                self.current_segment = segment
+                self.require_events()
+
+                for raw_childproc in self._events.get(self.current_segment, {}).get('childproc_complete', []):
+                    yield self._event_parser.parse_childproc(i, raw_childproc)
+                    i += 1
+        else:
+            if not self.all_events_loaded:
+                self.require_all_events()
+
+            i = 0
+            for raw_childproc in self._events.get('all', {}).get('childproc_complete', []):
                 yield self._event_parser.parse_childproc(i, raw_childproc)
                 i += 1
 
-    def all_filemods(self, since_epoch=0):
-        self.get_segments()
-        segments = self._segments
+    def all_modloads(self):
+        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+            self.get_segments()
+            segments = self._segments
 
-        if LooseVersion('6.0.0') <= self._cb.cb_server_version:
-            segments = filter(lambda seg: since_epoch <= seg, self._segments)
+            i = 0
+            for segment in segments:
+                self.current_segment = segment
+                self.require_events()
 
-        i = 0
-        for segment in segments:
-            self.current_segment = segment
-            self.require_events()
+                for raw_modload in self._events.get(self.current_segment, {}).get('modload_complete', []):
+                    yield self._event_parser.parse_modload(i, raw_modload)
+                    i += 1
+        else:
+            if not self.all_events_loaded:
+                self.require_all_events()
 
-            for raw_filemod in self._events.get(self.current_segment, {}).get('filemod_complete', []):
-                yield self._event_parser.parse_filemod(i, raw_filemod)
-                i += 1
-
-    def all_netconns(self, since_epoch=0):
-        self.get_segments()
-        segments = self._segments
-
-        if LooseVersion('6.0.0') <= self._cb.cb_server_version:
-            segments = filter(lambda seg: since_epoch <= seg, self._segments)
-
-        i = 0
-        for segment in segments:
-            self.current_segment = segment
-            self.require_events()
-
-            for raw_netconn in self._events.get(self.current_segment, {}).get('netconn_complete', []):
-                yield self._event_parser.parse_netconn(i, raw_netconn)
-                i += 1
-
-    def all_regmods(self, since_epoch=0):
-        self.get_segments()
-        segments = self._segments
-
-        if LooseVersion('6.0.0') <= self._cb.cb_server_version:
-            segments = filter(lambda seg: since_epoch <= seg, self._segments)
-
-        i = 0
-        for segment in segments:
-            self.current_segment = segment
-            self.require_events()
-
-            for raw_regmod in self._events.get(self.current_segment, {}).get('regmod_complete', []):
-                yield self._event_parser.parse_regmod(i, raw_regmod)
-                i += 1
-
-    def all_modloads(self, since_epoch=0):
-        self.get_segments()
-        segments = self._segments
-
-        if LooseVersion('6.0.0') <= self._cb.cb_server_version:
-            segments = filter(lambda seg: since_epoch <= seg, self._segments)
-
-        i = 0
-        for segment in segments:
-            self.current_segment = segment
-            self.require_events()
-
-            for raw_modload in self._events.get(self.current_segment, {}).get('modload_complete', []):
+            i = 0
+            for raw_modload in self._events.get('all', {}).get('modload_complete', []):
                 yield self._event_parser.parse_modload(i, raw_modload)
                 i += 1
 
+    def all_filemods(self):
+        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+            self.get_segments()
+            segments = self._segments
+
+            i = 0
+            for segment in segments:
+                self.current_segment = segment
+                self.require_events()
+
+                for raw_filemod in self._events.get(self.current_segment, {}).get('filemod_complete', []):
+                    yield self._event_parser.parse_filemod(i, raw_filemod)
+                    i += 1
+        else:
+            if not self.all_events_loaded:
+                self.require_all_events()
+
+            i = 0
+            for raw_filemod in self._events.get('all', {}).get('filemod_complete', []):
+                yield self._event_parser.parse_filemod(i, raw_filemod)
+                i += 1
+
+    def all_regmods(self):
+        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+            self.get_segments()
+            segments = self._segments
+
+            i = 0
+            for segment in segments:
+                self.current_segment = segment
+                self.require_events()
+
+                for raw_regmod in self._events.get(self.current_segment, {}).get('regmod_complete', []):
+                    yield self._event_parser.parse_regmod(i, raw_regmod)
+                    i += 1
+        else:
+            if not self.all_events_loaded:
+                self.require_all_events()
+
+            i = 0
+            for raw_regmod in self._events.get('all', {}).get('regmod_complete', []):
+                yield self._event_parser.parse_regmod(i, raw_regmod)
+                i += 1
+
+    def all_crossprocs(self):
+        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+            self.get_segments()
+            segments = self._segments
+
+            i = 0
+            for segment in segments:
+                self.current_segment = segment
+                self.require_events()
+
+                for raw_crossproc in self._events.get(self.current_segment, {}).get('crossproc_complete', []):
+                    yield self._event_parser.parse_crossproc(i, raw_crossproc)
+                    i += 1
+        else:
+            if not self.all_events_loaded:
+                self.require_all_events()
+
+            i = 0
+            for raw_crossproc in self._events.get('all', {}).get('crossproc_complete', []):
+                yield self._event_parser.parse_crossproc(i, raw_crossproc)
+                i += 1
+
+    def all_netconns(self):
+        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+            self.get_segments()
+            segments = self._segments
+
+            i = 0
+            for segment in segments:
+                self.current_segment = segment
+                self.require_events()
+
+                for raw_netconn in self._events.get(self.current_segment, {}).get('netconn_complete', []):
+                    yield self._event_parser.parse_netconn(i, raw_netconn)
+                    i += 1
+        else:
+            if not self.all_events_loaded:
+                self.require_all_events()
+
+            i = 0
+            for raw_netconn in self._events.get('all', {}).get('netconn_complete', []):
+                yield self._event_parser.parse_netconn(i, raw_netconn)
+                i += 1
 
 def get_constants(prefix):
     return dict((getattr(socket, n), n)
