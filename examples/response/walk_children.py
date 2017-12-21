@@ -46,7 +46,7 @@ def main():
         return 2
 
     for root_proc in procs:
-        if not root_proc.terminated:
+        if not root_proc.get('terminated'):
             duration = "still running"
         else:
             duration = str(root_proc.end - root_proc.start)

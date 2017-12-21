@@ -165,7 +165,7 @@ class BannedHash(MutableBaseModel, CreatableModelMixin):
 
     @classmethod
     def _query_implementation(cls, cb):
-        return SimpleQuery(cls, cb)
+        return SimpleQuery(cls, cb, urlobject=BannedHash.urlobject + "?count=10000")
 
     @property
     def binary(self):
