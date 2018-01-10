@@ -2699,26 +2699,19 @@ class Process(TaggedModel):
     def process_md5(self):
         # Some processes don't have an MD5 associated with them. Try and use the first modload as the MD5
         # otherwise, return None. (tested with Cb Response server 5.2.0.161004.1206)
-        md5 = self._attribute("process_md5", "")
-        if md5:
-            return md5
-        elif self._attribute("modload_count", 0) > 0:
-            modloads = self.modloads
-            return next(modloads).md5
-        else:
+        try:
+            return self._attribute("process_md5", "") or next(self.modloads).md5
+        except StopIteration:
             return None
+
 
     @property
     def path(self):
         # Some processes don't have a path associated with them. Try and use the first modload as the file path
         # otherwise, return None. (tested with Cb Response server 5.2.0.161004.1206)
-        path = self._attribute("path", "")
-        if path:
-            return path
-        elif self._attribute("modload_count", 0) > 0:
-            modloads = self.modloads
-            return next(modloads).path
-        else:
+        try:
+            return self._attribute("path","") or next(self.modloads).path
+        except StopIteration:
             return None
 
     @property
