@@ -2392,6 +2392,13 @@ class Process(TaggedModel):
             self._events[self.current_segment] = {}
             res = self._cb.get_object("/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id,
                                                                               self.current_segment)).get("process", {})
+
+            # The key self.current_segment may have disappeared from self._events at this point. This likely indicates
+            # there are no events to get, but we won't take any chances; instead, we will simply reinitialize
+            # self._events[self.current_segment] and check for events anyway.
+            if self.current_segment not in self._events:
+                self._events[self.current_segment] = {}
+
             for k in event_key_list:
                 self._events[self.current_segment][k] = res.get(k, [])
 
