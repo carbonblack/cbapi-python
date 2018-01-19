@@ -296,7 +296,8 @@ class CbLRSessionBase(object):
         Reply from 192.168.1.1: bytes=32 time<1ms TTL=64
 
         :param str command_string: command string used for the create process operation
-        :param bool wait_for_output: Block on output from the new process (execute in foreground)
+        :param bool wait_for_output: Block on output from the new process (execute in foreground). This will also set
+         wait_for_completion (below).
         :param str remote_output_file_name: The remote output file name used for process output
         :param str working_directory: The working directory of the create process operation
         :param int wait_timeout: Time out used for this live response command
@@ -310,6 +311,9 @@ class CbLRSessionBase(object):
         # - wait for the process to complete
         # - get the temporary file from the endpoint
         # - delete the temporary file
+
+        if wait_for_output:
+            wait_for_completion = True
 
         data = {"name": "create process", "object": command_string, "wait": wait_for_completion}
 
@@ -326,9 +330,10 @@ class CbLRSessionBase(object):
         resp = self._lr_post_command(data).json()
         command_id = resp.get('id')
 
-        if wait_for_output:
+        if wait_for_completion:
             self._poll_command(command_id, timeout=wait_timeout)
 
+        if wait_for_output:
             # now the file is ready to be read
 
             file_content = self.get_file(data["output_file"])
@@ -336,6 +341,8 @@ class CbLRSessionBase(object):
             self._lr_post_command({"name": "delete file", "object": data["output_file"]})
 
             return file_content
+        else:
+            return None
 
     def list_processes(self):
         """
