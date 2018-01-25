@@ -6,7 +6,7 @@ from cbapi.six.moves import urllib
 
 from distutils.version import LooseVersion
 from ..connection import BaseAPI
-from .models import Process, Binary, Watchlist, Investigation, Alert, ThreatReport
+from .models import Process, Binary, Watchlist, Investigation, Alert, ThreatReport, StoragePartition
 from ..errors import UnauthorizedError, ApiError
 from ..errors import CredentialError
 from .cblr import LiveResponseSessionManager
@@ -71,6 +71,12 @@ class CbResponseAPI(BaseAPI):
         self.cb_server_version = LooseVersion(self.server_info['version'])
         if self.cb_server_version < LooseVersion('5.0'):
             raise ApiError("CbEnterpriseResponseAPI only supports Cb servers version >= 5.0.0")
+
+        self._has_legacy_partitions = False
+        if self.cb_server_version >= LooseVersion('6.0'):
+            legacy_partitions = [p for p in self.select(StoragePartition) if p.info["isLegacy"]]
+            if legacy_partitions:
+                self._has_legacy_partitions = True
 
         self._lr_scheduler = None
 
