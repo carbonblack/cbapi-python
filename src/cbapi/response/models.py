@@ -1475,6 +1475,19 @@ class ProcessQuery(WatchlistEnabledQuery):
             log.debug("max_last_server_update only supported in Cb Response 6.1+")
             return self
 
+    def use_comprehensive_search(self):
+        """
+        Set the `comprehensive_search` flag on the Process query.
+
+        :return: new Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+
+        nq = self._clone()
+        nq._default_args["comprehensive_search"] = "true"
+
+        return nq
+
 
 @immutable
 class Binary(TaggedModel):

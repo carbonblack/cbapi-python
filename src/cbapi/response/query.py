@@ -4,6 +4,7 @@ from cbapi.six.moves import urllib
 from distutils.version import LooseVersion
 from ..errors import ApiError
 from ..utils import convert_query_params
+import copy
 
 import logging
 
@@ -67,7 +68,7 @@ class Query(PaginatedQuery):
             nq._raw_query = self._raw_query
 
         nq._sort_by = self._sort_by
-        nq._default_args = self._default_args
+        nq._default_args = copy.deepcopy(self._default_args)
         nq._batch_size = self._batch_size
         return nq
 
