@@ -731,7 +731,21 @@ class Sensor(MutableBaseModel):
 
         :warning: This may cause a significant amount of network traffic from this sensor to the Cb Response Server
         """
-        self.event_log_flush_time = datetime.now() + timedelta(days=1)
+
+
+        # Note that Cb Response 6 requires the date/time stamp to be sent in RFC822 format (not ISO 8601).
+        # since the date/time stamp just needs to be far in the future, we just fake a GMT timezone.
+        self.event_log_flush_time = datetime.now() + timedelta(days=365)
+        self.save()
+
+    def restart_sensor(self):
+        """
+        Restarts the Carbon Black sensor (*not* the underlying endpoint operating system).
+
+        This simply sets the flag to ask the sensor to restart the next time it checks into the Cb Response server,
+        it does not wait for the sensor to restart.
+        """
+        self.restart_queued = True
         self.save()
 
     def isolate(self, timeout=None):
@@ -783,6 +797,27 @@ class Sensor(MutableBaseModel):
             self.refresh()
 
         return True
+
+    def _update_object(self):
+        # Workarounds for issuing a sensor queue flush in Cb Response 6.0
+        # - We only want to reflect back the event_log_flush_time if the user explicitly set it to a new value
+        #   (therefore, set the event_log_flush_time to None if it isn't marked dirty)
+        # - The event_log_flush_time must be sent in RFC822 format (not ISO 8601) for Cb Response 6.x servers.
+        #
+        # Note that even though we delete the event_log_flush_time here, it'll get re-initialized when we GET
+        #  the sensor after sending the PUT request.
+        if "event_log_flush_time" in self._dirty_attributes and self._info.get("event_log_flush_time", None) is not None:
+            if self._cb.cb_server_version > LooseVersion("6.0.0"):
+                # since the date/time stamp just needs to be far in the future, we just fake a GMT timezone.
+                try:
+                    self._info["event_log_flush_time"] = self.event_log_flush_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+                except Exception:
+                    log.debug("Could not parse event_log_flush_time in the Sensor object, setting it to None.")
+                    self._info["event_log_flush_time"] = None
+        else:
+            self._info["event_log_flush_time"] = None
+
+        return super(Sensor, self)._update_object()
 
 
 class SensorGroup(MutableBaseModel, CreatableModelMixin):
