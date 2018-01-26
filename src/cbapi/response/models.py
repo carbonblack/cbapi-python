@@ -969,7 +969,8 @@ class User(MutableBaseModel, CreatableModelMixin):
             t = self._cb.select(Team, t)
 
         new_teams = [team for team in self.teams if team.get("id") != t.id]
-        new_teams.append({"id": t.id, "name": t.name})
+        #new_teams.append({"id": t.id, "name": t.name})
+        new_teams.append(t.id)
         self.teams = new_teams
 
 
