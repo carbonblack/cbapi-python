@@ -2671,8 +2671,8 @@ class Process(TaggedModel):
         if md5:
             return md5
         elif self._attribute("modload_count", 0) > 0:
-            md5 = self.modloads.next().md5
-            return md5
+            modloads = self.modloads
+            return next(modloads).md5
         else:
             return None
 
@@ -2684,8 +2684,8 @@ class Process(TaggedModel):
         if md5:
             return md5
         elif self._attribute("modload_count", 0) > 0:
-            md5 = self.modloads.next().path
-            return md5
+            modloads = self.modloads
+            return next(modloads).path
         else:
             return None
 
