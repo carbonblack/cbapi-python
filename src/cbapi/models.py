@@ -394,7 +394,7 @@ class MutableBaseModel(NewBaseModel):
             try:
                 message = request_ret.json()
                 log.debug("Received response: %s" % message)
-                if message.keys() == ["result"]:
+                if list(message.keys()) == ["result"]:
                     post_result = message.get("result", None)
 
                     if post_result and post_result != "success":

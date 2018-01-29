@@ -934,8 +934,10 @@ class User(MutableBaseModel, CreatableModelMixin):
         return info
 
     def _update_object(self):
-        if self._cb.cb_server_version < LooseVersion("6.1.0"):
+        if self._cb.cb_server_version < LooseVersion("6.1.0") or self._info.get("id", None) == None:
             # only include IDs of the teams and not the entire dictionary
+            # - applies to Cb Response server < 6.0 as well as Cb Response servers >= 6.0 where the user hasn't
+            #   been created yet.
             if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
                 new_object_info = deepcopy(self._info)
                 try:
@@ -967,9 +969,32 @@ class User(MutableBaseModel, CreatableModelMixin):
     def add_team(self, t):
         if isinstance(t, int):
             t = self._cb.select(Team, t)
+        elif type(t) in six.string_types:
+            t = self._cb.select(Team).where("name:%s" % t).one()
 
         new_teams = [team for team in self.teams if team.get("id") != t.id]
         new_teams.append({"id": t.id, "name": t.name})
+        self.teams = new_teams
+
+    def remove_team(self, t):
+        if isinstance(t, int):
+            t = self._cb.select(Team, t)
+        elif type(t) in six.string_types:
+            t = self._cb.select(Team).where("name:%s" % t).one()
+
+        new_teams = []
+        for team in self.teams:
+            keep = True
+            if isinstance(team, int):
+                if team == t.id:
+                    keep = False
+            elif isinstance(team, dict):
+                if team.get("id") == t.id:
+                    keep = False
+
+            if keep:
+                new_teams.append(team)
+
         self.teams = new_teams
 
 
