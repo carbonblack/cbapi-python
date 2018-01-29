@@ -53,6 +53,8 @@ class BaseQuery(object):
 
 
 class SimpleQuery(BaseQuery):
+    _multiple_where_clauses_accepted = False
+
     def __init__(self, cls, cb, urlobject=None, returns_fulldoc=True):
         super(SimpleQuery, self).__init__()
 
@@ -120,7 +122,7 @@ class SimpleQuery(BaseQuery):
             raise TypeError("Invalid argument type")
 
     def where(self, new_query):
-        if self._query:
+        if self._query and not self._multiple_where_clauses_accepted:
             raise ApiError("Cannot have multiple 'where' clauses")
 
         nq = self._clone()
@@ -128,6 +130,11 @@ class SimpleQuery(BaseQuery):
         nq._query[field] = value
         nq._full_init = False
         return nq
+
+    def and_(self, new_query):
+        if not self._multiple_where_clauses_accepted:
+            raise ApiError("Cannot have multiple 'where' clauses")
+        return self.where(new_query)
 
     def _perform_query(self):
         for item in self.results:

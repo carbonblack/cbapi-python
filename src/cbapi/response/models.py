@@ -855,6 +855,7 @@ class SensorGroup(MutableBaseModel, CreatableModelMixin):
 
 class SensorQuery(SimpleQuery):
     valid_field_names = ['ip', 'hostname', 'groupid']
+    _multiple_where_clauses_accepted = True
 
     def __init__(self, cls, cb):
         super(SensorQuery, self).__init__(cls, cb)
