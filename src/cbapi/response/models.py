@@ -239,12 +239,22 @@ class ThrottleRule(NewBaseModel):
 
 
 class AlertQuery(Query):
+    def __init__(self, doc_class, cb, query=None, raw_query=None):
+        super(AlertQuery, self).__init__(doc_class, cb, query=query, raw_query=raw_query)
+        self._batch_size = 500
+
     def _bulk_update(self, payload):
         # Using IDs for Alerts, since queries don't quite work as planned, and an "empty" query doesn't work.
         alert_ids = [a["unique_id"] for a in self._search()]
-        payload["alert_ids"] = alert_ids
 
-        self._cb.post_object("/api/v1/alerts", payload)
+        # Send the updates in blocks of 500
+        block_size = 500
+        cur, left = alert_ids[:block_size], alert_ids[block_size:]
+        while cur:
+            payload["alert_ids"] = cur
+            cur, left = left[:block_size], left[block_size:]
+            self._cb.post_object("/api/v1/alerts", payload)
+
         return None
 
     def set_ignored(self, ignored_flag=True):
