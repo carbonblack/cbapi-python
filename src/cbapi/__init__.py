@@ -4,8 +4,8 @@ import cbapi.six as six
 __title__ = 'cbapi'
 __author__ = 'Carbon Black Developer Network'
 __license__ = 'MIT'
-__copyright__ = 'Copyright 2016 Carbon Black'
-__version__ = '1.3.4'
+__copyright__ = 'Copyright 2018 Carbon Black'
+__version__ = '1.3.5'
 
 # New API as of cbapi 0.9.0
 from .response.rest_api import CbEnterpriseResponseAPI, CbResponseAPI

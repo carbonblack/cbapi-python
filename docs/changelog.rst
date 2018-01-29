@@ -1,6 +1,60 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.3.5 - Released February 2, 2018
+---------------------------------------
+
+This release includes bugfixes and contributions from the Carbon Black community.
+
+All products:
+
+* The ``BaseAPI`` constructor now takes three new optional keyword arguments to control the underlying connection
+  pool: ``pool_connections``, ``pool_maxsize``, and ``pool_block``. These arguments are sent to the underlying
+  ``HTTPAdapter`` used when connecting to the Carbon Black server. For more information on these parameters, see
+  the `Python requests API documentation for HTTPAdapter
+<http://docs.python-requests.org/en/master/api/#requests.adapters.HTTPAdapter>`_.
+* Fix the ``wait_for_completion`` and ``wait_for_output`` options in the Live Response ``.create_process()`` method.
+  If ``wait_for_completion`` is True, the call to ``.create_process()`` will block until the remote process
+  has exited. If ``wait_for_output`` is True, then ``.create_process()`` will additionally wait until the output
+  of the remote process is ready and return that output to the caller. Setting ``wait_for_output`` to True automatically
+  sets ``wait_for_completion`` to True as well.
+* More Python 3 compatibility fixes.
+*
+
+Cb Defense:
+
+* The ``policy_operations.py`` example script's "Replace Rule" command is fixed.
+* Add the Cb Live Response job-based API.
+
+Cb Response:
+
+* Fixes to ``walk_children.py`` example script.
+* The ``Process`` and ``Binary`` model objects now return None by default when a non-existent attribute is referenced,
+  rather than throwing an exception.
+* Multiple ``.where()`` clauses can now be used in the ``Sensor`` model object.
+* Workaround implemented for retrieving/managing more than 500 banned hashes.
+* Alert bulk operations now work on batches of 500 alerts.
+* ``.restart_sensor()`` method now available for ``Sensor`` model object.
+* ``.flush_events()`` method on ``Sensor`` model object no longer throws an exception on Cb Response 6.x servers.
+* Fix ``user_operations.py`` example script to eliminate exception when adding a new user to an existing team.
+* Add ``.remove_team()`` method on ``User`` model object.
+* Automatically set ``cb.legacy_5x_mode`` query parameter for all Process queries whenever a legacy Solr core (from
+  Cb Response 5.x) is loaded.
+* Add ``.use_comprehensive_search()`` method to enable the "comprehensive search" option on a Process query.
+  See the `Cb Developer Network documentation on Comprehensive Search
+  <https://developer.carbonblack.com/reference/enterprise-response/6.1/process-api-changes/#process-joining-comprehensive-search>`_
+  for more information on "comprehensive search".
+* Fix exceptions in enumerating child processes, retrieving path and MD5sums from processes.
+* Add ``.all_childprocs()``, ``.all_modloads()``, ``.all_filemods()``, ``.all_regmods()``, ``.all_crossprocs()``,
+  and ``.all_netconns()`` methods to retrieve process events from all segments, rather than the current process segment.
+  You can also use the special segment "0" to retrieve process events across all segments.
+* Fix ``cmdline_filters`` in the ``IngressFilter`` model object.
+
+Cb Protection:
+
+* Tamper Protection can now be set and cleared in the ``Computer`` model object.
+
+
 CbAPI 1.3.4 - Released September 14, 2017
 -----------------------------------------
 
