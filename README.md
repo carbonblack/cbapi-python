@@ -19,7 +19,9 @@ Also review the documentation and guides available on the
 
 ## Requirements
 
-The new cbapi is designed to work on Python 2.6.6 and above (including 3.x). 
+The new cbapi is designed to work on Python 2.6.6 and above (including 3.x). If you're just starting out,
+we recommend using the latest version of Python 3.6.x or above.
+
 All requirements are installed as part of `pip install`. 
 The legacy cbapi (`cbapi.CbApi`) and legacy bit9api (`cbapi.bit9Api`) are still compatible with Python 2.x only.
 

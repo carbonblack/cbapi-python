@@ -13,9 +13,9 @@ If you already have Python installed, you can skip right down to "Using Pip".
 Installing Python
 -----------------
 
-Obviously the first thing you’ll need to do is install Python on your workstation or server. For best compatibility,
-install the latest version of Python 2.7 (as of this writing, that is version 2.7.11). Linux and Mac OS X systems will
-most likely have Python installed; it will have to be installed on Windows separately.
+Obviously the first thing you’ll need to do is install Python on your workstation or server. We recommend
+using the latest version of Python 3 (as of this writing, 3.6.4) for maximum performance and compatibility.
+Linux and Mac OS X systems will most likely have Python installed; it will have to be installed on Windows separately.
 
 Note that cbapi is compatible with both Python 2.7 and Python 3.x. If you already have Python 3 installed on your
 system, you're good to go!
@@ -23,24 +23,25 @@ system, you're good to go!
 If you believe you have Python installed already, run the following two commands at a command prompt::
 
     $ python --version
-    Python 2.7.10
+    Python 3.6.4
 
     $ pip --version
-    pip 7.1.2 from /Users/jgarman/Desktop/Reno/homebrew/lib/python2.7/site-packages (python 2.7)
+    pip 9.0.1 from /usr/local/lib/python3.6/site-packages (python 3.6)
 
 If “python” reports back a version of 2.6.x, 2.7.x, or 3.x.x, you’re in luck.
 If “pip” is not found, don’t worry, we’ll install that shortly.
 
 If you're on Windows, and Python is not installed yet, download the latest Python installer from the python.org website.
-The direct link for the Python 2.7.11 installer for Windows 64-bit platforms is
-https://www.python.org/ftp/python/2.7.11/python-2.7.11.amd64.msi.
+We recommend using the latest version of Python 3. As of this writing, the latest version available is 3.6.4.
+The direct link for the Python 3.6.4 installer for Windows 64-bit platforms is
+https://www.python.org/ftp/python/3.6.4/python-3.6.4-amd64.exe.
 
 .. image:: _static/install-windows.png
    :alt: Windows installation options showing "Add python.exe to path"
    :align: right
 
-Install the MSI for "all users" and in the configuration options ensure that the "Add python.exe to Path" option is
-installed (you will have to scroll to the end of the customization options to find this).
+Ensure that the "Add Python to PATH" option is
+checked.
 
 If for some reason you do not have pip installed, follow the instructions at this
 `handy guide <http://docs.python-guide.org/en/latest/starting/installation/>`_.
