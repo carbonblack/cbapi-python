@@ -41,7 +41,7 @@ properties:
     type: string
   createTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   policyId:
     type: integer
     format: int64
@@ -59,26 +59,26 @@ properties:
     - "MISSION_CRITICAL"
   lastVirusActivityTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   firstVirusActivityTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   activationCodeExpiryTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   organizationName:
     type: string
   sensorVersion:
     type: string
   registeredTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   lastContact:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   lastReportedTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   windowsPlatform:
     type: string
     x-nullable: true
@@ -115,7 +115,7 @@ properties:
         - "UNINSTALLED_SERVER"
   deregisteredTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   sensorStates:
     type: array
     items:
@@ -146,12 +146,12 @@ properties:
           type: string
         time:
           type: integer
-          format: int64
+          format: epoch-ms-date-time
   rootedBySensor:
     type: boolean
   rootedBySensorTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   lastInternalIpAddress:
     type: string
   lastExternalIpAddress:
@@ -171,37 +171,37 @@ properties:
     type: boolean
   lastResetTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   lastShutdownTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   scanStatus:
     type: string
   scanLastActionTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   scanLastCompleteTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   linuxKernelVersion:
     type: string
   avEngine:
     type: string
   avLastScanTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   rootedByAnalytics:
     type: boolean
   rootedByAnalyticsTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   testId:
     type: integer
   avMaster:
     type: boolean
   uninstalledTime:
     type: integer
-    format: int64
+    format: epoch-ms-date-time
   name:
     type: string
   status:

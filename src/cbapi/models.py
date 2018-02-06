@@ -17,6 +17,9 @@ import time
 from .errors import ServerError, InvalidObjectError
 from .oldmodels import BaseModel
 import logging
+from datetime import datetime
+from cbapi.utils import calculate_elapsed_time
+
 log = logging.getLogger(__name__)
 
 
@@ -62,8 +65,10 @@ class CbMetaModel(type):
 
             if field_format.startswith('int'):
                 setattr(cls, field_name, FieldDescriptor(field_name, coerce_to=int))
-            elif field_format == "date-time":
-                setattr(cls, field_name, DateTimeFieldDescriptor(field_name))
+            elif field_format == "iso-date-time":
+                setattr(cls, field_name, IsoDateTimeFieldDescriptor(field_name))
+            elif field_format == "epoch-ms-date-time":
+                setattr(cls, field_name, EpochDateTimeFieldDescriptor(field_name, 1000.0))
             elif field_format == "boolean":
                 setattr(cls, field_name, FieldDescriptor(field_name, coerce_to=bool))
             elif field_format == "array":
@@ -119,17 +124,37 @@ class ObjectFieldDescriptor(FieldDescriptor):
         return ret or {}
 
 
-class DateTimeFieldDescriptor(FieldDescriptor):
+class IsoDateTimeFieldDescriptor(FieldDescriptor):
     def __init__(self, field_name):
-        super(DateTimeFieldDescriptor, self).__init__(field_name)
+        super(IsoDateTimeFieldDescriptor, self).__init__(field_name)
 
     def __get__(self, instance, instance_type=None):
-        d = super(DateTimeFieldDescriptor, self).__get__(instance, instance_type)
+        d = super(IsoDateTimeFieldDescriptor, self).__get__(instance, instance_type)
         return convert_from_cb(d)
 
     def __set__(self, instance, value):
         parsed_date = convert_to_cb(value)
-        super(DateTimeFieldDescriptor, self).__set__(instance, parsed_date)
+        super(IsoDateTimeFieldDescriptor, self).__set__(instance, parsed_date)
+
+
+class EpochDateTimeFieldDescriptor(FieldDescriptor):
+    epoch = datetime.utcfromtimestamp(0)
+
+    def __init__(self, field_name, multiplier=1.0):
+        super(EpochDateTimeFieldDescriptor, self).__init__(field_name)
+        self.multiplier = float(multiplier)
+
+    def __get__(self, instance, instance_type=None):
+        d = super(EpochDateTimeFieldDescriptor, self).__get__(instance, instance_type)
+        epoch_seconds = d / self.multiplier
+        return datetime.utcfromtimestamp(epoch_seconds)
+
+    def __set__(self, instance, value):
+        if isinstance(value, datetime):
+            new_value = calculate_elapsed_time(value - self.epoch) * self.multiplier
+        else:
+            new_value = value
+        super(EpochDateTimeFieldDescriptor, self).__set__(instance, new_value)
 
 
 class ForeignKeyFieldDescriptor(FieldDescriptor):

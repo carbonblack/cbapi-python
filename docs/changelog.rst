@@ -21,8 +21,11 @@ All products:
 
 Cb Defense:
 
+* Date/time stamps in the Device model object are now represented as proper Python datetime objects, rather than
+  integers.
 * The ``policy_operations.py`` example script's "Replace Rule" command is fixed.
 * Add the Cb Live Response job-based API.
+* Add a new example script ``list_devices.py``
 
 Cb Response:
 

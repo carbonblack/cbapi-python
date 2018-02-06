@@ -73,7 +73,7 @@ properties:
     description: 'If enabled and the hit count > 1, the number of [VirusTotal](http://virustotal.com) hits for this md5'
   server_added_timestamp:
     type: string
-    format: date-time
+    format: iso-date-time
     description: the first time this binary was received on the server in the server GMT time
   private_build:
     type: string
@@ -133,9 +133,9 @@ properties:
       type: string
   timestamp:
     type: string
-    format: date-time
+    format: iso-date-time
   cb_version:
     type: integer
   last_seen:
     type: string
-    format: date-time
+    format: iso-date-time

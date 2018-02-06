@@ -28,14 +28,14 @@ properties:
     description: "Image logo URL for notifiers in this policy"
   dateCreated:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date/time when this rule was created (UTC)"
   createdByUserId:
     type: "integer"
     description: "Id of user that created this object"
   dateModified:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date/time when this object was last modified (UTC)"
   modifiedByUserId:
     type: "integer"

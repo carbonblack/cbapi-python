@@ -8,7 +8,7 @@ properties:
     description: "Id of connector object that sent the notification"
   time:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date/time of the notification (UTC)"
   analysisResult:
     type: "integer"

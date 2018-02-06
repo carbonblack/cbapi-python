@@ -5,7 +5,7 @@ import contextlib
 
 from cbapi.six import iteritems
 import sys
-from cbapi.utils import check_python_tls_compatibility
+from cbapi.connection import check_python_tls_compatibility
 
 
 def check_tls(opts):

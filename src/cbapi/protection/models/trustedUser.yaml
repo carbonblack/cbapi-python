@@ -22,7 +22,7 @@ properties:
     description: "Platform where this trustedUser will be valid. it is one of: 1 = Windows, 2 = Mac, 4 = Linux"
   dateCreated:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date/time when this object was created (UTC)"
   createdByUserId:
     type: "integer"
@@ -32,7 +32,7 @@ properties:
     description: "User that created this object"
   dateModified:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date/time when this object was last modified (UTC)"
   modifiedByUserId:
     type: "integer"

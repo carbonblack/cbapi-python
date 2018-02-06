@@ -52,7 +52,7 @@ properties:
     description: "Set of platform flags where this file rule will be valid. combination of: 1 = Windows 2 = Mac 4 = Linux"
   dateCreated:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date/time when this rule was created (UTC)"
   createdBy:
     type: "string"
@@ -62,7 +62,7 @@ properties:
     description: "Id of user that created this object"
   dateModified:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date/time when this object was last modified (UTC)"
   modifiedBy:
     type: "string"

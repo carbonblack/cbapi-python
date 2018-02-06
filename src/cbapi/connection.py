@@ -32,24 +32,30 @@ from . import __version__
 
 from .cache.lru import lru_cache_function
 from .models import CreatableModelMixin
+from .utils import calculate_elapsed_time
 
 
 log = logging.getLogger(__name__)
 
 
-def calculate_elapsed_time_new(td):
-    return td.total_seconds()
+def check_python_tls_compatibility():
+    try:
+        tls_adapter = CbAPISessionAdapter(force_tls_1_2=True)
+    except Exception as e:
+        ret = "TLSv1.1"
 
+        if "OP_NO_TLSv1_1" not in ssl.__dict__:
+            ret = "TLSv1.0"
+        elif "OP_NO_TLSv1" not in ssl.__dict__:
+            ret = "SSLv3"
+        elif "OP_NO_SSLv3" not in ssl.__dict__:
+            ret = "SSLv2"
+        else:
+            ret = "Unknown"
+    else:
+        ret = "TLSv1.2"
 
-def calculate_elapsed_time_old(td):
-    return float((td.microseconds +
-                  (td.seconds + td.days * 24 * 3600) * 10**6)) / 10**6
-
-
-if sys.version_info < (2, 7):
-    calculate_elapsed_time = calculate_elapsed_time_old
-else:
-    calculate_elapsed_time = calculate_elapsed_time_new
+    return ret
 
 
 class CbAPISessionAdapter(HTTPAdapter):

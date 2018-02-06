@@ -18,7 +18,7 @@ properties:
     type: integer
   "last_update":
     type: string
-    format: "date-time"
+    format: "iso-date-time"
   "physical_memory_size":
     type: integer
   "build_id":
@@ -29,7 +29,7 @@ properties:
     type: boolean
   "event_log_flush_time":
     type: string
-    format: "date-time"
+    format: "iso-date-time"
   "computer_dns_name":
     type: string
   "emet_report_setting":
@@ -60,7 +60,7 @@ properties:
     type: string
   "next_checkin_time":
     type: string
-    format: "date-time"
+    format: "iso-date-time"
   "node_id":
     type: integer
   "cookie":
@@ -71,7 +71,7 @@ properties:
     type: string
   "license_expiration":
     type: string
-    format: "date-time"
+    format: "iso-date-time"
   "supports_isolation":
     type: boolean
   "parity_host_id":
@@ -84,7 +84,7 @@ properties:
     type: integer
   "registration_time":
     type: string
-    format: "date-time"
+    format: "iso-date-time"
   "restart_queued":
     type: boolean
   "notes":
@@ -99,7 +99,7 @@ properties:
     type: string
   "last_checkin_time":
     type: string
-    format: "date-time"
+    format: "iso-date-time"
   "os_type":
     type: integer
   "group_id":

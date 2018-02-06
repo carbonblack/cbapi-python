@@ -9,11 +9,11 @@ properties:
     description: "Unique filter identifier, in order to allow future updates. Can be any string, but should contain only alfanumeric digits and dashes (e.g. uuid). This is read-only field and honored only during initial POST."
   create_timestamp:
     type: string
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date of creation of this filter. This is read-only field."
   modify_timestamp:
     type: string
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date of last modification of this filter. This is read-only field."
   create_user_id:
     type: integer

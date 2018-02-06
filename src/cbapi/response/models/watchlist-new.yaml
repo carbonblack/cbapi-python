@@ -16,7 +16,7 @@ properties:
     type: "boolean"
   search_timestamp:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
   index_type:
     type: "string"
     description: "Index to search for this watchlist. Must be either 'events' (Processes) or 'modules' (Binaries)"
@@ -30,7 +30,7 @@ properties:
     format: "int32"
   date_added:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
   group_id:
     type: "integer"
     format: "int32"
@@ -39,6 +39,6 @@ properties:
     format: "int32"
   last_hit:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
   from_alliance:
     type: "boolean"

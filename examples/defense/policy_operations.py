@@ -40,7 +40,7 @@ def get_policy_by_name_or_id(cb, policy_id=None, name=None, return_all_if_none=F
 
 def list_policies(cb, parser, args):
     for p in cb.select(Policy):
-        print("Policy id {0}: {1} {2}".format(p.id, p.name, "({0})".format(p.description) if p.description else ""))
+        print(u"Policy id {0}: {1} {2}".format(p.id, p.name, "({0})".format(p.description) if p.description else ""))
         print("Rules:")
         for r in p.rules.values():
             print("  {0}: {1} when {2} {3} is {4}".format(r.get('id'), r.get("action"),

@@ -15,7 +15,7 @@ properties:
     type: "string"
   created_time:
     type: "integer"
-    format: "date-time"
+    format: "iso-date-time"
   os_type:
     type: "string"
   feed_rating:

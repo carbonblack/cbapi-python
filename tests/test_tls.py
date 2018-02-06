@@ -1,5 +1,4 @@
-from cbapi.connection import CbAPISessionAdapter
-from cbapi.utils import check_python_tls_compatibility
+from cbapi.connection import CbAPISessionAdapter, check_python_tls_compatibility
 from nose.tools import assert_equal, assert_raises
 import unittest
 import requests

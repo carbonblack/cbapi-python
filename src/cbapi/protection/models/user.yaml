@@ -52,7 +52,7 @@ properties:
     description: "Administrator's comments for this user"
   registrationDate:
     type: "string"
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date this user was first registered (UTC)"
   readOnly:
     type: "boolean"

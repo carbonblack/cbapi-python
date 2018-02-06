@@ -11,11 +11,11 @@ properties:
     description: "Type of the event (filemod, regmod, procstart, etc.)"
   date_tagged:
     type: string
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date when the event was tagged as part of an investigation"
   start_date:
     type: string
-    format: "date-time"
+    format: "iso-date-time"
     description: "Date when process associated with tagged event was started"
   unique_id:
     type: string
