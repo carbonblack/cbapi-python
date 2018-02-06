@@ -1,5 +1,5 @@
 from cbapi.response.models import Binary, Process, Sensor, Watchlist, Feed
-from cbapi.response.rest_api import CbEnterpriseResponseAPI
+from cbapi.response.rest_api import CbResponseAPI
 
 from nose.tools import assert_equal
 from testconfig import config
@@ -11,9 +11,6 @@ import sqlite3
 
 sys.path.append(os.path.dirname(__file__))
 import requests_cache
-
-#import requests.packages.urllib3
-#requests.packages.urllib3.disable_warnings()
 
 cache_file_name = os.path.join(os.path.dirname(__file__), "caches/cber")
 #
@@ -42,17 +39,10 @@ if not use_golden:
     #
     con = sqlite3.connect(cache_file_name + ".sqlite")
     cur = con.cursor()
-    cur.execute('drop table if exists AssertionTest')
-    cur.execute('create table AssertionTest (testname string primary key, testresult string)')
+    cur.execute('DROP TABLE IF EXISTS AssertionTest')
+    cur.execute('CREATE TABLE AssertionTest (testname string PRIMARY KEY, testresult string)')
     con.commit()
     con.close()
-
-
-#
-# Install the cache
-# NOTE: deny_outbound is set so we don't attempt comms and force using the cache
-#
-requests_cache.install_cache(cache_file_name, allowable_methods=('GET', 'POST'), deny_outbound=use_golden)
 
 
 def insertResult(testname, testresult):
@@ -74,17 +64,17 @@ def getTestResult(testname):
 
 class TestCbResponse(unittest.TestCase):
     def setUp(self):
+        requests_cache.install_cache(cache_file_name, allowable_methods=('GET', 'POST'), deny_outbound=use_golden)
         if use_golden:
             #
             # We don't want to connect to a cbserver so using bogus values
             #
-            self.c = CbEnterpriseResponseAPI(url="http://localhost", token="N/A", ssl_verify=False)
+            self.c = CbResponseAPI(url="https://localhost", token="N/A", ssl_verify=False)
         else:
-            self.c = CbEnterpriseResponseAPI()
+            self.c = CbResponseAPI()
 
         self.sensor = self.c.select(Sensor, 1)
         self.lr_session = self.sensor.lr_session()
-
 
     def test_all_binary(self):
         binary_query = self.c.select(Binary).where('')
@@ -134,7 +124,7 @@ class TestCbResponse(unittest.TestCase):
             assert_equal(len(watchlists),
                          test_result,
                          "Number of Watchlists returned should be {0}, but received {1}".format(
-                            test_result, len(watchlists)))
+                             test_result, len(watchlists)))
 
         else:
             insertResult('test_cber_watchlists', str(len(watchlists)))
@@ -150,8 +140,3 @@ class TestCbResponse(unittest.TestCase):
                              test_result, len(feeds)))
         else:
             insertResult('test_cber_feeds', str(len(feeds)))
-
-
-
-
-
