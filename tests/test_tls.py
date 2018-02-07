@@ -2,10 +2,16 @@ from cbapi.connection import CbAPISessionAdapter, check_python_tls_compatibility
 from nose.tools import assert_equal, assert_raises
 import unittest
 import requests
+import sys
+import os
+
+sys.path.append(os.path.dirname(__file__))
+import requests_cache
 
 
 class TestTLS(unittest.TestCase):
     def setUp(self):
+        requests_cache.uninstall_cache()
         self.tls_adapter = CbAPISessionAdapter(force_tls_1_2=True)
         self.session = requests.Session()
         self.session.mount("https://", self.tls_adapter)
