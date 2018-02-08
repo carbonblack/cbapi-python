@@ -5,7 +5,13 @@ from __future__ import absolute_import
 import requests
 import sys
 from requests.adapters import HTTPAdapter, DEFAULT_POOLBLOCK, DEFAULT_RETRIES, DEFAULT_POOLSIZE
-from requests.packages.urllib3.util.ssl_ import create_urllib3_context
+
+try:
+    from requests.packages.urllib3.util.ssl_ import create_urllib3_context
+    REQUESTS_HAS_URLLIB_SSL_CONTEXT = True
+except ImportError:
+    REQUESTS_HAS_URLLIB_SSL_CONTEXT = False
+
 import ssl
 
 
@@ -62,10 +68,14 @@ class CbAPISessionAdapter(HTTPAdapter):
     def __init__(self, verify_hostname=True, force_tls_1_2=False, max_retries=DEFAULT_RETRIES, **pool_kwargs):
         self._cbapi_verify_hostname = verify_hostname
         self._cbapi_force_tls_1_2 = force_tls_1_2
+
+        if force_tls_1_2 and not REQUESTS_HAS_URLLIB_SSL_CONTEXT:
+            raise ApiError("Cannot force the use of TLS1.2: Python, urllib3, and requests versions are too old.")
+
         super(CbAPISessionAdapter, self).__init__(max_retries=max_retries, **pool_kwargs)
 
     def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK, **pool_kwargs):
-        if self._cbapi_force_tls_1_2:
+        if self._cbapi_force_tls_1_2 and REQUESTS_HAS_URLLIB_SSL_CONTEXT:
             # Force the use of TLS v1.2 when talking to this Cb Response server.
             context = create_urllib3_context(ciphers=('TLSv1.2:!aNULL:!eNULL:!MD5'))
             context.options |= ssl.OP_NO_SSLv2
