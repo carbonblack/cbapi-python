@@ -8,8 +8,8 @@ cbapi: Carbon Black API for Python
 
 Release v\ |release|.
 
-cbapi provides a straightforward interface to the Cb Protection and Response REST APIs.
-This library provides a Pythonic layer to access the raw power of the REST APIs of both products, making it trivial
+cbapi provides a straightforward interface to the Carbon Black products: Cb Protection, Response, and Defense.
+This library provides a Pythonic layer to access the raw power of the REST APIs of all Cb products, making it trivial
 to do the easy stuff and handling all of the "sharp corners" behind the scenes for you. Take a look::
 
    >>> from cbapi.response import CbResponseAPI, Process, Binary, Sensor

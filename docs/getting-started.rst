@@ -24,8 +24,8 @@ cbapi strongly discourages embedding credentials in individual scripts. Instead,
 Cb Response or Cb Protection servers inside the API credential file and select which "profile" you would like to use
 at runtime.
 
-To create the initial credential file, a simple-to-use script is provided. Just run the ``cbapi-response`` or
-``cbapi-protection`` script with the ``configure`` argument. On Mac OS X and Linux::
+To create the initial credential file, a simple-to-use script is provided. Just run the ``cbapi-response``,
+``cbapi-protection``, or ``cbapi-defense`` script with the ``configure`` argument. On Mac OS X and Linux::
 
     $ cbapi-response configure
 
