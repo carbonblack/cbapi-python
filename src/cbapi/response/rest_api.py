@@ -74,7 +74,7 @@ class CbResponseAPI(BaseAPI):
 
         self._has_legacy_partitions = False
         if self.cb_server_version >= LooseVersion('6.0'):
-            legacy_partitions = [p for p in self.select(StoragePartition) if p.info["isLegacy"]]
+            legacy_partitions = [p for p in self.select(StoragePartition) if p.info.get("isLegacy", False)]
             if legacy_partitions:
                 self._has_legacy_partitions = True
 
