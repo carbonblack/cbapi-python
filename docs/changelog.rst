@@ -1,6 +1,13 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.3.6 - Released February 14, 2018
+----------------------------------------
+
+This release has one critical fix:
+
+* Fix a fatal exception when connecting to Cb Response 6.1.x servers
+
 CbAPI 1.3.5 - Released February 2, 2018
 ---------------------------------------
 
