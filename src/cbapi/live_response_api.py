@@ -139,9 +139,9 @@ class CbLRSessionBase(object):
         :Example:
 
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
-        ...     lr_session.put_file('File Data', new_remote_file)
+        ...     lr_session.put_file(open("test.txt", "rb"), r"c:\test.txt")
 
-        :param str infp: File data to put on the remote endpoint
+        :param str infp: Python file-like containing data to upload to the remote endpoint
         :param str remote_filename: File name to create on the remote endpoint
         :return: None
         """
