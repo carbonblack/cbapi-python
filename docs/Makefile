@@ -228,3 +228,6 @@ dummy:
 	$(SPHINXBUILD) -b dummy $(ALLSPHINXOPTS) $(BUILDDIR)/dummy
 	@echo
 	@echo "Build finished. Dummy builder generates no files."
+
+auto:
+	sphinx-autobuild $(ALLSPHINXOPTS) $(BUILDDIR)/html
