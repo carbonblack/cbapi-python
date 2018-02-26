@@ -138,16 +138,17 @@ class IsoDateTimeFieldDescriptor(FieldDescriptor):
 
 
 class EpochDateTimeFieldDescriptor(FieldDescriptor):
-    epoch = datetime.utcfromtimestamp(0)
-
     def __init__(self, field_name, multiplier=1.0):
         super(EpochDateTimeFieldDescriptor, self).__init__(field_name)
         self.multiplier = float(multiplier)
 
     def __get__(self, instance, instance_type=None):
         d = super(EpochDateTimeFieldDescriptor, self).__get__(instance, instance_type)
-        epoch_seconds = d / self.multiplier
-        return datetime.utcfromtimestamp(epoch_seconds)
+        if type(d) is float or type(d) is int or type(d) is long:
+            epoch_seconds = d / self.multiplier
+            return datetime.utcfromtimestamp(epoch_seconds)
+        else:
+            return datetime.utcfromtimestamp(0)      # default to epoch time (1970-01-01) if we have a non-numeric type
 
     def __set__(self, instance, value):
         if isinstance(value, datetime):
