@@ -31,7 +31,9 @@ established and the file contents are retrieved, or an exception occurs (in this
 an error reading the file).
 
 As seen in the example above, the ``.lr_session()`` method is context-aware. Cb Response has a limited number of
-concurrent Live Response session slots (by default, only ten). By wrapping the ``.lr_session()``
+concurrent Live Response session slots (by default, only ten). By wrapping the ``.lr_session()`` call within a
+``with`` context, the session is automatically closed at the end of the block and frees that slot for another
+concurrent Live Response session in another script or user context.
 
 A full listing of methods in the cbapi Live Response API is available in the documentation for
 the :py:mod:`cbapi.live_response_api.CbLRSessionBase` class.
