@@ -21,7 +21,10 @@ default_profile = {
     "rabbitmq_user": "cb",
     "rabbitmq_pass": None,
     "rabbitmq_host": "localhost",
-    "rabbitmq_port": 5004
+    "rabbitmq_port": 5004,
+
+    "username": None,
+    "password": None
 }
 
 _boolean_states = {'1': True, 'yes': True, 'true': True, 'on': True,
@@ -63,6 +66,7 @@ class CredentialStore(object):
 
         self.credentials = RawConfigParser(defaults=default_profile)
         self.credential_files = self.credentials.read(self.credential_search_path)
+        self.product_name = product_name
 
     def get_credentials(self, profile=None):
         credential_profile = profile or "default"

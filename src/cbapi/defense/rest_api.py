@@ -1,6 +1,7 @@
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
 from .cblr import LiveResponseSessionManager
+from ..errors import UnauthorizedError
 
 from cbapi.connection import BaseAPI
 import logging
@@ -27,7 +28,15 @@ class CbDefenseAPI(BaseAPI):
     """
     def __init__(self, *args, **kwargs):
         super(CbDefenseAPI, self).__init__(product_name="defense", *args, **kwargs)
+        if self.credentials.username and self.credentials.password:
+            self._reauthorize()
+
         self._lr_scheduler = None
+
+    def _reauthorize(self):
+        # Get a cookie
+        self.post_object("/checkAuthStrategy", {"email": self.credentials.username,
+                                                "password": self.credentials.password})
 
     def _perform_query(self, cls, query_string=None):
         return Query(cls, self, query_string)
@@ -59,6 +68,14 @@ class CbDefenseAPI(BaseAPI):
 
     def _request_lr_session(self, sensor_id):
         return self.live_response.request_session(sensor_id)
+
+    def api_json_request(self, method, uri, **kwargs):
+        try:
+            return super(CbDefenseAPI, self).api_json_request(method, uri, **kwargs)
+        except UnauthorizedError:
+            # try to reauthorize - did the cookie expire?
+            self._reauthorize()
+            return super(CbDefenseAPI, self).api_json_request(method, uri, **kwargs)
 
 
 class Query(PaginatedQuery):
