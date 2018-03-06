@@ -1,0 +1,1 @@
+{"action": "TERMINATE", "application": {"type": "REPUTATION", "value": "KNOWN_MALWARE"}, "operation": "INVOKE_SCRIPT", "required": false, "id": 1}

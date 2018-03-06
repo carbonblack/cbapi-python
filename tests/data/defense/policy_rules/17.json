@@ -1,0 +1,1 @@
+{"action": "DENY", "application": {"type": "REPUTATION", "value": "SUSPECT_MALWARE"}, "operation": "RUN", "required": false, "id": 17}

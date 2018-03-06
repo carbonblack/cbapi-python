@@ -1,0 +1,1 @@
+{"action": "IGNORE", "application": {"type": "NAME_PATH", "value": "c:\\windows\\notepad.exe"}, "operation": "BYPASS_API", "required": false, "id": 11}

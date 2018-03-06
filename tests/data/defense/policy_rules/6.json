@@ -1,0 +1,1 @@
+{"action": "IGNORE", "application": {"type": "NAME_PATH", "value": "c:\\windows\\notepad.exe"}, "operation": "MEMORY_SCRAPE", "required": false, "id": 6}
