@@ -9,6 +9,9 @@ properties:
     format: "int32"
   name:
     type: "string"
+  description:
+    type: "string"
+    description: "A description of the watchlist."
   search_query:
     type: "string"
     description: "URL encoded search query associated with this watchlist."
