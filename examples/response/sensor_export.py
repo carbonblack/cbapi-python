@@ -32,10 +32,7 @@ def main():
     parser.add_argument("--query","-q",dest="query",help="optional query to filter exported sensors",required=False)
     args = parser.parse_args()
     cb = get_cb_response_object(args)
-    export_fields = args.exportfields.split(",") if args.exportfields else \
-        ["id", "hostname", "group_id","network_interfaces", "os_environment_display_string", "build_version_string",
-         "network_isolation_enabled",
-         "last_checkin_time"]
+    export_fields = args.exportfields.split(",")
     return export_sensors(cb, export_file_name=args.exportfile, export_fields=export_fields,query=args.query)
 
 
