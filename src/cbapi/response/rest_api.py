@@ -98,6 +98,15 @@ class CbResponseAPI(BaseAPI):
         r = self.session.get("/api/info")
         return r.json()
 
+    def dashboard_statistics(self):
+        """Retrieve dashboard statistics from the Carbon Black Enterprise Response server.
+
+        :return: Dictionary with information retrieved from the ``/api/v1/dashboard/statistics`` API route
+        :rtype: dict
+        """
+        r = self.session.get("/api/v1/dashboard/statistics")
+        return r.json()
+
     def license_request(self):
         """Retrieve license request block from the Carbon Black Enterprise Response server.
 
