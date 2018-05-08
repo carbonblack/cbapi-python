@@ -88,7 +88,7 @@ properties:
   "restart_queued":
     type: boolean
   "notes":
-    type: integer
+    type: string
   "num_storefiles_bytes":
     type: string
   "os_environment_id":
