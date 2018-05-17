@@ -70,7 +70,7 @@ class BinaryWorker(threading.Thread):
             worker_queue.task_done()
 
 
-def dump_all_binaries(cb, destdir, start):
+def dump_all_binaries(cb, destdir, query=None):
     threads = []
     num_worker_threads = 10
     for i in range(num_worker_threads):
@@ -78,10 +78,12 @@ def dump_all_binaries(cb, destdir, start):
         t.daemon = True
         t.start()
         threads.append(t)
-
-    for binary in cb.select(Binary).all():
-        worker_queue.put(binary)
-
+    if not query:
+        for binary in cb.select(Binary).all():
+            worker_queue.put(binary)
+    else:
+        for binary in cb.select(Binary).where(query).all():
+            worker_queue.put(binary)
     worker_queue.join()
 
 
@@ -91,10 +93,12 @@ def main():
                         default=os.curdir)
 
     # TODO: we don't have a control on the "start" value in the query yet
-    # parser.add_argument('--start', action='store', dest='startvalue', help='Start from result number', default=0)
+    parser.add_argument('--query', action='store', dest='query', help='Query string to filter results', default=None)
     parser.add_argument('-v', action='store_true', dest='verbose', help='Enable verbose debugging messages',
                         default=False)
     args = parser.parse_args()
+
+    query = args.query
 
     cb = get_cb_response_object(args)
 
@@ -103,9 +107,7 @@ def main():
     else:
         logging.basicConfig(level=logging.INFO)
 
-    # startvalue = args.startvalue
-    startvalue = 0
-    return dump_all_binaries(cb, args.destdir, startvalue)
+    return dump_all_binaries(cb, args.destdir, query)
 
 
 if __name__ == '__main__':
