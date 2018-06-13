@@ -6,10 +6,11 @@ import glob
 import time
 import json
 
+
 sys.path.append(os.path.dirname(__file__))
 import requests_cache
 
-
+@unittest.skip("temporarily disabled")
 def test_policy(rulefiles):
     requests_cache.uninstall_cache()
     defense_api = CbDefenseAPI(profile="test")
@@ -34,6 +35,7 @@ def test_policy(rulefiles):
     new_policy.delete()
 
 
+@unittest.skip("temporarily disabled")
 def test_rule(new_policy, fn):
     new_rule = json.load(open(fn, "r"))
     new_policy.add_rule(new_rule)
