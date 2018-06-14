@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 import cbapi.six
 
 __title__ = 'cbapi'
@@ -10,7 +11,10 @@ __version__ = '1.3.6'
 # New API as of cbapi 0.9.0
 from cbapi.response.rest_api import CbEnterpriseResponseAPI, CbResponseAPI
 from cbapi.protection.rest_api import CbEnterpriseProtectionAPI, CbProtectionAPI
-from cbapi.defense.rest_api import CbDefenseAPI
+from cbapi.psc.defense import CbDefenseAPI
+
+# for compatibility with Cb Defense code from cbapi < 1.4.0
+import cbapi.psc.defense as defense
 
 # LEGACY APIs, will deprecated as of cbapi 2.0.0
 # only import these if the Python version is 2.x

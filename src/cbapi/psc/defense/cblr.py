@@ -1,15 +1,12 @@
-import threading
 import logging
-
-from collections import defaultdict
+import threading
 from cbapi.six.moves.queue import Queue
+from collections import defaultdict
+from concurrent.futures import _base
 
-from concurrent.futures import ThreadPoolExecutor, as_completed, _base, wait
-
+from cbapi.errors import TimeoutError
 from cbapi.live_response_api import CbLRManagerBase, CbLRSessionBase, poll_status
-from cbapi.errors import ObjectNotFoundError, TimeoutError
-from cbapi.defense.models import Device
-
+from cbapi.psc.defense.models import Device
 
 OS_LIVE_RESPONSE_ENUM = {
     "WINDOWS": 1,

@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import sys
-from cbapi.defense.models import Device
+
 from cbapi.example_helpers import build_cli_parser, get_cb_defense_object
+from cbapi.psc.defense import Device
 
 
 def main():

@@ -1,5 +1,5 @@
-from ..utils import convert_query_params
-from ..query import PaginatedQuery
+from cbapi.utils import convert_query_params
+from cbapi.query import PaginatedQuery
 from .cblr import LiveResponseSessionManager
 
 from cbapi.connection import BaseAPI
@@ -74,7 +74,7 @@ class Query(PaginatedQuery):
 
     Examples::
 
-    >>> from cbapi.defense import CbDefenseAPI
+    >>> from cbapi.psc.defense import CbDefenseAPI
     >>> cb = CbDefenseAPI()
 
     Notes:

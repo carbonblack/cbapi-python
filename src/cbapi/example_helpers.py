@@ -1,17 +1,18 @@
-import argparse
-from cbapi.response import CbEnterpriseResponseAPI
-from cbapi.protection import CbEnterpriseProtectionAPI
-from cbapi.defense import CbDefenseAPI
-import codecs
 import sys
-import shutil
-import cmd
-import ntpath
 import time
+
+import argparse
+import cmd
+import codecs
+import logging
+import ntpath
+import shutil
 import subprocess
 from optparse import OptionParser
-import logging
 
+from cbapi.protection import CbEnterpriseProtectionAPI
+from cbapi.psc.defense import CbDefenseAPI
+from cbapi.response import CbEnterpriseResponseAPI
 
 log = logging.getLogger(__name__)
 

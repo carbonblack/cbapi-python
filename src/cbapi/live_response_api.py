@@ -911,6 +911,7 @@ def poll_status(cb, url, desired_status="complete", timeout=None, delay=None):
     while status != desired_status and time.time() - start_time < timeout:
         res = cb.get_object(url)
         if res["status"] == desired_status:
+            log.debug(json.dumps(res))
             return res
         elif res["status"] == "error":
             raise LiveResponseError(res)

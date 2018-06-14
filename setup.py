@@ -5,7 +5,7 @@ cbapi-python
 from setuptools import setup
 import sys
 
-packages = ['cbapi', 'cbapi.protection', 'cbapi.response', 'cbapi.cache', 'cbapi.defense']
+packages = ['cbapi', 'cbapi.protection', 'cbapi.response', 'cbapi.cache', 'cbapi.psc.defense']
 if sys.version_info < (3, 0):
     packages.extend(['cbapi.legacy', 'cbapi.legacy.util'])
 

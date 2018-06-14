@@ -225,7 +225,7 @@ class Site(MutableBaseModel, CreatableModelMixin):
 
 
 # TODO: we cannot modify/create Throttle rules until the semantics around the POST/PUT handler are fixed
-class ThrottleRule(NewBaseModel):
+class ThrottleRule(MutableBaseModel, CreatableModelMixin):
     urlobject = "/api/throttle"
     swagger_meta_file = "response/models/throttle.yaml"
 
@@ -1406,6 +1406,9 @@ class ProcessQuery(WatchlistEnabledQuery):
         else:
             log.debug("group_by only supported in Cb Response 6.1+")
             return self
+
+    def set_legacy_mode(self, new_value=True):
+        self._default_args["cb.legacy_5x_mode"] = new_value
 
     def min_last_update(self, v):
         """Set the minimum last update time (relative to sensor) for this query. The timestamp can be expressed either
