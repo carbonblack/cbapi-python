@@ -1,15 +1,35 @@
 from __future__ import absolute_import
 from cbapi.psc.response.rest_api import Query, convert_query_params
 from cbapi.errors import ServerError
+from cbapi.models import NewBaseModel
+import logging
+import time
 
 
-class ProcessQuery(Query):
+log = logging.getLogger(__name__)
+
+
+class Process(NewBaseModel):
+    urlobject = '/api/v1/process'
+    default_sort = 'last_update desc'
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        # This will emulate a synchronous process query, for now.
+        return SyncProcessQuery(cls, cb)
+
+    def __init__(self, cb,  model_unique_id=None, initial_data=None, force_init=False, full_doc=False):
+        super(Process, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
+                                      force_init=force_init, full_doc=full_doc)
+
+
+class SyncProcessQuery(Query):
     def __init__(self, doc_class, cb, query=None):
-        super(ProcessQuery, self).__init__(doc_class, cb, query)
+        super(SyncProcessQuery, self).__init__(doc_class, cb, query)
 
     def _search(self, start=0, rows=0):
         # iterate over total result set, 1000 at a time
-        args = {}
+        args = self._get_query_parameters()
         args["cb.full_docs"] = "true"
 
         if start != 0:
@@ -19,40 +39,31 @@ class ProcessQuery(Query):
         current = start
         numrows = 0
 
-        args = self.prepare_query(args)
+        log.info("args = {0}".format(args))
         still_querying = True
 
+        query_args = convert_query_params(args)
+
+        query_start = self._cb.post_object("/integrationServices/v3/pscr/query/start", body=query_args)
+
+        if not query_start.json().get("success"):
+            raise ServerError(query_start.status_code, query_start.json().get("message"))
+
+        query_token = query_start.json().get("query_id")
+
         while still_querying:
-            query_args = convert_query_params(args)
+            time.sleep(.2)
+            result = self._cb.post_object("/integrationServices/v3/pscr/query/results", body={"query_id": query_token})
 
-            query_start = self._cb.post_object(self._doc_class.urlobject, query_parameters=query_args)
+            if not result.json().get("success"):
+                raise ServerError(result.status_code, result.json().get("message"))
 
-            if not query_start.json().get("success"):
-                raise ServerError(query_start.status_code, query_start.json().get("message"))
+            # TODO: implement check to see if the search is complete or not
+            query_meta = result.json().get("response_header", {})
+            log.info("Query metadata = {0}".format(query_meta))
 
-            query_token = query_start.json().get("query_id")
-            result = self._cb.get_object(self._doc_class.urlobject, query_parameters=query_args)
+            results = result.json().get('data', [])
 
-            self._total_results = result.get("totalResults", 0)
-            self._count_valid = True
-
-            results = result.get('results', [])
-
+            # TODO: implement pagination
             for item in results:
                 yield item
-                current += 1
-                numrows += 1
-                if rows and numrows == rows:
-                    still_querying = False
-                    break
-
-            args['start'] = current + 1     # as of 6/2017, the indexing on the Cb Defense backend is still 1-based
-
-            if current >= self._total_results:
-                break
-            if not results:
-                log.debug("server reported total_results overestimated the number of results for this query by {0}"
-                          .format(self._total_results - current))
-                log.debug("resetting total_results for this query to {0}".format(current))
-                self._total_results = current
-                break

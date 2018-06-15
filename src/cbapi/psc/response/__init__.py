@@ -3,4 +3,4 @@
 from __future__ import absolute_import
 
 from .rest_api import CbResponseAPI
-from cbapi.psc.defense.models import Device, Event, Policy
+from cbapi.psc.response.models import Process

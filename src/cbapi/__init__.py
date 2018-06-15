@@ -15,10 +15,3 @@ from cbapi.psc.defense import CbDefenseAPI
 
 # for compatibility with Cb Defense code from cbapi < 1.4.0
 import cbapi.psc.defense as defense
-
-# LEGACY APIs, will deprecated as of cbapi 2.0.0
-# only import these if the Python version is 2.x
-if cbapi.six.PY2:
-    from cbapi.legacy.cbapi import CbApi
-    from cbapi.legacy import util
-    from cbapi.legacy.bit9api import bit9Api

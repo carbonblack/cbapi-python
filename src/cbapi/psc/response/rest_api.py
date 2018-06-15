@@ -14,7 +14,7 @@ def convert_to_kv_pairs(q):
 
 
 class CbResponseAPI(BaseAPI):
-    """The main entry point into the Cb Defense API.
+    """The main entry point into the Cb Response PSC API.
 
     :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server.
         Uses the profile named 'default' when not specified.
@@ -25,11 +25,14 @@ class CbResponseAPI(BaseAPI):
     >>> cb = CbResponseAPI(profile="production")
     """
     def __init__(self, *args, **kwargs):
-        super(CbResponseAPI, self).__init__(product_name="response-psc", *args, **kwargs)
+        super(CbResponseAPI, self).__init__(product_name="psc", *args, **kwargs)
         self._lr_scheduler = None
 
-    def _perform_query(self, cls, query_string=None):
-        return Query(cls, self, query_string)
+    def _perform_query(self, cls, **kwargs):
+        if hasattr(cls, "_query_implementation"):
+            return cls._query_implementation(self)
+        else:
+            return Query(cls, self, **kwargs)
 
     def notification_listener(self, interval=60):
         """Generator to continually poll the Cb Defense server for notifications (alerts). Note that this can only
@@ -61,10 +64,10 @@ class CbResponseAPI(BaseAPI):
 
 
 class Query(PaginatedQuery):
-    """Represents a prepared query to the Cb Defense server.
+    """Represents a prepared query to the Cb Resposne PSC backend.
 
-    This object is returned as part of a :py:meth:`CbDefenseAPI.select`
-    operation on models requested from the Cb Defense server. You should not have to create this class yourself.
+    This object is returned as part of a :py:meth:`CbResponseAPI.select`
+    operation on models requested from the Cb Response PSC backend. You should not have to create this class yourself.
 
     The query is not executed on the server until it's accessed, either as an iterator (where it will generate values
     on demand as they're requested) or as a list (where it will retrieve the entire result set and save to a list).
@@ -92,6 +95,8 @@ class Query(PaginatedQuery):
         self._sort_by = None
         self._group_by = None
         self._batch_size = 100
+        self._raw_query = None
+        self._default_args = {}
 
     def _clone(self):
         nq = self.__class__(self._doc_class, self._cb)
@@ -121,17 +126,20 @@ class Query(PaginatedQuery):
         """
         return self.where(q)
 
-    def prepare_query(self, args):
-        if self._query:
-            for qe in self._query:
-                k, v = convert_to_kv_pairs(qe)
-                args[k] = v
+    def _get_query_parameters(self):
+        if self._raw_query:
+            args = self._raw_query.copy()
+        else:
+            args = self._default_args.copy()
+            if self._query:
+                args['q'] = self._query
+            else:
+                args['q'] = ''
 
         return args
 
     def _count(self):
         args = {'limit': 0}
-        args = self.prepare_query(args)
 
         query_args = convert_query_params(args)
         self._total_results = int(self._cb.get_object(self._doc_class.urlobject, query_parameters=query_args)
@@ -141,7 +149,7 @@ class Query(PaginatedQuery):
 
     def _search(self, start=0, rows=0):
         # iterate over total result set, 1000 at a time
-        args = {}
+        args = self._get_query_parameters()
         if start != 0:
             args['start'] = start
         args['rows'] = self._batch_size
@@ -149,7 +157,6 @@ class Query(PaginatedQuery):
         current = start
         numrows = 0
 
-        args = self.prepare_query(args)
         still_querying = True
 
         while still_querying:

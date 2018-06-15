@@ -26,7 +26,7 @@ class CbDefenseAPI(BaseAPI):
     >>> cb = CbDefenseAPI(profile="production")
     """
     def __init__(self, *args, **kwargs):
-        super(CbDefenseAPI, self).__init__(product_name="defense", *args, **kwargs)
+        super(CbDefenseAPI, self).__init__(product_name="psc", *args, **kwargs)
         self._lr_scheduler = None
 
     def _perform_query(self, cls, query_string=None):
