@@ -2208,6 +2208,13 @@ class Process(TaggedModel):
             # fill in data object for performance
             self._parse({"process": copy.deepcopy(initial_data)})
 
+        # 7/31/2018: remove parent_md5 from the _info array, as it's never set.
+        #  instead add an accessor to transparently request the process_md5 from the parent.
+        try:
+            del self._info["parent_md5"]
+        except KeyError:
+            pass
+
         if force_init:
             self.refresh()
 
@@ -2237,15 +2244,10 @@ class Process(TaggedModel):
         # string as part of a query result. in this case we need to do a
         # full_init.
         #
-        # As of Cb Response 5.2.0, parent_md5 may still be "00000000000000000000000000000000"
-        # in a query result, therefore keeping this workaround.
-        #
         # Relaxing this a bit to allow for cases where the information is there
         if attrname in ['parent_unique_id',
-                        'parent_name',
-                        'parent_md5'] and not self._full_init:
-            if attrname in self._info and self._info[attrname] != None and self._info[attrname] != "" \
-             and self._info[attrname] != "0"*32 and self._info[attrname] != "0"*30:
+                        'parent_name'] and not self._full_init:
+            if attrname in self._info and self._info[attrname] != None and self._info[attrname] != "":
                 return self._info[attrname]
             else:
                 self._retrieve_cb_info()
@@ -2260,6 +2262,12 @@ class Process(TaggedModel):
             return
         else:
             super(Process, self)._retrieve_cb_info(query_parameters)
+            # 7/31/2018: remove parent_md5 from the _info array, as it's never set.
+            #  instead add an accessor to transparently request the process_md5 from the parent.
+            try:
+                del self._info["parent_md5"]
+            except KeyError:
+                pass
 
     def _parse(self, obj):
         if "process" in obj:
@@ -2367,6 +2375,13 @@ class Process(TaggedModel):
                     continue
                 else:
                     proc.walk_children(callback, max_depth=max_depth, depth=depth+1)
+
+    @property
+    def parent_md5(self):
+        """
+        Workaround since parent_md5 silently disappeared in ~Cb Response 6.x
+        """
+        return self.parent.process_md5
 
     @property
     def start(self):
@@ -2738,7 +2753,10 @@ class Process(TaggedModel):
             # strip off the segment number since we're just looking for the parent process, not a specific event
             parent_unique_id = "-".join(parent_unique_id.split("-")[:5])
 
-        return self._cb.select(self.__class__, parent_unique_id, initial_data=self._parent_info)
+        if self._full_init:
+            return self._cb.select(self.__class__, parent_unique_id, initial_data=self._parent_info)
+        else:
+            return self._cb.select(self.__class__, parent_unique_id)
 
     @property
     def cmdline(self):
