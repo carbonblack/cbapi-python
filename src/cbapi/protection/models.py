@@ -284,7 +284,7 @@ class GrantedUserPolicyPermission(NewBaseModel):
 
 @immutable
 class InternalEvent(BaseModel):
-    urlobject = "/api/bit9platform/v1/fileInstance"
+    urlobject = "/api/bit9platform/v1/internalEvent"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(InternalEvent, self).__init__(cb, model_unique_id, initial_data)
