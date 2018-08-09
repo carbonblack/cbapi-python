@@ -253,7 +253,7 @@ class AlertQuery(Query):
         while cur:
             payload["alert_ids"] = cur
             cur, left = left[:block_size], left[block_size:]
-            self._cb.post_object("/api/v1/alerts", payload)
+            self._cb.post_object("/api/v2/alerts", payload)
 
         return None
 
