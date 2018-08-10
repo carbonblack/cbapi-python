@@ -106,7 +106,7 @@ class CbLRSessionBase(object):
         response.raw.decode_content = True
         return response.raw
 
-    def get_file(self, file_name):
+    def get_file(self, file_name, timeout=None, delay=None):
         """
         Retrieve contents of the specified file name
 
@@ -114,7 +114,7 @@ class CbLRSessionBase(object):
         :return: Content of the specified file name
         :rtype: str
         """
-        fp = self.get_raw_file(file_name)
+        fp = self.get_raw_file(file_name, timeout=timeout, delay=delay)
         content = fp.read()
         fp.close()
 
