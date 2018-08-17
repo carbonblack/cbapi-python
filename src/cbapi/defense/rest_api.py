@@ -35,8 +35,10 @@ class CbDefenseAPI(BaseAPI):
 
     def _reauthorize(self):
         # Get a cookie
-        self.post_object("/checkAuthStrategy", {"email": self.credentials.username,
-                                                "password": self.credentials.password})
+        r = self.post_object("/login", {"username": self.credentials.username,
+                                        "password": self.credentials.password}).json()
+        if not r.get("success", False):
+            raise UnauthorizedError("/login", message=r.get("message", ""))
 
     def _perform_query(self, cls, query_string=None):
         return Query(cls, self, query_string)

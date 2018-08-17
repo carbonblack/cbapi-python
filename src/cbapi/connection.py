@@ -120,7 +120,10 @@ class Connection(object):
             user_agent += " {}".format(integration_name)
 
         self.token = credentials.token
-        self.token_header = {'X-Auth-Token': self.token, 'User-Agent': user_agent}
+        self.token_header = {'User-Agent': user_agent}
+        if self.token != "x":
+            self.token_header["X-Auth-Token"] = self.token
+
         self.session = requests.Session()
 
         self._timeout = timeout
@@ -178,6 +181,7 @@ class Connection(object):
             log.debug('HTTP {0:s} {1:s} took {2:.3f}s (response {3:d})'.format(method, url,
                                                                                calculate_elapsed_time(r.elapsed),
                                                                                r.status_code))
+            log.debug("Response: {0}".format(r.text))
         except requests.Timeout as timeout_error:
             raise TimeoutError(uri=uri, original_exception=timeout_error)
         except requests.ConnectionError as connection_error:
