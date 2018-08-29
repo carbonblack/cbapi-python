@@ -40,6 +40,10 @@ class CbDefenseAPI(BaseAPI):
         if not r.get("success", False):
             raise UnauthorizedError("/login", message=r.get("message", ""))
 
+        # Get CSRF token
+        r = self.get_object("/userinfo")
+        self.session.session.headers["x-csrf-token"] = r.get("csrf", "")
+
     def _perform_query(self, cls, query_string=None):
         return Query(cls, self, query_string)
 
