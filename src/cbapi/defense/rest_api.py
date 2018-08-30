@@ -4,7 +4,10 @@ from .cblr import LiveResponseSessionManager
 from ..errors import UnauthorizedError
 
 from cbapi.connection import BaseAPI
+from copy import deepcopy
+
 import logging
+import json
 import time
 
 log = logging.getLogger(__name__)
@@ -34,14 +37,18 @@ class CbDefenseAPI(BaseAPI):
         self._lr_scheduler = None
 
     def _reauthorize(self):
+        tempheaders = deepcopy(self.session.session.headers)
+        tempheaders["Content-Type"] = "application/json"
+
         # Get a cookie
-        r = self.post_object("/login", {"username": self.credentials.username,
-                                        "password": self.credentials.password}).json()
-        if not r.get("success", False):
+        r = self.session.session.post("{0}/login".format(self.credentials.url), headers=tempheaders,
+                                      data=json.dumps({"username": self.credentials.username,
+                                                       "password": self.credentials.password}))
+        if not r.json().get("success", False):
             raise UnauthorizedError("/login", message=r.get("message", ""))
 
         # Get CSRF token
-        r = self.get_object("/userinfo")
+        r = self.session.session.get("{0}/userinfo".format(self.credentials.url), headers=tempheaders).json()
         self.session.session.headers["x-csrf-token"] = r.get("csrf", "")
 
     def _perform_query(self, cls, query_string=None):
