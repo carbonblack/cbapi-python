@@ -51,6 +51,9 @@ class CbDefenseAPI(BaseAPI):
         r = self.session.session.get("{0}/userinfo".format(self.credentials.url), headers=tempheaders).json()
         self.session.session.headers["x-csrf-token"] = r.get("csrf", "")
 
+        # Get currently logged in Organization ID
+        self.org_id = r.get("currentOrgId", 1)
+
     def _perform_query(self, cls, query_string=None):
         return Query(cls, self, query_string)
 
