@@ -1,6 +1,6 @@
-# Exported public API for the Cb Response PSC API
+# Exported public API for the Cb ThreatHunter API
 
 from __future__ import absolute_import
 
-from .rest_api import CbResponseAPI
-from cbapi.psc.response.models import Process
+from .rest_api import CbThreatHunterAPI
+from cbapi.psc.threathunter.models import Process

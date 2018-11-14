@@ -10,11 +10,12 @@ import logging
 log = logging.getLogger(__name__)
 
 
+
 class Query(PaginatedQuery):
-    """Represents a prepared query to the Cb Resposne PSC backend.
+    """Represents a prepared query to the Cb ThreatHunter backend.
 
     This object is returned as part of a :py:meth:`CbResponseAPI.select`
-    operation on models requested from the Cb Response PSC backend. You should not have to create this class yourself.
+    operation on models requested from the Cb ThreatHunter backend. You should not have to create this class yourself.
 
     The query is not executed on the server until it's accessed, either as an iterator (where it will generate values
     on demand as they're requested) or as a list (where it will retrieve the entire result set and save to a list).
@@ -23,8 +24,8 @@ class Query(PaginatedQuery):
 
     Examples::
 
-    >>> from cbapi.psc.response import CbResponseAPI
-    >>> cb = CbResponseAPI()
+    >>> from cbapi.psc.threathunter import CbThreatHunterAPI
+    >>> cb = CbThreatHunterAPI()
 
     Notes:
         - The slicing operator only supports start and end parameters, but not step. ``[1:-1]`` is legal, but
@@ -75,14 +76,11 @@ class Query(PaginatedQuery):
         return self.where(q)
 
     def _get_query_parameters(self):
-        if self._raw_query:
-            args = self._raw_query.copy()
+        args = self._default_args.copy()
+        if self._query:
+            args['q'] = self._query
         else:
-            args = self._default_args.copy()
-            if self._query:
-                args['q'] = self._query
-            else:
-                args['q'] = ''
+            args['q'] = ''
 
         return args
 
@@ -137,6 +135,7 @@ class Query(PaginatedQuery):
 
 
 # TODO: Split out the query object into a query builder and an iterator for the result set.
+
 class QueryResults(BaseQuery):
     def __init__(self, cb, query_id):
         super(QueryResults, self).__init__()
@@ -147,10 +146,10 @@ class QueryResults(BaseQuery):
         pass
 
 
-
-class SyncProcessQuery(Query):
+class AsyncProcessQuery(Query):
     def __init__(self, doc_class, cb):
-        super(SyncProcessQuery, self).__init__(doc_class, cb)
+        super(AsyncProcessQuery, self).__init__(doc_class, cb)
+        self._query_token = None
 
     def where(self, q):
         nq = self._clone()
@@ -215,52 +214,38 @@ class SyncProcessQuery(Query):
         else:
             return "*:*"               # return everything
 
-    def _search(self, start=0, rows=0):
-        # iterate over total result set, 1000 at a time
-        args = self._get_query_parameters()
-        # args["cb.full_docs"] = "true"
+    def submit(self):
+        if self._query_token:
+            raise ApiError("Query already submitted: token {0}".format(self._query_token))
 
-        # if start != 0:
-        #     args['start'] = start
-        # args['rows'] = self._batch_size
-        #
-        # current = start
-        # numrows = 0
+        args = self._get_query_parameters()
 
         log.info("args = {0}".format(args))
-        still_querying = True
         args["q"] = self.collapse_query()
 
-        query_start = self._cb.post_object("/integrationServices/v3/pscr/query/start", body=args)
+        query_start = self._cb.post_object("/pscr/query/v2/start", body={"search_params": args})
 
-        if not query_start.json().get("success"):
+        if query_start.json().get("status_code") != 200:
             raise ServerError(query_start.status_code, query_start.json().get("message"))
 
         log.info("Received response from /query/start: {0}".format(query_start.json()))
-        query_token = query_start.json().get("query_id")
+        self._query_token = query_start.json().get("query").get("cb.query_id")
+
+    def _search(self, start=0, rows=0):
+        if not self._query_token:
+            self.submit()
 
         still_querying = True
         while still_querying:
             time.sleep(.5)
-            result = self._cb.post_object("/integrationServices/v3/pscr/query/results", body={"query_id": query_token})
+            result = self._cb.get_object("/pscr/query/v1/status?query_id={0}".format(self._query_token))
 
-            if not result.json().get("success"):
+            if result.get("status_code") != 200:
                 raise ServerError(result.status_code, result.json().get("message"))
 
             # TODO: implement check to see if the search is complete or not
-            query_meta = result.json().get("response_header", {})
-            log.info("Query metadata = {0}".format(query_meta))
-            if not query_meta:
-                # TODO: this is a bug, we get 'success' but nothing else:
-                # ipdb> result.json()
-                # {'data': None, 'response_header': None, 'success': True, 'facets': None, 'message': None, 'query_id': None}
-                continue
-
-            self._count = query_meta.get("num_found", 0)
-            query_meta = query_meta.get("searchers_meta", {})
-
-            searchers_contacted = query_meta.get("contacted", 0)
-            searchers_completed = query_meta.get("completed", 0)
+            searchers_contacted = result.get("contacted", 0)
+            searchers_completed = result.get("completed", 0)
             log.info("contacted = {}, completed = {}".format(searchers_contacted, searchers_completed))
             if searchers_contacted == 0:
                 continue
@@ -271,7 +256,8 @@ class SyncProcessQuery(Query):
             self._count_valid = True
 
             log.info("Pulling results")
-            results = result.json().get('data', [])
+            result = self._cb.get_object("/pscr/query/v1/results?query_id={0}".format(self._query_token))
+            results = result.get('data', [])
 
             # TODO: implement pagination
             for item in results:
