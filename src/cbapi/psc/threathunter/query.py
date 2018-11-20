@@ -21,7 +21,6 @@ class QueryBuilder(object):
     Examples::
 
     >>> from cbapi.psc.threathunter import QueryBuilder
-    >>> from solrq import Q
     >>> # build a query with chaining
     >>> query = QueryBuilder().where(process_name="malicious.exe").and_(device_name="suspect")
     >>> # start with an initial query, and chain another condition to it
