@@ -157,12 +157,13 @@ class Query(PaginatedQuery):
     def where(self, q=None, **kwargs):
         """Add a filter to this query.
 
-        :param str q: Query string or solrq.Q object
+        :param str q: Query string, :py:class:`QueryBuilder`, or solrq.Q object
+        :param kwargs: Arguments to construct a solrq.Q with
         :return: Query object
         :rtype: :py:class:`Query`
         """
         if not q and not kwargs:
-            raise ApiError(".where() expects a string, a solrq.Q, or kwargs")
+            raise ApiError(".where() expects a string, a QueryBuilder, a solrq.Q, or kwargs")
 
         if isinstance(q, QueryBuilder):
             self._query_builder = q
@@ -171,9 +172,10 @@ class Query(PaginatedQuery):
         return self
 
     def and_(self, q=None, **kwargs):
-        """Add a filter to this query. Equivalent to calling :py:meth:`where` on this object.
+        """Add a conjunctive filter to this query.
 
         :param str q: Query string or solrq.Q object
+        :param kwargs: Arguments to construct a solrq.Q with
         :return: Query object
         :rtype: :py:class:`Query`
         """
@@ -187,11 +189,12 @@ class Query(PaginatedQuery):
         """Add a disjunctive filter to this query.
 
         :param str q: solrq.Q object
+        :param kwargs: Arguments to construct a solrq.Q with
         :return: Query object
         :rtype: :py:class:`Query`
         """
         if not q and not kwargs:
-            raise ApiError(".or_() expects a string, a solrq.Q, or kwargs")
+            raise ApiError(".or_() expects a solrq.Q, or kwargs")
 
         self._query_builder.or_(q, **kwargs)
         return self
