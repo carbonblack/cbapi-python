@@ -12,6 +12,7 @@ __version__ = '1.3.6'
 from cbapi.response.rest_api import CbEnterpriseResponseAPI, CbResponseAPI
 from cbapi.protection.rest_api import CbEnterpriseProtectionAPI, CbProtectionAPI
 from cbapi.psc.defense import CbDefenseAPI
+from cbapi.psc.threathunter import CbThreatHunterAPI
 
 # for compatibility with Cb Defense code from cbapi < 1.4.0
 import cbapi.psc.defense as defense

@@ -276,7 +276,19 @@ class BaseAPI(object):
                 raw_data = kwargs.pop("data", {})
                 raw_data = json.dumps(raw_data, sort_keys=True)
 
-        return self.session.http_request(method, uri, headers=headers, data=raw_data, **kwargs)
+        # TODO(ww): Test this.
+        result = self.session.http_request(method, uri, headers=headers, data=raw_data, **kwargs)
+
+        try:
+            resp = result.json()
+
+            if "errorMessage" in resp:
+                raise ServerError(error_code=result.status_code, message="{}: {}".format(resp["errorType"], resp["errorMessage"]))
+        except:
+            # empty response
+            pass
+
+        return result
 
     def post_object(self, uri, body, **kwargs):
         return self.api_json_request("POST", uri, data=body, **kwargs)

@@ -12,6 +12,7 @@ from optparse import OptionParser
 
 from cbapi.protection import CbEnterpriseProtectionAPI
 from cbapi.psc.defense import CbDefenseAPI
+from cbapi.psc.threathunter import CbThreatHunterAPI
 from cbapi.response import CbEnterpriseResponseAPI
 
 log = logging.getLogger(__name__)
@@ -85,6 +86,20 @@ def get_cb_defense_object(args):
 
     return cb
 
+
+def get_cb_threathunter_object(args):
+    if args.verbose:
+        import logging
+        logging.basicConfig()
+        logging.getLogger("cbapi").setLevel(logging.DEBUG)
+        logging.getLogger("__main__").setLevel(logging.DEBUG)
+
+    if args.cburl and args.apitoken:
+        cb = CbThreatHunterAPI(url=args.cburl, token=args.apitoken, ssl_verify=(not args.no_ssl_verify))
+    else:
+        cb = CbThreatHunterAPI(profile=args.profile)
+
+    return cb
 
 def get_object_by_name_or_id(cb, cls, name_field="name", id=None, name=None, force_init=True):
     clsname = cls.__name__

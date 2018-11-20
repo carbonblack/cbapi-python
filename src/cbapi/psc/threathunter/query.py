@@ -10,6 +10,84 @@ import logging
 log = logging.getLogger(__name__)
 
 
+class QueryBuilder(object):
+    # TODO(ww): Facet methods?
+    def __init__(self):
+        self._query = None
+        self._raw_query = None
+
+    def _guard_query_change(self):
+        if self._raw_query is not None:
+            raise ApiError("Cannot modify a solrq.Q query with a raw query")
+
+    def _guard_raw_query_change(self):
+        if self._query is not None:
+            raise ApiError("Cannot modify a raw query with a solrq.Q query")
+
+    def where(self, q):
+        if isinstance(q, string_types):
+            self._guard_raw_query_change()
+            if self._raw_query is None:
+                self._raw_query = []
+            self._raw_query.append(q)
+        elif isinstance(q, Q):
+            self._guard_query_change()
+            if self._query is not None:
+                raise ApiError("Use .and_() or .or_() for an extant solrq.Q object")
+            self._query = q
+        else:
+            raise ApiError(".where() only accepts strings or solrq.Q objects")
+
+        return self
+
+    def and_(self, q):
+        if isinstance(q, string_types):
+            self.where(q)
+        else:
+            self._guard_query_change()
+            if self._query is None:
+                self._query = q
+            else:
+                self._query = self._query & q
+
+        return self
+
+    def or_(self, q):
+        if isinstance(q, Q):
+            self._guard_query_change()
+            if self._query is None:
+                self._query = q
+            else:
+                self._query = self._query | q
+        else:
+            raise ApiError(".or_() only accepts solrq.Q objects")
+
+        return self
+
+    def collapse(self):
+        """The query can be represented by either an array of strings
+        (_raw_query) which is concatenated and passed directly to Solr, or
+        a solrq.Q object (_query) which is then converted into a string to
+        pass to Solr. This function will perform the appropriate conversions to
+        end up with the 'q' string sent into the POST request to the
+        PSC-R query endpoint."""
+        if self._raw_query is not None:
+            return " ".join(self._raw_query)
+        elif self._query is not None:
+            return str(self._query)
+        else:
+            return "*:*"               # return everything
+
+
+class QueryResults(BaseQuery):
+    def __init__(self, cb, query_id):
+        super(QueryResults, self).__init__()
+        self._cb = cb
+        self._query_id = query_id
+
+    def _search(self, start=0, rows=0):
+        pass
+
 
 class Query(PaginatedQuery):
     """Represents a prepared query to the Cb ThreatHunter backend.
@@ -37,19 +115,14 @@ class Query(PaginatedQuery):
     def __init__(self, doc_class, cb):
         super(Query, self).__init__(doc_class, cb, None)
 
-        self._query = None
+        self._query_builder = QueryBuilder()
         self._sort_by = None
         self._group_by = None
         self._batch_size = 100
-        self._raw_query = None
         self._default_args = {}
 
     def _clone(self):
         nq = self.__class__(self._doc_class, self._cb)
-        if nq._query is not None:
-            nq._query = self._query[::]
-        else:
-            nq._query = None
         nq._sort_by = self._sort_by
         nq._group_by = self._group_by
         nq._batch_size = self._batch_size
@@ -58,29 +131,34 @@ class Query(PaginatedQuery):
     def where(self, q):
         """Add a filter to this query.
 
-        :param str q: Query string
+        :param str q: Query string or solrq.Q object
         :return: Query object
         :rtype: :py:class:`Query`
         """
-        nq = self._clone()
-        nq._query.append(q)
-        return nq
+        self._query_builder.where(q)
+        return self
 
     def and_(self, q):
         """Add a filter to this query. Equivalent to calling :py:meth:`where` on this object.
 
-        :param str q: Query string
+        :param str q: Query string or solrq.Q object
         :return: Query object
         :rtype: :py:class:`Query`
         """
-        return self.where(q)
+        self._query_builder.and_(q)
+        return self
+
+    def or_(self, q):
+        """Add a disjunctive filter to this query.
+
+        :param str q: solrq.Q object
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
 
     def _get_query_parameters(self):
         args = self._default_args.copy()
-        if self._query:
-            args['q'] = self._query
-        else:
-            args['q'] = ''
+        args['q'] = self._query_builder.collapse()
 
         return args
 
@@ -134,85 +212,10 @@ class Query(PaginatedQuery):
                 break
 
 
-# TODO: Split out the query object into a query builder and an iterator for the result set.
-
-class QueryResults(BaseQuery):
-    def __init__(self, cb, query_id):
-        super(QueryResults, self).__init__()
-        self._cb = cb
-        self._query_id = query_id
-
-    def _search(self, start=0, rows=0):
-        pass
-
-
 class AsyncProcessQuery(Query):
     def __init__(self, doc_class, cb):
         super(AsyncProcessQuery, self).__init__(doc_class, cb)
         self._query_token = None
-
-    def where(self, q):
-        nq = self._clone()
-
-        if isinstance(q, string_types):
-            if nq._query is not None:
-                raise ApiError("Cannot concatenate a raw query with a solrq query")
-            if nq._raw_query is None:
-                nq._raw_query = []
-            nq._raw_query.append(q)
-        elif isinstance(q, Q):
-            if nq._raw_query is not None:
-                raise ApiError("Cannot concatenate a solrq query with a raw query")
-            if nq._query is not None:
-                raise ApiError("Call .and_() or .or_() to add the solrq query")
-            nq._query = q
-        else:
-            raise ApiError(".where() only accepts strings or solrq.Q objects")
-
-        return nq
-
-    def and_(self, q):
-        nq = self._clone()
-
-        if isinstance(q, string_types):
-            if nq._raw_query is None:
-                nq._raw_query = []
-            nq._raw_query.append(q)
-        elif isinstance(q, Q):
-            if nq._query is None:
-                nq._query = q
-            else:
-                nq._query = nq._query & q
-        else:
-            raise ApiError(".and_() only accepts strings or solrq.Q objects")
-
-        return nq
-
-    def or_(self, q):
-        nq = self._clone()
-
-        if isinstance(q, Q):
-            if nq._query is None:
-                nq._query = q
-            else:
-                nq._query = self._query | q
-        else:
-            raise ApiError(".or_() only accepts solrq.Q objects")
-
-        return nq
-
-    def collapse_query(self):
-        """The query can be represented by either an array of strings (_raw_query) which is concatenated and
-        passed directly to Solr, or
-        a solrq.Q object (_query) which is then converted into a string to pass to Solr. This function will
-        perform the appropriate conversions to end up with the 'q' string sent into the POST request to the
-        PSC-R query endpoint."""
-        if self._raw_query is not None:
-            return " ".join(self._raw_query)
-        elif self._query is not None:
-            return str(self._query)
-        else:
-            return "*:*"               # return everything
 
     def submit(self):
         if self._query_token:
@@ -220,10 +223,7 @@ class AsyncProcessQuery(Query):
 
         args = self._get_query_parameters()
 
-        log.info("args = {0}".format(args))
-        args["q"] = self.collapse_query()
-
-        query_start = self._cb.post_object("/pscr/query/v2/start", body={"search_params": args})
+        query_start = self._cb.post_object("/pscr/query/v1/start", body={"search_params": args})
 
         if query_start.json().get("status_code") != 200:
             raise ServerError(query_start.status_code, query_start.json().get("message"))
@@ -236,14 +236,15 @@ class AsyncProcessQuery(Query):
             self.submit()
 
         still_querying = True
+        query_id = convert_query_params({"query_id": self._query_token})
+
         while still_querying:
             time.sleep(.5)
-            result = self._cb.get_object("/pscr/query/v1/status?query_id={0}".format(self._query_token))
+            result = self._cb.get_object("/pscr/query/v1/status", query_parameters=query_id)
 
             if result.get("status_code") != 200:
                 raise ServerError(result.status_code, result.json().get("message"))
 
-            # TODO: implement check to see if the search is complete or not
             searchers_contacted = result.get("contacted", 0)
             searchers_completed = result.get("completed", 0)
             log.info("contacted = {}, completed = {}".format(searchers_contacted, searchers_completed))
@@ -256,7 +257,7 @@ class AsyncProcessQuery(Query):
             self._count_valid = True
 
             log.info("Pulling results")
-            result = self._cb.get_object("/pscr/query/v1/results?query_id={0}".format(self._query_token))
+            result = self._cb.get_object("/pscr/query/v1/results", query_parameters=query_id)
             results = result.get('data', [])
 
             # TODO: implement pagination
