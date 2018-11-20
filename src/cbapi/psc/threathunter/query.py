@@ -155,6 +155,8 @@ class Query(PaginatedQuery):
         :return: Query object
         :rtype: :py:class:`Query`
         """
+        self._query_builder.or_(q)
+        return self
 
     def _get_query_parameters(self):
         args = self._default_args.copy()
