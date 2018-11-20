@@ -11,9 +11,29 @@ log = logging.getLogger(__name__)
 
 
 class QueryBuilder(object):
+    """
+    Provides a flexible interface for building prepared queries to the CB
+    ThreatHunter backend.
+
+    This object can be instantiated directly, or can be managed implicitly
+    through the :py:meth:`CbThreatHunterAPI.select` API.
+
+    Examples::
+
+    >>> from cbapi.psc.threathunter import QueryBuilder
+    >>> from solrq import Q
+    >>> # build a query with chaining
+    >>> query = QueryBuilder().where(process_name="malicious.exe").and_(device_name="suspect")
+    >>> # start with an initial query, and chain another condition to it
+    >>> query = QueryBuilder(device_os="WINDOWS").or_(process_username="root")
+
+    """
     # TODO(ww): Facet methods?
-    def __init__(self):
-        self._query = None
+    def __init__(self, **kwargs):
+        if kwargs:
+            self._query = Q(**kwargs)
+        else:
+            self._query = None
         self._raw_query = None
 
     def _guard_query_change(self):
@@ -24,27 +44,31 @@ class QueryBuilder(object):
         if self._query is not None:
             raise ApiError("Cannot modify a raw query with a solrq.Q query")
 
-    def where(self, q):
+    def where(self, q, **kwargs):
         if isinstance(q, string_types):
             self._guard_raw_query_change()
             if self._raw_query is None:
                 self._raw_query = []
             self._raw_query.append(q)
-        elif isinstance(q, Q):
+        elif isinstance(q, Q) or kwargs:
             self._guard_query_change()
             if self._query is not None:
                 raise ApiError("Use .and_() or .or_() for an extant solrq.Q object")
+            if kwargs:
+                q = Q(**kwargs)
             self._query = q
         else:
             raise ApiError(".where() only accepts strings or solrq.Q objects")
 
         return self
 
-    def and_(self, q):
+    def and_(self, q, **kwargs):
         if isinstance(q, string_types):
             self.where(q)
         else:
             self._guard_query_change()
+            if kwargs:
+                q = Q(**kwargs)
             if self._query is None:
                 self._query = q
             else:
@@ -52,7 +76,10 @@ class QueryBuilder(object):
 
         return self
 
-    def or_(self, q):
+    def or_(self, q, **kwargs):
+        if kwargs:
+            q = Q(**kwargs)
+
         if isinstance(q, Q):
             self._guard_query_change()
             if self._query is None:
@@ -92,7 +119,7 @@ class QueryResults(BaseQuery):
 class Query(PaginatedQuery):
     """Represents a prepared query to the Cb ThreatHunter backend.
 
-    This object is returned as part of a :py:meth:`CbResponseAPI.select`
+    This object is returned as part of a :py:meth:`CbThreatHunterPI.select`
     operation on models requested from the Cb ThreatHunter backend. You should not have to create this class yourself.
 
     The query is not executed on the server until it's accessed, either as an iterator (where it will generate values
@@ -128,34 +155,46 @@ class Query(PaginatedQuery):
         nq._batch_size = self._batch_size
         return nq
 
-    def where(self, q):
+    def where(self, q=None, **kwargs):
         """Add a filter to this query.
 
         :param str q: Query string or solrq.Q object
         :return: Query object
         :rtype: :py:class:`Query`
         """
-        self._query_builder.where(q)
+        if not q and not kwargs:
+            raise ApiError(".where() expects a string, a solrq.Q, or kwargs")
+
+        if isinstance(q, QueryBuilder):
+            self._query_builder = q
+        else:
+            self._query_builder.where(q, **kwargs)
         return self
 
-    def and_(self, q):
+    def and_(self, q=None, **kwargs):
         """Add a filter to this query. Equivalent to calling :py:meth:`where` on this object.
 
         :param str q: Query string or solrq.Q object
         :return: Query object
         :rtype: :py:class:`Query`
         """
-        self._query_builder.and_(q)
+        if not q and not kwargs:
+            raise ApiError(".and_() expects a string, a solrq.Q, or kwargs")
+
+        self._query_builder.and_(q, **kwargs)
         return self
 
-    def or_(self, q):
+    def or_(self, q=None, **kwargs):
         """Add a disjunctive filter to this query.
 
         :param str q: solrq.Q object
         :return: Query object
         :rtype: :py:class:`Query`
         """
-        self._query_builder.or_(q)
+        if not q and not kwargs:
+            raise ApiError(".or_() expects a string, a solrq.Q, or kwargs")
+
+        self._query_builder.or_(q, **kwargs)
         return self
 
     def _get_query_parameters(self):
