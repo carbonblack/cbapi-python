@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 import requests
 import sys
-from requests.adapters import HTTPAdapter, DEFAULT_POOLBLOCK, DEFAULT_RETRIES, DEFAULT_POOLSIZE
+from requests.adapters import HTTPAdapter, DEFAULT_POOLBLOCK, DEFAULT_RETRIES, DEFAULT_POOLSIZE, DEFAULT_POOL_TIMEOUT
 
 try:
     from requests.packages.urllib3.util.ssl_ import create_urllib3_context
@@ -232,9 +232,9 @@ class BaseAPI(object):
             self.credential_profile_name = kwargs.pop("profile", None)
             self.credentials = self.credential_store.get_credentials(self.credential_profile_name)
 
-        timeout = kwargs.pop("timeout", None)
-        max_retries = kwargs.pop("max_retries", None)
-        pool_connections = kwargs.pop("pool_connections", DEFAULT_POOLSIZE)
+        timeout = kwargs.pop("timeout", DEFAULT_POOL_TIMEOUT)
+        max_retries = kwargs.pop("max_retries", DEFAULT_RETRIES)
+        pool_connections = kwargs.pop("pool_connections", 1)
         pool_maxsize = kwargs.pop("pool_maxsize", DEFAULT_POOLSIZE)
         pool_block = kwargs.pop("pool_block", DEFAULT_POOLBLOCK)
 
