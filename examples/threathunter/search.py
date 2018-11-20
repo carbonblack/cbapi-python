@@ -13,8 +13,10 @@ def main():
     args = parser.parse_args()
     cb = get_cb_threathunter_object(args)
 
-    query = Q(process_name="svchost.exe")
-    processes = cb.select(Process).where(query)
+    # query = Q(process_name="svchost.exe")
+    # query2 = Q(process_name="conhost.exe")
+    # processes = cb.select(Process).where(query).or_(query2)
+    processes = cb.select(Process).where(process_name="svchost.exe").and_(process_pid=3056)
 
     for process in processes:
         print(process)
