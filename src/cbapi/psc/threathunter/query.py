@@ -286,7 +286,7 @@ class AsyncProcessQuery(Query):
             result = self._cb.get_object("/pscr/query/v1/status", query_parameters=query_id)
 
             if result.get("status_code") != 200:
-                raise ServerError(result.status_code, result.json().get("message"))
+                raise ServerError(result.status_code, result.get("errorMessage"))
 
             searchers_contacted = result.get("contacted", 0)
             searchers_completed = result.get("completed", 0)
