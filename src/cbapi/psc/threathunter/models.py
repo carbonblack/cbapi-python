@@ -21,5 +21,13 @@ class Process(NewBaseModel):
         super(Process, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                       force_init=force_init, full_doc=full_doc)
 
+    # TODO(ww): Fill these in
     def events(self):
+        self._cb.get_object("")
+
+    def tree(self):
+        self._cb.get_object("")
+
+    # TODO(ww): /pscr/query/v1/evaluate takes the results of this call
+    def feedhits(self):
         self._cb.get_object("")

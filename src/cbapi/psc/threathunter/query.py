@@ -264,15 +264,19 @@ class AsyncProcessQuery(Query):
         if self._query_token:
             raise ApiError("Query already submitted: token {0}".format(self._query_token))
 
+        # TODO(ww): Call /pscr/query/v1/validate first?
+
         args = self._get_query_parameters()
 
         query_start = self._cb.post_object("/pscr/query/v1/start", body={"search_params": args})
 
+        # TODO(ww): Is this still needed, now that we check for errorMessage
+        # in api_json_request?
         if query_start.json().get("status_code") != 200:
             raise ServerError(query_start.status_code, query_start.json().get("message"))
 
         log.info("Received response from /query/start: {0}".format(query_start.json()))
-        self._query_token = query_start.json().get("query").get("cb.query_id")
+        self._query_token = query_start.json().get("query_id")
 
     def _search(self, start=0, rows=0):
         if not self._query_token:
@@ -286,7 +290,7 @@ class AsyncProcessQuery(Query):
             result = self._cb.get_object("/pscr/query/v1/status", query_parameters=query_id)
 
             if result.get("status_code") != 200:
-                raise ServerError(result.status_code, result.get("errorMessage"))
+                raise ServerError(result["status_code"], result["errorMessage"])
 
             searchers_contacted = result.get("contacted", 0)
             searchers_completed = result.get("completed", 0)
