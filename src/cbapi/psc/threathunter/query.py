@@ -1,5 +1,4 @@
 from cbapi.query import PaginatedQuery, BaseQuery
-from cbapi.utils import convert_query_params
 from cbapi.errors import ServerError, ApiError
 import time
 from solrq import Q
@@ -208,8 +207,7 @@ class Query(PaginatedQuery):
     def _count(self):
         args = {'limit': 0}
 
-        query_args = convert_query_params(args)
-        self._total_results = int(self._cb.get_object(self._doc_class.urlobject, query_parameters=query_args)
+        self._total_results = int(self._cb.get_object(self._doc_class.urlobject, query_parameters=args)
                                   .get("totalResults", 0))
         self._count_valid = True
         return self._total_results
@@ -227,8 +225,7 @@ class Query(PaginatedQuery):
         still_querying = True
 
         while still_querying:
-            query_args = convert_query_params(args)
-            result = self._cb.get_object(self._doc_class.urlobject, query_parameters=query_args)
+            result = self._cb.get_object(self._doc_class.urlobject, query_parameters=args)
 
             self._total_results = result.get("totalResults", 0)
             self._count_valid = True
@@ -264,9 +261,12 @@ class AsyncProcessQuery(Query):
         if self._query_token:
             raise ApiError("Query already submitted: token {0}".format(self._query_token))
 
-        # TODO(ww): Call /pscr/query/v1/validate first?
-
         args = self._get_query_parameters()
+
+        validated = self._cb.get_object("/pscr/query/v1/validate", query_parameters=args)
+
+        if not validated.get("valid"):
+            raise ApiError("Invalid query: {}".format(args))
 
         query_start = self._cb.post_object("/pscr/query/v1/start", body={"search_params": args})
 
@@ -283,7 +283,7 @@ class AsyncProcessQuery(Query):
             self.submit()
 
         still_querying = True
-        query_id = convert_query_params({"query_id": self._query_token})
+        query_id = {"query_id": self._query_token}
 
         while still_querying:
             time.sleep(.5)
