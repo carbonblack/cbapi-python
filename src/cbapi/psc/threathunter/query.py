@@ -310,3 +310,34 @@ class AsyncProcessQuery(Query):
             # TODO: implement pagination
             for item in results:
                 yield item
+
+
+class TreeQuery(Query):
+    def __init__(self, doc_class, cb):
+        super(TreeQuery, self).__init__(doc_class, cb)
+        self._args = {}
+
+    def where(self, **kwargs):
+        self._args = dict(self._args, **kwargs)
+        return self
+
+    def and_(self, **kwargs):
+        self._args = dict(self._args, **kwargs)
+        return self
+
+    def or_(self, **kwargs):
+        raise ApiError(".or_() cannot be called on Tree queries")
+
+    def _search(self, start=0, rows=0):
+        if "process_guid" not in self._args:
+            raise ApiError("required parameter process_guid missing")
+
+        log.info("Fetching process tree")
+
+        result = self._cb.get_object("/pscr/query/v1/tree", query_parameters=self._args)
+        # TODO(ww): Could return the whole root_node instead and use
+        # force_init=True in models.Tree
+        children = result.get("root_node", {}).get("children", [])
+
+        for child in children:
+            yield child

@@ -3,5 +3,5 @@
 from __future__ import absolute_import
 
 from .rest_api import CbThreatHunterAPI
-from cbapi.psc.threathunter.models import Process
+from cbapi.psc.threathunter.models import Process, Tree
 from cbapi.psc.threathunter.query import QueryBuilder
