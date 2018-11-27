@@ -33,6 +33,7 @@ class QueryBuilder(object):
         else:
             self._query = None
         self._raw_query = None
+        self._process_guid = None
 
     def _guard_query_change(self):
         if self._raw_query is not None:
@@ -208,7 +209,7 @@ class Query(PaginatedQuery):
         args = {'limit': 0}
 
         self._total_results = int(self._cb.get_object(self._doc_class.urlobject, query_parameters=args)
-                                  .get("totalResults", 0))
+                                  .get("response_header", {}).get("num_found", 0))
         self._count_valid = True
         return self._total_results
 
@@ -219,18 +220,22 @@ class Query(PaginatedQuery):
             args['start'] = start
         args['rows'] = self._batch_size
 
+        # TODO(ww): /pscr/query/v1/events/validate
+
         current = start
         numrows = 0
 
         still_querying = True
 
         while still_querying:
-            result = self._cb.get_object(self._doc_class.urlobject, query_parameters=args)
+            # TODO(ww): This endpoint requires a separate cb.process_guid parameter,
+            # but the current QueryBuilder isn't well suited for providing that.
+            result = self._cb.post_object(self._doc_class.urlobject, body={"search_params": args})
 
-            self._total_results = result.get("totalResults", 0)
+            self._total_results = result.get("response_header", {}).get("num_found", 0)
             self._count_valid = True
 
-            results = result.get('results', [])
+            results = result.get('docs', [])
 
             for item in results:
                 yield item
@@ -275,7 +280,6 @@ class AsyncProcessQuery(Query):
         if query_start.json().get("status_code") != 200:
             raise ServerError(query_start.status_code, query_start.json().get("message"))
 
-        log.info("Received response from /query/start: {0}".format(query_start.json()))
         self._query_token = query_start.json().get("query_id")
 
     def _search(self, start=0, rows=0):
@@ -337,10 +341,46 @@ class TreeQuery(Query):
 
         log.info("Fetching process tree")
 
-        result = self._cb.get_object("/pscr/query/v1/tree", query_parameters=self._args)
+        # TODO(ww): There's also v2/tree. Which one do we want?
+        result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
         # TODO(ww): Could return the whole root_node instead and use
         # force_init=True in models.Tree
         children = result.get("root_node", {}).get("children", [])
 
         for child in children:
             yield child
+
+
+class FeedHitsQuery(Query):
+    def __init__(self, doc_class, cb):
+        super(FeedHitsQuery, self).__init__(doc_class, cb)
+        self._args = {}
+
+    # TODO(ww): Instead of reimplementing these, we could probably
+    # make the QueryBuilder class more flexible. Maybe allow it to store
+    # a dict internally, in addition to the Q and string options?
+    def where(self, **kwargs):
+        self._args = dict(self._args, **kwargs)
+        return self
+
+    def and_(self, **kwargs):
+        self.where(**kwargs)
+        return self
+
+    def or_(self, **kwargs):
+        raise ApiError(".or_() cannot be called on FeedHits queries")
+
+    def _search(self, start=0, rows=0):
+        if "process_guid" not in self._args:
+            raise ApiError("required parameter process_guid missing")
+
+        log.info("Fetching feed hits")
+
+        # TODO(ww): This endpoint responds with 200, but consistently returns a JSON
+        # blob indicating 404. Is it down?
+        result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+        log.info(str(result))
+        feed_hits = result.get("feed_hits", [])
+
+        for feed_hit in feed_hits:
+            yield feed_hit
