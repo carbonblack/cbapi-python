@@ -317,12 +317,15 @@ class TreeQuery(Query):
         super(TreeQuery, self).__init__(doc_class, cb)
         self._args = {}
 
+    # TODO(ww): Instead of reimplementing these, we could probably
+    # make the QueryBuilder class more flexible. Maybe allow it to store
+    # a dict internally, in addition to the Q and string options?
     def where(self, **kwargs):
         self._args = dict(self._args, **kwargs)
         return self
 
     def and_(self, **kwargs):
-        self._args = dict(self._args, **kwargs)
+        self.where(**kwargs)
         return self
 
     def or_(self, **kwargs):
