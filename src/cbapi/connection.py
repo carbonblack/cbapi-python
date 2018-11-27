@@ -282,12 +282,11 @@ class BaseAPI(object):
 
         try:
             resp = result.json()
-
-            if "errorMessage" in resp:
-                raise ServerError(error_code=result.status_code, message=resp["errorMessage"])
         except:
-            # empty response
-            pass
+            return result
+
+        if "errorMessage" in resp:
+            raise ServerError(error_code=result.status_code, message=resp["errorMessage"])
 
         return result
 
