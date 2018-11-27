@@ -22,7 +22,6 @@ class Process(NewBaseModel):
         super(Process, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                       force_init=force_init, full_doc=full_doc)
 
-    # TODO(ww): Fill these in
     def events(self):
         return self._cb.select(Events).where(process_guid=self.process_guid)
 
