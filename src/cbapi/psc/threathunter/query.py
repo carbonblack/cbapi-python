@@ -289,39 +289,61 @@ class AsyncProcessQuery(Query):
 
         self._query_token = query_start.json().get("query_id")
 
+    def still_querying(self):
+        if not self._query_token:
+            self.submit()
+
+        result = self._cb.get_object("/pscr/query/v1/status", query_parameters={"query_id": self._query_token})
+
+        if result.get("status_code") != 200:
+            raise ServerError(result["status_code"], result["errorMessage"])
+
+        searchers_contacted = result.get("contacted", 0)
+        searchers_completed = result.get("completed", 0)
+        log.info("contacted = {}, completed = {}".format(searchers_contacted, searchers_completed))
+        if searchers_contacted == 0:
+            return True
+        if searchers_completed < searchers_contacted:
+            return True
+
+        return False
+
+    def _count(self):
+        if self._count_valid:
+            return self._total_results
+
+        while self.still_querying():
+            time.sleep(.5)
+
+        result = self._cb.get_object("/pscr/query/v1/results",
+                                     query_parameters={"query_id": self._query_token, "row_count": 0})
+
+        self._total_results = result.get('response_header', {}).get('num_found', 0)
+        self._count_valid = True
+
+        return self._total_results
+
     def _search(self, start=0, rows=0):
         if not self._query_token:
             self.submit()
 
-        still_querying = True
         query_id = {"query_id": self._query_token}
 
         # TODO(ww): Timeout
-        while still_querying:
+        timed_out = False
+        while self.still_querying() and not timed_out:
             time.sleep(.5)
-            result = self._cb.get_object("/pscr/query/v1/status", query_parameters=query_id)
 
-            if result.get("status_code") != 200:
-                raise ServerError(result["status_code"], result["errorMessage"])
+        log.info("Pulling results")
+        result = self._cb.get_object("/pscr/query/v1/results", query_parameters=query_id)
+        results = result.get('data', [])
 
-            searchers_contacted = result.get("contacted", 0)
-            searchers_completed = result.get("completed", 0)
-            log.info("contacted = {}, completed = {}".format(searchers_contacted, searchers_completed))
-            if searchers_contacted == 0:
-                continue
-            if searchers_completed < searchers_contacted:
-                continue
+        self._total_results = result.get('response_header', {}).get('num_found', 0)
+        self._count_valid = True
 
-            still_querying = False
-            self._count_valid = True
-
-            log.info("Pulling results")
-            result = self._cb.get_object("/pscr/query/v1/results", query_parameters=query_id)
-            results = result.get('data', [])
-
-            # TODO: implement pagination
-            for item in results:
-                yield item
+        # TODO: implement pagination
+        for item in results:
+            yield item
 
 
 class TreeQuery(BaseQuery):
