@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 class QueryBuilder(object):
     """
-    Provides a flexible interface for building prepared queries to the CB
+    Provides a flexible interface for building prepared queries for the CB
     ThreatHunter backend.
 
     This object can be instantiated directly, or can be managed implicitly
@@ -26,7 +26,7 @@ class QueryBuilder(object):
     >>> query = QueryBuilder(device_os="WINDOWS").or_(process_username="root")
 
     """
-    # TODO(ww): Facet methods?
+    # TODO(ww): Facet methods.
     def __init__(self, **kwargs):
         if kwargs:
             self._query = Q(**kwargs)
@@ -54,6 +54,7 @@ class QueryBuilder(object):
             if self._query is not None:
                 raise ApiError("Use .and_() or .or_() for an extant solrq.Q object")
             if kwargs:
+                self._process_guid = kwargs.get("process_guid")
                 q = Q(**kwargs)
             self._query = q
         else:
@@ -67,6 +68,7 @@ class QueryBuilder(object):
         else:
             self._guard_query_change()
             if kwargs:
+                self._process_guid = kwargs.get("process_guid")
                 q = Q(**kwargs)
             if self._query is None:
                 self._query = q
@@ -77,6 +79,7 @@ class QueryBuilder(object):
 
     def or_(self, q, **kwargs):
         if kwargs:
+            self._process_guid = kwargs.get("process_guid")
             q = Q(**kwargs)
 
         if isinstance(q, Q):
@@ -202,25 +205,30 @@ class Query(PaginatedQuery):
     def _get_query_parameters(self):
         args = self._default_args.copy()
         args['q'] = self._query_builder.collapse()
+        args["cb.process_guid"] = self._query_builder._process_guid
 
         return args
 
     def _count(self):
         args = {'limit': 0}
 
-        self._total_results = int(self._cb.get_object(self._doc_class.urlobject, query_parameters=args)
-                                  .get("response_header", {}).get("num_found", 0))
+        self._total_results = int(self._cb.post_object(self._doc_class.urlobject, query_parameters=args)
+                                  .json().get("response_header", {}).get("num_found", 0))
         self._count_valid = True
         return self._total_results
 
     def _search(self, start=0, rows=0):
         # iterate over total result set, 1000 at a time
         args = self._get_query_parameters()
+
+        validated = self._cb.get_object("/pscr/query/v1/validate", query_parameters=args)
+
+        if not validated.get("valid"):
+            raise ApiError("Invalid query: {}".format(args))
+
         if start != 0:
             args['start'] = start
         args['rows'] = self._batch_size
-
-        # TODO(ww): /pscr/query/v1/events/validate
 
         current = start
         numrows = 0
@@ -228,9 +236,8 @@ class Query(PaginatedQuery):
         still_querying = True
 
         while still_querying:
-            # TODO(ww): This endpoint requires a separate cb.process_guid parameter,
-            # but the current QueryBuilder isn't well suited for providing that.
-            result = self._cb.post_object(self._doc_class.urlobject, body={"search_params": args})
+            resp = self._cb.post_object(self._doc_class.urlobject, body={"search_params": args})
+            result = resp.json()
 
             self._total_results = result.get("response_header", {}).get("num_found", 0)
             self._count_valid = True
@@ -289,6 +296,7 @@ class AsyncProcessQuery(Query):
         still_querying = True
         query_id = {"query_id": self._query_token}
 
+        # TODO(ww): Timeout
         while still_querying:
             time.sleep(.5)
             result = self._cb.get_object("/pscr/query/v1/status", query_parameters=query_id)
@@ -316,9 +324,11 @@ class AsyncProcessQuery(Query):
                 yield item
 
 
-class TreeQuery(Query):
+class TreeQuery(BaseQuery):
     def __init__(self, doc_class, cb):
-        super(TreeQuery, self).__init__(doc_class, cb)
+        super(TreeQuery, self).__init__()
+        self._doc_class = doc_class
+        self._cb = cb
         self._args = {}
 
     # TODO(ww): Instead of reimplementing these, we could probably
@@ -335,20 +345,15 @@ class TreeQuery(Query):
     def or_(self, **kwargs):
         raise ApiError(".or_() cannot be called on Tree queries")
 
-    def _search(self, start=0, rows=0):
+    def _perform_query(self):
         if "process_guid" not in self._args:
             raise ApiError("required parameter process_guid missing")
 
         log.info("Fetching process tree")
 
-        # TODO(ww): There's also v2/tree. Which one do we want?
         result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
-        # TODO(ww): Could return the whole root_node instead and use
-        # force_init=True in models.Tree
-        children = result.get("root_node", {}).get("children", [])
 
-        for child in children:
-            yield child
+        return result
 
 
 class FeedHitsQuery(Query):

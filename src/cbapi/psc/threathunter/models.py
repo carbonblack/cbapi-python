@@ -26,7 +26,10 @@ class Process(NewBaseModel):
         return self._cb.select(Events).where(process_guid=self.process_guid)
 
     def tree(self):
-        return self._cb.select(Tree).where(process_guid=self.process_guid)
+        return self._cb.select(Tree).where(process_guid=self.process_guid).all()
+
+    def children(self):
+        return self.tree().get("nodes", {}).get("children", [])
 
     # TODO(ww): /pscr/query/v1/evaluate takes the results of this call
     def feedhits(self):
@@ -48,7 +51,7 @@ class Events(NewBaseModel):
 
 
 class Tree(NewBaseModel):
-    urlobject = '/pscr/query/v1/tree'
+    urlobject = '/pscr/query/v2/tree'
     primary_key = 'process_guid'
 
     @classmethod

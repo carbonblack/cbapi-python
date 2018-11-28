@@ -26,11 +26,9 @@ class CbThreatHunterAPI(BaseAPI):
         else:
             return Query(cls, self, **kwargs)
 
-    # TODO(ww): Does these calls make sense here?
-    # /pscr/query/v1/list
     def queries(self):
-        pass
+        ids = self.get_object("/pscr/query/v1/list")
+        return ids.get("query_ids", [])
 
-    # /pscr/query/v1/limits
     def limits(self):
-        pass
+        return self.get_object("/pscr/query/v1/limits")
