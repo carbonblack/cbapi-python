@@ -54,7 +54,7 @@ class QueryBuilder(object):
             if self._query is not None:
                 raise ApiError("Use .and_() or .or_() for an extant solrq.Q object")
             if kwargs:
-                self._process_guid = kwargs.get("process_guid")
+                self._process_guid = self._process_guid or kwargs.get("process_guid")
                 q = Q(**kwargs)
             self._query = q
         else:
@@ -68,7 +68,7 @@ class QueryBuilder(object):
         else:
             self._guard_query_change()
             if kwargs:
-                self._process_guid = kwargs.get("process_guid")
+                self._process_guid = self._process_guid or kwargs.get("process_guid")
                 q = Q(**kwargs)
             if self._query is None:
                 self._query = q
@@ -79,7 +79,7 @@ class QueryBuilder(object):
 
     def or_(self, q, **kwargs):
         if kwargs:
-            self._process_guid = kwargs.get("process_guid")
+            self._process_guid = self._process_guid or kwargs.get("process_guid")
             q = Q(**kwargs)
 
         if isinstance(q, Q):
@@ -210,9 +210,11 @@ class Query(PaginatedQuery):
         return args
 
     def _count(self):
-        args = {'limit': 0}
+        args = {"search_params": self._get_query_parameters()}
 
-        self._total_results = int(self._cb.post_object(self._doc_class.urlobject, query_parameters=args)
+        log.info("args: {}".format(str(args)))
+
+        self._total_results = int(self._cb.post_object(self._doc_class.urlobject, body=args)
                                   .json().get("response_header", {}).get("num_found", 0))
         self._count_valid = True
         return self._total_results
@@ -230,13 +232,15 @@ class Query(PaginatedQuery):
             args['start'] = start
         args['rows'] = self._batch_size
 
+        args = {"search_params": args}
+
         current = start
         numrows = 0
 
         still_querying = True
 
         while still_querying:
-            resp = self._cb.post_object(self._doc_class.urlobject, body={"search_params": args})
+            resp = self._cb.post_object(self._doc_class.urlobject, body=args)
             result = resp.json()
 
             self._total_results = result.get("response_header", {}).get("num_found", 0)

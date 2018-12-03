@@ -22,8 +22,8 @@ class Process(NewBaseModel):
         super(Process, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                       force_init=force_init, full_doc=full_doc)
 
-    def events(self):
-        return self._cb.select(Events).where(process_guid=self.process_guid)
+    def events(self, **kwargs):
+        return self._cb.select(Events).where(process_guid=self.process_guid).and_(**kwargs)
 
     def tree(self):
         return self._cb.select(Tree).where(process_guid=self.process_guid).all()
