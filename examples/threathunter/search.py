@@ -3,7 +3,7 @@
 import sys
 
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
-from cbapi.psc.threathunter import Process, Tree
+from cbapi.psc.threathunter import Process, Events, Tree, FeedHits
 
 
 def main():
@@ -12,14 +12,27 @@ def main():
     args = parser.parse_args()
     cb = get_cb_threathunter_object(args)
 
-    # query processes
-    processes = cb.select(Process).where(process_name="svchost.exe")
+    print("Number of queries: {}".format(len(cb.queries())))
+    print("API limits: {}".format(cb.limits()))
 
-    for process in processes:
-        print(process.process_guid)
+    processes = cb.select(Process).where(process_name="notepad.exe").and_(process_username="admin")
 
-    # query the process tree
-    children = cb.select(Tree).where(process_guid=processes[0].process_guid)
+    print("Number of processes: {}".format(len(processes)))
+
+    process = processes[0]
+
+    events = process.events(event_type="modload")
+    # alternatively:
+    # events = cb.select(Events).where(process_guid=process.process_guid)
+
+    print("Number of events: {}".format(len(events)))
+
+    # tree = process.tree()
+    # alternatively:
+    # tree = cb.select(Tree).where(process_guid=process.process_guid)
+
+    # get the children directly:
+    children = process.children()
 
     for child in children:
         print(child)
