@@ -15,7 +15,7 @@ def main():
     print("Number of queries: {}".format(len(cb.queries())))
     print("API limits: {}".format(cb.limits()))
 
-    processes = cb.select(Process).where(process_name="notepad.exe").and_(process_username="admin")
+    processes = cb.select(Process).where(process_name="notepad.exe").and_(process_username="admin").timeout(10000)
 
     print("Number of processes: {}".format(len(processes)))
 
