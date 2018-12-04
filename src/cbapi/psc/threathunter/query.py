@@ -305,7 +305,9 @@ class AsyncProcessQuery(Query):
         if not self._query_token:
             self.submit()
 
-        result = self._cb.get_object("/pscr/query/v1/status", query_parameters={"query_id": self._query_token})
+        args = {"query_id": self._query_token}
+
+        result = self._cb.get_object("/pscr/query/v1/status", query_parameters=args)
 
         if result.get("status_code") != 200:
             raise ServerError(result["status_code"], result["errorMessage"])
@@ -335,8 +337,10 @@ class AsyncProcessQuery(Query):
         if self._timed_out:
             raise ApiError("user-specified timeout exceeded while waiting for results")
 
+        args = {"query_id": self._query_token, "row_count": 0}
+
         result = self._cb.get_object("/pscr/query/v1/results",
-                                     query_parameters={"query_id": self._query_token, "row_count": 0})
+                                     query_parameters=args)
 
         self._total_results = result.get('response_header', {}).get('num_found', 0)
         self._count_valid = True
