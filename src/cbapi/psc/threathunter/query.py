@@ -328,6 +328,7 @@ class AsyncProcessQuery(Query):
         if self._count_valid:
             return self._total_results
 
+        # TODO(ww): Do we need to reset self._submit_time here?
         while self.still_querying():
             time.sleep(.5)
 
