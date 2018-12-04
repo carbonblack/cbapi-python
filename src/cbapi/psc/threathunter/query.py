@@ -272,6 +272,12 @@ class AsyncProcessQuery(Query):
     def __init__(self, doc_class, cb):
         super(AsyncProcessQuery, self).__init__(doc_class, cb)
         self._query_token = None
+        self._timeout = 0
+        self._timed_out = False
+
+    def timeout(self, msecs):
+        self._timeout = msecs
+        return self
 
     def submit(self):
         if self._query_token:
@@ -292,6 +298,8 @@ class AsyncProcessQuery(Query):
             raise ServerError(query_start.status_code, query_start.json().get("message"))
 
         self._query_token = query_start.json().get("query_id")
+        self._timed_out = False
+        self._submit_time = time.time() * 1000
 
     def still_querying(self):
         if not self._query_token:
@@ -308,6 +316,10 @@ class AsyncProcessQuery(Query):
         if searchers_contacted == 0:
             return True
         if searchers_completed < searchers_contacted:
+            if self._timeout != 0 and (time.time() * 1000) - self._submit_time > self._timeout:
+                self._timed_out = True
+                # TODO(ww): Maybe raise here instead of returning?
+                return False
             return True
 
         return False
@@ -318,6 +330,9 @@ class AsyncProcessQuery(Query):
 
         while self.still_querying():
             time.sleep(.5)
+
+        if self._timed_out:
+            raise ApiError("user-specified timeout exceeded while waiting for results")
 
         result = self._cb.get_object("/pscr/query/v1/results",
                                      query_parameters={"query_id": self._query_token, "row_count": 0})
@@ -333,12 +348,13 @@ class AsyncProcessQuery(Query):
 
         query_id = {"query_id": self._query_token}
 
-        # TODO(ww): Timeout
-        timed_out = False
-        while self.still_querying() and not timed_out:
+        while self.still_querying():
             time.sleep(.5)
 
-        log.info("Pulling results")
+        if self._timed_out:
+            raise ApiError("user-specified timeout exceeded while waiting for results")
+
+        log.info("Pulling results, timed_out={}".format(self._timed_out))
         result = self._cb.get_object("/pscr/query/v1/results", query_parameters=query_id)
         results = result.get('data', [])
 
