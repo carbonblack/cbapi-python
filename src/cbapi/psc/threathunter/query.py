@@ -301,7 +301,7 @@ class AsyncProcessQuery(Query):
         self._timed_out = False
         self._submit_time = time.time() * 1000
 
-    def still_querying(self):
+    def _still_querying(self):
         if not self._query_token:
             self.submit()
 
@@ -331,7 +331,7 @@ class AsyncProcessQuery(Query):
             return self._total_results
 
         # TODO(ww): Do we need to reset self._submit_time here?
-        while self.still_querying():
+        while self._still_querying():
             time.sleep(.5)
 
         if self._timed_out:
@@ -353,7 +353,7 @@ class AsyncProcessQuery(Query):
 
         query_id = {"query_id": self._query_token}
 
-        while self.still_querying():
+        while self._still_querying():
             time.sleep(.5)
 
         if self._timed_out:
