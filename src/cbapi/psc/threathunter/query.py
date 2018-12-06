@@ -108,16 +108,6 @@ class QueryBuilder(object):
             return "*:*"               # return everything
 
 
-class QueryResults(BaseQuery):
-    def __init__(self, cb, query_id):
-        super(QueryResults, self).__init__()
-        self._cb = cb
-        self._query_id = query_id
-
-    def _search(self, start=0, rows=0):
-        pass
-
-
 class Query(PaginatedQuery):
     """Represents a prepared query to the Cb ThreatHunter backend.
 
