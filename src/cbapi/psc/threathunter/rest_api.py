@@ -32,3 +32,16 @@ class CbThreatHunterAPI(BaseAPI):
 
     def limits(self):
         return self.get_object("/pscr/query/v1/limits")
+
+    # TODO(ww): Does it make sense to have this here, or under
+    # the FeedHits model?
+    def evaluate(self, feed_id, report_id, ioc_id=None):
+        args = {
+            'feed_id': feed_id,
+            'report_id': report_id,
+            'ioc_id': ioc_id,
+        }
+
+        # NOTE(ww): No return on purpose, since this endpoint returns
+        # an empty object on success.
+        self.post_object("/pscr/query/v1/evaluate", body=args)
