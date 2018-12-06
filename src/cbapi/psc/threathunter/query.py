@@ -269,7 +269,7 @@ class AsyncProcessQuery(Query):
         self._timeout = msecs
         return self
 
-    def submit(self):
+    def _submit(self):
         if self._query_token:
             raise ApiError("Query already submitted: token {0}".format(self._query_token))
 
@@ -293,7 +293,7 @@ class AsyncProcessQuery(Query):
 
     def _still_querying(self):
         if not self._query_token:
-            self.submit()
+            self._submit()
 
         args = {"query_id": self._query_token}
 
@@ -339,7 +339,7 @@ class AsyncProcessQuery(Query):
 
     def _search(self, start=0, rows=0):
         if not self._query_token:
-            self.submit()
+            self._submit()
 
         query_id = {"query_id": self._query_token}
 
