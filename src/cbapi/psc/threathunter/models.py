@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 class UnrefreshableModel(NewBaseModel):
     def refresh(self):
-        return ApiError("refresh() called on an unrefreshable model")
+        raise ApiError("refresh() called on an unrefreshable model")
 
 class Process(UnrefreshableModel):
     # TODO(ww): Currently unused; should we be using this?
