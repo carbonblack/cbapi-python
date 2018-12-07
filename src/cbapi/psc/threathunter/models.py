@@ -35,7 +35,6 @@ class Process(UnrefreshableModel):
     def children(self):
         return [Process(self._cb, initial_data=child) for child in self.tree()["nodes"]["children"]]
 
-    # TODO(ww): /pscr/query/v1/evaluate takes the results of this call
     def feedhits(self):
         return self._cb.select(FeedHits).where(process_guid=self.process_guid)
 
