@@ -277,7 +277,6 @@ class BaseAPI(object):
                 raw_data = kwargs.pop("data", {})
                 raw_data = json.dumps(raw_data, sort_keys=True)
 
-        # TODO(ww): Test this.
         result = self.session.http_request(method, uri, headers=headers, data=raw_data, **kwargs)
 
         try:
