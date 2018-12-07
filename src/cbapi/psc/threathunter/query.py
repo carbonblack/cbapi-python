@@ -93,6 +93,19 @@ class QueryBuilder(object):
 
         return self
 
+    def not_(self, q, **kwargs):
+        if kwargs:
+            q = ~ Q(**kwargs)
+
+        if isinstance(q, Q):
+            self._guard_query_change()
+            if self._query is None:
+                self._query = q
+            else:
+                self._query = self._query & q
+        else:
+            raise ApiError(".not_() only accepts solrq.Q objects")
+
     def collapse(self):
         """The query can be represented by either an array of strings
         (_raw_query) which is concatenated and passed directly to Solr, or
@@ -150,7 +163,7 @@ class Query(PaginatedQuery):
     def where(self, q=None, **kwargs):
         """Add a filter to this query.
 
-        :param str q: Query string, :py:class:`QueryBuilder`, or solrq.Q object
+        :param q: Query string, :py:class:`QueryBuilder`, or solrq.Q object
         :param kwargs: Arguments to construct a solrq.Q with
         :return: Query object
         :rtype: :py:class:`Query`
@@ -167,7 +180,7 @@ class Query(PaginatedQuery):
     def and_(self, q=None, **kwargs):
         """Add a conjunctive filter to this query.
 
-        :param str q: Query string or solrq.Q object
+        :param q: Query string or solrq.Q object
         :param kwargs: Arguments to construct a solrq.Q with
         :return: Query object
         :rtype: :py:class:`Query`
@@ -181,7 +194,7 @@ class Query(PaginatedQuery):
     def or_(self, q=None, **kwargs):
         """Add a disjunctive filter to this query.
 
-        :param str q: solrq.Q object
+        :param q: solrq.Q object
         :param kwargs: Arguments to construct a solrq.Q with
         :return: Query object
         :rtype: :py:class:`Query`
@@ -190,6 +203,21 @@ class Query(PaginatedQuery):
             raise ApiError(".or_() expects a solrq.Q, or kwargs")
 
         self._query_builder.or_(q, **kwargs)
+        return self
+
+    def not_(self, q=None, **kwargs):
+        """Adds a negated filter to this query.
+
+        :param q: solrq.Q object
+        :param kwargs: Arguments to construct a solrq.Q with
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
+
+        if not q and not kwargs:
+            raise ApiError(".not_() expects a solrq.Q, or kwargs")
+
+        self._query_builder.not_(q, **kwargs)
         return self
 
     def _get_query_parameters(self):
