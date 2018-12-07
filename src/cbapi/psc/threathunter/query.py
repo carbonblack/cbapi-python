@@ -1,5 +1,5 @@
 from cbapi.query import PaginatedQuery, BaseQuery
-from cbapi.errors import ServerError, ApiError
+from cbapi.errors import ServerError, ApiError, TimeoutError
 import time
 from solrq import Q
 from six import string_types
@@ -325,7 +325,7 @@ class AsyncProcessQuery(Query):
             time.sleep(.5)
 
         if self._timed_out:
-            raise ApiError("user-specified timeout exceeded while waiting for results")
+            raise TimeoutError(message="user-specified timeout exceeded while waiting for results")
 
         args = {"query_id": self._query_token, "row_count": 0}
 
@@ -347,7 +347,7 @@ class AsyncProcessQuery(Query):
             time.sleep(.5)
 
         if self._timed_out:
-            raise ApiError("user-specified timeout exceeded while waiting for results")
+            raise TimeoutError(message="user-specified timeout exceeded while waiting for results")
 
         log.info("Pulling results, timed_out={}".format(self._timed_out))
         result = self._cb.get_object("/pscr/query/v1/results", query_parameters=query_id)

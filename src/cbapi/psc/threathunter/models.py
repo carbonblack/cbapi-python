@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from cbapi.errors import ApiError
 from cbapi.models import NewBaseModel
 import logging
 from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, FeedHitsQuery
@@ -6,10 +7,12 @@ from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, Fe
 
 log = logging.getLogger(__name__)
 
+class UnrefreshableModel(NewBaseModel):
+    def refresh(self):
+        return ApiError("refresh() called on an unrefreshable model")
 
-class Process(NewBaseModel):
+class Process(UnrefreshableModel):
     # TODO(ww): Currently unused; should we be using this?
-    urlobject = '/api/v1/process'
     default_sort = 'last_update desc'
     primary_key = "process_guid"
 
@@ -29,14 +32,14 @@ class Process(NewBaseModel):
         return self._cb.select(Tree).where(process_guid=self.process_guid).all()
 
     def children(self):
-        return self.tree().get("nodes", {}).get("children", [])
+        return [Process(self._cb, initial_data=child) for child in self.tree()["nodes"]["children"]]
 
     # TODO(ww): /pscr/query/v1/evaluate takes the results of this call
     def feedhits(self):
         return self._cb.select(FeedHits).where(process_guid=self.process_guid)
 
 
-class Events(NewBaseModel):
+class Events(UnrefreshableModel):
     urlobject = '/pscr/query/v1/events'
     default_sort = 'last_update desc'
     primary_key = "process_guid"
@@ -50,7 +53,7 @@ class Events(NewBaseModel):
                                      force_init=force_init, full_doc=full_doc)
 
 
-class Tree(NewBaseModel):
+class Tree(UnrefreshableModel):
     urlobject = '/pscr/query/v2/tree'
     primary_key = 'process_guid'
 
@@ -63,7 +66,7 @@ class Tree(NewBaseModel):
                                    force_init=force_init, full_doc=full_doc)
 
 
-class FeedHits(NewBaseModel):
+class FeedHits(UnrefreshableModel):
     urlobject = '/pscr/query/v1/feedhits'
     primary_key = 'process_guid'
 
