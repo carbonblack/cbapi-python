@@ -4,6 +4,7 @@ import sys
 
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
 from cbapi.psc.threathunter import Process, Events, Tree, FeedHits
+from solrq import Range, Value
 
 
 def main():
@@ -15,13 +16,13 @@ def main():
     print("Number of queries: {}".format(len(cb.queries())))
     print("API limits: {}".format(cb.limits()))
 
-    processes = cb.select(Process).where(process_name="notepad.exe").and_(process_username="admin").timeout(10000)
+    processes = cb.select(Process).where(process_name="notepad.exe")
 
     print("Number of processes: {}".format(len(processes)))
 
     process = processes[0]
 
-    events = process.events(event_type="modload")
+    events = process.events(event_type=Value("*", safe=True))
     # alternatively:
     # events = cb.select(Events).where(process_guid=process.process_guid)
 
@@ -33,6 +34,8 @@ def main():
 
     # get the children directly:
     children = process.children()
+
+    print("Number of children: {}".format(len(children)))
 
     for child in children:
         print(child)
