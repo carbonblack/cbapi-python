@@ -15,6 +15,7 @@ class Process(UnrefreshableModel):
     # TODO(ww): Currently unused; should we be using this?
     default_sort = 'last_update desc'
     primary_key = "process_guid"
+    validation_url = "/pscr/query/v1/validate"
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -41,6 +42,7 @@ class Process(UnrefreshableModel):
 
 class Events(UnrefreshableModel):
     urlobject = '/pscr/query/v1/events'
+    validation_url = '/pscr/query/v1/events/validate'
     default_sort = 'last_update desc'
     primary_key = "process_guid"
 

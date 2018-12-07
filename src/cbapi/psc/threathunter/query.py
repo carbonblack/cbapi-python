@@ -237,14 +237,19 @@ class Query(PaginatedQuery):
         self._count_valid = True
         return self._total_results
 
-    def _search(self, start=0, rows=0):
-        # iterate over total result set, 1000 at a time
-        args = self._get_query_parameters()
+    def _validate(self, args):
+        if not self._doc_class.validation_url:
+            return
 
-        validated = self._cb.get_object("/pscr/query/v1/events/validate", query_parameters=args)
+        validated = self._cb.get_object(self._doc_class.validation_url, query_parameters=args)
 
         if not validated.get("valid"):
             raise ApiError("Invalid query: {}: {}".format(args, validated["invalid_message"]))
+
+    def _search(self, start=0, rows=0):
+        # iterate over total result set, 1000 at a time
+        args = self._get_query_parameters()
+        self._validate(args)
 
         if start != 0:
             args['start'] = start
@@ -302,11 +307,7 @@ class AsyncProcessQuery(Query):
             raise ApiError("Query already submitted: token {0}".format(self._query_token))
 
         args = self._get_query_parameters()
-
-        validated = self._cb.get_object("/pscr/query/v1/validate", query_parameters=args)
-
-        if not validated.get("valid"):
-            raise ApiError("Invalid query: {}".format(args))
+        self._validate(args)
 
         query_start = self._cb.post_object("/pscr/query/v1/start", body={"search_params": args})
 
