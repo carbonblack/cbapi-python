@@ -241,10 +241,10 @@ class Query(PaginatedQuery):
         # iterate over total result set, 1000 at a time
         args = self._get_query_parameters()
 
-        validated = self._cb.get_object("/pscr/query/v1/validate", query_parameters=args)
+        validated = self._cb.get_object("/pscr/query/v1/events/validate", query_parameters=args)
 
         if not validated.get("valid"):
-            raise ApiError("Invalid query: {}".format(args))
+            raise ApiError("Invalid query: {}: {}".format(args, validated["invalid_message"]))
 
         if start != 0:
             args['start'] = start
