@@ -10,7 +10,7 @@ from solrq import Range, Value
 def main():
     parser = build_cli_parser("Search processes")
     parser.add_argument("-q", type=str, help="process query", default="process_name:notepad.exe")
-    # parser.add_argument("-n", type=int, help="limit results to N proceeses", default=0)
+    parser.add_argument("-n", type=int, help="only output N proceeses", default=0)
     parser.add_argument("-e", type=bool, help="show events for query results", default=False)
     parser.add_argument("-c", type=bool, help="show children for query results", default=False)
 
@@ -25,31 +25,15 @@ def main():
     print("Number of processes: {}".format(len(processes)))
 
     for process in processes:
-        print(process)
+        print(process.process_guid)
 
-    # process = processes[0]
+        if args.e:
+            for event in process.events(event_type=Value("*", safe=True)):
+                print(event)
 
-    # events = process.events(event_type=Value("*", safe=True))
-
-    # for event in events:
-    #     print(event.event_guid)
-
-    # # alternatively:
-    # # events = cb.select(Events).where(process_guid=process.process_guid)
-
-    # print("Number of events: {}".format(len(events)))
-
-    # # tree = process.tree()
-    # # alternatively:
-    # # tree = cb.select(Tree).where(process_guid=process.process_guid)
-
-    # # get the children directly:
-    # children = process.children()
-
-    # print("Number of children: {}".format(len(children)))
-
-    # for child in children:
-    #     print(child)
+        if args.c:
+            for child in process.children():
+                print(child)
 
 
 if __name__ == "__main__":
