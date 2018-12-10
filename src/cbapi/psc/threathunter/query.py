@@ -379,7 +379,14 @@ class AsyncProcessQuery(Query):
         if self._timed_out:
             raise TimeoutError(message="user-specified timeout exceeded while waiting for results")
 
+        log.info("Pulling results: start={}, rows={}".format(start, rows))
         log.info("Pulling results, timed_out={}".format(self._timed_out))
+
+        query_id["start_row"] = start
+
+        if rows > 0:
+            query_id["row_count"] = rows
+
         result = self._cb.get_object("/pscr/query/v1/results", query_parameters=query_id)
         results = result.get('data', [])
 
