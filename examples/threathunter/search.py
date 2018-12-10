@@ -10,9 +10,9 @@ from solrq import Range, Value
 def main():
     parser = build_cli_parser("Search processes")
     parser.add_argument("-q", type=str, help="process query", default="process_name:notepad.exe")
-    parser.add_argument("-n", type=int, help="only output N proceeses", default=0)
-    parser.add_argument("-e", type=bool, help="show events for query results", default=False)
-    parser.add_argument("-c", type=bool, help="show children for query results", default=False)
+    parser.add_argument("-n", type=int, help="only output N processes", default=None)
+    parser.add_argument("-e", help="show events for query results", action="store_true", default=False)
+    parser.add_argument("-c", help="show children for query results", action="store_true", default=False)
 
     args = parser.parse_args()
     cb = get_cb_threathunter_object(args)
@@ -24,16 +24,20 @@ def main():
 
     print("Number of processes: {}".format(len(processes)))
 
-    for process in processes:
+    for process in processes[0:args.n]:
         print(process.process_guid)
 
         if args.e:
+            print("=========== events ===========")
             for event in process.events(event_type=Value("*", safe=True)):
-                print(event)
+                print("\t{}".format(event.event_type))
 
         if args.c:
+            print("========== children ==========")
             for child in process.children():
-                print(child)
+                print("\t{}".format(child.process_name))
+
+        print("===========================")
 
 
 if __name__ == "__main__":
