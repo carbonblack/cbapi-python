@@ -231,7 +231,7 @@ class Query(PaginatedQuery):
     def _count(self):
         args = {"search_params": self._get_query_parameters()}
 
-        log.info("args: {}".format(str(args)))
+        log.debug("args: {}".format(str(args)))
 
         self._total_results = int(self._cb.post_object(self._doc_class.urlobject, body=args)
                                   .json().get("response_header", {}).get("num_found", 0))
@@ -334,7 +334,7 @@ class AsyncProcessQuery(Query):
 
         searchers_contacted = result.get("contacted", 0)
         searchers_completed = result.get("completed", 0)
-        log.info("contacted = {}, completed = {}".format(searchers_contacted, searchers_completed))
+        log.debug("contacted = {}, completed = {}".format(searchers_contacted, searchers_completed))
         if searchers_contacted == 0:
             return True
         if searchers_completed < searchers_contacted:
@@ -379,7 +379,7 @@ class AsyncProcessQuery(Query):
         if self._timed_out:
             raise TimeoutError(message="user-specified timeout exceeded while waiting for results")
 
-        log.info("Pulling results, timed_out={}".format(self._timed_out))
+        log.debug("Pulling results, timed_out={}".format(self._timed_out))
 
         query_id["start_row"] = start
         if rows > 0:
@@ -421,7 +421,7 @@ class TreeQuery(BaseQuery):
         if "process_guid" not in self._args:
             raise ApiError("required parameter process_guid missing")
 
-        log.info("Fetching process tree")
+        log.debug("Fetching process tree")
 
         result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
 
@@ -451,12 +451,11 @@ class FeedHitsQuery(Query):
         if "process_guid" not in self._args:
             raise ApiError("required parameter process_guid missing")
 
-        log.info("Fetching feed hits")
+        log.debug("Fetching feed hits")
 
         # TODO(ww): This endpoint responds with 200, but consistently returns a JSON
         # blob indicating 404. Is it down?
         result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
-        log.info(str(result))
         feed_hits = result.get("feed_hits", [])
 
         for feed_hit in feed_hits:
