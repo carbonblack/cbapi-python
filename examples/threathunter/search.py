@@ -13,6 +13,7 @@ def main():
     parser.add_argument("-n", type=int, help="only output N processes", default=None)
     parser.add_argument("-e", help="show events for query results", action="store_true", default=False)
     parser.add_argument("-c", help="show children for query results", action="store_true", default=False)
+    parser.add_argument("-t", help="show tree for query results", action="store_true", default=False)
 
     args = parser.parse_args()
     cb = get_cb_threathunter_object(args)
@@ -35,7 +36,13 @@ def main():
         if args.c:
             print("========== children ==========")
             for child in process.children():
-                print("\t{}".format(child.process_name))
+                print("\t{}: {}".format(child.process_name, child.process_sha256()))
+
+        if args.t:
+            print("=========== tree =============")
+            tree = process.tree()
+            print(tree)
+            print(tree.nodes)
 
         print("===========================")
 
