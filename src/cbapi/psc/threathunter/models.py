@@ -30,13 +30,20 @@ class Process(UnrefreshableModel):
         return self._cb.select(Events).where(process_guid=self.process_guid).and_(**kwargs)
 
     def tree(self):
-        return self._cb.select(Tree).where(process_guid=self.process_guid).all()
+        data = self._cb.select(Tree).where(process_guid=self.process_guid).all()
+        return Tree(self._cb, initial_data=data)
 
     def children(self):
-        return [Process(self._cb, initial_data=child) for child in self.tree()["nodes"]["children"]]
+        return self.tree().children()
 
     def feedhits(self):
         return self._cb.select(FeedHits).where(process_guid=self.process_guid)
+
+    def process_md5(self):
+        return self.process_hash[0]
+
+    def process_sha256(self):
+        return self.process_hash[1]
 
 
 class Events(UnrefreshableModel):
@@ -65,6 +72,9 @@ class Tree(UnrefreshableModel):
     def __init__(self, cb,  model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         super(Tree, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                    force_init=force_init, full_doc=full_doc)
+
+    def children(self):
+        return [Process(self._cb, initial_data=child) for child in self.nodes["children"]]
 
 
 class FeedHits(UnrefreshableModel):
