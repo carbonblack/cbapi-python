@@ -44,11 +44,18 @@ class Process(UnrefreshableModel):
     def feedhits(self):
         return self._cb.select(FeedHits).where(process_guid=self.process_guid)
 
+    # TODO(ww): Is the order of the MD5/SHA256 in process_hash guaranteed?
+    # Should we check the lengths instead?
     def process_md5(self):
         return self.process_hash[0]
 
     def process_sha256(self):
         return self.process_hash[1]
+
+    def __repr__(self):
+        return "<%s.%s: process id %s document id %s> @ %s" % (self.__class__.__module__, self.__class__.__name__,
+                                                               self.process_guid, self.document_guid,
+                                                               self._cb.session.server)
 
 
 class Events(UnrefreshableModel):
