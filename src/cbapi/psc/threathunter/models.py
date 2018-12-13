@@ -33,6 +33,9 @@ class Process(UnrefreshableModel):
         data = self._cb.select(Tree).where(process_guid=self.process_guid).all()
         return Tree(self._cb, initial_data=data)
 
+    def parents(self):
+        return self._cb.select(Process).where(process_guid=self.parent_guid)
+
     def children(self):
         return self.tree().children()
 
