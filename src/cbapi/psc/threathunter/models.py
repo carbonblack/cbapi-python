@@ -7,9 +7,11 @@ from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, Fe
 
 log = logging.getLogger(__name__)
 
+
 class UnrefreshableModel(NewBaseModel):
     def refresh(self):
         raise ApiError("refresh() called on an unrefreshable model")
+
 
 class Process(UnrefreshableModel):
     # TODO(ww): Currently unused; should we be using this?
