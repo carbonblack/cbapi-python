@@ -36,6 +36,11 @@ class Process(UnrefreshableModel):
     def children(self):
         return self.tree().children()
 
+    def siblings(self):
+        # NOTE(ww): This shold be provided by the /tree endpoint eventually,
+        # but currently isn't.
+        raise ApiError("siblings() unimplemented")
+
     def feedhits(self):
         return self._cb.select(FeedHits).where(process_guid=self.process_guid)
 
