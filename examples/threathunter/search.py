@@ -10,6 +10,7 @@ from solrq import Range, Value
 def main():
     parser = build_cli_parser("Search processes")
     parser.add_argument("-q", type=str, help="process query", default="process_name:notepad.exe")
+    parser.add_argument("-f", help="show full process objects", action="store_true", default=False)
     parser.add_argument("-n", type=int, help="only output N processes", default=None)
     parser.add_argument("-e", help="show events for query results", action="store_true", default=False)
     parser.add_argument("-c", help="show children for query results", action="store_true", default=False)
@@ -26,7 +27,10 @@ def main():
     print("Number of processes: {}".format(len(processes)))
 
     for process in processes[0:args.n]:
-        print(process.process_guid)
+        if args.f:
+            print(process)
+        else:
+            print(process.process_guid)
 
         if args.e:
             print("=========== events ===========")
@@ -36,7 +40,10 @@ def main():
         if args.c:
             print("========== children ==========")
             for child in process.children():
-                print("\t{}: {}".format(child.process_name, child.process_sha256()))
+                if args.f:
+                    print(child)
+                else:
+                    print("\t{}: {}".format(child.process_name, child.process_sha256()))
 
         if args.t:
             print("=========== tree =============")
