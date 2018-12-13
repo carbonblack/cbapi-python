@@ -423,9 +423,14 @@ class TreeQuery(BaseQuery):
 
         log.debug("Fetching process tree")
 
-        result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+        results = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
 
-        return result
+        while results["incomplete_results"]:
+            result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+            results["nodes"]["children"].extend(result["nodes"]["children"])
+            results["incomplete_results"] = result["incomplete_results"]
+
+        return results
 
 
 class FeedHitsQuery(Query):
