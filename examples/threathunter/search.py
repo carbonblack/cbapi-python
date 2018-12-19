@@ -27,7 +27,10 @@ def main():
 
     print("Number of processes: {}".format(len(processes)))
 
-    for process in processes[0:args.n]:
+    if args.n:
+        processes = processes[0:args.n]
+
+    for process in processes:
         if args.f:
             print(process)
         else:
