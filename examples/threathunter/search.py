@@ -34,7 +34,7 @@ def main():
         if args.f:
             print(process)
         else:
-            print(process.process_guid)
+            print("{}: {}".format(process.process_guid, process.process_sha256))
 
         if args.e:
             print("=========== events ===========")
@@ -46,21 +46,19 @@ def main():
 
         if args.c:
             print("========== children ==========")
-            for child in process.children():
+            for child in process.children:
                 if args.f:
                     print(child)
                 else:
-                    print("\t{}: {}".format(child.process_name, child.process_sha256()))
+                    print("\t{}: {}".format(child.process_name, child.process_sha256))
 
         if args.p:
             print("========== parents ==========")
-            parents = process.parents()
-
-            for parent in parents:
+            for parent in process.parents:
                 if args.f:
                     print(parent)
                 else:
-                    print("\t{}: {}".format(parent.process_name, parent.process_sha256()))
+                    print("\t{}: {}".format(parent.process_name, parent.process_sha256))
 
 
         if args.t:
