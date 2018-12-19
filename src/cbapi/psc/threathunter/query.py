@@ -359,8 +359,7 @@ class AsyncProcessQuery(Query):
 
         args = {"query_id": self._query_token, "row_count": 0}
 
-        result = self._cb.get_object("/pscr/query/v1/results",
-                                     query_parameters=args)
+        result = self._cb.get_object("/pscr/query/v1/results", query_parameters=args)
 
         self._total_results = result.get('response_header', {}).get('num_found', 0)
         self._count_valid = True
@@ -382,18 +381,35 @@ class AsyncProcessQuery(Query):
         log.debug("Pulling results, timed_out={}".format(self._timed_out))
 
         query_id["start_row"] = start
-        if rows > 0:
-            query_id["row_count"] = rows
+        query_id["row_count"] = self._batch_size
 
-        result = self._cb.get_object("/pscr/query/v1/results", query_parameters=query_id)
-        results = result.get('data', [])
+        current = start
+        rows_fetched = 0
+        still_fetching = True
 
-        self._total_results = result.get('response_header', {}).get('num_found', 0)
-        self._count_valid = True
+        while still_fetching:
+            result = self._cb.get_object("/pscr/query/v1/results", query_parameters=query_id)
 
-        # TODO: implement pagination
-        for item in results:
-            yield item
+            self._total_results = result.get('response_header', {}).get('num_found', 0)
+            self._count_valid = True
+
+            results = result.get('data', [])
+
+            for item in results:
+                yield item
+                current += 1
+                rows_fetched += 1
+
+                if rows and rows_fetched >= rows:
+                    still_fetching = False
+                    break
+
+            if current >= self._total_results:
+                still_fetching = False
+                break
+
+            # TODO(ww): Is the pagination on CbTH also 1-based?
+            query_id["start_row"] = current + 1
 
 
 class TreeQuery(BaseQuery):
