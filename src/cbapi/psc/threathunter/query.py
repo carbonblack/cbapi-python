@@ -248,7 +248,7 @@ class Query(PaginatedQuery):
             raise ApiError("Invalid query: {}: {}".format(args, validated["invalid_message"]))
 
     def _search(self, start=0, rows=0):
-        # iterate over total result set, 1000 at a time
+        # iterate over total result set, 100 at a time
         args = self._get_query_parameters()
         self._validate(args)
 
