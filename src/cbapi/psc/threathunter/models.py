@@ -59,6 +59,7 @@ class Process(UnrefreshableModel):
         data = self._cb.select(Tree).where(process_guid=self.process_guid).all()
         return Tree(self._cb, initial_data=data)
 
+    @property
     def parents(self):
         """Returns a query for parent processes associated with this process.
 
@@ -67,6 +68,7 @@ class Process(UnrefreshableModel):
         """
         return self._cb.select(Process).where(process_guid=self.parent_guid)
 
+    @property
     def children(self):
         """Returns a list of child processes for this process.
 
@@ -75,6 +77,7 @@ class Process(UnrefreshableModel):
         """
         return self.tree().children()
 
+    @property
     def siblings(self):
         # NOTE(ww): This shold be provided by the /tree endpoint eventually,
         # but currently isn't.
@@ -83,23 +86,23 @@ class Process(UnrefreshableModel):
     def feedhits(self):
         return self._cb.select(FeedHits).where(process_guid=self.process_guid)
 
-    # TODO(ww): Is the order of the MD5/SHA256 in process_hash guaranteed?
-    # Should we check the lengths instead?
+    @property
     def process_md5(self):
         """Returns a string representation of the MD5 hash for this process.
 
         :return: A string representation of the process's MD5.
         :rtype: str
         """
-        return self.process_hash[0]
+        return next((hsh for hsh in self.process_hash if len(hsh) == 32), None)
 
+    @property
     def process_sha256(self):
         """Returns a string representation of the SHA256 hash for this process.
 
         :return: A string representation of the process's SHA256.
         :rtype: str
         """
-        return self.process_hash[1]
+        return next((hsh for hsh in self.process_hash if len(hsh) == 64), None)
 
     def __repr__(self):
         return "<%s.%s: process id %s document id %s> @ %s" % (self.__class__.__module__, self.__class__.__name__,
