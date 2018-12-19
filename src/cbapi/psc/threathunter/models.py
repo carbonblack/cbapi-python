@@ -59,7 +59,6 @@ class Process(UnrefreshableModel):
         data = self._cb.select(Tree).where(process_guid=self.process_guid).all()
         return Tree(self._cb, initial_data=data)
 
-    @property
     def parents(self):
         """Returns a query for parent processes associated with this process.
 
@@ -68,7 +67,6 @@ class Process(UnrefreshableModel):
         """
         return self._cb.select(Process).where(process_guid=self.parent_guid)
 
-    @property
     def children(self):
         """Returns a list of child processes for this process.
 
@@ -77,7 +75,6 @@ class Process(UnrefreshableModel):
         """
         return self.tree().children()
 
-    @property
     def siblings(self):
         # NOTE(ww): This shold be provided by the /tree endpoint eventually,
         # but currently isn't.

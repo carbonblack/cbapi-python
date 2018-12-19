@@ -406,10 +406,9 @@ class AsyncProcessQuery(Query):
 
             if current >= self._total_results:
                 still_fetching = False
-                break
 
-            # TODO(ww): Is the pagination on CbTH also 1-based?
-            query_id["start_row"] = current + 1
+            log.debug("current: {}, total_results: {}".format(current, self._total_results))
+            query_id["start_row"] = current
 
 
 class TreeQuery(BaseQuery):
