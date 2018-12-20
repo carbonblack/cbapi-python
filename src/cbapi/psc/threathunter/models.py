@@ -80,9 +80,6 @@ class Process(UnrefreshableModel):
         # but currently isn't.
         raise ApiError("siblings() unimplemented")
 
-    def feedhits(self):
-        return self._cb.select(FeedHits).where(process_guid=self.process_guid)
-
     @property
     def process_md5(self):
         """Returns a string representation of the MD5 hash for this process.
