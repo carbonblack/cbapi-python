@@ -302,6 +302,7 @@ documenting all of the methods available to you.
    response-api
    protection-api
    defense-api
+   threathunter-api
    exceptions
 
 Indices and tables
