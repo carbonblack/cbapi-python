@@ -4,6 +4,7 @@ import time
 from solrq import Q
 from six import string_types
 import logging
+import functools
 
 
 log = logging.getLogger(__name__)
@@ -26,7 +27,6 @@ class QueryBuilder(object):
     >>> query = QueryBuilder(device_os="WINDOWS").or_(process_username="root")
 
     """
-    # TODO(ww): Facet methods.
     def __init__(self, **kwargs):
         if kwargs:
             self._query = Q(**kwargs)
@@ -35,22 +35,34 @@ class QueryBuilder(object):
         self._raw_query = None
         self._process_guid = None
 
-    def _guard_query_change(self):
-        if self._raw_query is not None:
-            raise ApiError("Cannot modify a solrq.Q query with a raw query")
+    def _guard_query_params(func):
+        """Decorates the query construction methods of *QueryBuilder*, preventing
+        them from being called with parameters that would result in an intetnally
+        inconsistent query.
+        """
+        @functools.wraps(func)
+        def wrap_guard_query_change(self, q, **kwargs):
+            if self._raw_query is not None and (kwargs or isinstance(q, Q)):
+                raise ApiError("Cannot modify a raw query with structured parameters")
+            if self._query is not None and isinstance(q, string_types):
+                raise ApiError("Cannot modify a structured query with a raw parameter")
+            return func(self, q, **kwargs)
+        return wrap_guard_query_change
 
-    def _guard_raw_query_change(self):
-        if self._query is not None:
-            raise ApiError("Cannot modify a raw query with a solrq.Q query")
-
+    @_guard_query_params
     def where(self, q, **kwargs):
+        """Adds a conjunctive filter to a query.
+
+        :param q: string or solrq.Q object
+        :param kwargs: Arguments to construct a solrq.Q with
+        :return: QueryBuilder object
+        :rtype: :py:class:`QueryBuilder`
+        """
         if isinstance(q, string_types):
-            self._guard_raw_query_change()
             if self._raw_query is None:
                 self._raw_query = []
             self._raw_query.append(q)
         elif isinstance(q, Q) or kwargs:
-            self._guard_query_change()
             if self._query is not None:
                 raise ApiError("Use .and_() or .or_() for an extant solrq.Q object")
             if kwargs:
@@ -62,11 +74,18 @@ class QueryBuilder(object):
 
         return self
 
+    @_guard_query_params
     def and_(self, q, **kwargs):
+        """Adds a conjunctive filter to a query.
+
+        :param q: string or solrq.Q object
+        :param kwargs: Arguments to construct a solrq.Q with
+        :return: QueryBuilder object
+        :rtype: :py:class:`QueryBuilder`
+        """
         if isinstance(q, string_types):
             self.where(q)
-        else:
-            self._guard_query_change()
+        elif isinstance(q, Q) or kwargs:
             if kwargs:
                 self._process_guid = self._process_guid or kwargs.get("process_guid")
                 q = Q(**kwargs)
@@ -74,16 +93,25 @@ class QueryBuilder(object):
                 self._query = q
             else:
                 self._query = self._query & q
+        else:
+            raise ApiError(".and_() only accepts strings or solrq.Q objects")
 
         return self
 
+    @_guard_query_params
     def or_(self, q, **kwargs):
+        """Adds a disjunctive filter to a query.
+
+        :param q: solrq.Q object
+        :param kwargs: Arguments to construct a solrq.Q with
+        :return: QueryBuilder object
+        :rtype: :py:class:`QueryBuilder`
+        """
         if kwargs:
             self._process_guid = self._process_guid or kwargs.get("process_guid")
             q = Q(**kwargs)
 
         if isinstance(q, Q):
-            self._guard_query_change()
             if self._query is None:
                 self._query = q
             else:
@@ -93,12 +121,19 @@ class QueryBuilder(object):
 
         return self
 
+    @_guard_query_params
     def not_(self, q, **kwargs):
+        """Adds a negative filter to a query.
+
+        :param q: solrq.Q object
+        :param kwargs: Arguments to construct a solrq.Q with
+        :return: QueryBuilder object
+        :rtype: :py:class:`QueryBuilder`
+        """
         if kwargs:
             q = ~ Q(**kwargs)
 
         if isinstance(q, Q):
-            self._guard_query_change()
             if self._query is None:
                 self._query = q
             else:
