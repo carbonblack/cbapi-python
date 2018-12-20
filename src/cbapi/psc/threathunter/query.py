@@ -446,37 +446,3 @@ class TreeQuery(BaseQuery):
             results["incomplete_results"] = result["incomplete_results"]
 
         return results
-
-
-class FeedHitsQuery(Query):
-    def __init__(self, doc_class, cb):
-        super(FeedHitsQuery, self).__init__(doc_class, cb)
-        self._args = {}
-
-    # TODO(ww): Instead of reimplementing these, we could probably
-    # make the QueryBuilder class more flexible. Maybe allow it to store
-    # a dict internally, in addition to the Q and string options?
-    def where(self, **kwargs):
-        self._args = dict(self._args, **kwargs)
-        return self
-
-    def and_(self, **kwargs):
-        self.where(**kwargs)
-        return self
-
-    def or_(self, **kwargs):
-        raise ApiError(".or_() cannot be called on FeedHits queries")
-
-    def _search(self, start=0, rows=0):
-        if "process_guid" not in self._args:
-            raise ApiError("required parameter process_guid missing")
-
-        log.debug("Fetching feed hits")
-
-        # TODO(ww): This endpoint responds with 200, but consistently returns a JSON
-        # blob indicating 404. Is it down?
-        result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
-        feed_hits = result.get("feed_hits", [])
-
-        for feed_hit in feed_hits:
-            yield feed_hit

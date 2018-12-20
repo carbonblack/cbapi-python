@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from cbapi.errors import ApiError
 from cbapi.models import NewBaseModel
 import logging
-from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, FeedHitsQuery
+from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery
 
 
 log = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class Process(UnrefreshableModel):
                                       force_init=force_init, full_doc=full_doc)
 
     def events(self, **kwargs):
-        """Returns a query for *Events* associated with this process's process GUID.
+        """Returns a query for *Event*s associated with this process's process GUID.
 
         :param kwargs: Arguments to filter the event query with.
         :return: Returns a :py:class:`threathunter.rest_api.Query` object with the appropriate search parameters for events
@@ -44,7 +44,7 @@ class Process(UnrefreshableModel):
         >>> [print(event) for event in process.events()]
         >>> [print(event) for event in process.events(event_type="modload")]
         """
-        return self._cb.select(Events).where(process_guid=self.process_guid).and_(**kwargs)
+        return self._cb.select(Event).where(process_guid=self.process_guid).and_(**kwargs)
 
     def tree(self):
         """Returns a *Tree* of children (and possibly siblings) associated with this process.
@@ -107,7 +107,7 @@ class Process(UnrefreshableModel):
                                                                self._cb.session.server)
 
 
-class Events(UnrefreshableModel):
+class Event(UnrefreshableModel):
     urlobject = '/pscr/query/v1/events'
     validation_url = '/pscr/query/v1/events/validate'
     default_sort = 'last_update desc'
@@ -118,8 +118,8 @@ class Events(UnrefreshableModel):
         return Query(cls, cb)
 
     def __init__(self, cb,  model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
-        super(Events, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
-                                     force_init=force_init, full_doc=full_doc)
+        super(Event, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
+                                    force_init=force_init, full_doc=full_doc)
 
 
 class Tree(UnrefreshableModel):
@@ -138,16 +138,3 @@ class Tree(UnrefreshableModel):
 
     def children(self):
         return [Process(self._cb, initial_data=child) for child in self.nodes["children"]]
-
-
-class FeedHits(UnrefreshableModel):
-    urlobject = '/pscr/query/v1/feedhits'
-    primary_key = 'process_guid'
-
-    @classmethod
-    def _query_implementation(cls, cb):
-        return FeedHitsQuery(cls, cb)
-
-    def __init__(self, cb,  model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
-        super(FeedHits, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
-                                       force_init=force_init, full_doc=full_doc)

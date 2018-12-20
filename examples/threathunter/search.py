@@ -3,7 +3,7 @@
 import sys
 
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
-from cbapi.psc.threathunter import Process, Events, Tree, FeedHits
+from cbapi.psc.threathunter import Process, Event, Tree
 from solrq import Range, Value
 
 
