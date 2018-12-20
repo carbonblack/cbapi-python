@@ -31,8 +31,6 @@ instances manually, or allow ``CbThreatHunterAPI.select()`` to do it for you:
     :members:
 .. autoclass:: cbapi.psc.threathunter.models.AsyncProcessQuery
     :members:
-.. autoclass:: cbapi.psc.threathunter.models.TreeQuery
-    :members:
 
 Models
 ------
