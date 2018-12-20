@@ -188,13 +188,6 @@ class Query(PaginatedQuery):
         self._batch_size = 100
         self._default_args = {}
 
-    def _clone(self):
-        nq = self.__class__(self._doc_class, self._cb)
-        nq._sort_by = self._sort_by
-        nq._group_by = self._group_by
-        nq._batch_size = self._batch_size
-        return nq
-
     def where(self, q=None, **kwargs):
         """Add a filter to this query.
 
@@ -235,7 +228,7 @@ class Query(PaginatedQuery):
         :rtype: :py:class:`Query`
         """
         if not q and not kwargs:
-            raise ApiError(".or_() expects a solrq.Q, or kwargs")
+            raise ApiError(".or_() expects a solrq.Q or kwargs")
 
         self._query_builder.or_(q, **kwargs)
         return self
@@ -335,6 +328,16 @@ class AsyncProcessQuery(Query):
         self._timed_out = False
 
     def timeout(self, msecs):
+        """Sets the timeout on a process query.
+
+        Example::
+
+        >>> cb.select(Process).where(process_name="foo.exe").timeout(5000)
+
+        :param: msecs: the timeout duration, in milliseconds
+        :return: AsyncProcessQuery object
+        :rtype: :py:class:`AsyncProcessQuery:
+        """
         self._timeout = msecs
         return self
 
