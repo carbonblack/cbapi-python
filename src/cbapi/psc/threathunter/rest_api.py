@@ -27,8 +27,24 @@ class CbThreatHunterAPI(BaseAPI):
             return Query(cls, self, **kwargs)
 
     def queries(self):
+        """Retrieves a list of queries, active or complete, known by
+        the ThreatHunter server.
+
+        :return: a list of query ids
+        :rtype: list(str)
+        """
         ids = self.get_object("/pscr/query/v1/list")
         return ids.get("query_ids", [])
 
     def limits(self):
+        """Returns a dictionary containing API limiting information.
+
+        Example:
+
+        >>> cb.limits()
+        {u'status_code': 200, u'time_bounds': {u'upper': 1545335070095, u'lower': 1542779216139}}
+
+        :return: a dict of limiting information
+        :rtype: dict(str, str)
+        """
         return self.get_object("/pscr/query/v1/limits")
