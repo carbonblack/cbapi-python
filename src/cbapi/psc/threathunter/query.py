@@ -345,7 +345,7 @@ class AsyncProcessQuery(Query):
 
         :param: msecs: the timeout duration, in milliseconds
         :return: AsyncProcessQuery object
-        :rtype: :py:class:`AsyncProcessQuery:
+        :rtype: :py:class:`AsyncProcessQuery`
         """
         self._timeout = msecs
         return self

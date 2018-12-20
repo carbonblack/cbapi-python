@@ -36,8 +36,8 @@ class Process(UnrefreshableModel):
         """Returns a query for *Event*s associated with this process's process GUID.
 
         :param kwargs: Arguments to filter the event query with.
-        :return: Returns a :py:class:`threathunter.rest_api.Query` object with the appropriate search parameters for events
-        :rtype: :py:class:`threathunter.rest_api.Query`
+        :return: Returns a Query object with the appropriate search parameters for events
+        :rtype: :py:class:`cbapi.psc.threathunter.query.Query`
 
         Example::
 
@@ -47,7 +47,7 @@ class Process(UnrefreshableModel):
         return self._cb.select(Event).where(process_guid=self.process_guid).and_(**kwargs)
 
     def tree(self):
-        """Returns a *Tree* of children (and possibly siblings) associated with this process.
+        """Returns a :py:class:`Tree` of children (and possibly siblings) associated with this process.
 
         :return: Returns a :py:class:`Tree` object
         :rtype: :py:class:`Tree`
@@ -62,9 +62,11 @@ class Process(UnrefreshableModel):
     def parents(self):
         """Returns a query for parent processes associated with this process.
 
-        :return: Returns a :py:class:`threathunter.rest_api.Query` object with the appropriate search parameters for parent processes
-        :rtype: :py:class:`threathunter.rest_api.Query`
+        :return: Returns a Query object with the appropriate search parameters for parent processes, or None if the process has no recorded parent
+        :rtype: :py:class:`cbapi.psc.threathunter.query.AsyncProcessQuery` or None
         """
+        if not self.parent_guid:
+            return None
         return self._cb.select(Process).where(process_guid=self.parent_guid)
 
     def children(self):
@@ -134,4 +136,9 @@ class Tree(UnrefreshableModel):
                                    force_init=force_init, full_doc=full_doc)
 
     def children(self):
+        """Returns all of the children of the process that this tree is centered around.
+
+        :return: A list of :py:class:`Process` instances
+        :rtype: list of :py:class:`Process`
+        """
         return [Process(self._cb, initial_data=child) for child in self.nodes["children"]]
