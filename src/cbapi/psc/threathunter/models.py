@@ -100,6 +100,17 @@ class Process(UnrefreshableModel):
         """
         return next((hsh for hsh in self.process_hash if len(hsh) == 64), None)
 
+    @property
+    def process_pids(self):
+        """Returns a list of PIDs associated with this process.
+
+        :return: A list of PIDs
+        :rtype: list of ints
+        """
+        # NOTE(ww): This exists because the API returns the list as "process_pid",
+        # which is misleading. We just give a slightly clearer name.
+        return self.process_pid
+
     def __repr__(self):
         return "<%s.%s: process id %s document id %s> @ %s" % (self.__class__.__module__, self.__class__.__name__,
                                                                self.process_guid, self.document_guid,
