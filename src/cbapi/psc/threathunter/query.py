@@ -53,8 +53,8 @@ class QueryBuilder(object):
     def where(self, q, **kwargs):
         """Adds a conjunctive filter to a query.
 
-        :param q: string or solrq.Q object
-        :param kwargs: Arguments to construct a solrq.Q with
+        :param q: string or `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
         :return: QueryBuilder object
         :rtype: :py:class:`QueryBuilder`
         """
@@ -78,8 +78,8 @@ class QueryBuilder(object):
     def and_(self, q, **kwargs):
         """Adds a conjunctive filter to a query.
 
-        :param q: string or solrq.Q object
-        :param kwargs: Arguments to construct a solrq.Q with
+        :param q: string or `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
         :return: QueryBuilder object
         :rtype: :py:class:`QueryBuilder`
         """
@@ -102,8 +102,8 @@ class QueryBuilder(object):
     def or_(self, q, **kwargs):
         """Adds a disjunctive filter to a query.
 
-        :param q: solrq.Q object
-        :param kwargs: Arguments to construct a solrq.Q with
+        :param q: `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
         :return: QueryBuilder object
         :rtype: :py:class:`QueryBuilder`
         """
@@ -125,8 +125,8 @@ class QueryBuilder(object):
     def not_(self, q, **kwargs):
         """Adds a negative filter to a query.
 
-        :param q: solrq.Q object
-        :param kwargs: Arguments to construct a solrq.Q with
+        :param q: `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
         :return: QueryBuilder object
         :rtype: :py:class:`QueryBuilder`
         """
@@ -141,7 +141,7 @@ class QueryBuilder(object):
         else:
             raise ApiError(".not_() only accepts solrq.Q objects")
 
-    def collapse(self):
+    def _collapse(self):
         """The query can be represented by either an array of strings
         (_raw_query) which is concatenated and passed directly to Solr, or
         a solrq.Q object (_query) which is then converted into a string to
@@ -171,6 +171,10 @@ class Query(PaginatedQuery):
 
     >>> from cbapi.psc.threathunter import CbThreatHunterAPI
     >>> cb = CbThreatHunterAPI()
+    >>> query = cb.select(Process)
+    >>> query = query.where(process_name="notepad.exe")
+    >>> # alternatively:
+    >>> query = query.where("process_name:notepad.exe")
 
     Notes:
         - The slicing operator only supports start and end parameters, but not step. ``[1:-1]`` is legal, but
@@ -191,8 +195,8 @@ class Query(PaginatedQuery):
     def where(self, q=None, **kwargs):
         """Add a filter to this query.
 
-        :param q: Query string, :py:class:`QueryBuilder`, or solrq.Q object
-        :param kwargs: Arguments to construct a solrq.Q with
+        :param q: Query string, :py:class:`QueryBuilder`, or `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
         :return: Query object
         :rtype: :py:class:`Query`
         """
@@ -208,8 +212,8 @@ class Query(PaginatedQuery):
     def and_(self, q=None, **kwargs):
         """Add a conjunctive filter to this query.
 
-        :param q: Query string or solrq.Q object
-        :param kwargs: Arguments to construct a solrq.Q with
+        :param q: Query string or `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
         :return: Query object
         :rtype: :py:class:`Query`
         """
@@ -222,8 +226,8 @@ class Query(PaginatedQuery):
     def or_(self, q=None, **kwargs):
         """Add a disjunctive filter to this query.
 
-        :param q: solrq.Q object
-        :param kwargs: Arguments to construct a solrq.Q with
+        :param q: `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
         :return: Query object
         :rtype: :py:class:`Query`
         """
@@ -236,8 +240,8 @@ class Query(PaginatedQuery):
     def not_(self, q=None, **kwargs):
         """Adds a negated filter to this query.
 
-        :param q: solrq.Q object
-        :param kwargs: Arguments to construct a solrq.Q with
+        :param q: `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
         :return: Query object
         :rtype: :py:class:`Query`
         """
@@ -250,7 +254,7 @@ class Query(PaginatedQuery):
 
     def _get_query_parameters(self):
         args = self._default_args.copy()
-        args['q'] = self._query_builder.collapse()
+        args['q'] = self._query_builder._collapse()
         args["cb.process_guid"] = self._query_builder._process_guid
         args["fl"] = "*,parent_hash,parent_name,process_cmdline,backend_timestamp,device_external_ip,device_group,device_internal_ip,device_os,process_effective_reputation,process_reputation,ttp"
 
@@ -322,6 +326,9 @@ class Query(PaginatedQuery):
 
 class AsyncProcessQuery(Query):
     """Represents the query logic for an asychronous Process query.
+
+    This class specializes :py:class:`Query` to handle the particulars of
+    process querying.
     """
     def __init__(self, doc_class, cb):
         super(AsyncProcessQuery, self).__init__(doc_class, cb)
@@ -485,7 +492,7 @@ class TreeQuery(BaseQuery):
         return self
 
     def or_(self, **kwargs):
-        """Unsupported.
+        """Unsupported. Will raise if called.
 
         :raise: :py:class:`ApiError`
         """
