@@ -37,5 +37,10 @@ instances manually, or allow ``CbThreatHunterAPI.select()`` to do it for you:
 Models
 ------
 
-
+.. autoclass:: cbapi.psc.threathunter.models.Process
+    :members:
+.. autoclass:: cbapi.psc.threathunter.models.Event
+    :members:
+.. autoclass:: cbapi.psc.threathunter.models.Tree
+    :members:
 
