@@ -321,6 +321,8 @@ class Query(PaginatedQuery):
 
 
 class AsyncProcessQuery(Query):
+    """Represents the query logic for an asychronous Process query.
+    """
     def __init__(self, doc_class, cb):
         super(AsyncProcessQuery, self).__init__(doc_class, cb)
         self._query_token = None
@@ -450,24 +452,43 @@ class AsyncProcessQuery(Query):
 
 
 class TreeQuery(BaseQuery):
+    """ Represents the logic for a Tree query.
+    """
     def __init__(self, doc_class, cb):
         super(TreeQuery, self).__init__()
         self._doc_class = doc_class
         self._cb = cb
         self._args = {}
 
-    # TODO(ww): Instead of reimplementing these, we could probably
-    # make the QueryBuilder class more flexible. Maybe allow it to store
-    # a dict internally, in addition to the Q and string options?
     def where(self, **kwargs):
+        """Adds a conjunctive filter to this *TreeQuery*.
+
+        Example::
+
+        >>> cb.select(Tree).where(process_guid="...")
+
+        :param: kwargs: Arguments to invoke the *TreeQuery* with.
+        :return: this *TreeQuery*
+        :rtype: :py:class:`TreeQuery`
+        """
         self._args = dict(self._args, **kwargs)
         return self
 
     def and_(self, **kwargs):
+        """Adds a conjunctive filter to this *TreeQuery*.
+
+        :param: kwargs: Arguments to invoke the *TreeQuery* with.
+        :return: this *TreeQuery*
+        :rtype: :py:class:`TreeQuery`
+        """
         self.where(**kwargs)
         return self
 
     def or_(self, **kwargs):
+        """Unsupported.
+
+        :raise: :py:class:`ApiError`
+        """
         raise ApiError(".or_() cannot be called on Tree queries")
 
     def _perform_query(self):
