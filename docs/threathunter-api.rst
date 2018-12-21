@@ -1,7 +1,7 @@
 .. _threathunter_api:
 
 Cb ThreatHunter API
-===============
+===================
 
 This page documents the public interfaces exposed by cbapi when communicating with a
 Carbon Black PSC ThreatHunter server.
