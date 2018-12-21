@@ -33,7 +33,7 @@ class Process(UnrefreshableModel):
                                       force_init=force_init, full_doc=full_doc)
 
     def events(self, **kwargs):
-        """Returns a query for *Event*s associated with this process's process GUID.
+        """Returns a query for events associated with this process's process GUID.
 
         :param kwargs: Arguments to filter the event query with.
         :return: Returns a Query object with the appropriate search parameters for events
@@ -118,6 +118,9 @@ class Process(UnrefreshableModel):
 
 
 class Event(UnrefreshableModel):
+    """Events can be queried for via ``CbThreatHunterAPI.select``
+    or though an already selected process with ``Process.events()``.
+    """
     urlobject = '/pscr/query/v1/events'
     validation_url = '/pscr/query/v1/events/validate'
     default_sort = 'last_update desc'
@@ -133,7 +136,8 @@ class Event(UnrefreshableModel):
 
 
 class Tree(UnrefreshableModel):
-    """Represents a process tree.
+    """The preferred interface for interacting with Tree models
+    is ``Process.tree()``.
     """
     urlobject = '/pscr/query/v2/tree'
     primary_key = 'process_guid'
