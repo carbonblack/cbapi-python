@@ -9,9 +9,9 @@ Carbon Black PSC ThreatHunter server.
 Main Interface
 --------------
 
-To use cbapi with Carbon Black ThreatHunter, you will be using the CbThreatHunterAPI.
-The CbThreatHunterAPI object then exposes two main methods to access data on the
-Carbon Black server: ``select`` and ``create``.
+To use cbapi with Carbon Black ThreatHunter, you use CbThreatHunterAPI objects.
+These objects expose two main methods to access data on the
+ThreatHunter server: ``select`` and ``create``.
 
 .. autoclass:: cbapi.psc.threathunter.rest_api.CbThreatHunterAPI
     :members:
