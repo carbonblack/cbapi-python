@@ -3,7 +3,7 @@
 import sys
 
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
-from cbapi.psc.threathunter import Process, Tree
+from cbapi.psc.threathunter import Process
 
 
 def main():
@@ -19,10 +19,10 @@ def main():
 
     tree = cb.select(Process).where(process_guid=args.p)[0].tree()
 
-    for idx, child in enumerate(tree.children()):
+    for idx, child in enumerate(tree.children):
         print("Child #{}".format(idx))
         print("\tName: {}".format(child.process_name))
-        print("\tNumber of children: {}".format(len(child.children())))
+        print("\tNumber of children: {}".format(len(child.children)))
 
 if __name__ == "__main__":
     sys.exit(main())

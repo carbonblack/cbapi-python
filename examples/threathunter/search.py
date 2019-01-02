@@ -43,7 +43,7 @@ def main():
 
         if args.c:
             print("========== children ==========")
-            for child in process.children():
+            for child in process.children:
                 if args.f:
                     print(child)
                 else:
