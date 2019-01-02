@@ -94,7 +94,12 @@ class Process(UnrefreshableModel):
         :return: A string representation of the process's MD5.
         :rtype: str
         """
-        return next((hsh for hsh in self.process_hash if len(hsh) == 32), None)
+        # NOTE: We have to check _info instead of poking the attribute directly
+        # to avoid the missing attrbute login in NewBaseModel.
+        if "process_hash" in self._info:
+            return next((hsh for hsh in self.process_hash if len(hsh) == 32), None)
+        else:
+            return None
 
     @property
     def process_sha256(self):
@@ -103,7 +108,10 @@ class Process(UnrefreshableModel):
         :return: A string representation of the process's SHA256.
         :rtype: str
         """
-        return next((hsh for hsh in self.process_hash if len(hsh) == 64), None)
+        if "process_hash" in self._info:
+            return next((hsh for hsh in self.process_hash if len(hsh) == 64), None)
+        else:
+            return None
 
     @property
     def process_pids(self):
