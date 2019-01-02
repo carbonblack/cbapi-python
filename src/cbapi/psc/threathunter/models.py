@@ -64,15 +64,17 @@ class Process(UnrefreshableModel):
         data = self._cb.select(Tree).where(process_guid=self.process_guid).all()
         return Tree(self._cb, initial_data=data)
 
+    @property
     def parents(self):
         """Returns a query for parent processes associated with this process.
 
         :return: Returns a Query object with the appropriate search parameters for parent processes, or None if the process has no recorded parent
         :rtype: :py:class:`cbapi.psc.threathunter.query.AsyncProcessQuery` or None
         """
-        if not self.parent_guid:
-            return None
-        return self._cb.select(Process).where(process_guid=self.parent_guid)
+        if "parent_guid" in self._info:
+            return self._cb.select(Process).where(process_guid=self.parent_guid)
+        else:
+            return []
 
     def children(self):
         """Returns a list of child processes for this process.
