@@ -359,11 +359,6 @@ class AsyncProcessQuery(Query):
 
         query_start = self._cb.post_object("/pscr/query/v1/start", body={"search_params": args})
 
-        # TODO(ww): Is this still needed, now that we check for errorMessage
-        # in api_json_request?
-        if query_start.json().get("status_code") != 200:
-            raise ServerError(query_start.status_code, query_start.json().get("message"))
-
         self._query_token = query_start.json().get("query_id")
         self._timed_out = False
         self._submit_time = time.time() * 1000
@@ -387,7 +382,6 @@ class AsyncProcessQuery(Query):
         if searchers_completed < searchers_contacted:
             if self._timeout != 0 and (time.time() * 1000) - self._submit_time > self._timeout:
                 self._timed_out = True
-                # TODO(ww): Maybe raise here instead of returning?
                 return False
             return True
 
@@ -397,7 +391,6 @@ class AsyncProcessQuery(Query):
         if self._count_valid:
             return self._total_results
 
-        # TODO(ww): Do we need to reset self._submit_time here?
         while self._still_querying():
             time.sleep(.5)
 
