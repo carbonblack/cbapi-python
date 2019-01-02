@@ -35,7 +35,7 @@ def main():
 
         if args.e:
             print("=========== events ===========")
-            for event in process.events(event_type=Value("*", safe=True)):
+            for event in process.events():
                 if args.f:
                     print(event)
                 else:
