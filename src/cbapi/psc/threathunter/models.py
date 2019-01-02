@@ -44,7 +44,12 @@ class Process(UnrefreshableModel):
         >>> [print(event) for event in process.events()]
         >>> [print(event) for event in process.events(event_type="modload")]
         """
-        return self._cb.select(Event).where(process_guid=self.process_guid).and_(**kwargs)
+        query = self._cb.select(Event).where(process_guid=self.process_guid)
+
+        if kwargs:
+            query = query.and_(**kwargs)
+
+        return query
 
     def tree(self):
         """Returns a :py:class:`Tree` of children (and possibly siblings) associated with this process.
