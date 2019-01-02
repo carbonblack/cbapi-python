@@ -83,7 +83,7 @@ class Process(UnrefreshableModel):
         :return: Returns a list of process objects
         :rtype: list of :py:class:`Process`
         """
-        return self.tree().children()
+        return self.tree().children
 
     @property
     def siblings(self):
@@ -167,6 +167,7 @@ class Tree(UnrefreshableModel):
         super(Tree, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                    force_init=force_init, full_doc=full_doc)
 
+    @property
     def children(self):
         """Returns all of the children of the process that this tree is centered around.
 
