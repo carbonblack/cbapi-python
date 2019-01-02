@@ -76,6 +76,7 @@ class Process(UnrefreshableModel):
         else:
             return []
 
+    @property
     def children(self):
         """Returns a list of child processes for this process.
 
@@ -84,6 +85,7 @@ class Process(UnrefreshableModel):
         """
         return self.tree().children()
 
+    @property
     def siblings(self):
         # NOTE(ww): This shold be provided by the /tree endpoint eventually,
         # but currently isn't.
