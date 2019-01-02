@@ -51,7 +51,7 @@ def main():
 
         if args.p:
             print("========== parents ==========")
-            for parent in process.parents():
+            for parent in process.parents:
                 if args.f:
                     print(parent)
                 else:
