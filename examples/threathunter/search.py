@@ -20,9 +20,6 @@ def main():
     args = parser.parse_args()
     cb = get_cb_threathunter_object(args)
 
-    print("Number of queries: {}".format(len(cb.queries())))
-    print("API limits: {}".format(cb.limits()))
-
     processes = cb.select(Process).where(args.q)
 
     print("Number of processes: {}".format(len(processes)))
