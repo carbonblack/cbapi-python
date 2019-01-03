@@ -2,11 +2,13 @@
 #
 
 import sys
-from cbapi.defense import Policy
-from cbapi.example_helpers import build_cli_parser, get_cb_defense_object
-from cbapi.errors import ServerError
-import logging
+
 import json
+import logging
+
+from cbapi.errors import ServerError
+from cbapi.example_helpers import build_cli_parser, get_cb_defense_object
+from cbapi.psc.defense import Policy
 
 log = logging.getLogger(__name__)
 

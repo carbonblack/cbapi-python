@@ -1,5 +1,5 @@
-from ..utils import convert_query_params
-from ..query import PaginatedQuery
+from cbapi.utils import convert_query_params
+from cbapi.query import PaginatedQuery
 from .cblr import LiveResponseSessionManager
 
 from cbapi.connection import BaseAPI
@@ -26,7 +26,7 @@ class CbDefenseAPI(BaseAPI):
     >>> cb = CbDefenseAPI(profile="production")
     """
     def __init__(self, *args, **kwargs):
-        super(CbDefenseAPI, self).__init__(product_name="defense", *args, **kwargs)
+        super(CbDefenseAPI, self).__init__(product_name="psc", *args, **kwargs)
         self._lr_scheduler = None
 
     def _perform_query(self, cls, query_string=None):
@@ -74,7 +74,7 @@ class Query(PaginatedQuery):
 
     Examples::
 
-    >>> from cbapi.defense import CbDefenseAPI
+    >>> from cbapi.psc.defense import CbDefenseAPI
     >>> cb = CbDefenseAPI()
 
     Notes:

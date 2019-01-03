@@ -1,10 +1,12 @@
-from cbapi.defense import *
-import unittest
 import sys
-import os
-import glob
 import time
+
+import glob
 import json
+import os
+import unittest
+
+from cbapi.psc.defense import *
 
 
 sys.path.append(os.path.dirname(__file__))

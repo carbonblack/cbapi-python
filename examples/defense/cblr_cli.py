@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
-from cbapi.example_helpers import build_cli_parser, get_cb_defense_object, CblrCli
-from cbapi.defense import Device
-import logging
 import sys
+
+import logging
+
+from cbapi.example_helpers import build_cli_parser, get_cb_defense_object, CblrCli
+from cbapi.psc.defense import Device
 
 log = logging.getLogger(__name__)
 

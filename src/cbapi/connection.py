@@ -38,8 +38,7 @@ from . import __version__
 
 from .cache.lru import lru_cache_function
 from .models import CreatableModelMixin
-from .utils import calculate_elapsed_time
-
+from .utils import calculate_elapsed_time, convert_query_params
 
 log = logging.getLogger(__name__)
 
@@ -252,6 +251,8 @@ class BaseAPI(object):
 
     def get_object(self, uri, query_parameters=None, default=None):
         if query_parameters:
+            if isinstance(query_parameters, dict):
+                query_parameters = convert_query_params(query_parameters)
             uri += '?%s' % (urllib.parse.urlencode(sorted(query_parameters)))
 
         result = self.api_json_request("GET", uri)
@@ -276,7 +277,17 @@ class BaseAPI(object):
                 raw_data = kwargs.pop("data", {})
                 raw_data = json.dumps(raw_data, sort_keys=True)
 
-        return self.session.http_request(method, uri, headers=headers, data=raw_data, **kwargs)
+        result = self.session.http_request(method, uri, headers=headers, data=raw_data, **kwargs)
+
+        try:
+            resp = result.json()
+        except:
+            return result
+
+        if "errorMessage" in resp:
+            raise ServerError(error_code=result.status_code, message=resp["errorMessage"])
+
+        return result
 
     def post_object(self, uri, body, **kwargs):
         return self.api_json_request("POST", uri, data=body, **kwargs)
