@@ -5,7 +5,7 @@ cbapi-python
 from setuptools import setup
 import sys
 
-packages = ['cbapi', 'cbapi.protection', 'cbapi.response', 'cbapi.cache', 'cbapi.psc.defense']
+packages = ['cbapi', 'cbapi.protection', 'cbapi.response', 'cbapi.cache', 'cbapi.psc.defense', 'cbapi.pcs.threathunter']
 if sys.version_info < (3, 0):
     packages.extend(['cbapi.legacy', 'cbapi.legacy.util'])
 
@@ -29,7 +29,7 @@ if sys.version_info < (3, 0):
 
 setup(
     name='cbapi',
-    version='1.3.7',
+    version='1.3.8',
     url='https://github.com/carbonblack/cbapi-python',
     license='MIT',
     author='Carbon Black',
