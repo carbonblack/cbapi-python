@@ -1,5 +1,6 @@
 from cbapi.connection import BaseAPI
 from cbapi.errors import ApiError
+from six import string_types
 import logging
 
 log = logging.getLogger(__name__)
@@ -17,9 +18,13 @@ class InvalidReport(CbTHFeedError):
     pass
 
 
-class FeedModel(object):
+# TODO(ww): Integrate this with cbapi.NewBaseModel maybe?
+# Is there enough similarity between the two?
+class FeedBaseModel(object):
+    _safe_dict_types = (str, int, float, bool, type(None),)
+
     def __init__(self, cb):
-        super(FeedModel, self).__init__()
+        super(FeedBaseModel, self).__init__()
         self._cb = cb
 
     def __str__(self):
@@ -28,8 +33,8 @@ class FeedModel(object):
 
         for key, value in self.__dict__.items():
             status = "   "
-            # TODO(ww): Don't special-case FeedModel?
-            if isinstance(value, FeedModel):
+            # TODO(ww): Don't special-case FeedBaseModel?
+            if isinstance(value, FeedBaseModel):
                 val = value.__class__.__name__
             else:
                 val = str(value)
@@ -42,16 +47,16 @@ class FeedModel(object):
     def as_dict(self):
         blob = {}
         for key, value in self.__dict__.items():
-            if isinstance(value, (str, int, float, bool, type(None))):
+            if isinstance(value, self._safe_dict_types):
                 blob[key] = value
             elif isinstance(value, list):
-                if all(isinstance(x, FeedModel) for x in value):
+                if all(isinstance(x, FeedBaseModel) for x in value):
                     blob[key] = [x.as_dict() for x in value]
-                elif all(isinstance(x, (str, int, float, bool, None)) for x in value):
+                elif all(isinstance(x, self._safe_dict_types) for x in value):
                     blob[key] = value
                 else:
                     raise CbTHFeedError("unsupported type for attribute {}: {}".format(key, value.__class__.__name__))
-            elif isinstance(value, FeedModel):
+            elif isinstance(value, FeedBaseModel):
                 blob[key] = value.as_dict()
             elif isinstance(value, CbThreatHunterFeedAPI):
                 continue
@@ -60,7 +65,12 @@ class FeedModel(object):
         return blob
 
 
-class FeedInfo(FeedModel):
+class ValidatableModel(FeedBaseModel):
+    def validate(self):
+        raise CbTHFeedError("validate() not implemented")
+
+
+class FeedInfo(ValidatableModel):
     """docstring for FeedInfo"""
     def __init__(self, cb, *, name, owner, provider_url, summary, category, access, id=None):
         super(FeedInfo, self).__init__(cb)
@@ -73,11 +83,11 @@ class FeedInfo(FeedModel):
         self.access = access
         self.id = id
 
-    def update(self, feedinfo):
+    def update(self, **kwargs):
         pass
 
     def delete(self):
-        self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}".format(self.id))
+        self._cb.delete_feed(self)
 
     def reports(self):
         resp = self._cb.get_object("/threathunter/feedmgr/v1/feed/{}/report".format(self.id))
@@ -87,7 +97,7 @@ class FeedInfo(FeedModel):
         pass
 
 
-class QueryIOC(FeedModel):
+class QueryIOC(FeedBaseModel):
     """docstring for QueryIOC"""
     def __init__(self, cb, *, search_query, index_type=None):
         super(QueryIOC, self).__init__(cb)
@@ -95,7 +105,7 @@ class QueryIOC(FeedModel):
         self.index_type = index_type
 
 
-class Report(FeedModel):
+class Report(ValidatableModel):
     """docstring for Report"""
     def __init__(self, cb, *, id, timestamp, title, description, severity, link=None, tags=[], iocs=[], iocs_v2=[], visibility=None):
         super(Report, self).__init__(cb)
@@ -115,14 +125,28 @@ class Report(FeedModel):
         pass
 
 
-class Feed(FeedModel):
+class Feed(ValidatableModel):
     def __init__(self, cb, *, feedinfo, reports):
         super(Feed, self).__init__(cb)
         self.feedinfo = FeedInfo(self._cb, **feedinfo)
         self.reports = [Report(self._cb, **report) for report in reports]
 
     def delete(self):
-        self.feedinfo.delete()
+        self._cb.delete_feed(self)
+
+    def validate(self):
+        self.feedinfo.validate()
+        self.reports.validate()
+
+
+class IOC(ValidatableModel):
+    def __init__(self, cb, *, id, match_type, values, field=None, link=None):
+        super(IOC, self).__init__(cb)
+        self.id = id
+        self.match_type = match_type
+        self.values = values
+        self.field = field
+        self.link = link
 
 # class IOCs(object):
 #     """docstring for IOCs"""
@@ -157,7 +181,19 @@ class CbThreatHunterFeedAPI(BaseAPI):
     def create_feed(self, reports=[], **kwargs):
         feed = Feed(self, feedinfo=kwargs, reports=reports)
         resp = self.post_object("/threathunter/feedmgr/v1/feed", feed.as_dict())
-        return FeedInfo(**resp.json())
+        return FeedInfo(cb, **resp.json())
+
+    def delete_feed(self, feed):
+        if isinstance(feed, Feed):
+            feed_id = feed.feedinfo.id
+        elif isinstance(feed, FeedInfo):
+            feed_id = feed.id
+        elif isinstance(feed, string_types):
+            feed_id = feed
+        else:
+            raise CbTHFeedError("bad type for feed deletion: {}".format(feed.__class__.__name__))
+
+        self.delete_object("/threathunter/feedmgr/v1/feed/{}".format(feed_id))
 
 
 if __name__ == '__main__':
@@ -166,12 +202,13 @@ if __name__ == '__main__':
     logging.getLogger("__main__").setLevel(logging.DEBUG)
     cb = CbThreatHunterFeedAPI()
 
-    cb.create_feed(name="ToB Test Feed", owner="Trail of Bits",
-                   provider_url="https://www.trailofbits.com/",
-                   summary="A test feed.", category="Partner",
-                   access="private")
+    feed = cb.create_feed(name="ToB Test Feed", owner="Trail of Bits",
+                          provider_url="https://www.trailofbits.com/",
+                          summary="A test feed.", category="Partner",
+                          access="private")
 
     feeds = cb.feeds()
-
     for feed in feeds:
         print(feed)
+
+    cb.delete_feed(feed)
