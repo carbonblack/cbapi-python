@@ -1,7 +1,20 @@
 from cbapi.connection import BaseAPI
+from cbapi.errors import ApiError
 import logging
 
 log = logging.getLogger(__name__)
+
+
+class CbTHFeedError(ApiError):
+    pass
+
+
+class InvalidFeedInfo(CbTHFeedError):
+    pass
+
+
+class InvalidReport(CbTHFeedError):
+    pass
 
 
 class FeedModel(object):
@@ -25,6 +38,26 @@ class FeedModel(object):
             lines.append(u"{0:s} {1:>20s}: {2:s}".format(status, key, val))
 
         return "\n".join(lines)
+
+    def as_dict(self):
+        blob = {}
+        for key, value in self.__dict__.items():
+            if isinstance(value, (str, int, float, bool, type(None))):
+                blob[key] = value
+            elif isinstance(value, list):
+                if all(isinstance(x, FeedModel) for x in value):
+                    blob[key] = [x.as_dict() for x in value]
+                elif all(isinstance(x, (str, int, float, bool, None)) for x in value):
+                    blob[key] = value
+                else:
+                    raise CbTHFeedError("unsupported type for attribute {}: {}".format(key, value.__class__.__name__))
+            elif isinstance(value, FeedModel):
+                blob[key] = value.as_dict()
+            elif isinstance(value, CbThreatHunterFeedAPI):
+                continue
+            else:
+                raise CbTHFeedError("unsupported type for attribute {}: {}".format(key, value.__class__.__name__))
+        return blob
 
 
 class FeedInfo(FeedModel):
@@ -121,8 +154,11 @@ class CbThreatHunterFeedAPI(BaseAPI):
         resp = self.get_object("/threathunter/feedmgr/v1/feed/{}".format(feed_id))
         return resp
 
-    def create(self, feed):
-        pass
+    def create_feed(self, reports=[], **kwargs):
+        feed = Feed(self, feedinfo=kwargs, reports=reports)
+        resp = self.post_object("/threathunter/feedmgr/v1/feed", feed.as_dict())
+        return FeedInfo(**resp.json())
+
 
 if __name__ == '__main__':
     logging.basicConfig()
@@ -130,7 +166,12 @@ if __name__ == '__main__':
     logging.getLogger("__main__").setLevel(logging.DEBUG)
     cb = CbThreatHunterFeedAPI()
 
-    feeds = cb.feeds(include_public=True)
+    cb.create_feed(name="ToB Test Feed", owner="Trail of Bits",
+                   provider_url="https://www.trailofbits.com/",
+                   summary="A test feed.", category="Partner",
+                   access="private")
+
+    feeds = cb.feeds()
 
     for feed in feeds:
         print(feed)
