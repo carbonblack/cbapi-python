@@ -41,20 +41,20 @@ class FeedBaseModel(object):
 
         return "\n".join(lines)
 
-    def as_dict(self):
+    def _as_dict(self):
         blob = {}
         for key, value in self.__dict__.items():
             if isinstance(value, self._safe_dict_types):
                 blob[key] = value
             elif isinstance(value, list):
                 if all(isinstance(x, FeedBaseModel) for x in value):
-                    blob[key] = [x.as_dict() for x in value]
+                    blob[key] = [x._as_dict() for x in value]
                 elif all(isinstance(x, self._safe_dict_types) for x in value):
                     blob[key] = value
                 else:
                     raise CbTHFeedError("unsupported type for attribute {}: {}".format(key, value.__class__.__name__))
             elif isinstance(value, FeedBaseModel):
-                blob[key] = value.as_dict()
+                blob[key] = value._as_dict()
             elif isinstance(value, CbThreatHunterFeedAPI):
                 continue
             else:
@@ -67,11 +67,11 @@ class ValidatableModel(FeedBaseModel):
     def _ensure_valid(cls, func):
         @functools.wraps(func)
         def wrap_ensure_valid(self, *args, **kwargs):
-            self.validate()
+            self._validate()
             return func(self, *args, **kwargs)
         return wrap_ensure_valid
 
-    def validate(self):
+    def _validate(self):
         # If a subclass gives us a basic validation schema, use it.
         if self._validation_schema:
             for attr, exp_type in self._validation_schema.items():
@@ -82,10 +82,13 @@ class ValidatableModel(FeedBaseModel):
                                                                  exp_type.__name__,
                                                                  value))
         else:
-            raise CbTHFeedError("validate() not implemented")
+            raise CbTHFeedError("_validate() not implemented")
 
 
 class FeedInfo(ValidatableModel):
+    """Represents the metadata associated with a :py:class:`Feed` either
+    retrieved from the Feed API or ready to be sent to the Feed API.
+    """
     _validation_schema = {
         'name': str,
         'owner': str,
@@ -95,7 +98,6 @@ class FeedInfo(ValidatableModel):
         'access': str,
     }
 
-    """docstring for FeedInfo"""
     def __init__(self, cb, *, name, owner, provider_url, summary, category, access, id=None):
         super(FeedInfo, self).__init__(cb)
         self.name = name
@@ -109,19 +111,34 @@ class FeedInfo(ValidatableModel):
 
     @ValidatableModel._ensure_valid
     def update(self, **kwargs):
+        """Updates this FeedInfo instance with new fields, both locally
+        and on the Feed API server.
+
+        :param kwargs: (optional) The fields to change within this instance
+        :return: A new :py:class:`FeedInfo` with the updated fields
+        :rtype: :py:class:`FeedInfo`
+        :raise FeedValidationError: if this FeedInfo doesn't have an ID
+        """
         # NOTE(ww): We allow FeedInfos to be instantiated without an ID for
         # server side creation, so normal validation can't handle this case.
         if not self.id:
             raise FeedValidationError("update() called without feed ID")
 
-        resp = self._cb.put_object("/feedmgr/v1/feed/{}/feedinfo".format(self.id), self.as_dict())
+        resp = self._cb.put_object("/feedmgr/v1/feed/{}/feedinfo".format(self.id), self._as_dict())
         return FeedInfo(self._cb, **resp.json())
 
     def delete(self):
+        """Deletes the feed associated with this FeedInfo from
+        the Feed API server.
+        """
+        if not self.id:
+            raise FeedValidationError("delete() called without feed ID")
         self._cb.delete_feed(self)
 
     def reports(self):
-        # NOTE(ww): See update() above,
+        """Retrieves the reports associated with this FeedInfo
+        from the Feed API server.
+        """
         if not self.id:
             raise FeedValidationError("reports() called without feed ID")
 
@@ -129,11 +146,16 @@ class FeedInfo(ValidatableModel):
         return [Report(self._cb, **report) for report in resp.get("results", [])]
 
     def replace(self, reports):
-        pass
+        """Replaces the reports currently associated with this FeedInfo
+        with the given reports.
+
+        :param reports: the replacement reports
+        :type reports: list of :py:class:`Report`
+        """
+        raise CbTHFeedError("not yet implemented")
 
 
 class QueryIOC(FeedBaseModel):
-    """docstring for QueryIOC"""
     def __init__(self, cb, *, search_query, index_type=None):
         super(QueryIOC, self).__init__(cb)
         self.search_query = search_query
@@ -149,7 +171,6 @@ class Report(ValidatableModel):
         'severity': int,
     }
 
-    """docstring for Report"""
     def __init__(self, cb, *, id, timestamp, title, description, severity, link=None, tags=[], iocs=[], iocs_v2=[], visibility=None):
         # TODO(ww): Should we be supporting v1 as well? API docs
         # indicate that v1 will be automatically converted.
@@ -167,42 +188,65 @@ class Report(ValidatableModel):
         self.iocs_v2 = [IOC(self._cb, **ioc) for ioc in iocs_v2]
         self.visibility = visibility
 
-    def validate(self):
-        super(Report, self).validate()
+    def _validate(self):
+        super(Report, self)._validate()
 
         # TODO(ww): Docs indicate that these lists are optional,
         # but are they *always* optional?
         for ioc in self.iocs:
-            ioc.validate()
+            ioc._validate()
         for ioc_v2 in self.iocs_v2:
-            ioc_v2.validate()
+            ioc_v2._validate()
 
     def delete(self):
+        """Deletes this report from its feed on the Feed API server.
+        """
         # TODO(ww): Pass feed_id in somehow.
-        pass
+        raise CbTHFeedError("not yet implemented")
 
 
 class Feed(ValidatableModel):
+    """Represents a feed either retrieved from the Feed API or
+    ready to be sent to the Feed API.
+    """
     def __init__(self, cb, *, feedinfo, reports):
         super(Feed, self).__init__(cb)
         self.feedinfo = FeedInfo(self._cb, **feedinfo)
         self.reports = [Report(self._cb, **report) for report in reports]
 
-    def validate(self):
-        self.feedinfo.validate()
-        # self.reports.validate()
+    def _validate(self):
+        self.feedinfo._validate()
+        [report.validate() for report in self.reports]
 
     @ValidatableModel._ensure_valid
     def create(self):
-        resp = self._cb.post_object("/threathunter/feedmgr/v1/feed", self.as_dict())
+        """Creates a feed on the Feed API server corresponding to this object's state.
+
+        :return: A :py:class:`FeedInfo` instance containing the new feed's metadata
+        :rtype: :py:class:`FeedInfo`
+        """
+        # Feeds that already have IDs have already been created.
+        if self.feedinfo.id:
+            raise CbTHFeedError("create() called on an already created feed")
+        resp = self._cb.post_object("/threathunter/feedmgr/v1/feed", self._as_dict())
         return FeedInfo(self._cb, **resp.json())
 
     @ValidatableModel._ensure_valid
     def delete(self):
+        """Deletes this feed from the Feed API server.
+        """
         self._cb.delete_feed(self)
+
+    def reports(self):
+        """A wrapper for :py:meth:`FeedInfo.reports()`.
+        """
+        return self.feedinfo.reports()
 
 
 class IOC(ValidatableModel):
+    """Represents one or more values of a particular IOC type.
+    Encapsulated by :py:class:`Report` instances.
+    """
     _validation_schema = {
         'id': str,
         'match_type': str,
@@ -217,8 +261,10 @@ class IOC(ValidatableModel):
         self.field = field
         self.link = link
 
-    def validate(self):
-        super(IOC, self).validate()
+    def _validate(self):
+        """Validates this IOC object.
+        """
+        super(IOC, self)._validate()
 
         for value in self.values:
             if not value or not isinstance(value, str):
@@ -259,7 +305,7 @@ class CbThreatHunterFeedAPI(BaseAPI):
         return resp
 
     def create_feed(self, reports=[], **kwargs):
-        """A convenience method for :py:meth:`Feed.create`.
+        """A convenience method for :py:meth:`Feed.create()`.
 
         :param list(str) reports: (optional) Create the feed with the given :py:class:`Report`s
         :return: a new :py:class:`FeedInfo` corresponding to the new feed
@@ -267,8 +313,7 @@ class CbThreatHunterFeedAPI(BaseAPI):
 
         Usage::
 
-        >>> cb.create_feed(name="My Feed", owner="Nemo", provider_url="https://example.com",
-                           summary="Description", category="Partner", access="private")
+            >>> cb.create_feed(name="My Feed", owner="Nemo", provider_url="https://example.com", summary="Description", category="Partner", access="private")
         """
         feed = Feed(self, feedinfo=kwargs, reports=reports)
         return feed.create()

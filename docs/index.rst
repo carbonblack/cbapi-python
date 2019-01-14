@@ -303,6 +303,7 @@ documenting all of the methods available to you.
    protection-api
    defense-api
    threathunter-api
+   threathunter-feed-api
    exceptions
 
 Indices and tables
