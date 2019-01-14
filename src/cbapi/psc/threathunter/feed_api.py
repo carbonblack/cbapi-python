@@ -2,6 +2,7 @@ from cbapi.connection import BaseAPI
 from cbapi.errors import ApiError
 from six import string_types
 import logging
+import functools
 
 log = logging.getLogger(__name__)
 
@@ -66,11 +67,38 @@ class FeedBaseModel(object):
 
 
 class ValidatableModel(FeedBaseModel):
+    @classmethod
+    def _ensure_valid(cls, func):
+        @functools.wraps(func)
+        def wrap_ensure_valid(self, *args, **kwargs):
+            self.validate()
+            return func(self, *args, **kwargs)
+        return wrap_ensure_valid
+
     def validate(self):
-        raise CbTHFeedError("validate() not implemented")
+        # If a subclass gives us a basic validation schema, use it.
+        if self._validation_schema:
+            for attr, exp_type in self._validation_schema.items():
+                value = self.__dict__[attr]
+                if not value or not isinstance(value, exp_type):
+                    raise InvalidFeedInfo(
+                        "expected truthy {}={}, got '{}'".format(attr,
+                                                                 exp_type.__name__,
+                                                                 value))
+        else:
+            raise CbTHFeedError("validate() not implemented")
 
 
 class FeedInfo(ValidatableModel):
+    _validation_schema = {
+        'name': str,
+        'owner': str,
+        'provider_url': str,
+        'summary': str,
+        'category': str,
+        'access': str,
+    }
+
     """docstring for FeedInfo"""
     def __init__(self, cb, *, name, owner, provider_url, summary, category, access, id=None):
         super(FeedInfo, self).__init__(cb)
@@ -90,6 +118,11 @@ class FeedInfo(ValidatableModel):
         self._cb.delete_feed(self)
 
     def reports(self):
+        # NOTE(ww): We allow FeedInfos to be instantiated without an ID for
+        # server side creation, so normal validation can't handle this case.
+        if not self.id:
+            raise InvalidFeedInfo("reports() called without feed ID")
+
         resp = self._cb.get_object("/threathunter/feedmgr/v1/feed/{}/report".format(self.id))
         return [Report(self._cb, **report) for report in resp.get("results", [])]
 
@@ -106,8 +139,21 @@ class QueryIOC(FeedBaseModel):
 
 
 class Report(ValidatableModel):
+    _validation_schema = {
+        'id': str,
+        'timestamp': int,
+        'title': str,
+        'description': str,
+        'severity': int,
+    }
+
     """docstring for Report"""
     def __init__(self, cb, *, id, timestamp, title, description, severity, link=None, tags=[], iocs=[], iocs_v2=[], visibility=None):
+        # TODO(ww): Should we be supporting v1 as well? API docs
+        # indicate that v1 will be automatically converted.
+        if iocs:
+            raise CbTHFeedError("expected iocs_v2 only")
+
         super(Report, self).__init__(cb)
         self.id = id
         self.timestamp = timestamp
@@ -116,9 +162,18 @@ class Report(ValidatableModel):
         self.severity = severity
         self.link = link
         self.tags = tags
-        self.iocs = iocs
-        self.iocs_v2 = iocs_v2
+        self.iocs_v2 = [IOC(self._cb, **ioc) for ioc in iocs_v2]
         self.visibility = visibility
+
+    def validate(self):
+        super(Report, self).validate()
+
+        # TODO(ww): Docs indicate that these lists are optional,
+        # but are they *always* optional?
+        for ioc in self.iocs:
+            ioc.validate()
+        for ioc_v2 in self.iocs_v2:
+            ioc_v2.validate()
 
     def delete(self):
         # TODO(ww): Pass feed_id in somehow.
@@ -131,12 +186,18 @@ class Feed(ValidatableModel):
         self.feedinfo = FeedInfo(self._cb, **feedinfo)
         self.reports = [Report(self._cb, **report) for report in reports]
 
-    def delete(self):
-        self._cb.delete_feed(self)
-
     def validate(self):
         self.feedinfo.validate()
-        self.reports.validate()
+        # self.reports.validate()
+
+    @ValidatableModel._ensure_valid
+    def create(self):
+        resp = self._cb.post_object("/threathunter/feedmgr/v1/feed", self.as_dict())
+        return FeedInfo(self._cb, **resp.json())
+
+    @ValidatableModel._ensure_valid
+    def delete(self):
+        self._cb.delete_feed(self)
 
 
 class IOC(ValidatableModel):
@@ -180,8 +241,7 @@ class CbThreatHunterFeedAPI(BaseAPI):
 
     def create_feed(self, reports=[], **kwargs):
         feed = Feed(self, feedinfo=kwargs, reports=reports)
-        resp = self.post_object("/threathunter/feedmgr/v1/feed", feed.as_dict())
-        return FeedInfo(cb, **resp.json())
+        return feed.create()
 
     def delete_feed(self, feed):
         if isinstance(feed, Feed):
