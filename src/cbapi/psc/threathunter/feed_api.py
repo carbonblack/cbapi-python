@@ -216,12 +216,6 @@ class Report(ValidatableModel):
         for ioc_v2 in self.iocs_v2:
             ioc_v2._validate()
 
-    def delete(self):
-        """Deletes this report from its feed on the Feed API server.
-        """
-        # TODO(ww): Pass feed_id in somehow.
-        raise CbTHFeedError("not yet implemented")
-
 
 class Feed(ValidatableModel):
     """Represents a feed either retrieved from the Feed API or
@@ -271,6 +265,19 @@ class Feed(ValidatableModel):
         """A wrapper for :py:meth:`FeedInfo.replace()`.
         """
         return self.feedinfo.replace(reports)
+
+    @ValidatableModel._ensure_valid
+    def delete_report(self, report):
+        """Deletes the given report from the :py:class:`Feed`.
+
+        :param report: The report to delete
+        :type report: :py:class:`Report`
+        """
+        if report not in self.reports:
+            raise CbTHFeedError("delete_report() called with a non-member report")
+
+        # TODO(ww): Also delete the report from the local copy of the feed?
+        self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}/report/{}".format(self.feedinfo.id, report.id))
 
 
 class IOC(ValidatableModel):
