@@ -11,11 +11,7 @@ class CbTHFeedError(ApiError):
     pass
 
 
-class InvalidFeedInfo(CbTHFeedError):
-    pass
-
-
-class InvalidReport(CbTHFeedError):
+class FeedValidationError(CbTHFeedError):
     pass
 
 
@@ -81,7 +77,7 @@ class ValidatableModel(FeedBaseModel):
             for attr, exp_type in self._validation_schema.items():
                 value = self.__dict__[attr]
                 if not value or not isinstance(value, exp_type):
-                    raise InvalidFeedInfo(
+                    raise FeedValidationError(
                         "expected truthy {}={}, got '{}'".format(attr,
                                                                  exp_type.__name__,
                                                                  value))
@@ -121,7 +117,7 @@ class FeedInfo(ValidatableModel):
         # NOTE(ww): We allow FeedInfos to be instantiated without an ID for
         # server side creation, so normal validation can't handle this case.
         if not self.id:
-            raise InvalidFeedInfo("reports() called without feed ID")
+            raise FeedValidationError("reports() called without feed ID")
 
         resp = self._cb.get_object("/threathunter/feedmgr/v1/feed/{}/report".format(self.id))
         return [Report(self._cb, **report) for report in resp.get("results", [])]
@@ -201,6 +197,12 @@ class Feed(ValidatableModel):
 
 
 class IOC(ValidatableModel):
+    _validation_schema = {
+        'id': str,
+        'match_type': str,
+        'values': list,
+    }
+
     def __init__(self, cb, *, id, match_type, values, field=None, link=None):
         super(IOC, self).__init__(cb)
         self.id = id
@@ -209,11 +211,12 @@ class IOC(ValidatableModel):
         self.field = field
         self.link = link
 
-# class IOCs(object):
-#     """docstring for IOCs"""
-#     def __init__(self, arg):
-#         super(IOCs, self).__init__()
-#         self.arg = arg
+    def validate(self):
+        super(IOC, self).validate()
+
+        for value in self.values:
+            if not value or not isinstance(value, str):
+                raise FeedValidationError("expected iocs to be list(str)")
 
 
 class CbThreatHunterFeedAPI(BaseAPI):
