@@ -294,3 +294,5 @@ latex_elements = {
         '\DeclareUnicodeCharacter{25A0}{=}',  # Solid box
     )),
 }
+
+autoclass_content = 'both'
