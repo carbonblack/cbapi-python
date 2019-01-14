@@ -163,6 +163,10 @@ class QueryIOC(FeedBaseModel):
 
 
 class Report(ValidatableModel):
+    """Represents a report either sendable to or retrieved from
+    the Feed API server. Reports are uniquely identified within
+    a feed and contain one or more :py:class:`IOC`s.
+    """
     _validation_schema = {
         'id': str,
         'timestamp': int,

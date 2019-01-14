@@ -13,7 +13,7 @@ Main Interface
     :members:
     :inherited-members:
 
-Feeds
+Classes
 -----
 
 .. autoclass:: cbapi.psc.threathunter.feed_api.Feed
