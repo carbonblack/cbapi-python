@@ -3,6 +3,7 @@ from cbapi.errors import ApiError
 from six import string_types
 import logging
 import functools
+import validators
 
 log = logging.getLogger(__name__)
 
@@ -109,6 +110,14 @@ class FeedInfo(ValidatableModel):
         self.access = access
         self.id = id
 
+    def _validate(self):
+        super(FeedInfo, self)._validate()
+
+        if not validators.url(self.provider_url):
+            raise FeedValidationError("provider_url must be a URL")
+        if self.access not in ['public', 'private']:
+            raise FeedValidationError("access must be either 'public' or 'private'")
+
     @ValidatableModel._ensure_valid
     def update(self, **kwargs):
         """Updates this FeedInfo instance with new fields, both locally
@@ -151,8 +160,13 @@ class FeedInfo(ValidatableModel):
 
         :param reports: the replacement reports
         :type reports: list of :py:class:`Report`
+        :return: Whether or not the replacement succeeded
+        :rtype: bool
         """
-        raise CbTHFeedError("not yet implemented")
+        [report._validate() for report in reports]
+        body = {"reports": [report._as_dict() for report in reports]}
+        resp = self._cb.post_object("/feedmgr/v1/feed/{}/report".format(self.id), body)
+        return resp.json().get("success", False)
 
 
 class QueryIOC(FeedBaseModel):
@@ -245,6 +259,11 @@ class Feed(ValidatableModel):
         """A wrapper for :py:meth:`FeedInfo.reports()`.
         """
         return self.feedinfo.reports()
+
+    def replace(self, reports):
+        """A wrapper for :py:meth:`FeedInfo.replace()`.
+        """
+        return self.feedinfo.replace(reports)
 
 
 class IOC(ValidatableModel):
@@ -354,13 +373,15 @@ if __name__ == '__main__':
     logging.getLogger("__main__").setLevel(logging.DEBUG)
     cb = CbThreatHunterFeedAPI()
 
-    feed = cb.create_feed(name="ToB Test Feed", owner="Trail of Bits",
-                          provider_url="https://www.trailofbits.com/",
-                          summary="A test feed.", category="Partner",
-                          access="private")
+    # feed = cb.create_feed(name="ToB Test Feed", owner="Trail of Bits",
+    #                       provider_url="https://www.trailofbits.com/",
+    #                       summary="A test feed.", category="Partner",
+    #                       access="private")
 
-    feeds = cb.feeds()
+    feeds = cb.feeds(include_public=True)
     for feed in feeds:
         print(feed)
+        for report in feed.reports():
+            print(report)
 
-    cb.delete_feed(feed)
+    # cb.delete_feed(feed)

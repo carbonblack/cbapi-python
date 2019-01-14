@@ -26,7 +26,8 @@ install_requires=[
     'pygments',
     'python-dateutil',
     'protobuf',
-    'solrq'
+    'solrq',
+    'validators',
 ]
 
 if sys.version_info < (2, 7):
