@@ -15,9 +15,6 @@ packages = [
     'cbapi.psc.threathunter'
 ]
 
-if sys.version_info < (3, 0):
-    packages.extend(['cbapi.legacy', 'cbapi.legacy.util'])
-
 install_requires=[
     'requests',
     'requests[security]',
@@ -31,6 +28,7 @@ install_requires=[
     'protobuf',
     'solrq'
 ]
+
 if sys.version_info < (2, 7):
     install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])
 if sys.version_info < (3, 0):
