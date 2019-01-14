@@ -5,7 +5,15 @@ cbapi-python
 from setuptools import setup
 import sys
 
-packages = ['cbapi', 'cbapi.protection', 'cbapi.response', 'cbapi.cache', 'cbapi.psc.defense','cbapi.psc.threathunter']
+packages = [
+    'cbapi',
+    'cbapi.protection',
+    'cbapi.response',
+    'cbapi.cache',
+    'cbapi.psc',
+    'cbapi.psc.defense',
+    'cbapi.psc.threathunter'
+]
 
 install_requires=[
     'requests',
@@ -20,6 +28,7 @@ install_requires=[
     'protobuf',
     'solrq'
 ]
+
 if sys.version_info < (2, 7):
     install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])
 if sys.version_info < (3, 0):
