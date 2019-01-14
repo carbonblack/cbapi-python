@@ -228,6 +228,13 @@ class Feed(ValidatableModel):
     ready to be sent to the Feed API.
     """
     def __init__(self, cb, *, feedinfo, reports):
+        """Creates a new report.
+
+        :param feedinfo: The new feed's :py:class:`FeedInfo`
+        :type feedinfo: :py:class:`FeedInfo`
+        :param: reports: The new feed's list of :py:class:`Report`s
+        :type reports: list of :py:class:`Report`
+        """
         super(Feed, self).__init__(cb)
         self.feedinfo = FeedInfo(self._cb, **feedinfo)
         self.reports = [Report(self._cb, **report) for report in reports]
@@ -277,6 +284,8 @@ class IOC(ValidatableModel):
     }
 
     def __init__(self, cb, *, id, match_type, values, field=None, link=None):
+        """Creates a new IOC.
+        """
         super(IOC, self).__init__(cb)
         self.id = id
         self.match_type = match_type
@@ -285,13 +294,10 @@ class IOC(ValidatableModel):
         self.link = link
 
     def _validate(self):
-        """Validates this IOC object.
-        """
         super(IOC, self)._validate()
 
-        for value in self.values:
-            if not value or not isinstance(value, str):
-                raise FeedValidationError("expected iocs to be list(str)")
+        if not all(value and isinstance(value, str) for value in self.values):
+            raise FeedValidationError("expected iocs to be list(str)")
 
 
 class CbThreatHunterFeedAPI(BaseAPI):
