@@ -107,15 +107,21 @@ class FeedInfo(ValidatableModel):
         self.access = access
         self.id = id
 
+    @ValidatableModel._ensure_valid
     def update(self, **kwargs):
-        pass
+        # NOTE(ww): We allow FeedInfos to be instantiated without an ID for
+        # server side creation, so normal validation can't handle this case.
+        if not self.id:
+            raise FeedValidationError("update() called without feed ID")
+
+        resp = self._cb.put_object("/feedmgr/v1/feed/{}/feedinfo".format(self.id), self.as_dict())
+        return FeedInfo(self._cb, **resp.json())
 
     def delete(self):
         self._cb.delete_feed(self)
 
     def reports(self):
-        # NOTE(ww): We allow FeedInfos to be instantiated without an ID for
-        # server side creation, so normal validation can't handle this case.
+        # NOTE(ww): See update() above,
         if not self.id:
             raise FeedValidationError("reports() called without feed ID")
 
@@ -235,18 +241,47 @@ class CbThreatHunterFeedAPI(BaseAPI):
         self._lr_scheduler = None
 
     def feeds(self, include_public=False):
+        """Gets all feeds known to the CbTH Feeds API.
+
+        :param bool include_public: (optional) Whether to include public community feeds.
+        :return: a list of :py:class:`Feed`s.
+        """
         resp = self.get_object("/threathunter/feedmgr/v1/feed", query_parameters={"include_public": include_public})
         return [FeedInfo(self, **feed) for feed in resp.get("results", [])]
 
     def feed(self, feed_id):
+        """Gets a :py:class:`Feed` by ID.
+
+        :param str feed_id: The ID of the feed to retrieve
+        :return: a new :py:class:`Feed` corresponding to the ID
+        """
         resp = self.get_object("/threathunter/feedmgr/v1/feed/{}".format(feed_id))
         return resp
 
     def create_feed(self, reports=[], **kwargs):
+        """A convenience method for :py:meth:`Feed.create`.
+
+        :param list(str) reports: (optional) Create the feed with the given :py:class:`Report`s
+        :return: a new :py:class:`FeedInfo` corresponding to the new feed
+        :rtype: FeedInfo
+
+        Usage::
+
+        >>> cb.create_feed(name="My Feed", owner="Nemo", provider_url="https://example.com",
+                           summary="Description", category="Partner", access="private")
+        """
         feed = Feed(self, feedinfo=kwargs, reports=reports)
         return feed.create()
 
     def delete_feed(self, feed):
+        """Deletes the given `feed`.
+
+        :param feed: The feed to delete
+        :type feed: :py:class:`Feed` or :py:class:`FeedInfo` or str
+        :return: None
+        :raises: :py:class:`CbTHFeedError` if `feed`'s type is unknown
+        :raises: :py:class:`FeedValidationError` if `feed` is missing a feed ID
+        """
         if isinstance(feed, Feed):
             feed_id = feed.feedinfo.id
         elif isinstance(feed, FeedInfo):
@@ -255,6 +290,11 @@ class CbThreatHunterFeedAPI(BaseAPI):
             feed_id = feed
         else:
             raise CbTHFeedError("bad type for feed deletion: {}".format(feed.__class__.__name__))
+
+        # NOTE(ww): Any of the options above might be partially initialized,
+        # so we perform a sanity check here.
+        if not feed_id:
+            raise FeedValidationError("expected object with a valid feed ID")
 
         self.delete_object("/threathunter/feedmgr/v1/feed/{}".format(feed_id))
 
