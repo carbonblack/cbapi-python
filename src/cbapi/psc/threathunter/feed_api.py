@@ -28,10 +28,6 @@ class FeedValidationError(CbTHFeedError):
 class FeedBaseModel(object):
     _safe_dict_types = (str, int, float, bool, type(None),)
 
-    def __init__(self, cb):
-        super(FeedBaseModel, self).__init__()
-        self._cb = cb
-
     def __str__(self):
         lines = []
         lines.append("{0:s} object, bound to {1:s}.".format(self.__class__.__name__, self._cb.session.server))
@@ -70,6 +66,12 @@ class FeedBaseModel(object):
         return blob
 
 
+class APIAwareModel(FeedBaseModel):
+    def __init__(self, cb):
+        super(APIAwareModel, self).__init__()
+        self._cb = cb
+
+
 class ValidatableModel(FeedBaseModel):
     @classmethod
     def _ensure_valid(cls, func):
@@ -93,7 +95,7 @@ class ValidatableModel(FeedBaseModel):
             raise CbTHFeedError("_validate() not implemented")
 
 
-class FeedInfo(ValidatableModel):
+class FeedInfo(APIAwareModel, ValidatableModel):
     """Represents the metadata associated with a :py:class:`Feed` either
     retrieved from the Feed API or ready to be sent to the Feed API.
     """
@@ -133,8 +135,7 @@ class FeedInfo(ValidatableModel):
 
     @ValidatableModel._ensure_valid
     def update(self, **kwargs):
-        """Updates this FeedInfo instance with new fields, both locally
-        and on the Feed API server.
+        """Updates this FeedInfo instance with new fields on the Feed API server.
 
         :param kwargs: (optional) The fields to change within this instance
         :return: A new :py:class:`FeedInfo` with the updated fields
@@ -146,7 +147,10 @@ class FeedInfo(ValidatableModel):
         if not self.id:
             raise FeedValidationError("update() called without feed ID")
 
-        resp = self._cb.put_object("/feedmgr/v1/feed/{}/feedinfo".format(self.id), self._as_dict())
+        attrs = {**self._as_dict(), **kwargs}
+        new_info = FeedInfo(self._cb, **attrs)
+
+        resp = self._cb.put_object("/feedmgr/v1/feed/{}/feedinfo".format(self.id), new_info._as_dict())
         return FeedInfo(self._cb, **resp.json())
 
     def delete(self):
@@ -184,7 +188,7 @@ class FeedInfo(ValidatableModel):
 
 # TODO(ww): Do we need this?
 class QueryIOC(FeedBaseModel):
-    def __init__(self, cb, *, search_query, index_type=None):
+    def __init__(self, *, search_query, index_type=None):
         super(QueryIOC, self).__init__(cb)
         self.search_query = search_query
         self.index_type = index_type
@@ -203,7 +207,7 @@ class Report(ValidatableModel):
         'severity': int,
     }
 
-    def __init__(self, cb, *, id, timestamp, title, description, severity, link=None, tags=[], iocs=[], iocs_v2=[], visibility=None):
+    def __init__(self, *, id, timestamp, title, description, severity, link=None, tags=[], iocs=[], iocs_v2=[], visibility=None):
         # TODO(ww): Should we be supporting v1 as well? API docs
         # indicate that v1 will be automatically converted.
         if iocs:
@@ -218,7 +222,7 @@ class Report(ValidatableModel):
         self.link = link
         self.tags = tags
         self.iocs = []
-        self.iocs_v2 = [IOC(self._cb, **ioc) for ioc in iocs_v2]
+        self.iocs_v2 = [IOC(**ioc) for ioc in iocs_v2]
         self.visibility = visibility
 
     def _validate(self):
@@ -232,7 +236,7 @@ class Report(ValidatableModel):
             ioc_v2._validate()
 
 
-class Feed(ValidatableModel):
+class Feed(APIAwareModel, ValidatableModel):
     """Represents a feed either retrieved from the Feed API or
     ready to be sent to the Feed API.
     """
@@ -246,7 +250,7 @@ class Feed(ValidatableModel):
         """
         super(Feed, self).__init__(cb)
         self.feedinfo = FeedInfo(self._cb, **feedinfo)
-        self.reports = [Report(self._cb, **report) for report in reports]
+        self.reports = [Report(**report) for report in reports]
 
     def _validate(self):
         self.feedinfo._validate()
@@ -305,7 +309,7 @@ class IOC(ValidatableModel):
         'values': list,
     }
 
-    def __init__(self, cb, *, id, match_type, values, field=None, link=None):
+    def __init__(self, *, id, match_type, values, field=None, link=None):
         """Creates a new IOC.
         """
         super(IOC, self).__init__(cb)
@@ -414,10 +418,18 @@ if __name__ == '__main__':
     logging.getLogger("__main__").setLevel(logging.DEBUG)
     cb = CbThreatHunterFeedAPI()
 
-    # feed = cb.create_feed(name="ToB Test Feed", owner="Trail of Bits",
-    #                       provider_url="https://www.trailofbits.com/",
-    #                       summary="A test feed.", category="Partner",
-    #                       access="private")
+    feed = cb.create_feed(name="ToB Test Feed", owner="Trail of Bits",
+                          provider_url="https://www.trailofbits.com/",
+                          summary="A test feed.", category="Partner",
+                          access="private")
+
+    print(feed)
+
+    feed = feed.update(summary="Changed description")
+
+    print(feed)
+
+    cb.delete_feed(feed)
 
     # ioc = {
     #     "id": "bazquux",
@@ -432,9 +444,9 @@ if __name__ == '__main__':
 
     # feed.replace([report])
 
-    feeds = cb.feeds(include_public=False)
-    for feed in feeds:
-        print(feed)
-        feed.delete()
+    # feeds = cb.feeds(include_public=False)
+    # for feed in feeds:
+    #     print(feed)
+    #     feed.delete()
 
     # cb.delete_feed(feed)
