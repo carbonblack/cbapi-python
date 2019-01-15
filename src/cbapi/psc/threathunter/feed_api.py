@@ -4,6 +4,7 @@ from six import string_types
 import logging
 import functools
 import validators
+import time
 
 log = logging.getLogger(__name__)
 
@@ -126,6 +127,10 @@ class FeedInfo(ValidatableModel):
         if self.access not in ['public', 'private']:
             raise FeedValidationError("access must be either 'public' or 'private'")
 
+    def create_report(self, **kwargs):
+        timestamp = kwargs.pop("timestamp", int(time.time()))
+        return Report(self._cb, timestamp=timestamp, **kwargs)
+
     @ValidatableModel._ensure_valid
     def update(self, **kwargs):
         """Updates this FeedInfo instance with new fields, both locally
@@ -171,7 +176,7 @@ class FeedInfo(ValidatableModel):
         :return: Whether or not the replacement succeeded
         :rtype: bool
         """
-        [report._validate() for report in reports]
+        # [report._validate() for report in reports]
         body = {"reports": [report._as_dict() for report in reports]}
         resp = self._cb.post_object("/feedmgr/v1/feed/{}/report".format(self.id), body)
         return resp.json().get("success", False)
@@ -212,6 +217,7 @@ class Report(ValidatableModel):
         self.severity = severity
         self.link = link
         self.tags = tags
+        self.iocs = []
         self.iocs_v2 = [IOC(self._cb, **ioc) for ioc in iocs_v2]
         self.visibility = visibility
 
@@ -413,10 +419,22 @@ if __name__ == '__main__':
     #                       summary="A test feed.", category="Partner",
     #                       access="private")
 
-    feeds = cb.feeds(include_public=True)
+    # ioc = {
+    #     "id": "bazquux",
+    #     "match_type": "equality",
+    #     "values": ["example.com"],
+    #     "field": "netconn_domain",
+    # }
+
+    # report = feed.create_report(id="foobar", title="Test Report",
+    #                             description="Test Report Desc.",
+    #                             severity=10, iocs_v2=[ioc])
+
+    # feed.replace([report])
+
+    feeds = cb.feeds(include_public=False)
     for feed in feeds:
         print(feed)
-        for report in feed.reports():
-            print(report)
+        feed.delete()
 
     # cb.delete_feed(feed)
