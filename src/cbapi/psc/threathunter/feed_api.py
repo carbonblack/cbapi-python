@@ -131,27 +131,35 @@ class FeedInfo(APIAwareModel, ValidatableModel):
 
     def create_report(self, **kwargs):
         timestamp = kwargs.pop("timestamp", int(time.time()))
-        return Report(self._cb, timestamp=timestamp, **kwargs)
+        return Report(timestamp=timestamp, **kwargs)
 
     @ValidatableModel._ensure_valid
     def update(self, **kwargs):
         """Updates this FeedInfo instance with new fields on the Feed API server.
 
         :param kwargs: (optional) The fields to change within this instance
-        :return: A new :py:class:`FeedInfo` with the updated fields
+        :return: This :py:class:`FeedInfo`, with updated fields
         :rtype: :py:class:`FeedInfo`
         :raise FeedValidationError: if this FeedInfo doesn't have an ID
+        :raise CbTHFeedError: if an updated ID is given
         """
         # NOTE(ww): We allow FeedInfos to be instantiated without an ID for
         # server side creation, so normal validation can't handle this case.
         if not self.id:
             raise FeedValidationError("update() called without feed ID")
 
+        # TODO(ww): It doesn't make sense (to me) for a feed to be able to
+        # update its ID, since that's what uniquely identifies it. But
+        # is this actually specified anywhere?
+        if "id" in kwargs:
+            raise CbTHFeedError("can't update an existing feed's ID")
+
         attrs = {**self._as_dict(), **kwargs}
         new_info = FeedInfo(self._cb, **attrs)
 
         resp = self._cb.put_object("/feedmgr/v1/feed/{}/feedinfo".format(self.id), new_info._as_dict())
-        return FeedInfo(self._cb, **resp.json())
+        self.__dict__.update(**resp.json())
+        return self
 
     def delete(self):
         """Deletes the feed associated with this FeedInfo from
