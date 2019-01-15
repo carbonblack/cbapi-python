@@ -13,8 +13,8 @@ Main Interface
     :members:
     :inherited-members:
 
-Classes
------
+Models
+-------
 
 .. autoclass:: cbapi.psc.threathunter.feed_api.Feed
     :members:
@@ -31,3 +31,10 @@ Classes
 .. autoclass:: cbapi.psc.threathunter.feed_api.IOC
     :members:
     :inherited-members:
+
+Exceptions
+----------
+
+.. autoclass:: cbapi.psc.threathunter.feed_api.CbTHFeedError
+
+.. autoclass:: cbapi.psc.threathunter.feed_api.FeedValidationError
