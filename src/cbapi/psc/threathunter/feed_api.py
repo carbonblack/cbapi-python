@@ -9,10 +9,16 @@ log = logging.getLogger(__name__)
 
 
 class CbTHFeedError(ApiError):
+    """Represents a general error while interacting
+    with the ThreatHunter Feed API.
+    """
     pass
 
 
 class FeedValidationError(CbTHFeedError):
+    """Represents a failure when validating the fields
+    of a Feed API model.
+    """
     pass
 
 
@@ -100,6 +106,8 @@ class FeedInfo(ValidatableModel):
     }
 
     def __init__(self, cb, *, name, owner, provider_url, summary, category, access, id=None):
+        """Creates a new FeedInfo.
+        """
         super(FeedInfo, self).__init__(cb)
         self.name = name
         self.owner = owner
@@ -169,6 +177,7 @@ class FeedInfo(ValidatableModel):
         return resp.json().get("success", False)
 
 
+# TODO(ww): Do we need this?
 class QueryIOC(FeedBaseModel):
     def __init__(self, cb, *, search_query, index_type=None):
         super(QueryIOC, self).__init__(cb)
@@ -305,6 +314,19 @@ class IOC(ValidatableModel):
 
         if not all(value and isinstance(value, str) for value in self.values):
             raise FeedValidationError("expected iocs to be list(str)")
+
+        # NOTE(ww): We only validate the field for non-query match types
+        if self.match_type == "query":
+            return
+
+        if self.field not in ["netconn_domain"]:
+            raise FeedValidationError("unknown IOC type: {}".format(self.field))
+
+        if self.field == "netconn_domain":
+            if not all(validators.domain(domain) for domain in self.values):
+                raise FeedValidationError("one or more invalid domains")
+        elif self.field == "something_else":
+            pass
 
 
 class CbThreatHunterFeedAPI(BaseAPI):
