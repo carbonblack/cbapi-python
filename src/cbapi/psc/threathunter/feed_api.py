@@ -26,6 +26,9 @@ class FeedValidationError(CbTHFeedError):
 # TODO(ww): Integrate this with cbapi.NewBaseModel maybe?
 # Is there enough similarity between the two?
 class FeedBaseModel(object):
+    """A top-level model for all Feed API request and response
+    objects.
+    """
     _safe_dict_types = (str, int, float, bool, type(None),)
 
     def __str__(self):
@@ -46,6 +49,9 @@ class FeedBaseModel(object):
         return "\n".join(lines)
 
     def _as_dict(self):
+        """Returns a dict that can be safely serialized to JSON
+        for a Feed API request.
+        """
         blob = {}
         for key, value in self.__dict__.items():
             if isinstance(value, self._safe_dict_types):
@@ -67,12 +73,20 @@ class FeedBaseModel(object):
 
 
 class APIAwareModel(FeedBaseModel):
+    """A mix-in for Feed API models that need to interact
+    with the CbTH Feed API directly.
+    """
     def __init__(self, cb):
         super(APIAwareModel, self).__init__()
         self._cb = cb
 
 
 class ValidatableModel(FeedBaseModel):
+    """A Feed API model that can be validated against
+    either a schema, a custom validation function, or both.
+    """
+    # TODO(ww): Is there a nicer way to create this decorator,
+    # so that subclasses don't have to reference the class by name?
     @classmethod
     def _ensure_valid(cls, func):
         @functools.wraps(func)
@@ -230,6 +244,7 @@ class Report(ValidatableModel):
         self.link = link
         self.tags = tags
         self.iocs = []
+        # self.iocs = [IOC_v1(**ioc) for ioc in iocs]
         self.iocs_v2 = [IOC(**ioc) for ioc in iocs_v2]
         self.visibility = visibility
 
