@@ -1,9 +1,9 @@
 CbAPI Changelog
 ===============
-CbAPI 1.3.7 - Released January 4, 2019
+CbAPI 1.4.0 - Released January 10, 2019
 ----------------------------------------
 
-This release introduces support for Cb PSC's ThreatHunter APIs:
+This release introduces support for Cb PSC's ThreatHunter APIs
 
 * Process, Tree, and Search are supported with more to come
 
