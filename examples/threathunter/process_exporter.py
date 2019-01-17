@@ -3,7 +3,7 @@
 import sys
 
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
-from cbapi.psc.threathunter import Event
+from cbapi.psc.threathunter import Process
 import json
 import csv 
 
@@ -12,7 +12,7 @@ def main():
     parser = build_cli_parser("Query processes")
     parser.add_argument("-p", type=str, help="process guid", default=None)
     parser.add_argument("-q",type=str,help="query string",default=None)
-    parser.add_arguement("-s",type=bool, help="silent mode",default=False)
+    parser.add_argument("-s",type=bool, help="silent mode",default=False)
     parser.add_argument("-n", type=int, help="only output N events", default=None)
     parser.add_argument("-f", type=str, help="output file name",default=None)
     parser.add_argument("-of", type=str,help="output file format: csv or json",default="json")
@@ -30,7 +30,7 @@ def main():
         processes = cb.select(Process).where(process_guid=args.p)
 
     if args.n:
-        processes = processes[0:args.n]
+        processes = [ p for p in processes[0:args.n]]
 
     if not args.s:
         for process in processes:
@@ -42,11 +42,13 @@ def main():
     if args.f is not None:
         if args.of == "json":
             with open(args.f, 'w') as outfile:
-                    json.dump(processes, outfile)
+                for p in processes:
+                    json.dump(p.original_document, outfile)
         else:
             with open(args.f, 'w') as outfile:
                 csvwriter = csv.writer(outfile)
-                csvwriter.writerows(processes)
+                for p in processes:
+                    csvwriter.writerow(p.original_document)
 
 
 if __name__ == "__main__":
