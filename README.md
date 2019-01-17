@@ -1,6 +1,6 @@
 # Python bindings for Carbon Black REST API
 
-**Current version: 1.3.7**
+**Latest Version: 1.4.0**
 
 [![Build Status](https://travis-ci.org/carbonblack/cbapi-python.svg?branch=master)](https://travis-ci.org/carbonblack/cbapi-python)
 
