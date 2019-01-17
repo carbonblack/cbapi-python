@@ -208,8 +208,11 @@ class FeedInfo(APIAwareModel, ValidatableModel):
         return resp.json().get("success", False)
 
 
-# TODO(ww): Do we need this?
-class QueryIOC(FeedBaseModel):
+class QueryIOC(ValidatableModel):
+    _validation_schema = {
+        'search_query': str,
+    }
+
     def __init__(self, *, search_query, index_type=None):
         super(QueryIOC, self).__init__(cb)
         self.search_query = search_query
@@ -230,11 +233,6 @@ class Report(ValidatableModel):
     }
 
     def __init__(self, *, id, timestamp, title, description, severity, link=None, tags=[], iocs=[], iocs_v2=[], visibility=None):
-        # TODO(ww): Should we be supporting v1 as well? API docs
-        # indicate that v1 will be automatically converted.
-        if iocs:
-            raise CbTHFeedError("expected iocs_v2 only")
-
         super(Report, self).__init__(cb)
         self.id = id
         self.timestamp = timestamp
@@ -244,7 +242,7 @@ class Report(ValidatableModel):
         self.link = link
         self.tags = tags
         self.iocs = []
-        # self.iocs = [IOC_v1(**ioc) for ioc in iocs]
+        self.iocs = [IOC_v1(**ioc) for ioc in iocs]
         self.iocs_v2 = [IOC(**ioc) for ioc in iocs_v2]
         self.visibility = visibility
 
@@ -322,6 +320,37 @@ class Feed(APIAwareModel, ValidatableModel):
         self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}/report/{}".format(self.feedinfo.id, report.id))
 
 
+class IOC_v1(ValidatableModel):
+    """Represents one or more values of a partiuclar IOC type,
+    in v1 format. Encapsulated by :py:class:`Report` instances.
+    """
+    # TODO(ww): SHA1/256 are not documented, but are they supported?
+    def __init__(self, *, md5=[], ipv4=[], ipv6=[], dns=[], query=[]):
+        super(IOC_v1, self).__init__()
+        self.md5 = md5
+        self.ipv4 = ipv4
+        self.ipv6 = ipv6
+        self.dns = dns
+        self.query = [QueryIOC(**q) for q in query]
+
+    def _validate(self):
+        if not self.md5 and not self.ipv4 and not self.ipv6 and not self.dns:
+            raise FeedValidationError("v1 IOCs must have at least one IOC list")
+
+        if self.md5:
+            if not all(validators.md5(md5) for md5 in self.md5):
+                raise FeedValidationError("one or more invalid MD5s")
+        if self.ipv4:
+            if not all(validators.ipv4(ipv4) for ipv4 in self.ipv4):
+                raise FeedValidationError("one or more invalid IPv4s")
+        if self.ipv6:
+            if not all(validators.ipv6(ipv6) for ipv6 in self.ipv6):
+                raise FeedValidationError("one or more invalid IPv6s")
+        if self.dns:
+            if not all(validators.domain(dns) for dns in self.dns):
+                raise FeedValidationError("one or more invalid domains")
+
+
 class IOC(ValidatableModel):
     """Represents one or more values of a particular IOC type.
     Encapsulated by :py:class:`Report` instances.
@@ -335,7 +364,7 @@ class IOC(ValidatableModel):
     def __init__(self, *, id, match_type, values, field=None, link=None):
         """Creates a new IOC.
         """
-        super(IOC, self).__init__(cb)
+        super(IOC, self).__init__()
         self.id = id
         self.match_type = match_type
         self.values = values
