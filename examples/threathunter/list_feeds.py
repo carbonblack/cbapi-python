@@ -12,8 +12,8 @@ def main():
     args = parser.parse_args()
     cb = get_cb_threathunter_feed_object(args)
 
-    for feed in cb.feeds(include_public=args.p):
-        print(feed)
+    for info in cb.feeds(include_public=args.p):
+        print(info)
 
 
 if __name__ == "__main__":
