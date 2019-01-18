@@ -422,7 +422,7 @@ class CbThreatHunterFeedAPI(BaseAPI):
         :return: a new :py:class:`Feed` corresponding to the ID
         """
         resp = self.get_object("/threathunter/feedmgr/v1/feed/{}".format(feed_id))
-        return resp
+        return Feed(self, **resp)
 
     def create_feed(self, reports=[], **kwargs):
         """A convenience method for :py:meth:`Feed.create()`.
