@@ -1,8 +1,8 @@
 from __future__ import absolute_import
 from cbapi.errors import ApiError
-from cbapi.models import NewBaseModel
+from cbapi.models import NewBaseModel, CreatableModelMixin
 import logging
-from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery
+from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, FeedQuery, ReportQuery
 
 
 log = logging.getLogger(__name__)
@@ -163,7 +163,7 @@ class Tree(UnrefreshableModel):
     def _query_implementation(cls, cb):
         return TreeQuery(cls, cb)
 
-    def __init__(self, cb,  model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         super(Tree, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                    force_init=force_init, full_doc=full_doc)
 
@@ -175,3 +175,98 @@ class Tree(UnrefreshableModel):
         :rtype: list of :py:class:`Process`
         """
         return [Process(self._cb, initial_data=child) for child in self.nodes["children"]]
+
+
+class Feed(UnrefreshableModel, CreatableModelMixin):
+    """Represents a ThreatHunter feed's metadata.
+    """
+    urlobject = "/threathunter/feedmgr/v1/feed"
+    primary_key = "id"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return FeedQuery(cls, cb)
+
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+        item = None
+
+        if initial_data:
+            item = initial_data
+        elif model_unique_id:
+            # TODO(ww): It's probably bad practice to make a request here.
+            # Maybe abstract this into a separate method?
+            resp = cb.get_object("/threathunter/feedmgr/v1/feed/{}".format(model_unique_id))
+            # NOTE(ww): This strips the reports from the resultant Feed model.
+            # Maybe store them in self._reports and return them from self.reports()?
+            item = resp.get("feedinfo", {})
+
+        if not item:
+            raise ApiError("missing either model_unique_id or initial_data")
+
+        super(Feed, self).__init__(cb, model_unique_id=item["id"], initial_data=item,
+                                   force_init=force_init, full_doc=full_doc)
+
+    def _validate(self):
+        pass
+
+    def delete(self):
+        if not self.id:
+            raise ApiError("missing Feed ID")
+
+        self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}".format(self.id))
+
+    def reports(self):
+        return self._cb.select(Report).where(feed_id=self.id)
+
+    def replace(self):
+        pass
+
+
+class Report(UnrefreshableModel, CreatableModelMixin):
+    """Represents reports retrieved from a ThreatHunter feed.
+    """
+    urlobject = "/threathunter/feedmgr/v1/feed/{}/report"
+    primary_key = "id"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return ReportQuery(cls, cb)
+
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+        super(Report, self).__init__(cb, model_unique_id=initial_data["id"], initial_data=initial_data,
+                                     force_init=force_init, full_doc=full_doc)
+
+        self._iocs = self.iocs
+        self._iocs_v2 = self._iocs_v2
+
+    def _validate(self):
+        pass
+
+    def delete(self):
+        if not self.id:
+            raise ApiError("missing Report ID")
+
+        # TODO(ww): Problem: Report deletion requires the feed ID.
+        # self._cb.delete_object("/threathunter/feedmgr/v1/feed/")
+
+    def iocs(self):
+        pass
+
+
+class Watchlist(UnrefreshableModel):
+    pass
+
+
+class IOC(UnrefreshableModel):
+    primary_key = "id"
+
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+        if not initial_data:
+            raise ApiError("IOC can only be initialized from initial_data")
+
+        super(Report, self).__init__(cb, model_unique_id=initial_data["id"], initial_data=initial_data,
+                                     force_init=force_init, full_doc=full_doc)
+
+    def _validate(self):
+        pass
+    pass
