@@ -214,7 +214,7 @@ class QueryIOC(ValidatableModel):
     }
 
     def __init__(self, *, search_query, index_type=None):
-        super(QueryIOC, self).__init__(cb)
+        super(QueryIOC, self).__init__()
         self.search_query = search_query
         self.index_type = index_type
 
@@ -233,7 +233,7 @@ class Report(ValidatableModel):
     }
 
     def __init__(self, *, id, timestamp, title, description, severity, link=None, tags=[], iocs=[], iocs_v2=[], visibility=None):
-        super(Report, self).__init__(cb)
+        super(Report, self).__init__()
         self.id = id
         self.timestamp = timestamp
         self.title = title
