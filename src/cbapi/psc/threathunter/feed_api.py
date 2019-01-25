@@ -324,7 +324,6 @@ class IOC_v1(ValidatableModel):
     """Represents one or more values of a partiuclar IOC type,
     in v1 format. Encapsulated by :py:class:`Report` instances.
     """
-    # TODO(ww): SHA1/256 are not documented, but are they supported?
     def __init__(self, *, md5=[], ipv4=[], ipv6=[], dns=[], query=[]):
         super(IOC_v1, self).__init__()
         self.md5 = md5
