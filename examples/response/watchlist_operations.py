@@ -36,7 +36,7 @@ def add_watchlist(cb, parser, args):
 def delete_watchlist(cb, parser, args):
     try:
         if args.id:
-            attempted_to_find = "ID of {0:s}".format(args.id)
+            attempted_to_find = "ID of {0:s}".format(str(args.id))
             watchlists = [cb.select(Watchlist, args.id, force_init=True)]
         else:
             attempted_to_find = "name {0:s}".format(args.name)
