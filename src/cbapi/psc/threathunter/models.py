@@ -3,7 +3,7 @@ from cbapi.errors import ApiError
 from cbapi.models import NewBaseModel, CreatableModelMixin
 import logging
 from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, FeedQuery, ReportQuery
-
+import validators
 
 log = logging.getLogger(__name__)
 
@@ -182,6 +182,30 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
     """
     urlobject = "/threathunter/feedmgr/v1/feed"
     primary_key = "id"
+    validation_map = {
+        "name": {
+            "func": lambda x: type(x) == str,
+        },
+        "owner": {
+            "func": lambda x: type(x) == str,
+        },
+        "provider_url": {
+            "func": validators.url,
+        },
+        "summary": {
+            "func": lambda x: type(x) == str,
+        },
+        "category": {
+            "func": lambda x: type(x) == str,
+        },
+        "access": {
+            "func": lambda x: type(x) == str and x in ["public", "private"],
+        },
+        "id": {
+            "required": False,
+            "func": lambda x: type(x) == str,
+        }
+    }
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -189,27 +213,33 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         item = {}
+        reports = []
 
         if initial_data:
-            item = initial_data
+            # NOTE(ww): Some endpoints give us the full Feed, others give us just the FeedInfo.
+            if "feedinfo" in initial_data:
+                item = initial_data["feedinfo"]
+                reports = initial_data.get("reports", [])
+            else:
+                item = initial_data
         elif model_unique_id:
             # TODO(ww): It's probably bad practice to make a request here.
             # Maybe abstract this into a separate method?
             resp = cb.get_object("/threathunter/feedmgr/v1/feed/{}".format(model_unique_id))
-            # NOTE(ww): This strips the reports from the resultant Feed model.
-            # Maybe store them in self._reports and return them from self.reports()?
             item = resp.get("feedinfo", {})
+            reports = resp.get("reports", [])
 
         super(Feed, self).__init__(cb, model_unique_id=item.get("id", None), initial_data=item,
                                    force_init=force_init, full_doc=full_doc)
 
+        self._reports = [Report(cb, initial_data=report) for report in reports]
+
     def _create(self):
         self._validate()
 
-        # TODO(ww): Support reports here.
         body = {
             'feedinfo': self._info,
-            'reports': [],
+            'reports': [report._info for report in self._reports],
         }
 
         new_info = self._cb.post_object("/threathunter/feedmgr/v1/feed", body).json()
@@ -217,18 +247,44 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
         return self
 
     def _validate(self):
-        pass
+        for key, value in self._info.items():
+            if key not in self.validation_map:
+                raise ApiError("unexpected field: {}".format(key))
+
+        for key, validation in self.validation_map.items():
+            if key not in self._info and validation.get("required", True):
+                raise ApiError("required field missing: {}".format(key))
+            if key in self._info and not validation["func"](self._info[key]):
+                raise ApiError("invalid field: {}".format(key))
+
+        for report in self._reports:
+            report._validate()
+
+        # TODO(ww): Any other field-specific validation required?
 
     def delete(self):
         if not self.id:
-            raise ApiError("missing Feed ID")
+            raise ApiError("missing feed ID")
 
         self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}".format(self.id))
 
+    def update(self, **kwargs):
+        if not self.id:
+            raise ApiError("missing feed ID")
+
+        for key, value in kwargs.items():
+            if key not in self._info:
+                raise ApiError("can't update nonexistent field {}".format(key))
+
+        new_info = self._cb.put_object("/threathunter/feedmgr/v1/feed/{}/feedinfo".format(self.id), kwargs).json()
+        self._info.update(new_info)
+        return self
+
     def reports(self):
+        # TODO(ww): Short circuit on self._reports?
         return self._cb.select(Report).where(feed_id=self.id)
 
-    def replace(self):
+    def replace(self, append=False):
         pass
 
 
@@ -237,6 +293,46 @@ class Report(UnrefreshableModel, CreatableModelMixin):
     """
     urlobject = "/threathunter/feedmgr/v1/feed/{}/report"
     primary_key = "id"
+    # TODO(ww): docs say that id is required, but that doesn't make sense in the context
+    # of report creation.
+    validation_map = {
+        "id": {
+            "required": False,
+            "func": lambda x: type(x) == str,
+        },
+        "timestamp": {
+            "func": lambda x: type(x) == int,
+        },
+        "title": {
+            "func": lambda x: type(x) == str,
+        },
+        "description": {
+            "func": lambda x: type(x) == str,
+        },
+        "severity": {
+            "func": lambda x: type(x) == int,
+        },
+        "link": {
+            "required": False,
+            "func": validators.url,
+        },
+        "tags": {
+            "required": False,
+            "func": lambda xs: type(xs) == list and all(type(x) == str for x in xs),
+        },
+        "iocs": {
+            "required": False,
+            "func": lambda xs: type(xs) == list and all(isinstance(x, IOC) for x in xs),
+        },
+        "iocs_v2": {
+            "required": False,
+            "func": lambda xs: type(xs) == list and all(isinstance(x, IOC_v2) for x in xs),
+        },
+        "visibility": {
+            "required": False,
+            "func": lambda x: type(x) == str and x in ["public", "private"],
+        },
+    }
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -250,7 +346,15 @@ class Report(UnrefreshableModel, CreatableModelMixin):
         self._iocs_v2 = self._iocs_v2
 
     def _validate(self):
-        pass
+        for key, value in self._info.items():
+            if key not in self.validation_map:
+                raise ApiError("unexpected field: {}".format(key))
+
+        for key, validation in self.validation_map.items():
+            if key not in self._info and validation.get("required", True):
+                raise ApiError("required field missing: {}".format(key))
+            if key in self._info and not validation["func"](self._info[key]):
+                raise ApiError("invalid field: {}".format(key))
 
     def delete(self):
         if not self.id:
@@ -268,6 +372,19 @@ class Watchlist(UnrefreshableModel):
 
 
 class IOC(UnrefreshableModel):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+        if not initial_data:
+            raise ApiError("IOC can only be initialized from initial_data")
+
+        super(Report, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
+                                     force_init=force_init, full_doc=full_doc)
+
+    def _validate(self):
+        pass
+    pass
+
+
+class IOC_v2(UnrefreshableModel):
     primary_key = "id"
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
