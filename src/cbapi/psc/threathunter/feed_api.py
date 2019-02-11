@@ -26,8 +26,12 @@ class CbThreatHunterFeedAPI(BaseAPI):
             raise ApiError("All Feed API queries must provide _query_implementation")
 
     def create(self, cls, data=None):
-        obj = super(CbThreatHunterFeedAPI, self).create(cls, data)
+        # NOTE(ww): This doesn't work, since NewBaseModel.__setattr__ prevents
+        # modification of non-underscore fields.
+        # obj = super(CbThreatHunterFeedAPI, self).create(cls, data)
+
+        obj = cls(self, initial_data=data)
 
         if hasattr(obj, "_create"):
-            return obj._create(self)
+            return obj._create()
         return obj
