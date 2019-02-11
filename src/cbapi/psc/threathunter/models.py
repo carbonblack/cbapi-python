@@ -284,8 +284,18 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
         # TODO(ww): Short circuit on self._reports?
         return self._cb.select(Report).where(feed_id=self.id)
 
-    def replace(self, append=False):
-        pass
+    def replace(self, reports, append=False):
+        if not self.id:
+            raise ApiError("missing feed ID")
+
+        rep_dicts = [report._info for report in reports]
+
+        if append:
+            rep_dicts += [report._info for report in self._reports]
+
+        body = {"reports": rep_dicts}
+
+        self._cb.post_object("/threathunter/feedmgr/v1/{}/report".format(self.id), body)
 
 
 class Report(UnrefreshableModel, CreatableModelMixin):
