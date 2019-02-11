@@ -188,7 +188,7 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
         return FeedQuery(cls, cb)
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
-        item = None
+        item = {}
 
         if initial_data:
             item = initial_data
@@ -200,11 +200,21 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
             # Maybe store them in self._reports and return them from self.reports()?
             item = resp.get("feedinfo", {})
 
-        if not item:
-            raise ApiError("missing either model_unique_id or initial_data")
-
-        super(Feed, self).__init__(cb, model_unique_id=item["id"], initial_data=item,
+        super(Feed, self).__init__(cb, model_unique_id=item.get("id", None), initial_data=item,
                                    force_init=force_init, full_doc=full_doc)
+
+    def _create(self):
+        self._validate()
+
+        # TODO(ww): Support reports here.
+        body = {
+            'feedinfo': self._info,
+            'reports': [],
+        }
+
+        new_info = self._cb.post_object("/threathunter/feedmgr/v1/feed", body).json()
+        self._info.update(new_info)
+        return self
 
     def _validate(self):
         pass

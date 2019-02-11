@@ -24,3 +24,10 @@ class CbThreatHunterFeedAPI(BaseAPI):
             return cls._query_implementation(self)
         else:
             raise ApiError("All Feed API queries must provide _query_implementation")
+
+    def create(self, cls, data=None):
+        obj = super(CbThreatHunterFeedAPI, self).create(cls, data)
+
+        if hasattr(obj, "_create"):
+            return obj._create(self)
+        return obj

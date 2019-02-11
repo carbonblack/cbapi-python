@@ -3,6 +3,7 @@
 import sys
 
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_object
+from cbapi.psc.threathunter import Feed
 
 
 def main():
@@ -17,11 +18,18 @@ def main():
     args = parser.parse_args()
     cb = get_cb_threathunter_feed_object(args)
 
-    info = cb.create_feed(name=args.name, owner=args.owner,
-                          provider_url=args.url, summary=args.summary,
-                          category=args.category, access=args.access)
+    data = {
+        'name': args.name,
+        'owner': args.owner,
+        'provider_url': args.url,
+        'summary': args.summary,
+        'category': args.category,
+        'access': args.access,
+    }
 
-    print(info)
+    feed = cb.create(Feed, data)
+
+    print(feed)
 
 
 if __name__ == "__main__":
