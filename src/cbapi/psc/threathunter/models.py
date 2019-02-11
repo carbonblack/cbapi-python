@@ -229,10 +229,12 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
             item = resp.get("feedinfo", {})
             reports = resp.get("reports", [])
 
-        super(Feed, self).__init__(cb, model_unique_id=item.get("id", None), initial_data=item,
+        feed_id = item.get("id")
+
+        super(Feed, self).__init__(cb, model_unique_id=feed_id, initial_data=item,
                                    force_init=force_init, full_doc=full_doc)
 
-        self._reports = [Report(cb, initial_data=report) for report in reports]
+        self._reports = [Report(cb, initial_data=report, feed_id=feed_id) for report in reports]
 
     def _create(self):
         self._validate()
@@ -348,12 +350,19 @@ class Report(UnrefreshableModel, CreatableModelMixin):
     def _query_implementation(cls, cb):
         return ReportQuery(cls, cb)
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True, feed_id=None):
         super(Report, self).__init__(cb, model_unique_id=initial_data["id"], initial_data=initial_data,
                                      force_init=force_init, full_doc=full_doc)
 
+        # NOTE(ww): Warn instead of failing, since not all report operations
+        # require a feed ID.
+        if not feed_id:
+            log.warning("Report created without feed ID")
+
+        self.feed_id = feed_id
+
         self._iocs = self.iocs
-        self._iocs_v2 = self._iocs_v2
+        self._iocs_v2 = self.iocs_v2
 
     def _validate(self):
         for key, value in self._info.items():
@@ -394,7 +403,7 @@ class IOC(UnrefreshableModel):
     pass
 
 
-class IOC_v2(UnrefreshableModel):
+class IOC_V2(UnrefreshableModel):
     primary_key = "id"
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):

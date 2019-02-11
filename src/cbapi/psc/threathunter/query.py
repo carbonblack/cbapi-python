@@ -542,7 +542,9 @@ class ReportQuery(SimpleQuery):
         if "feed_id" not in self._args:
             raise ApiError("required parameter feed_id missing")
 
+        feed_id = self._args["feed_id"]
+
         log.debug("Fetching all reports")
-        resp = self._cb.get_object(self._doc_class.urlobject.format(self._args["feed_id"]))
+        resp = self._cb.get_object(self._doc_class.urlobject.format(feed_id))
         results = resp.get("results", [])
-        return [self._doc_class(self._cb, initial_data=item) for item in results]
+        return [self._doc_class(self._cb, initial_data=item, feed_id=feed_id) for item in results]
