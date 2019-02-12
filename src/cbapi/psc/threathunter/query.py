@@ -510,8 +510,6 @@ class TreeQuery(BaseQuery):
 class FeedQuery(SimpleQuery):
     def __init__(self, doc_class, cb):
         super(FeedQuery, self).__init__(doc_class, cb)
-        self._doc_class = doc_class
-        self._cb = cb
         self._args = {}
 
     def where(self, **kwargs):
@@ -529,8 +527,6 @@ class FeedQuery(SimpleQuery):
 class ReportQuery(SimpleQuery):
     def __init__(self, doc_class, cb):
         super(ReportQuery, self).__init__(doc_class, cb)
-        self._doc_class = doc_class
-        self._cb = cb
         self._args = {}
 
     def where(self, **kwargs):
@@ -548,3 +544,16 @@ class ReportQuery(SimpleQuery):
         resp = self._cb.get_object(self._doc_class.urlobject.format(feed_id))
         results = resp.get("results", [])
         return [self._doc_class(self._cb, initial_data=item, feed_id=feed_id) for item in results]
+
+
+class WatchlistQuery(SimpleQuery):
+    def __init__(self, doc_class, cb):
+        super(WatchlistQuery, self).__init__(doc_class, cb)
+
+    @property
+    def results(self):
+        log.debug("Fetching all watchlists")
+
+        resp = self._cb.get_object(self._doc_class.urlobject)
+        results = resp.get("results", [])
+        return [self._doc_class(self._cb, initial_data=item) for item in results]

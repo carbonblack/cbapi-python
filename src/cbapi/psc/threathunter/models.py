@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from cbapi.errors import ApiError
 from cbapi.models import NewBaseModel, CreatableModelMixin
 import logging
-from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, FeedQuery, ReportQuery
+from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, FeedQuery, ReportQuery, WatchlistQuery
 import validators
 
 log = logging.getLogger(__name__)
@@ -256,7 +256,7 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
         for key, validation in self.validation_map.items():
             if key not in self._info and validation.get("required", True):
                 raise ApiError("required field missing: {}".format(key))
-            if key in self._info and not validation["func"](self._info[key]):
+            if self._info.get(key) and not validation["func"](self._info[key]):
                 raise ApiError("invalid field: {}".format(key))
 
         for report in self._reports:
@@ -334,11 +334,11 @@ class Report(UnrefreshableModel, CreatableModelMixin):
         },
         "iocs": {
             "required": False,
-            "func": lambda xs: type(xs) == list and all(isinstance(x, IOC) for x in xs),
+            "func": lambda x: isinstance(x, dict),
         },
         "iocs_v2": {
             "required": False,
-            "func": lambda xs: type(xs) == list and all(isinstance(x, IOC_v2) for x in xs),
+            "func": lambda xs: type(xs) == list and all(isinstance(x, IOC_V2) for x in xs),
         },
         "visibility": {
             "required": False,
@@ -351,7 +351,7 @@ class Report(UnrefreshableModel, CreatableModelMixin):
         return ReportQuery(cls, cb)
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True, feed_id=None):
-        super(Report, self).__init__(cb, model_unique_id=initial_data["id"], initial_data=initial_data,
+        super(Report, self).__init__(cb, model_unique_id=initial_data.get("id"), initial_data=initial_data,
                                      force_init=force_init, full_doc=full_doc)
 
         # NOTE(ww): Warn instead of failing, since not all report operations
@@ -359,10 +359,12 @@ class Report(UnrefreshableModel, CreatableModelMixin):
         if not feed_id:
             log.warning("Report created without feed ID")
 
-        self.feed_id = feed_id
+        self._feed_id = feed_id
 
-        self._iocs = self.iocs
-        self._iocs_v2 = self.iocs_v2
+        if hasattr(self, "iocs") and self.iocs:
+            self._iocs = IOCs(cb, initial_data=self.iocs)
+        if hasattr(self, "iocs_v2") and self.iocs_v2:
+            self._iocs_v2 = [IOC_V2(cb, initial_data=ioc) for ioc in self.iocs_v2]
 
     def _validate(self):
         for key, value in self._info.items():
@@ -372,7 +374,7 @@ class Report(UnrefreshableModel, CreatableModelMixin):
         for key, validation in self.validation_map.items():
             if key not in self._info and validation.get("required", True):
                 raise ApiError("required field missing: {}".format(key))
-            if key in self._info and not validation["func"](self._info[key]):
+            if self._info.get(key) and not validation["func"](self._info[key]):
                 raise ApiError("invalid field: {}".format(key))
 
     def delete(self):
@@ -382,21 +384,24 @@ class Report(UnrefreshableModel, CreatableModelMixin):
         # TODO(ww): Problem: Report deletion requires the feed ID.
         # self._cb.delete_object("/threathunter/feedmgr/v1/feed/")
 
+    @property
     def iocs(self):
-        pass
+        return self._iocs
+
+    @property
+    def iocs_v2(self):
+        return self._iocs_v2
 
 
-class Watchlist(UnrefreshableModel):
-    pass
+class IOCs(UnrefreshableModel):
+    primary_key = "id"
 
-
-class IOC(UnrefreshableModel):
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         if not initial_data:
             raise ApiError("IOC can only be initialized from initial_data")
 
-        super(Report, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
-                                     force_init=force_init, full_doc=full_doc)
+        super(IOCs, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
+                                   force_init=force_init, full_doc=full_doc)
 
     def _validate(self):
         pass
@@ -410,9 +415,22 @@ class IOC_V2(UnrefreshableModel):
         if not initial_data:
             raise ApiError("IOC can only be initialized from initial_data")
 
-        super(Report, self).__init__(cb, model_unique_id=initial_data["id"], initial_data=initial_data,
+        super(IOC_V2, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                      force_init=force_init, full_doc=full_doc)
 
     def _validate(self):
         pass
     pass
+
+
+class Watchlist(UnrefreshableModel):
+    # NOTE(ww): Not documented.
+    urlobject = "/threathunter/watchlistmgr/v2/watchlist"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return WatchlistQuery(cls, cb)
+
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+        super(Watchlist, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
+                                        force_init=force_init, full_doc=full_doc)
