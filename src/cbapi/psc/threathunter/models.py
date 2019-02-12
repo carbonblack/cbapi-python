@@ -182,6 +182,8 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
     """
     urlobject = "/threathunter/feedmgr/v1/feed"
     primary_key = "id"
+
+    # TODO(ww): Move to YAML.
     validation_map = {
         "name": {
             "func": lambda x: type(x) == str,
@@ -282,6 +284,7 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
         self._info.update(new_info)
         return self
 
+    @property
     def reports(self):
         # TODO(ww): Short circuit on self._reports?
         return self._cb.select(Report).where(feed_id=self.id)
@@ -307,6 +310,7 @@ class Report(UnrefreshableModel, CreatableModelMixin):
     primary_key = "id"
     # TODO(ww): docs say that id is required, but that doesn't make sense in the context
     # of report creation.
+    # TODO(ww): Move to YAML.
     validation_map = {
         "id": {
             "required": False,
