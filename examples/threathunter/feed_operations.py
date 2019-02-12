@@ -91,7 +91,28 @@ def import_report(cb, parser, args):
 
 
 def delete_report(cb, parser, args):
-    pass
+    if args.id:
+        feed = cb.select(Feed, args.id)
+    else:
+        feeds = [feed for feed in cb.select(Feed) if feed.name == args.feedname]
+
+        if len(feeds) > 1:
+            print("More than one feed named {}, not continuing".format(args.feedname))
+            return
+
+        feed = feeds[0]
+
+    if args.reportid:
+        reports = [report for report in feed.reports if report.id == args.reportid]
+    else:
+        reports = [report for report in feed.reports if report.title == args.reportname]
+
+        if len(reports) > 1:
+            print("More than one feed named {}, not continuing".format(args.feedname))
+            return
+
+    report = reports[0]
+    report.delete()
 
 
 def replace_report(cb, parser, args):
@@ -118,6 +139,7 @@ def main():
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
 
     import_command = commands.add_parser("import", help="Import a previously exported feed")
+    # TODO(ww): Provide option to rename feed?
 
     del_command = commands.add_parser("delete", help="Delete feed")
     specifier = del_command.add_mutually_exclusive_group(required=True)
@@ -133,6 +155,7 @@ def main():
     specifier.add_argument("-r", "--reportname", type=str, help="Report Name")
 
     import_report_command = commands.add_parser("import-report", help="Import a previously exported report")
+    # TODO(ww): Provide option to rename feed, report?
 
     delete_report_command = commands.add_parser("delete-report", help="Delete a report from a feed")
     specifier = delete_report_command.add_mutually_exclusive_group(required=True)
