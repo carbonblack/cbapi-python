@@ -384,9 +384,10 @@ class Report(UnrefreshableModel, CreatableModelMixin):
     def delete(self):
         if not self.id:
             raise ApiError("missing Report ID")
+        if not self._feed_id:
+            raise ApiError("missing Feed ID")
 
-        # TODO(ww): Problem: Report deletion requires the feed ID.
-        # self._cb.delete_object("/threathunter/feedmgr/v1/feed/")
+        self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id))
 
     @property
     def iocs(self):
