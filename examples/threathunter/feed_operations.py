@@ -12,27 +12,35 @@ log = logging.getLogger(__name__)
 
 
 def list_feeds(cb, parser, args):
+    if args.iocs and not args.reports:
+        print("--iocs specified without --reports")
+        return
+
     feeds = cb.select(Feed).where(include_public=args.public)
 
     for feed in feeds:
         print(feed)
-        for report in feed.reports():
-            print(report)
-            for ioc in report.iocs_v2:
-                print(ioc)
+        if args.reports:
+            for report in feed.reports:
+                print(report)
+                if args.iocs:
+                    for ioc in report.iocs_v2:
+                        print(ioc)
 
 
 def list_iocs(cb, parser, args):
     if args.id:
         feed = cb.select(Feed, args.id)
     else:
-        feed = [feed for feed in cb.select(Feed) if feed.name == args.feedname]
+        feeds = [feed for feed in cb.select(Feed) if feed.name == args.feedname]
 
-        if len(feed) > 1:
+        if len(feeds) > 1:
             print("More than one feed named {}, not continuing".format(args.feedname))
             return
 
-    for report in feed.reports():
+        feed = feeds[0]
+
+    for report in feed.reports:
         for ioc in report.iocs_v2:
             print(ioc)
 
@@ -49,12 +57,14 @@ def export_feed(cb, parser, args):
 
         feed = feeds[0]
 
-    for report in feed.reports():
-        pass
+    # TODO(ww): Is this sufficient? Export reports as well?
+    # Maybe remove the ID from the export?
+    print(json.dumps(feed._info))
 
 
 def import_feed(cb, parser, args):
-    json_feed = json.loads(sys.stdin.read())
+    feed = json.loads(sys.stdin.read())
+    cb.create(Feed, feed)
 
 
 def delete_feed(cb, parser, args):
@@ -94,6 +104,8 @@ def main():
 
     list_command = commands.add_parser("list", help="List all configured feeds")
     list_command.add_argument("-P", "--public", help="Include public feeds", action="store_true", default=False)
+    list_command.add_argument("-r", "--reports", help="Include reports for each feed", action="store_true", default=False)
+    list_command.add_argument("-i", "--iocs", help="Include IOCs for each feed's reports", action="store_true", default=False)
 
     list_iocs_command = commands.add_parser("list-iocs", help="List all IOCs for a feed")
     specifier = list_iocs_command.add_mutually_exclusive_group(required=True)
@@ -113,12 +125,30 @@ def main():
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
 
     export_report_command = commands.add_parser("export-report", help="Export a feed's report into an importable format")
+    specifier = export_report_command.add_mutually_exclusive_group(required=True)
+    specifier.add_argument("-i", "--id", type=str, help="Feed ID")
+    specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
+    specifier = export_report_command.add_mutually_exclusive_group(required=True)
+    specifier.add_argument("-I", "--reportid", type=str, help="Report ID")
+    specifier.add_argument("-r", "--reportname", type=str, help="Report Name")
 
     import_report_command = commands.add_parser("import-report", help="Import a previously exported report")
 
     delete_report_command = commands.add_parser("delete-report", help="Delete a report from a feed")
+    specifier = delete_report_command.add_mutually_exclusive_group(required=True)
+    specifier.add_argument("-i", "--id", type=str, help="Feed ID")
+    specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
+    specifier = delete_report_command.add_mutually_exclusive_group(required=True)
+    specifier.add_argument("-I", "--reportid", type=str, help="Report ID")
+    specifier.add_argument("-r", "--reportname", type=str, help="Report Name")
 
     replace_report_command = commands.add_parser("replace-report", help="Replace a feed's report")
+    specifier = replace_report_command.add_mutually_exclusive_group(required=True)
+    specifier.add_argument("-i", "--id", type=str, help="Feed ID")
+    specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
+    specifier = replace_report_command.add_mutually_exclusive_group(required=True)
+    specifier.add_argument("-I", "--reportid", type=str, help="Report ID")
+    specifier.add_argument("-r", "--reportname", type=str, help="Report Name")
 
     args = parser.parse_args()
     cb = get_cb_threathunter_feed_object(args)
