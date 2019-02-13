@@ -383,8 +383,21 @@ class Report(UnrefreshableModel, CreatableModelMixin):
             if self._info.get(key) and not validation["func"](self._info[key]):
                 raise ApiError("invalid field: {}".format(key))
 
-    def update(self):
-        pass
+    def update(self, **kwargs):
+        if not self.id:
+            raise ApiError("missing Report ID")
+        if not self._feed_id:
+            raise ApiError("missing Feed ID")
+
+        for key, value in kwargs.items():
+            if key in self._info:
+                self._info[key] = value
+
+        self._validate()
+
+        new_info = self._cb.put_object("/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id), self._info)
+        self._info.update(new_info)
+        return self
 
     def delete(self):
         if not self.id:
