@@ -45,7 +45,7 @@ def main():
     parser.add_argument("--watchlists", "-w", dest="watchlists", help="The watchlists in question", required=True)
     parser.add_argument("--operation", "-o", dest="operation", help="The operation to perform", required=True,
                         default="Isolate")
-    parser.add_arguemnt("--dryrun", "-d", dest="dryrun", help="Dry run mode", default=False, required=False)
+    parser.add_argument("--dryrun", "-d", dest="dryrun", help="Dry run mode", default=False, required=False)
     args = parser.parse_args()
     cb = get_cb_response_object(args)
     return sensor_operations(cb, watchlists=args.watchlists, operation=args.operation, dryrun=args.dryrun)
