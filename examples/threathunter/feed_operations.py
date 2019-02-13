@@ -4,17 +4,53 @@
 import sys
 from cbapi.psc.threathunter.models import Feed
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_object
-from cbapi.errors import ServerError
 import logging
 import json
+from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
 
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
+def get_feed(cb, feed_id=None, feed_name=None):
+    if feed_id:
+        return cb.select(Feed, feed_id)
+    elif feed_name:
+        feeds = [feed for feed in cb.select(Feed) if feed.name == feed_name]
+
+        if len(feeds) > 1:
+            eprint("More than one feed named {}, not continuing".format(feed_name))
+            sys.exit(1)
+
+        return feeds[0]
+    else:
+        raise ValueError("expected either feed_id or feed_name")
+
+
+def get_report(cb, feed_id=None, feed_name=None, report_id=None, report_name=None):
+    feed = get_feed(cb, feed_id=feed_id, feed_name=feed_name)
+
+    if report_id:
+        return [report for report in feed.reports if report.id == report_id][0]
+    elif report_name:
+        reports = [report for report in feed.reports if report.title == report_name]
+
+        if len(reports) > 1:
+            eprint("More than one report named {} found, not continuing".format(report_name))
+            sys.exit(1)
+
+        return reports[0]
+    else:
+        raise ValueError("expected either report_id or report_name")
+
+
 def list_feeds(cb, parser, args):
     if args.iocs and not args.reports:
-        print("--iocs specified without --reports")
-        return
+        eprint("--iocs specified without --reports")
+        sys.exit(1)
 
     feeds = cb.select(Feed).where(include_public=args.public)
 
@@ -29,16 +65,7 @@ def list_feeds(cb, parser, args):
 
 
 def list_iocs(cb, parser, args):
-    if args.id:
-        feed = cb.select(Feed, args.id)
-    else:
-        feeds = [feed for feed in cb.select(Feed) if feed.name == args.feedname]
-
-        if len(feeds) > 1:
-            print("More than one feed named {}, not continuing".format(args.feedname))
-            return
-
-        feed = feeds[0]
+    feed = get_feed(cb, feed_id=args.id, feed_name=args.feedname)
 
     for report in feed.reports:
         for ioc in report.iocs_v2:
@@ -46,20 +73,14 @@ def list_iocs(cb, parser, args):
 
 
 def export_feed(cb, parser, args):
-    if args.id:
-        feed = cb.select(Feed, args.id)
-    else:
-        feeds = [feed for feed in cb.select(Feed) if feed.name == args.feedname]
+    feed = get_feed(cb, feed_id=args.id, feed_name=args.feedname)
 
-        if len(feeds) > 1:
-            print("More than one feed named {}, not continuing".format(args.feedname))
-            return
+    exported = {}
 
-        feed = feeds[0]
-
-    # TODO(ww): Is this sufficient? Export reports as well?
-    # Maybe remove the ID from the export?
-    print(json.dumps(feed._info))
+    # TODO(ww): Maybe add metadata about when the feed was exported?
+    exported['feedinfo'] = feed._info
+    exported['reports'] = [report._info for report in feed.reports]
+    print(json.dumps(exported))
 
 
 def import_feed(cb, parser, args):
@@ -68,22 +89,20 @@ def import_feed(cb, parser, args):
 
 
 def delete_feed(cb, parser, args):
-    if args.id:
-        feed = cb.select(Feed, args.id)
-    else:
-        feeds = [feed for feed in cb.select(Feed) if feed.name == args.feedname]
-
-        if len(feeds) > 1:
-            print("More than one feed named {}, not continuing".format(args.feedname))
-            return
-
-        feed = feeds[0]
-
+    feed = get_feed(cb, feed_id=args.id, feed_name=args.feedname)
     feed.delete()
 
 
 def export_report(cb, parser, args):
-    pass
+    report = get_report(cb, feed_id=args.id, feed_name=args.feedname,
+                        report_id=args.reportid, report_name=args.reportname)
+
+    exported = defaultdict(list)
+
+    for ioc in report.iocs_v2:
+        exported["reports"].append(ioc._info)
+
+    print(json.dumps(exported))
 
 
 def import_report(cb, parser, args):
@@ -91,27 +110,8 @@ def import_report(cb, parser, args):
 
 
 def delete_report(cb, parser, args):
-    if args.id:
-        feed = cb.select(Feed, args.id)
-    else:
-        feeds = [feed for feed in cb.select(Feed) if feed.name == args.feedname]
-
-        if len(feeds) > 1:
-            print("More than one feed named {}, not continuing".format(args.feedname))
-            return
-
-        feed = feeds[0]
-
-    if args.reportid:
-        reports = [report for report in feed.reports if report.id == args.reportid]
-    else:
-        reports = [report for report in feed.reports if report.title == args.reportname]
-
-        if len(reports) > 1:
-            print("More than one feed named {}, not continuing".format(args.feedname))
-            return
-
-    report = reports[0]
+    report = get_report(cb, feed_id=args.id, feed_name=args.feedname,
+                        report_id=args.reportid, report_name=args.reportname)
     report.delete()
 
 

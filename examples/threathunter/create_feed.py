@@ -10,7 +10,7 @@ from cbapi.psc.threathunter import Feed
 
 
 def main():
-    parser = build_cli_parser("Create a CbTH feed from a stream of IOCs")
+    parser = build_cli_parser("Create a CbTH feed and report from a stream of IOCs")
 
     # Feed metadata arguments.
     parser.add_argument("--name", type=str, help="Feed name", required=True)
@@ -55,8 +55,11 @@ def main():
         'link': args.rep_link,
         'tags': rep_tags,
         'iocs': iocs,
+        'iocs_v2': [],  # NOTE(ww): The feed server will convert IOCs to v2s for us.
     }
 
+    # TODO(ww): Instead of validating here, create an IOCs
+    # object, populate it with these, and run _validate()
     for _idx, line in enumerate(sys.stdin):
         line = line.rstrip("\r\n")
         if validators.md5(line):
