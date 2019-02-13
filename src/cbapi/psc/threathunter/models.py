@@ -181,6 +181,7 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
     """Represents a ThreatHunter feed's metadata.
     """
     urlobject = "/threathunter/feedmgr/v1/feed"
+    urlobject_single = "/threathunter/feedmgr/v1/feed/{}"
     primary_key = "id"
 
     # TODO(ww): Move to YAML.
@@ -227,7 +228,7 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
         elif model_unique_id:
             # TODO(ww): It's probably bad practice to make a request here.
             # Maybe abstract this into a separate method?
-            resp = cb.get_object("/threathunter/feedmgr/v1/feed/{}".format(model_unique_id))
+            resp = cb.get_object(self.urlobject_single.format(model_unique_id))
             item = resp.get("feedinfo", {})
             reports = resp.get("reports", [])
 
@@ -449,6 +450,7 @@ class IOC_V2(UnrefreshableModel):
 class Watchlist(UnrefreshableModel):
     # NOTE(ww): Not documented.
     urlobject = "/threathunter/watchlistmgr/v2/watchlist"
+    urlobject_single = "/threathunter/watchlistmgr/v2/watchlist/{}"
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -462,7 +464,7 @@ class Watchlist(UnrefreshableModel):
         elif model_unique_id:
             # TODO(ww): It's probably bad practice to make a request here.
             # Maybe abstract this into a separate method?
-            resp = cb.get_object("/threathunter/watchlistmgr/v2/watchlist/{}".format(model_unique_id))
+            resp = cb.get_object(self.urlobject_single.format(model_unique_id))
             item = resp.get("feedinfo", {})
 
         feed_id = item.get("id")
@@ -472,28 +474,50 @@ class Watchlist(UnrefreshableModel):
 
     @property
     def classifier(self):
-        pass
+        return (self.classifier.get("key"), self.classifier.get("value"))
 
     def delete(self):
-        pass
+        if not self.id:
+            raise ApiError("missing Watchlist ID")
+
+        self._cb.delete_object("/watchlistmgr/v2/watchlist/{}".format(self.id))
 
     @property
     def alerting(self):
-        # TODO(ww): Maybe rename? alert_status?
-        pass
+        if not self.id:
+            raise ApiError("missing Watchlist ID")
+
+        resp = self._cb.get_object("/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
+        return resp["alert"]
 
     def enable_alerts(self):
-        pass
+        if not self.id:
+            raise ApiError("missing Watchlist ID")
+
+        self._cb.put_object("/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
 
     def disable_alerts(self):
-        pass
+        if not self.id:
+            raise ApiError("missing Watchlist ID")
+
+        self._cb.delete_object("/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
 
     @property
     def tag_status(self):
-        pass
+        if not self.id:
+            raise ApiError("missing Watchlist ID")
+
+        resp = self._cb.get_object("/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
+        return resp["tag"]
 
     def enable_tags(self):
-        pass
+        if not self.id:
+            raise ApiError("missing Watchlist ID")
+
+        self._cb.put_object("/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
 
     def disable_tags(self):
-        pass
+        if not self.id:
+            raise ApiError("missing Watchlist ID")
+
+        self._cb.delete_object("/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
