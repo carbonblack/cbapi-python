@@ -100,13 +100,13 @@ def export_report(cb, parser, args):
     exported = defaultdict(list)
 
     for ioc in report.iocs_v2:
-        exported["reports"].append(ioc._info)
+        exported["iocs_v2"].append(ioc._info)
 
     print(json.dumps(exported))
 
 
 def import_report(cb, parser, args):
-    pass
+    feed = get_feed(cb, feed_id=args.id, feed_name=args.feedname)
 
 
 def delete_report(cb, parser, args):
@@ -116,7 +116,7 @@ def delete_report(cb, parser, args):
 
 
 def replace_report(cb, parser, args):
-    pass
+    feed = get_feed(cb, feed_id=args.id, feed_name=args.feedname)
 
 
 def main():
@@ -155,7 +155,10 @@ def main():
     specifier.add_argument("-r", "--reportname", type=str, help="Report Name")
 
     import_report_command = commands.add_parser("import-report", help="Import a previously exported report")
-    # TODO(ww): Provide option to rename feed, report?
+    specifier = import_report_command.add_mutually_exclusive_group(required=True)
+    specifier.add_argument("-i", "--id", type=str, help="Feed ID")
+    specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
+    import_report_command.add_argument("-r", "--reportname", type=str, help="Report Name")
 
     delete_report_command = commands.add_parser("delete-report", help="Delete a report from a feed")
     specifier = delete_report_command.add_mutually_exclusive_group(required=True)
