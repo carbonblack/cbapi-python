@@ -54,22 +54,24 @@ def alter_iocs(cb, parser, args):
 
 
 def export_watchlist(cb, parser, args):
-    pass
+    watchlist = get_watchlist(cb, watchlist_id=args.watchlist_id, watchlist_name=args.watchlist_name)
+    print(json.dumps(watchlist._info))
 
 
 def import_watchlist(cb, parser, args):
-    pass
+    watchlist = json.loads(sys.stdin.read())
+    cb.create(Watchlist, watchlist)
 
 
 def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="Feed commands", dest="command_name")
 
-    commands.add_parser("list", help="List all configured feeds")
+    commands.add_parser("list", help="List all configured watchlists")
 
     subscribe_command = commands.add_parser("subscribe", help="Create a watchlist with a feed")
-    subscribe_command.add_argument("-i", "--id", type=str, help="The Feed ID", required=True)
-    subscribe_command.add_argument("-n", "--name", type=str, help="Watchlist name", required=True)
+    subscribe_command.add_argument("-i", "--feed_id", type=str, help="The Feed ID", required=True)
+    subscribe_command.add_argument("-w", "--watchlist_name", type=str, help="Watchlist name", required=True)
     subscribe_command.add_argument("-d", "--description", type=str, help="Watchlist description", required=True)
     subscribe_command.add_argument("-t", "--tags", action="store_true", help="Enable tags", default=False)
     subscribe_command.add_argument("-a", "--alerts", action="store_true", help="Enable alerts", default=False)
@@ -77,7 +79,7 @@ def main():
     subscribe_command.add_argument("-U", "--last_update", type=int, help="Last update timestamp", default=int(time.time()))
 
     create_command = commands.add_parser("create", help="Create a watchlist with a report")
-    create_command.add_argument("-n", "--name", type=str, help="Watchlist name", required=True)
+    create_command.add_argument("-w", "--watchlist_name", type=str, help="Watchlist name", required=True)
     create_command.add_argument("-d", "--description", type=str, help="Watchlist description", required=True)
     create_command.add_argument("-t", "--tags", action="store_true", help="Enable tags", default=False)
     create_command.add_argument("-a", "--alerts", action="store_true", help="Enable alerts", default=False)
@@ -93,14 +95,16 @@ def main():
     create_command.add_argument("--rep_visibility", type=str, help="Report visibility")
 
     alter_report_command = commands.add_parser("alter-report", help="Change the properties of a watchlist's report")
-    alter_report_command.add_argument("-i", "--id", type=str, help="Watchlist ID", required=True)
+    alter_report_command.add_argument("-i", "--watchlist_id", type=str, help="Watchlist ID", required=True)
     alter_report_command.add_argument("-r", "--reportid", type=str, help="Report ID", required=True)
     alter_report_command.add_argument("-s", "--severity", type=int, help="The report's severity", required=True)
 
     alter_ioc_command = commands.add_parser("alter-ioc", help="Change the properties of a watchlist's IOC")
 
     export_command = commands.add_parser("export", help="Export a watchlist into an importable format")
-    export_command.add_argument("-i", "--id", type=str, help="Watchlist ID", required=True)
+    specifier = export_command.add_mutually_exclusive_group(required=True)
+    specifier.add_argument("-i", "--watchlist_id", type=str, help="Watchlist ID")
+    specifier.add_argument("-w", "--watchlist_name", type=str, help="Watchlist name")
 
     import_command = commands.add_parser("import", help="Import a previously exported watchlist")
 
