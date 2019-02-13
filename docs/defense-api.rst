@@ -11,7 +11,7 @@ Main Interface
 To use cbapi with Carbon Black Defense, you will be using the CbDefenseAPI.
 The CbDefenseAPI object then exposes two main methods to select data on the Carbon Black server:
 
-.. autoclass:: cbapi.defense.rest_api.CbDefenseAPI
+.. autoclass:: cbapi.defense.psc.rest_api.CbDefenseAPI
     :members:
     :inherited-members:
 
@@ -21,13 +21,13 @@ The CbDefenseAPI object then exposes two main methods to select data on the Carb
 Queries
 -------
 
-.. autoclass:: cbapi.defense.rest_api.Query
+.. autoclass:: cbapi.defense.psc.rest_api.Query
     :members:
 
 
 Models
 ------
 
-.. automodule:: cbapi.defense.models
+.. automodule:: cbapi.defense.psc.models
     :members:
     :undoc-members:
