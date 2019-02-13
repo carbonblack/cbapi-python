@@ -37,6 +37,30 @@ def list_watchlists(cb, parser, args):
         print(watchlist)
 
 
+def subscribe_watchlist(cb, parser, args):
+    pass
+
+
+def create_watchlist(cb, parser, args):
+    pass
+
+
+def alter_report(cb, parser, args):
+    pass
+
+
+def alter_iocs(cb, parser, args):
+    pass
+
+
+def export_watchlist(cb, parser, args):
+    pass
+
+
+def import_watchlist(cb, parser, args):
+    pass
+
+
 def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="Feed commands", dest="command_name")
@@ -76,6 +100,7 @@ def main():
     alter_ioc_command = commands.add_parser("alter-ioc", help="Change the properties of a watchlist's IOC")
 
     export_command = commands.add_parser("export", help="Export a watchlist into an importable format")
+    export_command.add_argument("-i", "--id", type=str, help="Watchlist ID", required=True)
 
     import_command = commands.add_parser("import", help="Import a previously exported watchlist")
 
@@ -85,17 +110,17 @@ def main():
     if args.command_name == "list":
         return list_watchlists(cb, parser, args)
     elif args.command_name == "subscribe":
-        pass
+        return subscribe_watchlist(cb, parser, args)
     elif args.command_name == "create":
-        pass
+        return create_watchlist(cb, parser, args)
     elif args.command_name == "alter-report":
-        pass
+        return alter_report(cb, parser, args)
     elif args.command_name == "alter-ioc":
-        pass
+        return alter_iocs(cb, parser, args)
     elif args.command_name == "export":
-        pass
+        return export_watchlist(cb, parser, args)
     elif args.command_name == "import":
-        pass
+        return import_watchlist(cb, parser, args)
 
 
 if __name__ == "__main__":
