@@ -20,10 +20,7 @@ class CbThreatHunterFeedAPI(BaseAPI):
         self._lr_scheduler = None
 
     def _perform_query(self, cls, **kwargs):
-        if hasattr(cls, "_query_implementation"):
-            return cls._query_implementation(self)
-        else:
-            raise ApiError("All Feed API queries must provide _query_implementation")
+        return cls._query_implementation(self)
 
     def create(self, cls, data=None):
         # NOTE(ww): This doesn't work, since NewBaseModel.__setattr__ prevents

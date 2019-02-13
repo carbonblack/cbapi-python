@@ -365,6 +365,8 @@ class Report(UnrefreshableModel, CreatableModelMixin):
 
         self._feed_id = feed_id
 
+        # NOTE(ww): This is a little silly: we need to check
+        # both that the attribute exists and that it isn't None.
         if hasattr(self, "iocs") and self.iocs:
             self._iocs = IOCs(cb, initial_data=self.iocs)
         if hasattr(self, "iocs_v2") and self.iocs_v2:
@@ -380,6 +382,9 @@ class Report(UnrefreshableModel, CreatableModelMixin):
                 raise ApiError("required field missing: {}".format(key))
             if self._info.get(key) and not validation["func"](self._info[key]):
                 raise ApiError("invalid field: {}".format(key))
+
+    def update(self):
+        pass
 
     def delete(self):
         if not self.id:
@@ -403,7 +408,7 @@ class IOCs(UnrefreshableModel):
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         if not initial_data:
-            raise ApiError("IOC can only be initialized from initial_data")
+            raise ApiError("IOCs can only be initialized from initial_data")
 
         super(IOCs, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                    force_init=force_init, full_doc=full_doc)
