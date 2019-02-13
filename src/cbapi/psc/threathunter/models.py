@@ -450,6 +450,7 @@ class IOC_V2(UnrefreshableModel):
 class Watchlist(UnrefreshableModel):
     # NOTE(ww): Not documented.
     urlobject = "/threathunter/watchlistmgr/v2/watchlist"
+    # TODO(ww): Doesn't appear to work yet.
     urlobject_single = "/threathunter/watchlistmgr/v2/watchlist/{}"
 
     @classmethod
