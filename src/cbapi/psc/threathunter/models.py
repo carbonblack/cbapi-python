@@ -455,5 +455,45 @@ class Watchlist(UnrefreshableModel):
         return WatchlistQuery(cls, cb)
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
-        super(Watchlist, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
+        item = {}
+
+        if initial_data:
+            item = initial_data
+        elif model_unique_id:
+            # TODO(ww): It's probably bad practice to make a request here.
+            # Maybe abstract this into a separate method?
+            resp = cb.get_object("/threathunter/watchlistmgr/v2/watchlist/{}".format(model_unique_id))
+            item = resp.get("feedinfo", {})
+
+        feed_id = item.get("id")
+
+        super(Watchlist, self).__init__(cb, model_unique_id=feed_id, initial_data=item,
                                         force_init=force_init, full_doc=full_doc)
+
+    @property
+    def classifier(self):
+        pass
+
+    def delete(self):
+        pass
+
+    @property
+    def alerting(self):
+        # TODO(ww): Maybe rename? alert_status?
+        pass
+
+    def enable_alerts(self):
+        pass
+
+    def disable_alerts(self):
+        pass
+
+    @property
+    def tag_status(self):
+        pass
+
+    def enable_tags(self):
+        pass
+
+    def disable_tags(self):
+        pass
