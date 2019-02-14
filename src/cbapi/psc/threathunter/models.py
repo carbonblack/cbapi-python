@@ -309,12 +309,11 @@ class Report(UnrefreshableModel, CreatableModelMixin):
     """
     urlobject = "/threathunter/feedmgr/v1/feed/{}/report"
     primary_key = "id"
-    # TODO(ww): docs say that id is required, but that doesn't make sense in the context
-    # of report creation.
+    # NOTE(ww): id is required for creation, but immediately
+    # replaced on the server side.
     # TODO(ww): Move to YAML.
     validation_map = {
         "id": {
-            "required": False,
             "func": lambda x: type(x) == str,
         },
         "timestamp": {
