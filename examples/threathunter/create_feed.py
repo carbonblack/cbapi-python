@@ -4,6 +4,7 @@ import sys
 import time
 from collections import defaultdict
 import validators
+import hashlib
 
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_object
 from cbapi.psc.threathunter import Feed
@@ -33,12 +34,12 @@ def main():
     cb = get_cb_threathunter_feed_object(args)
 
     feed_info = {
-        'name': args.name,
-        'owner': args.owner,
-        'provider_url': args.url,
-        'summary': args.summary,
-        'category': args.category,
-        'access': args.access,
+        "name": args.name,
+        "owner": args.owner,
+        "provider_url": args.url,
+        "summary": args.summary,
+        "category": args.category,
+        "access": args.access,
     }
 
     iocs = defaultdict(list)
@@ -48,21 +49,24 @@ def main():
         rep_tags = args.rep_tags.split(",")
 
     report = {
-        'id': "foobar",  # NOTE(ww): Required, but not used - the server sends us one.
-        'timestamp': args.rep_timestamp,
-        'title': args.rep_title,
-        'description': args.rep_desc,
-        'severity': args.rep_severity,
-        'link': args.rep_link,
-        'tags': rep_tags,
-        'iocs': iocs,
-        'iocs_v2': [],  # NOTE(ww): The feed server will convert IOCs to v2s for us.
+        "timestamp": args.rep_timestamp,
+        "title": args.rep_title,
+        "description": args.rep_desc,
+        "severity": args.rep_severity,
+        "link": args.rep_link,
+        "tags": rep_tags,
+        "iocs": iocs,
+        "iocs_v2": [],  # NOTE(ww): The feed server will convert IOCs to v2s for us.
     }
+
+    report_id = hashlib.md5()
+    report_id.update(str(time.time()).encode("utf-8"))
 
     # TODO(ww): Instead of validating here, create an IOCs
     # object, populate it with these, and run _validate()
     for idx, line in enumerate(sys.stdin):
         line = line.rstrip("\r\n")
+        report_id.update(line.encode("utf-8"))
         if validators.md5(line):
             iocs["md5"].append(line)
         elif validators.sha256(line):
@@ -81,9 +85,11 @@ def main():
                 print("line {}: invalid query".format(idx + 1))
                 return 1
 
+    report["id"] = report_id.hexdigest()
+
     feed = {
-        'feedinfo': feed_info,
-        'reports': [report]
+        "feedinfo": feed_info,
+        "reports": [report]
     }
 
     feed = cb.create(Feed, feed)
