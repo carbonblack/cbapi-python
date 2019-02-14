@@ -447,7 +447,7 @@ class IOC_V2(UnrefreshableModel):
     pass
 
 
-class Watchlist(UnrefreshableModel):
+class Watchlist(UnrefreshableModel, CreatableModelMixin):
     # NOTE(ww): Not documented.
     urlobject = "/threathunter/watchlistmgr/v2/watchlist"
     urlobject_single = "/threathunter/watchlistmgr/v2/watchlist/{}"
@@ -471,9 +471,24 @@ class Watchlist(UnrefreshableModel):
         super(Watchlist, self).__init__(cb, model_unique_id=feed_id, initial_data=item,
                                         force_init=force_init, full_doc=full_doc)
 
+    def _create(self):
+        self._validate()
+
+        new_info = self._cb.post_object("/watchlistmgr/v2/watchlist", self._info).json()
+        self._info.update(new_info)
+        return self
+
+    def _validate(self):
+        pass
+
     @property
     def classifier(self):
-        return (self.classifier.get("key"), self.classifier.get("value"))
+        classifier_dict = self._info.get("classifier")
+
+        if not classifier_dict:
+            return None
+
+        return (classifier_dict["key"], classifier_dict["value"])
 
     def delete(self):
         if not self.id:
@@ -520,3 +535,4 @@ class Watchlist(UnrefreshableModel):
             raise ApiError("missing Watchlist ID")
 
         self._cb.delete_object("/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
+
