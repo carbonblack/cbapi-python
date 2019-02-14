@@ -38,7 +38,23 @@ def list_watchlists(cb, parser, args):
 
 
 def subscribe_watchlist(cb, parser, args):
-    pass
+    classifier = {
+        "key": "feed_id",
+        "value": args.feed_id,
+    }
+
+    watchlist = {
+        "name": args.watchlist_name,
+        "description": args.description,
+        "tags_enabled": args.tags,
+        "alerts_enabled": args.alerts,
+        "create_timestamp": args.timestamp,
+        "last_update_timestamp": args.last_update,
+        "report_ids": [],
+        "classifier": classifier,
+    }
+
+    cb.create(Watchlist, watchlist)
 
 
 def create_watchlist(cb, parser, args):
