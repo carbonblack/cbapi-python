@@ -309,8 +309,6 @@ class Report(UnrefreshableModel, CreatableModelMixin):
     """
     urlobject = "/threathunter/feedmgr/v1/feed/{}/report"
     primary_key = "id"
-    # NOTE(ww): id is required for creation, but immediately
-    # replaced on the server side.
     # TODO(ww): Move to YAML.
     validation_map = {
         "id": {
@@ -342,7 +340,7 @@ class Report(UnrefreshableModel, CreatableModelMixin):
         },
         "iocs_v2": {
             "required": False,
-            "func": lambda xs: type(xs) == list and all(isinstance(x, IOC_V2) for x in xs),
+            "func": lambda xs: type(xs) == list and all(isinstance(x, dict) for x in xs),
         },
         "visibility": {
             "required": False,
