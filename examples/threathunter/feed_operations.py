@@ -2,7 +2,7 @@
 #
 
 import sys
-from cbapi.psc.threathunter.models import Feed
+from cbapi.psc.threathunter.models import Feed, Report
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_object
 import logging
 import json
@@ -116,16 +116,17 @@ def export_report(cb, parser, args):
 def import_report(cb, parser, args):
     feed = get_feed(cb, feed_id=args.id, feed_name=args.feedname)
 
-    imported = json.loads(sys.stdin.read())
+    imp_dict = json.loads(sys.stdin.read())
 
     reports = feed.reports
-    existing_report = next((report for report in reports if imported["id"] == report.id), None)
+    existing_report = next((report for report in reports if imp_dict["id"] == report.id), None)
 
     if existing_report:
         eprint("Report already exists; use replace-report.")
         sys.exit(1)
     else:
-        pass
+        imp_report = cb.create(Report, imp_dict)
+        feed.replace([imp_report], append=True)
 
 
 def delete_report(cb, parser, args):
