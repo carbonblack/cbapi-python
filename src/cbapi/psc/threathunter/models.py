@@ -450,7 +450,6 @@ class IOC_V2(UnrefreshableModel):
 class Watchlist(UnrefreshableModel):
     # NOTE(ww): Not documented.
     urlobject = "/threathunter/watchlistmgr/v2/watchlist"
-    # TODO(ww): Doesn't appear to work yet.
     urlobject_single = "/threathunter/watchlistmgr/v2/watchlist/{}"
 
     @classmethod
@@ -465,8 +464,7 @@ class Watchlist(UnrefreshableModel):
         elif model_unique_id:
             # TODO(ww): It's probably bad practice to make a request here.
             # Maybe abstract this into a separate method?
-            resp = cb.get_object(self.urlobject_single.format(model_unique_id))
-            item = resp.get("feedinfo", {})
+            item = cb.get_object(self.urlobject_single.format(model_unique_id))
 
         feed_id = item.get("id")
 
