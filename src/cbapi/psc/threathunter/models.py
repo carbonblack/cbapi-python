@@ -496,14 +496,6 @@ class Watchlist(UnrefreshableModel, CreatableModelMixin):
 
         self._cb.delete_object("/watchlistmgr/v2/watchlist/{}".format(self.id))
 
-    @property
-    def alerting(self):
-        if not self.id:
-            raise ApiError("missing Watchlist ID")
-
-        resp = self._cb.get_object("/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
-        return resp["alert"]
-
     def enable_alerts(self):
         if not self.id:
             raise ApiError("missing Watchlist ID")
@@ -516,14 +508,6 @@ class Watchlist(UnrefreshableModel, CreatableModelMixin):
 
         self._cb.delete_object("/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
 
-    @property
-    def tag_status(self):
-        if not self.id:
-            raise ApiError("missing Watchlist ID")
-
-        resp = self._cb.get_object("/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
-        return resp["tag"]
-
     def enable_tags(self):
         if not self.id:
             raise ApiError("missing Watchlist ID")
@@ -535,4 +519,3 @@ class Watchlist(UnrefreshableModel, CreatableModelMixin):
             raise ApiError("missing Watchlist ID")
 
         self._cb.delete_object("/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
-
