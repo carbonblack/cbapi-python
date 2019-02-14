@@ -122,7 +122,8 @@ def import_report(cb, parser, args):
     existing_report = next((report for report in reports if imported["id"] == report.id), None)
 
     if existing_report:
-        sys.exit(2)  # NYI
+        eprint("Report already exists; use replace-report.")
+        sys.exit(1)
     else:
         pass
 
