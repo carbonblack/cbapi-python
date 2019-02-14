@@ -122,13 +122,7 @@ def import_report(cb, parser, args):
     existing_report = next((report for report in reports if imported["id"] == report.id), None)
 
     if existing_report:
-        if not args.merge and not args.replace:
-            eprint("Report exists, but neither --merge nor --replace passed".format(imported["id"]))
-            sys.exit(1)
-        elif args.merge:
-            sys.exit(2)  # NYI
-        elif args.replace:
-            existing_report.update(**imported)
+        sys.exit(2)  # NYI
     else:
         pass
 
@@ -141,6 +135,17 @@ def delete_report(cb, parser, args):
 
 def replace_report(cb, parser, args):
     feed = get_feed(cb, feed_id=args.id, feed_name=args.feedname)
+
+    imported = json.loads(sys.stdin.read())
+
+    reports = feed.reports
+    existing_report = next((report for report in reports if imported["id"] == report.id), None)
+
+    if existing_report:
+        existing_report.update(**imported)
+    else:
+        eprint("No existing report to replace")
+        sys.exit(1)
 
 
 def main():
@@ -182,8 +187,6 @@ def main():
     specifier = import_report_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
-    import_report_command.add_argument("-m", "--merge", action="store_true", help="Merge with an existing report", default=False)
-    import_report_command.add_argument("-R", "--replace", action="store_true", help="Replace an existing report", default=False)
 
     delete_report_command = commands.add_parser("delete-report", help="Delete a report from a feed")
     specifier = delete_report_command.add_mutually_exclusive_group(required=True)
@@ -197,9 +200,6 @@ def main():
     specifier = replace_report_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
-    specifier = replace_report_command.add_mutually_exclusive_group(required=True)
-    specifier.add_argument("-I", "--reportid", type=str, help="Report ID")
-    specifier.add_argument("-r", "--reportname", type=str, help="Report Name")
 
     args = parser.parse_args()
     cb = get_cb_threathunter_feed_object(args)
