@@ -62,6 +62,7 @@ def create_watchlist(cb, parser, args):
 
 
 def alter_report(cb, parser, args):
+    watchlist = get_watchlist(watchlist_id=args.watchlist_id)
     pass
 
 

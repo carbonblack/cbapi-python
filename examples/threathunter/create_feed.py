@@ -48,6 +48,7 @@ def main():
         rep_tags = args.rep_tags.split(",")
 
     report = {
+        'id': "foobar",  # NOTE(ww): Required, but not used - the server sends us one.
         'timestamp': args.rep_timestamp,
         'title': args.rep_title,
         'description': args.rep_desc,
@@ -60,7 +61,7 @@ def main():
 
     # TODO(ww): Instead of validating here, create an IOCs
     # object, populate it with these, and run _validate()
-    for _idx, line in enumerate(sys.stdin):
+    for idx, line in enumerate(sys.stdin):
         line = line.rstrip("\r\n")
         if validators.md5(line):
             iocs["md5"].append(line)
@@ -73,9 +74,12 @@ def main():
         elif validators.domain(line):
             iocs["dns"].append(line)
         else:
-            # TODO(ww): Validate queries.
-            # Can we use the CbTH process search validation endpoint?
-            pass
+            if cb.validate_query(line):
+                query_ioc = {"search_query": line}
+                iocs["query"].append(query_ioc)
+            else:
+                print("line {}: invalid query".format(idx + 1))
+                return 1
 
     feed = {
         'feedinfo': feed_info,
