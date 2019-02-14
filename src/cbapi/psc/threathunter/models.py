@@ -418,8 +418,6 @@ class Report(UnrefreshableModel, CreatableModelMixin):
 
 
 class IOCs(UnrefreshableModel):
-    primary_key = "id"
-
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         if not initial_data:
             raise ApiError("IOCs can only be initialized from initial_data")
@@ -519,3 +517,10 @@ class Watchlist(UnrefreshableModel, CreatableModelMixin):
             raise ApiError("missing Watchlist ID")
 
         self._cb.delete_object("/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
+
+    def reports(self):
+        if not self.report_ids:
+            return []
+
+        for rep_id in self.report_ids:
+            pass
