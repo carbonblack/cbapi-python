@@ -1,0 +1,23 @@
+type: object
+required:
+  - name
+  - owner
+  - provider_url
+  - summary
+  - category
+  - access
+properties:
+  name:
+    type: string
+  owner:
+    type: string
+  provider_url:
+    type: string
+  summary:
+    type: string
+  category:
+    type: string
+  access:
+    type: string
+  id:
+    type: string

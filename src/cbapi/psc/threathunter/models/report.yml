@@ -1,0 +1,32 @@
+type: object
+required:
+  - id
+  - timestamp
+  - title
+  - description
+  - severity
+properties:
+  id:
+    type: string
+  timestamp:
+    type: int32
+  title:
+    type: string
+  description:
+    type: string
+  severity:
+    type: int32
+  link:
+    type: string
+  tags:
+    type: array
+    items:
+      type: string
+  iocs:
+    type: object
+  iocs_v2:
+    type: array
+    items:
+      type: object
+  visibility:
+    type: string

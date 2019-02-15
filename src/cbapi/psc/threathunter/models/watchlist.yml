@@ -1,0 +1,27 @@
+type: object
+required:
+  - name
+  - description
+  - create_timestamp
+  - last_update_timestamp
+properties:
+  name:
+    type: string
+  description:
+    type: string
+  id:
+    type: string
+  tags_enabled:
+    type: boolean
+  alerts_enabled:
+    type: boolean
+  create_timestamp:
+    type: int32
+  last_update_timestamp:
+    type: int32
+  report_ids:
+    type: array
+    items:
+      type: string
+  classifier:
+    type: object

@@ -1,0 +1,22 @@
+type: object
+properties:
+  md5:
+    type: array
+    items:
+      type: string
+  ipv4:
+    type: array
+    items:
+      type: string
+  ipv6:
+    type: array
+    items:
+      type: string
+  dns:
+    type: array
+    items:
+      type: string
+  query:
+    type: array
+    items:
+      type: object
