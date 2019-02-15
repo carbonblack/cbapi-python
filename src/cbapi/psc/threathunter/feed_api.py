@@ -25,13 +25,7 @@ class CbThreatHunterFeedAPI(BaseAPI):
     def create(self, cls, data=None):
         # NOTE(ww): This doesn't work, since NewBaseModel.__setattr__ prevents
         # modification of non-underscore fields.
-        # obj = super(CbThreatHunterFeedAPI, self).create(cls, data)
-
-        obj = cls(self, initial_data=data)
-
-        if hasattr(obj, "_create"):
-            return obj._create()
-        return obj
+        return cls(self, initial_data=data)
 
     def validate_query(self, query):
         args = {"q": query}

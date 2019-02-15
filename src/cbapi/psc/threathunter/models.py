@@ -1,6 +1,6 @@
 from __future__ import absolute_import
-from cbapi.errors import ApiError
-from cbapi.models import NewBaseModel, CreatableModelMixin
+from cbapi.errors import ApiError, InvalidObjectError
+from cbapi.models import NewBaseModel, CreatableModelMixin, MutableBaseModel
 import logging
 from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, FeedQuery, ReportQuery, WatchlistQuery
 import validators
@@ -8,7 +8,7 @@ import validators
 log = logging.getLogger(__name__)
 
 
-class UnrefreshableModel(NewBaseModel):
+class UnrefreshableModelMixin(NewBaseModel):
     """Represents a model that can't be refreshed, i.e. for which ``reset()``
     is not a valid operation.
     """
@@ -16,7 +16,13 @@ class UnrefreshableModel(NewBaseModel):
         raise ApiError("refresh() called on an unrefreshable model")
 
 
-class Process(UnrefreshableModel):
+class FeedModel(UnrefreshableModelMixin, CreatableModelMixin, MutableBaseModel):
+    """A common base class for models used by the Feed and Watchlist APIs.
+    """
+    pass
+
+
+class Process(UnrefreshableModelMixin):
     """Represents a process retrieved by one of the CbTH endpoints.
     """
     default_sort = 'last_update desc'
@@ -134,7 +140,7 @@ class Process(UnrefreshableModel):
                                                                self._cb.session.server)
 
 
-class Event(UnrefreshableModel):
+class Event(UnrefreshableModelMixin):
     """Events can be queried for via ``CbThreatHunterAPI.select``
     or though an already selected process with ``Process.events()``.
     """
@@ -152,7 +158,7 @@ class Event(UnrefreshableModel):
                                     force_init=force_init, full_doc=full_doc)
 
 
-class Tree(UnrefreshableModel):
+class Tree(UnrefreshableModelMixin):
     """The preferred interface for interacting with Tree models
     is ``Process.tree()``.
     """
@@ -177,38 +183,13 @@ class Tree(UnrefreshableModel):
         return [Process(self._cb, initial_data=child) for child in self.nodes["children"]]
 
 
-class Feed(UnrefreshableModel, CreatableModelMixin):
+class Feed(FeedModel):
     """Represents a ThreatHunter feed's metadata.
     """
     urlobject = "/threathunter/feedmgr/v1/feed"
     urlobject_single = "/threathunter/feedmgr/v1/feed/{}"
     primary_key = "id"
-
-    # TODO(ww): Move to YAML.
-    validation_map = {
-        "name": {
-            "func": lambda x: type(x) == str,
-        },
-        "owner": {
-            "func": lambda x: type(x) == str,
-        },
-        "provider_url": {
-            "func": validators.url,
-        },
-        "summary": {
-            "func": lambda x: type(x) == str,
-        },
-        "category": {
-            "func": lambda x: type(x) == str,
-        },
-        "access": {
-            "func": lambda x: type(x) == str and x in ["public", "private"],
-        },
-        "id": {
-            "required": False,
-            "func": lambda x: type(x) == str,
-        }
-    }
+    swagger_meta_file = "psc/threathunter/models/feed.yaml"
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -239,8 +220,8 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
 
         self._reports = [Report(cb, initial_data=report, feed_id=feed_id) for report in reports]
 
-    def _create(self):
-        self._validate()
+    def save(self):
+        self.validate()
 
         body = {
             'feedinfo': self._info,
@@ -251,31 +232,29 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
         self._info.update(new_info)
         return self
 
-    def _validate(self):
-        for key, value in self._info.items():
-            if key not in self.validation_map:
-                raise ApiError("unexpected field: {}".format(key))
+    def validate(self):
+        super(Feed, self).validate()
 
-        for key, validation in self.validation_map.items():
-            if key not in self._info and validation.get("required", True):
-                raise ApiError("required field missing: {}".format(key))
-            if self._info.get(key) and not validation["func"](self._info[key]):
-                raise ApiError("invalid field: {}".format(key))
+        if self.access not in ["public", "private"]:
+            raise InvalidObjectError("access should be public or private")
+
+        if not validators.url(self.provider_url):
+            raise InvalidObjectError("provider_url should be a valid URL")
 
         for report in self._reports:
-            report._validate()
+            report.validate()
 
         # TODO(ww): Any other field-specific validation required?
 
     def delete(self):
         if not self.id:
-            raise ApiError("missing feed ID")
+            raise InvalidObjectError("missing feed ID")
 
         self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}".format(self.id))
 
     def update(self, **kwargs):
         if not self.id:
-            raise ApiError("missing feed ID")
+            raise InvalidObjectError("missing feed ID")
 
         for key, value in kwargs.items():
             if key not in self._info:
@@ -304,49 +283,12 @@ class Feed(UnrefreshableModel, CreatableModelMixin):
         self._cb.post_object("/threathunter/feedmgr/v1/{}/report".format(self.id), body)
 
 
-class Report(UnrefreshableModel, CreatableModelMixin):
+class Report(FeedModel):
     """Represents reports retrieved from a ThreatHunter feed.
     """
     urlobject = "/threathunter/feedmgr/v1/feed/{}/report"
     primary_key = "id"
-    # TODO(ww): Move to YAML.
-    validation_map = {
-        "id": {
-            "func": lambda x: type(x) == str,
-        },
-        "timestamp": {
-            "func": lambda x: type(x) == int,
-        },
-        "title": {
-            "func": lambda x: type(x) == str,
-        },
-        "description": {
-            "func": lambda x: type(x) == str,
-        },
-        "severity": {
-            "func": lambda x: type(x) == int,
-        },
-        "link": {
-            "required": False,
-            "func": validators.url,
-        },
-        "tags": {
-            "required": False,
-            "func": lambda xs: type(xs) == list and all(type(x) == str for x in xs),
-        },
-        "iocs": {
-            "required": False,
-            "func": lambda x: isinstance(x, dict),
-        },
-        "iocs_v2": {
-            "required": False,
-            "func": lambda xs: type(xs) == list and all(isinstance(x, dict) for x in xs),
-        },
-        "visibility": {
-            "required": False,
-            "func": lambda x: type(x) == str and x in ["public", "private"],
-        },
-    }
+    swagger_meta_file = "psc/threathunter/models/report.yaml"
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -363,23 +305,16 @@ class Report(UnrefreshableModel, CreatableModelMixin):
 
         self._feed_id = feed_id
 
-        # NOTE(ww): This is a little silly: we need to check
-        # both that the attribute exists and that it isn't None.
-        if hasattr(self, "iocs") and self.iocs:
+        if self.iocs:
             self._iocs = IOCs(cb, initial_data=self.iocs)
-        if hasattr(self, "iocs_v2") and self.iocs_v2:
+        if self.iocs_v2:
             self._iocs_v2 = [IOC_V2(cb, initial_data=ioc) for ioc in self.iocs_v2]
 
-    def _validate(self):
-        for key, value in self._info.items():
-            if key not in self.validation_map:
-                raise ApiError("unexpected field: {}".format(key))
+    def validate(self):
+        super(Report, self).validate()
 
-        for key, validation in self.validation_map.items():
-            if key not in self._info and validation.get("required", True):
-                raise ApiError("required field missing: {}".format(key))
-            if self._info.get(key) and not validation["func"](self._info[key]):
-                raise ApiError("invalid field: {}".format(key))
+        if self.link and not validators.url(self.link):
+            raise InvalidObjectError("link should be a valid URL")
 
     def update(self, **kwargs):
         if not self.id:
@@ -391,7 +326,7 @@ class Report(UnrefreshableModel, CreatableModelMixin):
             if key in self._info:
                 self._info[key] = value
 
-        self._validate()
+        self.validate()
 
         new_info = self._cb.put_object("/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id), self._info)
         self._info.update(new_info)
@@ -406,15 +341,17 @@ class Report(UnrefreshableModel, CreatableModelMixin):
         self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id))
 
     @property
-    def iocs(self):
-        return self._iocs
-
-    @property
-    def iocs_v2(self):
+    def iocs_(self):
+        # NOTE(ww): This name is underscored because something in the model
+        # hierarchy is messing up method resolution -- self.iocs and self.iocs_v2
+        # are resolving to the attributes rather than the attribute-ified
+        # methods.
         return self._iocs_v2
 
 
-class IOCs(UnrefreshableModel):
+class IOCs(FeedModel):
+    swagger_meta_file = "psc/threathunter/models/iocs.yaml"
+
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         if not initial_data:
             raise ApiError("IOCs can only be initialized from initial_data")
@@ -422,30 +359,30 @@ class IOCs(UnrefreshableModel):
         super(IOCs, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                    force_init=force_init, full_doc=full_doc)
 
-    def _validate(self):
-        pass
-    pass
 
-
-class IOC_V2(UnrefreshableModel):
+class IOC_V2(FeedModel):
     primary_key = "id"
+    swagger_meta_file = "psc/threathunter/models/ioc_v2.yaml"
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         if not initial_data:
-            raise ApiError("IOC can only be initialized from initial_data")
+            raise ApiError("IOC_V2 can only be initialized from initial_data")
 
         super(IOC_V2, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                      force_init=force_init, full_doc=full_doc)
 
-    def _validate(self):
-        pass
-    pass
+    def validate(self):
+        super(IOCs, self).validate()
+
+        if self.link and not validators.url(self.link):
+            raise InvalidObjectError("link should be a valid URL")
 
 
-class Watchlist(UnrefreshableModel, CreatableModelMixin):
+class Watchlist(FeedModel):
     # NOTE(ww): Not documented.
     urlobject = "/threathunter/watchlistmgr/v2/watchlist"
     urlobject_single = "/threathunter/watchlistmgr/v2/watchlist/{}"
+    swagger_meta_file = "psc/threathunter/models/watchlist.yaml"
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -466,14 +403,14 @@ class Watchlist(UnrefreshableModel, CreatableModelMixin):
         super(Watchlist, self).__init__(cb, model_unique_id=feed_id, initial_data=item,
                                         force_init=force_init, full_doc=full_doc)
 
-    def _create(self):
-        self._validate()
+    def save(self):
+        self.validate()
 
         new_info = self._cb.post_object("/watchlistmgr/v2/watchlist", self._info).json()
         self._info.update(new_info)
         return self
 
-    def _validate(self):
+    def validate(self):
         pass
 
     @property
