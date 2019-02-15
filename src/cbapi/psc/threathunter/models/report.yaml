@@ -9,13 +9,15 @@ properties:
   id:
     type: string
   timestamp:
-    type: int32
+    type: integer
+    format: int32
   title:
     type: string
   description:
     type: string
   severity:
-    type: int32
+    type: integer
+    format: int32
   link:
     type: string
   tags:

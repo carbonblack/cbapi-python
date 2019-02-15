@@ -19,4 +19,9 @@ properties:
   query:
     type: array
     items:
-      type: object
+      type: object # QueryIOC
+      properties:
+        index_type:
+          type: string
+        search_query:
+          type: string
