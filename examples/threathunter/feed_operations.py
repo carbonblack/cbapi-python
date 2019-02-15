@@ -73,7 +73,7 @@ def list_feeds(cb, parser, args):
             for report in feed.reports:
                 print(report)
                 if args.iocs:
-                    for ioc in report.iocs_v2:
+                    for ioc in report.iocs_:
                         print(ioc)
 
 
@@ -99,6 +99,7 @@ def export_feed(cb, parser, args):
 def import_feed(cb, parser, args):
     feed = json.loads(sys.stdin.read())
     cb.create(Feed, feed)
+    feed.save()
 
 
 def delete_feed(cb, parser, args):

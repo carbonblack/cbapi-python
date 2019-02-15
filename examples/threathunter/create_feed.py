@@ -55,7 +55,6 @@ def main():
         "severity": args.rep_severity,
         "link": args.rep_link,
         "tags": rep_tags,
-        "iocs": iocs,
         "iocs_v2": [],  # NOTE(ww): The feed server will convert IOCs to v2s for us.
     }
 
@@ -86,6 +85,7 @@ def main():
                 return 1
 
     report["id"] = report_id.hexdigest()
+    report["iocs"] = dict(iocs)
 
     feed = {
         "feedinfo": feed_info,
@@ -93,6 +93,7 @@ def main():
     }
 
     feed = cb.create(Feed, feed)
+    feed.save()
 
     print(feed)
 

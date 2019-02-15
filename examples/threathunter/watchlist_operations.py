@@ -43,7 +43,7 @@ def subscribe_watchlist(cb, parser, args):
         "value": args.feed_id,
     }
 
-    watchlist = {
+    watchlist_dict = {
         "name": args.watchlist_name,
         "description": args.description,
         "tags_enabled": args.tags,
@@ -54,7 +54,8 @@ def subscribe_watchlist(cb, parser, args):
         "classifier": classifier,
     }
 
-    cb.create(Watchlist, watchlist)
+    watchlist = cb.create(Watchlist, watchlist_dict)
+    watchlist.save()
 
 
 def create_watchlist(cb, parser, args):
