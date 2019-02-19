@@ -4,7 +4,7 @@ Cb ThreatHunter Feed API
 ========================
 
 This page documents the public interfaces exposed by cbapi when communicating with a
-Carbon Black PSC ThreatHunter Feed API server.
+Carbon Black PSC ThreatHunter Feed and Watchlist API server.
 
 Main Interface
 --------------
