@@ -412,6 +412,10 @@ class IOCs(FeedModel):
     swagger_meta_file = "psc/threathunter/models/iocs.yaml"
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+        """Creates a new IOCs instance.
+
+        :raise ApiError: if `initial_data` is `None`
+        """
         if not initial_data:
             raise ApiError("IOCs can only be initialized from initial_data")
 
@@ -426,6 +430,10 @@ class IOC_V2(FeedModel):
     swagger_meta_file = "psc/threathunter/models/ioc_v2.yaml"
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+        """Creates a new IOC_V2 instance.
+
+        :raise ApiError: if `initial_data` is `None`
+        """
         if not initial_data:
             raise ApiError("IOC_V2 can only be initialized from initial_data")
 
