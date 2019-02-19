@@ -1,7 +1,7 @@
 .. _threathunter_feed_api:
 
 Cb ThreatHunter Feed API
-===================
+========================
 
 This page documents the public interfaces exposed by cbapi when communicating with a
 Carbon Black PSC ThreatHunter Feed API server.
@@ -13,8 +13,23 @@ Main Interface
     :members:
     :inherited-members:
 
-Models
+Queries
 -------
+
+.. autoclass:: cbapi.psc.threathunter.query.FeedQuery
+    :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.query.ReportQuery
+    :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.query.WatchlistQuery
+    :members:
+    :inherited-members:
+
+Models
+------
 
 .. autoclass:: cbapi.psc.threathunter.models.Feed
     :members:
