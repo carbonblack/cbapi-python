@@ -26,8 +26,15 @@ class CbThreatHunterFeedAPI(BaseAPI):
         return cls._query_implementation(self)
 
     def create(self, cls, data=None):
-        # NOTE(ww): This doesn't work, since NewBaseModel.__setattr__ prevents
-        # modification of non-underscore fields.
+        """Creates a new model.
+
+            >>> feed = cb.create(Feed, feed_data)
+
+        :param cls: The model being created
+        :param data: The data to pre-populate the model with
+        :type data: dict(str, object)
+        :return: an instance of `cls`
+        """
         return cls(self, initial_data=data)
 
     def validate_query(self, query):
