@@ -249,8 +249,6 @@ class Feed(FeedModel):
         for report in self._reports:
             report.validate()
 
-        # TODO(ww): Any other field-specific validation required?
-
     def delete(self):
         """Deletes this feed from the ThreatHunter server.
 
@@ -291,7 +289,6 @@ class Feed(FeedModel):
         :return: a list of reports
         :rtype: list(:py:class:`Report`)
         """
-        # TODO(ww): Short circuit on self._reports?
         return self._cb.select(Report).where(feed_id=self.id)
 
     def replace(self, reports, append=False):
