@@ -221,6 +221,11 @@ class Feed(FeedModel):
         self._reports = [Report(cb, initial_data=report, feed_id=feed_id) for report in reports]
 
     def save(self):
+        """Saves this feed on the ThreatHunter server.
+
+        :return: The saved feed
+        :rtype: :py:class:`Feed`
+        """
         self.validate()
 
         body = {
@@ -247,12 +252,24 @@ class Feed(FeedModel):
         # TODO(ww): Any other field-specific validation required?
 
     def delete(self):
+        """Deletes this feed from the ThreatHunter server.
+
+        :raise InvalidObjectError: if `id` is missing
+        """
         if not self.id:
             raise InvalidObjectError("missing feed ID")
 
         self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}".format(self.id))
 
     def update(self, **kwargs):
+        """Update this feed's metadata with the given arguments.
+
+            >>> feed.update(access="private")
+
+        :param kwargs: The fields to update
+        :type kwargs: dict(str, str)
+        :raise InvalidObjectError: if `id` is missing
+        """
         if not self.id:
             raise InvalidObjectError("missing feed ID")
 
@@ -266,12 +283,25 @@ class Feed(FeedModel):
 
     @property
     def reports(self):
+        """Returns a list of :py:class:`Report` associated with this feed.
+
+        :return: a list of reports
+        :rtype: list(:py:class:`Report`)
+        """
         # TODO(ww): Short circuit on self._reports?
         return self._cb.select(Report).where(feed_id=self.id)
 
     def replace(self, reports, append=False):
+        """Repace this feed's report with the given reports, appending
+        if requested.
+
+        :param reports: the reports to replace with
+        :type reports: list(:py:class:`Report`)
+        :param bool append: whether or not to append the given reports to the current list
+        :raise InvalidObjectError: if `id` is missing
+        """
         if not self.id:
-            raise ApiError("missing feed ID")
+            raise InvalidObjectError("missing feed ID")
 
         rep_dicts = [report._info for report in reports]
 
@@ -320,10 +350,20 @@ class Report(FeedModel):
             raise InvalidObjectError("link should be a valid URL")
 
     def update(self, **kwargs):
+        """Update this report with the given arguments.
+
+            >>> report.update(title="My new report title")
+
+        :param kwargs: The fields to update
+        :type kwargs: dict(str, str)
+        :return: The updated report
+        :rtype: :py:class:`Report`
+        :raises InvalidObjectError: if either `id` or `feed_id` is missing
+        """
         if not self.id:
-            raise ApiError("missing Report ID")
+            raise InvalidObjectError("missing Report ID")
         if not self._feed_id:
-            raise ApiError("missing Feed ID")
+            raise InvalidObjectError("missing Feed ID")
 
         for key, value in kwargs.items():
             if key in self._info:
@@ -336,15 +376,26 @@ class Report(FeedModel):
         return self
 
     def delete(self):
+        """Deletes this report from the ThreatHunter server.
+
+            >>> report.delete()
+
+        :raises InvalidObjectError: if either `id` or `feed_id` is missing
+        """
         if not self.id:
-            raise ApiError("missing Report ID")
+            raise InvalidObjectError("missing Report ID")
         if not self._feed_id:
-            raise ApiError("missing Feed ID")
+            raise InvalidObjectError("missing Feed ID")
 
         self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id))
 
     @property
     def iocs_(self):
+        """Returns a list of :py:class:`IOC_V2` associated with this report.
+
+        :return: a list of IOCs
+        :rtype: list(:py:class:`IOC_V2`)
+        """
         # NOTE(ww): This name is underscored because something in the model
         # hierarchy is messing up method resolution -- self.iocs and self.iocs_v2
         # are resolving to the attributes rather than the attribute-ified
@@ -353,6 +404,8 @@ class Report(FeedModel):
 
 
 class IOCs(FeedModel):
+    """Represents a collection of categorized IOCs.
+    """
     swagger_meta_file = "psc/threathunter/models/iocs.yaml"
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
@@ -364,6 +417,8 @@ class IOCs(FeedModel):
 
 
 class IOC_V2(FeedModel):
+    """Represents a collection of IOCs of a particular type, plus matching criteria and metadata.
+    """
     primary_key = "id"
     swagger_meta_file = "psc/threathunter/models/ioc_v2.yaml"
 
@@ -382,6 +437,8 @@ class IOC_V2(FeedModel):
 
 
 class Watchlist(FeedModel):
+    """Represents a ThreatHunter watchlist.
+    """
     # NOTE(ww): Not documented.
     urlobject = "/threathunter/watchlistmgr/v2/watchlist"
     urlobject_single = "/threathunter/watchlistmgr/v2/watchlist/{}"
@@ -407,6 +464,11 @@ class Watchlist(FeedModel):
                                         force_init=force_init, full_doc=full_doc)
 
     def save(self):
+        """Saves this watchlist on the ThreatHunter server.
+
+        :return: The saved watchlist
+        :rtype: :py:class:`Watchlist`
+        """
         self.validate()
 
         new_info = self._cb.post_object("/threathunter/watchlistmgr/v2/watchlist", self._info).json()
@@ -414,10 +476,15 @@ class Watchlist(FeedModel):
         return self
 
     def validate(self):
-        pass
+        # TODO(ww): Validate.
+        super(Watchlist, self).validate()
 
     @property
-    def classifier(self):
+    def classifier_(self):
+        """Returns the classifier key and value, if any, for this watchlist.
+
+        :rtype: tuple(str, str) or None
+        """
         classifier_dict = self._info.get("classifier")
 
         if not classifier_dict:
@@ -426,37 +493,62 @@ class Watchlist(FeedModel):
         return (classifier_dict["key"], classifier_dict["value"])
 
     def delete(self):
+        """Deletes this watchlist from the ThreatHunter server.
+
+        :raise InvalidObjectError: if `id` is missing
+        """
         if not self.id:
-            raise ApiError("missing Watchlist ID")
+            raise InvalidObjectError("missing Watchlist ID")
 
         self._cb.delete_object("/threathunter/watchlistmgr/v2/watchlist/{}".format(self.id))
 
     def enable_alerts(self):
+        """Enable alerts for this watchlist. Alerts are not retroactive.
+
+        :raise InvalidObjectError: if `id` is missing
+        """
         if not self.id:
-            raise ApiError("missing Watchlist ID")
+            raise InvalidObjectError("missing Watchlist ID")
 
         self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
 
     def disable_alerts(self):
+        """Disable alerts for this watchlist.
+
+        :raise InvalidObjectError: if `id` is missing
+        """
         if not self.id:
-            raise ApiError("missing Watchlist ID")
+            raise InvalidObjectError("missing Watchlist ID")
 
         self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
 
     def enable_tags(self):
+        """Enable tagging for this watchlist.
+
+        :raise InvalidObjectError: if `id` is missing
+        """
         if not self.id:
-            raise ApiError("missing Watchlist ID")
+            raise InvalidObjectError("missing Watchlist ID")
 
         self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
 
     def disable_tags(self):
+        """Disable tagging for this watchlist.
+
+        :raise InvalidObjectError: if `id` is missing
+        """
         if not self.id:
-            raise ApiError("missing Watchlist ID")
+            raise InvalidObjectError("missing Watchlist ID")
 
         self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
 
     @property
     def reports(self):
+        """Returns a list of :py:class:`Report` instances associated with this watchlist.
+
+        :return: A list of reports
+        :rtype: list(:py:class:`Report`)
+        """
         if not self.report_ids:
             return []
 

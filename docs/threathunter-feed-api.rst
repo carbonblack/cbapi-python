@@ -16,25 +16,27 @@ Main Interface
 Models
 -------
 
-.. autoclass:: cbapi.psc.threathunter.feed_api.Feed
+.. autoclass:: cbapi.psc.threathunter.models.Feed
     :members:
     :inherited-members:
 
-.. autoclass:: cbapi.psc.threathunter.feed_api.FeedInfo
+.. autoclass:: cbapi.psc.threathunter.models.FeedInfo
     :members:
     :inherited-members:
 
-.. autoclass:: cbapi.psc.threathunter.feed_api.Report
+.. autoclass:: cbapi.psc.threathunter.models.Report
     :members:
     :inherited-members:
 
-.. autoclass:: cbapi.psc.threathunter.feed_api.IOC
+.. autoclass:: cbapi.psc.threathunter.models.IOCs
     :members:
     :inherited-members:
 
-Exceptions
-----------
+.. autoclass:: cbapi.psc.threathunter.models.IOC_V2
+    :members:
+    :inherited-members:
 
-.. autoclass:: cbapi.psc.threathunter.feed_api.CbTHFeedError
+.. autoclass:: cbapi.psc.threathunter.models.Watchlist
+    :members:
+    :inherited-members:
 
-.. autoclass:: cbapi.psc.threathunter.feed_api.FeedValidationError
