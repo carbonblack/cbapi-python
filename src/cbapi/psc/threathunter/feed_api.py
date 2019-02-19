@@ -13,7 +13,10 @@ class CbThreatHunterFeedAPI(BaseAPI):
     Usage::
 
     >>> from cbapi.psc.threathunter import CbThreatHunterFeedAPI
+    >>> from cbapi.psc.threathunter.models import Feed
     >>> cb = CbThreatHunterFeedAPI(profile="production")
+    >>> for feed in cb.select(Feed):
+    >>>    print(feed.name)
     """
     def __init__(self, *args, **kwargs):
         super(CbThreatHunterFeedAPI, self).__init__(product_name="psc", *args, **kwargs)
