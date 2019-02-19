@@ -409,7 +409,7 @@ class Watchlist(FeedModel):
     def save(self):
         self.validate()
 
-        new_info = self._cb.post_object("/watchlistmgr/v2/watchlist", self._info).json()
+        new_info = self._cb.post_object("/threathunter/watchlistmgr/v2/watchlist", self._info).json()
         self._info.update(new_info)
         return self
 
@@ -429,31 +429,31 @@ class Watchlist(FeedModel):
         if not self.id:
             raise ApiError("missing Watchlist ID")
 
-        self._cb.delete_object("/watchlistmgr/v2/watchlist/{}".format(self.id))
+        self._cb.delete_object("/threathunter/watchlistmgr/v2/watchlist/{}".format(self.id))
 
     def enable_alerts(self):
         if not self.id:
             raise ApiError("missing Watchlist ID")
 
-        self._cb.put_object("/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
+        self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
 
     def disable_alerts(self):
         if not self.id:
             raise ApiError("missing Watchlist ID")
 
-        self._cb.delete_object("/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
+        self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
 
     def enable_tags(self):
         if not self.id:
             raise ApiError("missing Watchlist ID")
 
-        self._cb.put_object("/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
+        self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
 
     def disable_tags(self):
         if not self.id:
             raise ApiError("missing Watchlist ID")
 
-        self._cb.delete_object("/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
+        self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
 
     @property
     def reports(self):
@@ -462,7 +462,7 @@ class Watchlist(FeedModel):
 
         reports_ = []
         for rep_id in self.report_ids:
-            resp = self._cb.get_object("/watchlistmgr/v2/report/{}".format(rep_id))
+            resp = self._cb.get_object("/threathunter/watchlistmgr/v1/report/{}".format(rep_id))
             reports_.append(Report(self._cb, initial_data=resp))
 
         return reports_
