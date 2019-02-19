@@ -65,8 +65,13 @@ def create_watchlist(cb, parser, args):
     pass
 
 
+def delete_watchlist(cb, parser, args):
+    watchlist = get_watchlist(cb, watchlist_id=args.watchlist_id, watchlist_name=args.watchlist_name)
+    watchlist.delete()
+
+
 def alter_report(cb, parser, args):
-    watchlist = get_watchlist(watchlist_id=args.watchlist_id)
+    watchlist = get_watchlist(cb, watchlist_id=args.watchlist_id)
     pass
 
 
@@ -116,6 +121,11 @@ def main():
     create_command.add_argument("--rep_tags", type=str, help="Report tags, comma separated")
     create_command.add_argument("--rep_visibility", type=str, help="Report visibility")
 
+    delete_command = commands.add_parser("delete", help="Delete a watchlist")
+    specifier = delete_command.add_mutually_exclusive_group(required=True)
+    specifier.add_argument("-i", "--watchlist_id", type=str, help="The watchlist ID")
+    specifier.add_argument("-w", "--watchlist_name", type=str, help="The watchlist name")
+
     alter_report_command = commands.add_parser("alter-report", help="Change the properties of a watchlist's report")
     alter_report_command.add_argument("-i", "--watchlist_id", type=str, help="Watchlist ID", required=True)
     alter_report_command.add_argument("-r", "--reportid", type=str, help="Report ID", required=True)
@@ -139,6 +149,8 @@ def main():
         return subscribe_watchlist(cb, parser, args)
     elif args.command_name == "create":
         return create_watchlist(cb, parser, args)
+    elif args.command_name == "delete":
+        return delete_watchlist(cb, parser, args)
     elif args.command_name == "alter-report":
         return alter_report(cb, parser, args)
     elif args.command_name == "alter-ioc":
