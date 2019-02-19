@@ -35,6 +35,9 @@ def list_watchlists(cb, parser, args):
 
     for watchlist in watchlists:
         print(watchlist)
+        if args.reports:
+            for report in watchlist.reports:
+                print(report)
 
 
 def subscribe_watchlist(cb, parser, args):
@@ -85,7 +88,8 @@ def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="Feed commands", dest="command_name")
 
-    commands.add_parser("list", help="List all configured watchlists")
+    list_command = commands.add_parser("list", help="List all configured watchlists")
+    list_command.add_argument("-r", "--reports", action="store_true", help="List reports for each watchlist", default=False)
 
     subscribe_command = commands.add_parser("subscribe", help="Create a watchlist with a feed")
     subscribe_command.add_argument("-i", "--feed_id", type=str, help="The Feed ID", required=True)
