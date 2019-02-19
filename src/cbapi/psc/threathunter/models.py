@@ -487,7 +487,6 @@ class Watchlist(FeedModel):
         return self
 
     def validate(self):
-        # TODO(ww): Validate.
         super(Watchlist, self).validate()
 
     @property
