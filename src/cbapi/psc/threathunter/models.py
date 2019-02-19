@@ -269,6 +269,7 @@ class Feed(FeedModel):
         :param kwargs: The fields to update
         :type kwargs: dict(str, str)
         :raise InvalidObjectError: if `id` is missing
+        :raise ApiError: if an invalid field is specified
         """
         if not self.id:
             raise InvalidObjectError("missing feed ID")
@@ -279,6 +280,8 @@ class Feed(FeedModel):
 
         new_info = self._cb.put_object("/threathunter/feedmgr/v1/feed/{}/feedinfo".format(self.id), kwargs).json()
         self._info.update(new_info)
+        self.validate()
+
         return self
 
     @property
@@ -500,7 +503,7 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.delete_object("/threathunter/watchlistmgr/v2/watchlist/{}".format(self.id))
+        self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}".format(self.id))
 
     def enable_alerts(self):
         """Enable alerts for this watchlist. Alerts are not retroactive.
