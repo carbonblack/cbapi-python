@@ -35,10 +35,6 @@ Models
     :members:
     :inherited-members:
 
-.. autoclass:: cbapi.psc.threathunter.models.FeedInfo
-    :members:
-    :inherited-members:
-
 .. autoclass:: cbapi.psc.threathunter.models.Report
     :members:
     :inherited-members:
