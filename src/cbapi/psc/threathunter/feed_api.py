@@ -39,6 +39,6 @@ class CbThreatHunterFeedAPI(BaseAPI):
 
     def validate_query(self, query):
         args = {"q": query}
-        resp = self.get_object("/pscr/query/v1/events/validate", query_parameters=args)
+        resp = self.get_object("/pscr/query/v1/validate", query_parameters=args)
 
         return resp.get("valid", False)
