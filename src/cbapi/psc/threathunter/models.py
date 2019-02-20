@@ -4,6 +4,7 @@ from cbapi.models import NewBaseModel, CreatableModelMixin, MutableBaseModel
 import logging
 from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, FeedQuery, ReportQuery, WatchlistQuery
 import validators
+import time
 
 log = logging.getLogger(__name__)
 
@@ -344,9 +345,9 @@ class Report(FeedModel):
         self._from_watchlist = from_watchlist
 
         if self.iocs:
-            self._iocs = IOCs(cb, initial_data=self.iocs, from_watchlist=from_watchlist)
+            self._iocs = IOCs(cb, initial_data=self.iocs, report_id=self.id)
         if self.iocs_v2:
-            self._iocs_v2 = [IOC_V2(cb, initial_data=ioc, from_watchlist=from_watchlist) for ioc in self.iocs_v2]
+            self._iocs_v2 = [IOC_V2(cb, initial_data=ioc, report_id=self.id) for ioc in self.iocs_v2]
 
     def save(self):
         """Saves this report *as a watchlist report*.
@@ -397,9 +398,12 @@ class Report(FeedModel):
             if key in self._info:
                 self._info[key] = value
 
+        # NOTE(ww): Updating reports on the watchlist API appears to require
+        # updated timestamps.
+        self.timestamp = int(time.time())
         self.validate()
 
-        new_info = self._cb.put_object(url, self._info)
+        new_info = self._cb.put_object(url, self._info).json()
         self._info.update(new_info)
         return self
 
@@ -434,7 +438,6 @@ class Report(FeedModel):
         """
         if not self.id:
             raise InvalidObjectError("missing Report ID")
-
         if not self._from_watchlist:
             raise InvalidObjectError("ignore status only applies to watchlist reports")
 
@@ -454,7 +457,7 @@ class Report(FeedModel):
         if not self._from_watchlist:
             raise InvalidObjectError("ignoring only applies to watchlist reports")
 
-        self._cb.put_object("/threathunter/watchlistmgr/v1/report/{}/ignore".format(self.id))
+        self._cb.put_object("/threathunter/watchlistmgr/v1/report/{}/ignore".format(self.id), None)
 
     def unignore(self):
         """Removes the ignore status on this report.
@@ -491,7 +494,7 @@ class IOCs(FeedModel):
     swagger_meta_file = "psc/threathunter/models/iocs.yaml"
 
     def __init__(self, cb, model_unique_id=None, initial_data=None,
-                 force_init=False, full_doc=True, from_watchlist=False):
+                 force_init=False, full_doc=True, report_id=None):
         """Creates a new IOCs instance.
 
         :raise ApiError: if `initial_data` is `None`
@@ -502,7 +505,7 @@ class IOCs(FeedModel):
         super(IOCs, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                    force_init=force_init, full_doc=full_doc)
 
-        self._from_watchlist = from_watchlist
+        self._report_id = report_id
 
 
 class IOC_V2(FeedModel):
@@ -512,7 +515,7 @@ class IOC_V2(FeedModel):
     swagger_meta_file = "psc/threathunter/models/ioc_v2.yaml"
 
     def __init__(self, cb, model_unique_id=None, initial_data=None,
-                 force_init=False, full_doc=True, from_watchlist=False):
+                 force_init=False, full_doc=True, report_id=None):
         """Creates a new IOC_V2 instance.
 
         :raise ApiError: if `initial_data` is `None`
@@ -524,13 +527,54 @@ class IOC_V2(FeedModel):
                                      initial_data=initial_data, force_init=force_init,
                                      full_doc=full_doc)
 
-        self._from_watchlist = from_watchlist
+        self._report_id = report_id
 
     def validate(self):
         super(IOC_V2, self).validate()
 
         if self.link and not validators.url(self.link):
             raise InvalidObjectError("link should be a valid URL")
+
+    @property
+    def ignored(self):
+        if not self.id:
+            raise InvalidObjectError("missing IOC ID")
+        if not self._report_id:
+            raise InvalidObjectError("ignore status only spplies to watchlist IOCs")
+
+        url = "/threathunter/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
+        resp = self._cb.get_object(url)
+        return resp["ignored"]
+
+    def ignore(self):
+        """Sets the ignore status on this IOC.
+
+        Only watchlist IOCs have an ignore status.
+
+        :raises InvalidObjectError: if `id` is missing or this IOC is not from a watchlist
+        """
+        if not self.id:
+            raise InvalidObjectError("missing Report ID")
+        if not self._report_id:
+            raise InvalidObjectError("ignoring only applies to watchlist IOCs")
+
+        url = "/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
+        self._cb.put_object(url, None)
+
+    def unignore(self):
+        """Removes the ignore status on this IOC.
+
+        Only watchlist IOCs have an ignore status.
+
+        :raises InvalidObjectError: if `id` is missing or this IOC is not from a watchlist
+        """
+        if not self.id:
+            raise InvalidObjectError("missing Report ID")
+        if not self._report_id:
+            raise InvalidObjectError("ignoring only applies to watchlist IOCs")
+
+        url = "/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
+        self._cb.delete_object(url)
 
 
 class Watchlist(FeedModel):
@@ -623,7 +667,7 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
+        self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/alert".format(self.id), None)
 
     def disable_alerts(self):
         """Disable alerts for this watchlist.
@@ -643,7 +687,7 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
+        self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id), None)
 
     def disable_tags(self):
         """Disable tagging for this watchlist.
