@@ -82,9 +82,9 @@ class UnauthorizedError(ApiError):
 
     def __str__(self):
         if self.message:
-            return self.message
+            return "Check your API Credentials: " + str(self.message)
 
-        return "Unauthorized: attempted to {0:s} {1:s}".format(self.action, self.uri)
+        return "Unauthorized (Check API creds): attempted to {0:s} {1:s}".format(self.action, self.uri)
 
 
 class CredentialError(ApiError):
