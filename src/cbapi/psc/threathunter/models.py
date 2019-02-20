@@ -327,21 +327,26 @@ class Report(FeedModel):
     def _query_implementation(cls, cb):
         return ReportQuery(cls, cb)
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True, feed_id=None):
-        super(Report, self).__init__(cb, model_unique_id=initial_data.get("id"), initial_data=initial_data,
+    def __init__(self, cb, model_unique_id=None, initial_data=None,
+                 force_init=False, full_doc=True, feed_id=None,
+                 from_watchlist=False):
+
+        super(Report, self).__init__(cb, model_unique_id=initial_data.get("id"),
+                                     initial_data=initial_data,
                                      force_init=force_init, full_doc=full_doc)
 
         # NOTE(ww): Warn instead of failing, since not all report operations
-        # require a feed ID.
-        if not feed_id:
+        # on feed reports require a feed_id.
+        if not feed_id and not from_watchlist:
             log.warning("Report created without feed ID")
 
         self._feed_id = feed_id
+        self._from_watchlist = from_watchlist
 
         if self.iocs:
-            self._iocs = IOCs(cb, initial_data=self.iocs)
+            self._iocs = IOCs(cb, initial_data=self.iocs, from_watchlist=from_watchlist)
         if self.iocs_v2:
-            self._iocs_v2 = [IOC_V2(cb, initial_data=ioc) for ioc in self.iocs_v2]
+            self._iocs_v2 = [IOC_V2(cb, initial_data=ioc, from_watchlist=from_watchlist) for ioc in self.iocs_v2]
 
     def validate(self):
         super(Report, self).validate()
@@ -360,10 +365,16 @@ class Report(FeedModel):
         :rtype: :py:class:`Report`
         :raises InvalidObjectError: if either `id` or `feed_id` is missing
         """
+
         if not self.id:
             raise InvalidObjectError("missing Report ID")
-        if not self._feed_id:
-            raise InvalidObjectError("missing Feed ID")
+
+        if self._from_watchlist:
+            url = "/threathunter/watchlistmgr/v1/report/{}".format(self.id)
+        else:
+            if not self._feed_id:
+                raise InvalidObjectError("missing Feed ID")
+            url = "/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id)
 
         for key, value in kwargs.items():
             if key in self._info:
@@ -371,7 +382,7 @@ class Report(FeedModel):
 
         self.validate()
 
-        new_info = self._cb.put_object("/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id), self._info)
+        new_info = self._cb.put_object(url, self._info)
         self._info.update(new_info)
         return self
 
@@ -384,10 +395,64 @@ class Report(FeedModel):
         """
         if not self.id:
             raise InvalidObjectError("missing Report ID")
-        if not self._feed_id:
-            raise InvalidObjectError("missing Feed ID")
 
-        self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id))
+        if self._from_watchlist:
+            url = "/threathunter/watchlistmgr/v1/report/{}".format(self.id)
+        else:
+            if not self._feed_id:
+                raise InvalidObjectError("missing Feed ID")
+            url = "/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id)
+
+        self._cb.delete_object(url)
+
+    @property
+    def ignored(self):
+        """Returns the ignore status for this report.
+
+        Only watchlist reports have an ignore status.
+
+        :return: whether or not this report is ignored
+        :rtype: bool
+        :raises InvalidObjectError: if `id` is missing or this report is not from a watchlist
+        """
+        if not self.id:
+            raise InvalidObjectError("missing Report ID")
+
+        if not self._from_watchlist:
+            raise InvalidObjectError("ignore status only applies to watchlist reports")
+
+        resp = self._cb.get_object("/threathunter/watchlistmgr/v1/report/{}/ignore".format(self.id))
+        return resp["ignored"]
+
+    def ignore(self):
+        """Sets the ignore status on this report.
+
+        Only watchlist reports have an ignore status.
+
+        :raises InvalidObjectError: if `id` is missing or this report is not from a watchlist
+        """
+        if not self.id:
+            raise InvalidObjectError("missing Report ID")
+
+        if not self._from_watchlist:
+            raise InvalidObjectError("ignoring only applies to watchlist reports")
+
+        self._cb.put_object("/threathunter/watchlistmgr/v1/report/{}/ignore".format(self.id))
+
+    def unignore(self):
+        """Removes the ignore status on this report.
+
+        Only watchlist reports have an ignore status.
+
+        :raises InvalidObjectError: if `id` is missing or this report is not from a watchlist
+        """
+        if not self.id:
+            raise InvalidObjectError("missing Report ID")
+
+        if not self._from_watchlist:
+            raise InvalidObjectError("ignoring only applies to watchlist reports")
+
+        self._cb.delete_object("/threathunter/watchlistmgr/v1/report/{}/ignore".format(self.id))
 
     @property
     def iocs_(self):
@@ -408,7 +473,8 @@ class IOCs(FeedModel):
     """
     swagger_meta_file = "psc/threathunter/models/iocs.yaml"
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+    def __init__(self, cb, model_unique_id=None, initial_data=None,
+                 force_init=False, full_doc=True, from_watchlist=False):
         """Creates a new IOCs instance.
 
         :raise ApiError: if `initial_data` is `None`
@@ -419,6 +485,8 @@ class IOCs(FeedModel):
         super(IOCs, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                    force_init=force_init, full_doc=full_doc)
 
+        self._from_watchlist = from_watchlist
+
 
 class IOC_V2(FeedModel):
     """Represents a collection of IOCs of a particular type, plus matching criteria and metadata.
@@ -426,7 +494,8 @@ class IOC_V2(FeedModel):
     primary_key = "id"
     swagger_meta_file = "psc/threathunter/models/ioc_v2.yaml"
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+    def __init__(self, cb, model_unique_id=None, initial_data=None,
+                 force_init=False, full_doc=True, from_watchlist=False):
         """Creates a new IOC_V2 instance.
 
         :raise ApiError: if `initial_data` is `None`
@@ -436,6 +505,8 @@ class IOC_V2(FeedModel):
 
         super(IOC_V2, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                      force_init=force_init, full_doc=full_doc)
+
+        self._from_watchlist = from_watchlist
 
     def validate(self):
         super(IOCs, self).validate()
@@ -562,6 +633,6 @@ class Watchlist(FeedModel):
         reports_ = []
         for rep_id in self.report_ids:
             resp = self._cb.get_object("/threathunter/watchlistmgr/v1/report/{}".format(rep_id))
-            reports_.append(Report(self._cb, initial_data=resp))
+            reports_.append(Report(self._cb, initial_data=resp, from_watchlist=True))
 
         return reports_
