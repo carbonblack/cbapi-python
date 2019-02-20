@@ -81,7 +81,7 @@ def list_iocs(cb, parser, args):
     feed = get_feed(cb, feed_id=args.id, feed_name=args.feedname)
 
     for report in feed.reports:
-        for ioc in report.iocs_v2:
+        for ioc in report.iocs_:
             print(ioc)
 
 
