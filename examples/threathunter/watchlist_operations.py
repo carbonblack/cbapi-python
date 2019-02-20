@@ -2,11 +2,12 @@
 #
 
 import sys
-from cbapi.psc.threathunter.models import Watchlist
+from cbapi.psc.threathunter.models import Watchlist, Report
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_object
 import logging
 import json
 import time
+import hashlib
 
 log = logging.getLogger(__name__)
 
@@ -122,8 +123,31 @@ def export_watchlist(cb, parser, args):
 
 def import_watchlist(cb, parser, args):
     imported = json.loads(sys.stdin.read())
-    cb.create(Watchlist, imported['watchlist'])
-    # TODO: Import reports.
+
+    # clear any report IDs, since we'll regenerate them
+    imported["watchlist"]["report_ids"].clear()
+
+    watchlist = cb.create(Watchlist, imported['watchlist'])
+    watchlist.save()
+
+    # import each report and extract its new ID
+    report_ids = []
+    for rep_dict in imported["reports"]:
+
+        # NOTE(ww): IOC_V2 is currently bugged on the server side and
+        # doesn't generate IDs. We do it here to keep things moving.
+        for ioc in rep_dict["iocs_v2"]:
+            if not ioc["id"]:
+                ioc_id = hashlib.md5()
+                [ioc_id.update(value.encode("utf-8")) for value in ioc["values"]]
+                ioc["id"] = ioc_id.hexdigest()
+        report = cb.create(Report, rep_dict)
+        report.save()
+        report_ids.append(report.id)
+
+    # finally, update our new watchlist with the imported reports
+    if report_ids:
+        watchlist.update(report_ids=report_ids)
 
 
 def main():
