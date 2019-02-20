@@ -34,7 +34,7 @@ def get_watchlist(cb, watchlist_id=None, watchlist_name=None):
         raise ValueError("expected either watchlist_id or watchlist_name")
 
 
-def get_report(cb, watchlist, report_id=None, report_name=None):
+def get_report(watchlist, report_id=None, report_name=None):
     if report_id:
         reports = [report for report in watchlist.reports if report.id == report_id]
     elif report_name:
@@ -101,9 +101,8 @@ def alter_report(cb, parser, args):
     elif args.deactivate:
         report.ignore()
 
-    # TODO(ww): Severity modification.
     if args.severity:
-        pass
+        report.update(severity=args.severity)
 
 
 def alter_iocs(cb, parser, args):
@@ -198,6 +197,12 @@ def main():
     specifier.add_argument("-a", "--activate", action="store_true", help="Activate alerts for this report")
 
     alter_ioc_command = commands.add_parser("alter-ioc", help="Change the properties of a watchlist's IOC")
+    alter_ioc_command.add_argument("-i", "--watchlist_id", type=str, help="Watchlist ID", required=True)
+    alter_ioc_command.add_argument("-r", "--report_id", type=str, help="Report ID", required=True)
+    alter_ioc_command.add_argument("-I", "--ioc_id", type=str, help="IOC ID", required=True)
+    specifier = alter_ioc_command.add_mutually_exclusive_group(required=False)
+    specifier.add_argument("-d", "--deactivate", action="store_true", help="Deactive alerts for this IOC")
+    specifier.add_argument("-a", "--activate", action="store_true", help="Activate alerts for this IOC")
 
     export_command = commands.add_parser("export", help="Export a watchlist into an importable format")
     specifier = export_command.add_mutually_exclusive_group(required=True)
