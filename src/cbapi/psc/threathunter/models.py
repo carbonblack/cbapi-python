@@ -348,11 +348,28 @@ class Report(FeedModel):
         if self.iocs_v2:
             self._iocs_v2 = [IOC_V2(cb, initial_data=ioc, from_watchlist=from_watchlist) for ioc in self.iocs_v2]
 
+    def save(self):
+        """Saves this report *as a watchlist report*.
+        """
+        self.validate()
+
+        # NOTE(ww): Once saved, this object corresponds to a watchlist report.
+        # As such, we need to tell the model to route calls like update()
+        # and delete() to the correct (watchlist) endpoints.
+        self._from_watchlist = True
+
+        new_info = self._cb.post_object("/threathunter/watchlistmgr/v1/report", self._info).json()
+        self._info.update(new_info)
+        return self
+
     def validate(self):
         super(Report, self).validate()
 
         if self.link and not validators.url(self.link):
             raise InvalidObjectError("link should be a valid URL")
+
+        if self.iocs_v2:
+            [ioc.validate() for ioc in self._iocs_v2]
 
     def update(self, **kwargs):
         """Update this report with the given arguments.
@@ -503,13 +520,14 @@ class IOC_V2(FeedModel):
         if not initial_data:
             raise ApiError("IOC_V2 can only be initialized from initial_data")
 
-        super(IOC_V2, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
-                                     force_init=force_init, full_doc=full_doc)
+        super(IOC_V2, self).__init__(cb, model_unique_id=initial_data.get(self.primary_key),
+                                     initial_data=initial_data, force_init=force_init,
+                                     full_doc=full_doc)
 
         self._from_watchlist = from_watchlist
 
     def validate(self):
-        super(IOCs, self).validate()
+        super(IOC_V2, self).validate()
 
         if self.link and not validators.url(self.link):
             raise InvalidObjectError("link should be a valid URL")
@@ -556,6 +574,23 @@ class Watchlist(FeedModel):
 
     def validate(self):
         super(Watchlist, self).validate()
+
+    def update(self, **kwargs):
+        if not self.id:
+            raise InvalidObjectError("missing Watchlist ID")
+
+        # NOTE(ww): Special case, according to the docs.
+        if "report_ids" in kwargs and not kwargs["report_ids"]:
+            raise ApiError("can't update a watchlist to have an empty report list")
+
+        for key, value in kwargs.items():
+            if key in self._info:
+                self._info[key] = value
+
+        self.validate()
+
+        new_info = self._cb.put_object("/threathunter/watchlistmgr/v2/watchlist/{}".format(self.id), self._info).json()
+        self._info.update(new_info)
 
     @property
     def classifier_(self):
