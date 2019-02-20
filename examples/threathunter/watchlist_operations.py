@@ -134,11 +134,13 @@ def import_watchlist(cb, parser, args):
     report_ids = []
     for rep_dict in imported["reports"]:
 
-        # NOTE(ww): IOC_V2 is currently bugged on the server side and
-        # doesn't generate IDs. We do it here to keep things moving.
+        # NOTE(ww): Previous versions of the CbTH Watchlist API weren't
+        # generating IOC IDs on the server side. If they don't show up
+        # in our import, generate them manually.
         for ioc in rep_dict["iocs_v2"]:
             if not ioc["id"]:
                 ioc_id = hashlib.md5()
+                ioc_id.update(str(time.time()).encode("utf-8"))
                 [ioc_id.update(value.encode("utf-8")) for value in ioc["values"]]
                 ioc["id"] = ioc_id.hexdigest()
         report = cb.create(Report, rep_dict)
