@@ -79,13 +79,12 @@ def main():
         else:
             # TODO(ww): Which endpoint should we use for query validation?
             # The Process query validation endpoint doesn't work.
-            print("line {}: invalid IOC and/or query".format(idx + 1))
-            # if cb.validate_query(line):
-            #     query_ioc = {"search_query": line}
-            #     iocs["query"].append(query_ioc)
-            # else:
-            #     print("line {}: invalid query".format(idx + 1))
-            #     return 1
+            # print("line {}: invalid IOC and/or query".format(idx + 1))
+            if cb.validate_query(line):
+                query_ioc = {"search_query": line}
+                iocs["query"].append(query_ioc)
+            else:
+                print("line {}: invalid query".format(idx + 1))
 
     report["id"] = report_id.hexdigest()
     report["iocs"] = dict(iocs)

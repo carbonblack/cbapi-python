@@ -100,6 +100,10 @@ def alter_report(cb, parser, args):
     elif args.deactivate:
         report.ignore()
 
+    # TODO(ww): Severity modification.
+    if args.severity:
+        pass
+
 
 def alter_iocs(cb, parser, args):
     pass
@@ -107,12 +111,19 @@ def alter_iocs(cb, parser, args):
 
 def export_watchlist(cb, parser, args):
     watchlist = get_watchlist(cb, watchlist_id=args.watchlist_id, watchlist_name=args.watchlist_name)
-    print(json.dumps(watchlist._info))
+    exported = {
+        'watchlist': watchlist._info,
+    }
+
+    exported['reports'] = [report._info for report in watchlist.reports]
+
+    print(json.dumps(exported))
 
 
 def import_watchlist(cb, parser, args):
-    watchlist = json.loads(sys.stdin.read())
-    cb.create(Watchlist, watchlist)
+    imported = json.loads(sys.stdin.read())
+    cb.create(Watchlist, imported['watchlist'])
+    # TODO: Import reports.
 
 
 def main():
@@ -155,7 +166,7 @@ def main():
     alter_report_command = commands.add_parser("alter-report", help="Change the properties of a watchlist's report")
     alter_report_command.add_argument("-i", "--watchlist_id", type=str, help="Watchlist ID", required=True)
     alter_report_command.add_argument("-r", "--report_id", type=str, help="Report ID", required=True)
-    alter_report_command.add_argument("-s", "--severity", type=int, help="The report's severity", required=True)
+    alter_report_command.add_argument("-s", "--severity", type=int, help="The report's severity", required=False)
     specifier = alter_report_command.add_mutually_exclusive_group(required=False)
     specifier.add_argument("-d", "--deactivate", action="store_true", help="Deactive alerts for this report")
     specifier.add_argument("-a", "--activate", action="store_true", help="Activate alerts for this report")

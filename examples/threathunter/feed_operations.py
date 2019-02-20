@@ -6,7 +6,6 @@ from cbapi.psc.threathunter.models import Feed, Report
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_object
 import logging
 import json
-from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
