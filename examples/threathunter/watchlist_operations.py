@@ -21,13 +21,34 @@ def get_watchlist(cb, watchlist_id=None, watchlist_name=None):
     elif watchlist_name:
         feeds = [feed for feed in cb.select(Watchlist) if feed.name == watchlist_name]
 
-        if len(feeds) > 1:
+        if not feeds:
+            eprint("No watchlist named {}".format(watchlist_name))
+            sys.exit(1)
+        elif len(feeds) > 1:
             eprint("More than one feed named {}, not continuing".format(watchlist_name))
             sys.exit(1)
 
         return feeds[0]
     else:
         raise ValueError("expected either watchlist_id or watchlist_name")
+
+
+def get_report(cb, watchlist, report_id=None, report_name=None):
+    if report_id:
+        reports = [report for report in watchlist.reports if report.id == report_id]
+    elif report_name:
+        reports = [report for report in watchlist.reports if report.title == report_name]
+    else:
+        raise ValueError("expected either report_id or report_name")
+
+    if not reports:
+        eprint("No matching reports found.")
+        sys.exit(1)
+    if len(reports) > 1:
+        eprint("More than one matching report found.")
+        sys.exit(1)
+
+    return reports[0]
 
 
 def list_watchlists(cb, parser, args):
@@ -72,7 +93,12 @@ def delete_watchlist(cb, parser, args):
 
 def alter_report(cb, parser, args):
     watchlist = get_watchlist(cb, watchlist_id=args.watchlist_id)
-    pass
+    report = get_report(watchlist, report_id=args.report_id)
+
+    if args.activate:
+        report.unignore()
+    elif args.deactivate:
+        report.ignore()
 
 
 def alter_iocs(cb, parser, args):
@@ -128,8 +154,11 @@ def main():
 
     alter_report_command = commands.add_parser("alter-report", help="Change the properties of a watchlist's report")
     alter_report_command.add_argument("-i", "--watchlist_id", type=str, help="Watchlist ID", required=True)
-    alter_report_command.add_argument("-r", "--reportid", type=str, help="Report ID", required=True)
+    alter_report_command.add_argument("-r", "--report_id", type=str, help="Report ID", required=True)
     alter_report_command.add_argument("-s", "--severity", type=int, help="The report's severity", required=True)
+    specifier = alter_report_command.add_mutually_exclusive_group(required=False)
+    specifier.add_argument("-d", "--deactivate", action="store_true", help="Deactive alerts for this report")
+    specifier.add_argument("-a", "--activate", action="store_true", help="Activate alerts for this report")
 
     alter_ioc_command = commands.add_parser("alter-ioc", help="Change the properties of a watchlist's IOC")
 
