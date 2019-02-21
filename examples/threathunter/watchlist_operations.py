@@ -105,8 +105,23 @@ def alter_report(cb, parser, args):
         report.update(severity=args.severity)
 
 
-def alter_iocs(cb, parser, args):
-    pass
+def alter_ioc(cb, parser, args):
+    watchlist = get_watchlist(cb, watchlist_id=args.watchlist_id)
+    report = get_report(watchlist, report_id=args.report_id)
+
+    iocs = [ioc for ioc in report.iocs_ if ioc.id == args.ioc_id]
+
+    if not iocs:
+        eprint("No IOC with ID {} found.".format(args.ioc_id))
+        sys.exit(1)
+    elif len(iocs) > 1:
+        eprint("More than one IOC with ID {} found.".format(args.ioc_id))
+        sys.exit(1)
+
+    if args.activate:
+        iocs[0].unignore()
+    elif args.deactivate:
+        iocs[0].ignore()
 
 
 def export_watchlist(cb, parser, args):
@@ -225,7 +240,7 @@ def main():
     elif args.command_name == "alter-report":
         return alter_report(cb, parser, args)
     elif args.command_name == "alter-ioc":
-        return alter_iocs(cb, parser, args)
+        return alter_ioc(cb, parser, args)
     elif args.command_name == "export":
         return export_watchlist(cb, parser, args)
     elif args.command_name == "import":
