@@ -151,6 +151,10 @@ def create_watchlist(cb, parser, args):
 
 def delete_watchlist(cb, parser, args):
     watchlist = get_watchlist(cb, watchlist_id=args.watchlist_id, watchlist_name=args.watchlist_name)
+
+    if args.reports:
+        [report.delete() for report in watchlist.reports]
+
     watchlist.delete()
 
 
@@ -264,6 +268,7 @@ def main():
     specifier = delete_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--watchlist_id", type=str, help="The watchlist ID")
     specifier.add_argument("-w", "--watchlist_name", type=str, help="The watchlist name")
+    specifier.add_argument("-R", "--reports", action="store_true", help="Delete all associated reports too", default=False)
 
     alter_report_command = commands.add_parser("alter-report", help="Change the properties of a watchlist's report")
     alter_report_command.add_argument("-i", "--watchlist_id", type=str, help="Watchlist ID", required=True)
