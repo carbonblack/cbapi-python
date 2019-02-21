@@ -32,9 +32,7 @@ def get_feed(cb, feed_id=None, feed_name=None):
         raise ValueError("expected either feed_id or feed_name")
 
 
-def get_report(cb, feed_id=None, feed_name=None, report_id=None, report_name=None):
-    feed = get_feed(cb, feed_id=feed_id, feed_name=feed_name)
-
+def get_report(feed, report_id=None, report_name=None):
     if report_id:
         reports = [report for report in feed.reports if report.id == report_id]
 
@@ -107,8 +105,8 @@ def delete_feed(cb, parser, args):
 
 
 def export_report(cb, parser, args):
-    report = get_report(cb, feed_id=args.id, feed_name=args.feedname,
-                        report_id=args.reportid, report_name=args.reportname)
+    feed = get_feed(cb, feed_id=args.id, feed_name=args.feedname)
+    report = get_report(feed, report_id=args.reportid, report_name=args.reportname)
 
     print(json.dumps(report._info))
 
@@ -130,8 +128,8 @@ def import_report(cb, parser, args):
 
 
 def delete_report(cb, parser, args):
-    report = get_report(cb, feed_id=args.id, feed_name=args.feedname,
-                        report_id=args.reportid, report_name=args.reportname)
+    feed = get_feed(cb, feed_id=args.id, feed_name=args.feedname)
+    report = get_report(feed, report_id=args.reportid, report_name=args.reportname)
     report.delete()
 
 
