@@ -426,7 +426,7 @@ class Report(FeedModel):
     def delete(self):
         """Deletes this report from the ThreatHunter server.
 
-            >>> report.delete()
+        >>> report.delete()
 
         :raises InvalidObjectError: if either `id` or `feed_id` is missing
         """
@@ -676,7 +676,7 @@ class Watchlist(FeedModel):
     def update(self, **kwargs):
         """Updates this watchlist with the given arguments.
 
-            >>> watchlist.update(name="New Name")
+        >>> watchlist.update(name="New Name")
 
         :param kwargs: The fields to update
         :type kwargs: dict(str, str)

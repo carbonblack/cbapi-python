@@ -28,7 +28,7 @@ class CbThreatHunterFeedAPI(BaseAPI):
     def create(self, cls, data=None):
         """Creates a new model.
 
-            >>> feed = cb.create(Feed, feed_data)
+        >>> feed = cb.create(Feed, feed_data)
 
         :param cls: The model being created
         :param data: The data to pre-populate the model with
@@ -40,7 +40,7 @@ class CbThreatHunterFeedAPI(BaseAPI):
     def validate_query(self, query):
         """Validates the given IOC query.
 
-            >>> cb.validate_query("process_name:chrome.exe") # True
+        >>> cb.validate_query("process_name:chrome.exe") # True
 
         :param str query: the query to validate
         :return: whether or not the query is valid
