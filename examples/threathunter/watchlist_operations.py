@@ -8,6 +8,8 @@ import logging
 import json
 import time
 import hashlib
+import validators
+from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
@@ -84,7 +86,67 @@ def subscribe_watchlist(cb, parser, args):
 
 
 def create_watchlist(cb, parser, args):
-    pass
+    watchlist_dict = {
+        "name": args.watchlist_name,
+        "description": args.description,
+        "tags_enabled": args.tags,
+        "alerts_enabled": args.alerts,
+        "create_timestamp": args.timestamp,
+        "last_update_timestamp": args.last_update,
+        "report_ids": [],
+        "classifier": None,
+    }
+
+    iocs = defaultdict(list)
+
+    rep_tags = []
+    if args.rep_tags:
+        rep_tags = args.rep_tags.split(",")
+
+    report_dict = {
+        "timestamp": args.rep_timestamp,
+        "title": args.rep_title,
+        "description": args.rep_desc,
+        "severity": args.rep_severity,
+        "link": args.rep_link,
+        "tags": rep_tags,
+        "iocs_v2": [],  # NOTE(ww): The feed server will convert IOCs to v2s for us.
+    }
+
+    report_id = hashlib.md5()
+    report_id.update(str(time.time()).encode("utf-8"))
+
+    # TODO(ww): Instead of validating here, create an IOCs
+    # object, populate it with these, and run _validate()
+    for idx, line in enumerate(sys.stdin):
+        line = line.rstrip("\r\n")
+        report_id.update(line.encode("utf-8"))
+        if validators.md5(line):
+            iocs["md5"].append(line)
+        elif validators.sha256(line):
+            iocs["sha256"].append(line)
+        elif validators.ipv4(line):
+            iocs["ipv4"].append(line)
+        elif validators.ipv6(line):
+            iocs["ipv6"].append(line)
+        elif validators.domain(line):
+            iocs["dns"].append(line)
+        else:
+            if cb.validate_query(line):
+                query_ioc = {"search_query": line}
+                iocs["query"].append(query_ioc)
+            else:
+                print("line {}: invalid query".format(idx + 1))
+
+    report_dict["id"] = report_id.hexdigest()
+    report_dict["iocs"] = dict(iocs)
+
+    report = cb.create(Report, report_dict)
+    report.save()
+
+    watchlist_dict["report_ids"].append(report.id)
+    watchlist = cb.create(Watchlist, watchlist_dict)
+    watchlist.save()
 
 
 def delete_watchlist(cb, parser, args):
@@ -224,7 +286,7 @@ def main():
     specifier.add_argument("-i", "--watchlist_id", type=str, help="Watchlist ID")
     specifier.add_argument("-w", "--watchlist_name", type=str, help="Watchlist name")
 
-    import_command = commands.add_parser("import", help="Import a previously exported watchlist")
+    commands.add_parser("import", help="Import a previously exported watchlist")
 
     args = parser.parse_args()
     cb = get_cb_threathunter_feed_object(args)
