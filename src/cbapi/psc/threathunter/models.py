@@ -558,7 +558,7 @@ class IOC_V2(FeedModel):
         if not self._report_id:
             raise InvalidObjectError("ignoring only applies to watchlist IOCs")
 
-        url = "/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
+        url = "/threathunter/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
         self._cb.put_object(url, None)
 
     def unignore(self):
@@ -573,7 +573,7 @@ class IOC_V2(FeedModel):
         if not self._report_id:
             raise InvalidObjectError("ignoring only applies to watchlist IOCs")
 
-        url = "/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
+        url = "/threathunter/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
         self._cb.delete_object(url)
 
 
