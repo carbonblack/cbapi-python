@@ -171,8 +171,8 @@ def main():
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
 
-    commands.add_parser("import", help="Import a previously exported feed")
-    commands.add_argument("-f", "--feedname", type=str, help="Renames the imported feed")
+    import_command = commands.add_parser("import", help="Import a previously exported feed")
+    import_command.add_argument("-f", "--feedname", type=str, help="Renames the imported feed")
 
     del_command = commands.add_parser("delete", help="Delete feed")
     specifier = del_command.add_mutually_exclusive_group(required=True)
