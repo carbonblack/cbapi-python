@@ -278,12 +278,14 @@ class Feed(FeedModel):
             raise InvalidObjectError("missing feed ID")
 
         for key, value in kwargs.items():
-            if key not in self._info:
-                raise ApiError("can't update nonexistent field {}".format(key))
+            if key in self._info:
+                self._info[key] = value
 
-        new_info = self._cb.put_object("/threathunter/feedmgr/v1/feed/{}/feedinfo".format(self.id), kwargs).json()
-        self._info.update(new_info)
         self.validate()
+
+        url = "/threathunter/feedmgr/v1/feed/{}/feedinfo".format(self.id)
+        new_info = self._cb.put_object(url, self._info).json()
+        self._info.update(new_info)
 
         return self
 
@@ -397,7 +399,8 @@ class Report(FeedModel):
         :type kwargs: dict(str, str)
         :return: The updated report
         :rtype: :py:class:`Report`
-        :raises InvalidObjectError: if `id` or `feed_id` is missing, or :py:meth:`validate` fails
+        :raises InvalidObjectError: if `id` is missing, or `feed_id` is missing
+            and this report is a feed report, or :py:meth:`validate` fails
         """
 
         if not self.id:
@@ -428,7 +431,8 @@ class Report(FeedModel):
 
         >>> report.delete()
 
-        :raises InvalidObjectError: if either `id` or `feed_id` is missing
+        :raises InvalidObjectError: if `id` is missing, or `feed_id` is missing
+            and this report is a feed report
         """
         if not self.id:
             raise InvalidObjectError("missing Report ID")
