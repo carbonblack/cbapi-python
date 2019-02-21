@@ -314,9 +314,6 @@ class Feed(FeedModel):
         self._cb.post_object("/threathunter/feedmgr/v1/{}/report".format(self.id), body)
 
 
-# TODO(ww): Report probably needs to be subclassed into FeedReport
-# and WatchlistReport, since each API has its own endpoints
-# and requirements for retrieving, modifying, and deleting reports.
 class Report(FeedModel):
     """Represents reports retrieved from a ThreatHunter feed.
     """
