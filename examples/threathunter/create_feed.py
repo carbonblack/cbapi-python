@@ -77,9 +77,6 @@ def main():
         elif validators.domain(line):
             iocs["dns"].append(line)
         else:
-            # TODO(ww): Which endpoint should we use for query validation?
-            # The Process query validation endpoint doesn't work.
-            # print("line {}: invalid IOC and/or query".format(idx + 1))
             if cb.validate_query(line):
                 query_ioc = {"search_query": line}
                 iocs["query"].append(query_ioc)
