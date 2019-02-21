@@ -507,6 +507,25 @@ class IOCs(FeedModel):
 
         self._report_id = report_id
 
+    def validate(self):
+        super(IOCs, self).validate()
+
+        for md5 in self.md5:
+            if not validators(md5):
+                raise InvalidObjectError("invalid MD5 checksum: {}".format(md5))
+        for ipv4 in self.ipv4:
+            if not validators(ipv4):
+                raise InvalidObjectError("invalid IPv4 address: {}".format(ipv4))
+        for ipv6 in self.ipv6:
+            if not validators(ipv6):
+                raise InvalidObjectError("invalid IPv6 address: {}".format(ipv6))
+        for dns in self.dns:
+            if not validators(dns):
+                raise InvalidObjectError("invalid domain: {}".format(dns))
+        for query in self.query:
+            if not self._cb.validate(query["search_query"]):
+                raise InvalidObjectError("invalid search query: {}".format(query["search_query"]))
+
 
 class IOC_V2(FeedModel):
     """Represents a collection of IOCs of a particular type, plus matching criteria and metadata.
