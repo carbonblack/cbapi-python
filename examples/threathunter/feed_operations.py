@@ -88,14 +88,18 @@ def export_feed(cb, parser, args):
     exported = {}
 
     # TODO(ww): Maybe add metadata about when the feed was exported?
-    exported['feedinfo'] = feed._info
-    exported['reports'] = [report._info for report in feed.reports]
+    exported["feedinfo"] = feed._info
+    exported["reports"] = [report._info for report in feed.reports]
     print(json.dumps(exported))
 
 
 def import_feed(cb, parser, args):
-    feed = json.loads(sys.stdin.read())
-    cb.create(Feed, feed)
+    imported = json.loads(sys.stdin.read())
+
+    if args.feedname:
+        imported["feedinfo"]["name"] = args.feedname
+
+    feed = cb.create(Feed, imported)
     feed.save()
 
 
@@ -167,8 +171,8 @@ def main():
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
 
-    import_command = commands.add_parser("import", help="Import a previously exported feed")
-    # TODO(ww): Provide option to rename feed?
+    commands.add_parser("import", help="Import a previously exported feed")
+    commands.add_argument("-f", "--feedname", type=str, help="Renames the imported feed")
 
     del_command = commands.add_parser("delete", help="Delete feed")
     specifier = del_command.add_mutually_exclusive_group(required=True)
