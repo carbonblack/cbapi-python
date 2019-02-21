@@ -239,6 +239,10 @@ class Feed(FeedModel):
         return self
 
     def validate(self):
+        """Validates this feed's state.
+
+        :raise InvalidObjectError: if the feed's state is invalid
+        """
         super(Feed, self).validate()
 
         if self.access not in ["public", "private"]:
@@ -263,11 +267,11 @@ class Feed(FeedModel):
     def update(self, **kwargs):
         """Update this feed's metadata with the given arguments.
 
-            >>> feed.update(access="private")
+        >>> feed.update(access="private")
 
         :param kwargs: The fields to update
         :type kwargs: dict(str, str)
-        :raise InvalidObjectError: if `id` is missing
+        :raise InvalidObjectError: if `id` is missing or :py:meth:`validate` fails
         :raise ApiError: if an invalid field is specified
         """
         if not self.id:
@@ -348,6 +352,13 @@ class Report(FeedModel):
 
     def save(self):
         """Saves this report *as a watchlist report*.
+
+        .. NOTE::
+            This method **cannot** be used to save a feed report. To
+            save feed reports, create them with `cb.create` and use
+            :py:meth:`Feed.replace`.
+
+        :raise InvalidObjectError: if :py:meth:`validate` fails
         """
         self.validate()
 
@@ -361,6 +372,10 @@ class Report(FeedModel):
         return self
 
     def validate(self):
+        """Validates this report's state.
+
+        :raise InvalidObjectError: if the report's state is invalid
+        """
         super(Report, self).validate()
 
         if self.link and not validators.url(self.link):
@@ -372,13 +387,17 @@ class Report(FeedModel):
     def update(self, **kwargs):
         """Update this report with the given arguments.
 
-            >>> report.update(title="My new report title")
+        .. NOTE::
+            The report's timestamp is always updated, regardless of whether
+            passed explicitly.
+
+        >>> report.update(title="My new report title")
 
         :param kwargs: The fields to update
         :type kwargs: dict(str, str)
         :return: The updated report
         :rtype: :py:class:`Report`
-        :raises InvalidObjectError: if either `id` or `feed_id` is missing
+        :raises InvalidObjectError: if `id` or `feed_id` is missing, or :py:meth:`validate` fails
         """
 
         if not self.id:
@@ -505,6 +524,10 @@ class IOCs(FeedModel):
         self._report_id = report_id
 
     def validate(self):
+        """Validates this IOCs structure's state.
+
+        :raise InvalidObjectError: if the IOCs structure's state is invalid
+        """
         super(IOCs, self).validate()
 
         for md5 in self.md5:
@@ -546,6 +569,10 @@ class IOC_V2(FeedModel):
         self._report_id = report_id
 
     def validate(self):
+        """Validates this IOC_V2's state.
+
+        :raise InvalidObjectError: if the IOC_V2's state is invalid
+        """
         super(IOC_V2, self).validate()
 
         if self.link and not validators.url(self.link):
@@ -553,6 +580,12 @@ class IOC_V2(FeedModel):
 
     @property
     def ignored(self):
+        """Returns whether or not this IOC is ignored
+
+        :return: the ignore status
+        :rtype: bool
+        :raise InvalidObjectError: if this IOC is missing an `id` or is not a watchlist IOC
+        """
         if not self.id:
             raise InvalidObjectError("missing IOC ID")
         if not self._report_id:
@@ -625,6 +658,7 @@ class Watchlist(FeedModel):
 
         :return: The saved watchlist
         :rtype: :py:class:`Watchlist`
+        :raise InvalidObjectError: if :py:meth:`validate` fails
         """
         self.validate()
 
@@ -633,9 +667,22 @@ class Watchlist(FeedModel):
         return self
 
     def validate(self):
+        """Validates this watchlist's state.
+
+        :raise InvalidObjectError: if the watchlist's state is invalid
+        """
         super(Watchlist, self).validate()
 
     def update(self, **kwargs):
+        """Updates this watchlist with the given arguments.
+
+            >>> watchlist.update(name="New Name")
+
+        :param kwargs: The fields to update
+        :type kwargs: dict(str, str)
+        :raise InvalidObjectError: if `id` is missing or :py:meth:`validate` fails
+        :raise ApiError: if `report_ids` is given *and* is empty
+        """
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 

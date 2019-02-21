@@ -38,6 +38,14 @@ class CbThreatHunterFeedAPI(BaseAPI):
         return cls(self, initial_data=data)
 
     def validate_query(self, query):
+        """Validates the given IOC query.
+
+            >>> cb.validate_query("process_name:chrome.exe") # True
+
+        :param str query: the query to validate
+        :return: whether or not the query is valid
+        :rtype: bool
+        """
         args = {"q": query}
         resp = self.get_object("/pscr/query/v1/validate", query_parameters=args)
 
