@@ -536,7 +536,8 @@ class ReportQuery(SimpleQuery):
     >>> cb.select(Report).where(feed_id=id)
 
     .. NOTE::
-        Only feed reports can be queried.
+        Only feed reports can be queried. Watchlist reports
+        should be interacted with via :py:meth:`Watchlist.reports`.
     """
     def __init__(self, doc_class, cb):
         super(ReportQuery, self).__init__(doc_class, cb)
