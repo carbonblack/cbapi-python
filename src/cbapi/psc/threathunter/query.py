@@ -510,9 +510,9 @@ class TreeQuery(BaseQuery):
 class FeedQuery(SimpleQuery):
     """Represents the logic for a :py:class:`Feed` query.
 
-        >>> cb.select(Feed)
-        >>> cb.select(Feed, id)
-        >>> cb.select(Feed).where(include_public=True)
+    >>> cb.select(Feed)
+    >>> cb.select(Feed, id)
+    >>> cb.select(Feed).where(include_public=True)
     """
     def __init__(self, doc_class, cb):
         super(FeedQuery, self).__init__(doc_class, cb)
@@ -533,7 +533,10 @@ class FeedQuery(SimpleQuery):
 class ReportQuery(SimpleQuery):
     """Represents the logic for a :py:class:`Report` query.
 
-        >>> cb.select(Report).where(feed_id=id)
+    >>> cb.select(Report).where(feed_id=id)
+
+    .. NOTE::
+        Only feed reports can be queried.
     """
     def __init__(self, doc_class, cb):
         super(ReportQuery, self).__init__(doc_class, cb)
@@ -559,7 +562,7 @@ class ReportQuery(SimpleQuery):
 class WatchlistQuery(SimpleQuery):
     """Represents the logic for a :py:class:`Watchlist` query.
 
-        >>> cb.select(Watchlist)
+    >>> cb.select(Watchlist)
     """
     def __init__(self, doc_class, cb):
         super(WatchlistQuery, self).__init__(doc_class, cb)
