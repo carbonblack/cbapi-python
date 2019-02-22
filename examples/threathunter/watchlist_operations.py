@@ -268,10 +268,10 @@ def main():
     create_command.add_argument("--rep_visibility", type=str, help="Report visibility")
 
     delete_command = commands.add_parser("delete", help="Delete a watchlist")
+    delete_command.add_argument("-R", "--reports", action="store_true", help="Delete all associated reports too", default=False)
     specifier = delete_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--watchlist_id", type=str, help="The watchlist ID")
     specifier.add_argument("-w", "--watchlist_name", type=str, help="The watchlist name")
-    specifier.add_argument("-R", "--reports", action="store_true", help="Delete all associated reports too", default=False)
 
     alter_report_command = commands.add_parser("alter-report", help="Change the properties of a watchlist's report")
     alter_report_command.add_argument("-i", "--watchlist_id", type=str, help="Watchlist ID", required=True)
