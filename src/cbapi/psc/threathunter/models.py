@@ -497,6 +497,22 @@ class Report(FeedModel):
         self._cb.delete_object("/threathunter/watchlistmgr/v1/report/{}/ignore".format(self.id))
 
     @property
+    def custom_severity(self):
+        """Returns the custom severity for this report.
+
+        :return: The custom severity for this report, if it exists
+        :rtype: :py:class:`ReportSeverity`
+        :raise InvalidObjectError: if `id` is missing or this report is not from a watchlist
+        """
+        if not self.id:
+            raise InvalidObjectError("missing report ID")
+        if not self._from_watchlist:
+            raise InvalidObjectError("custom severities only exist on watchlist reports")
+
+        resp = self._cb.get_object("/threathunter/watchlistmgr/v1/severity/report/{}".format(self.id))
+        return ReportSeverity(self._cb, initial_data=resp)
+
+    @property
     def iocs_(self):
         """Returns a list of :py:class:`IOC_V2` associated with this report.
 
@@ -811,3 +827,18 @@ class Watchlist(FeedModel):
             reports_.append(Report(self._cb, initial_data=resp, from_watchlist=True))
 
         return reports_
+
+
+class ReportSeverity(FeedModel):
+    """Represents a custom report severity.
+    """
+    primary_key = "report_id"
+    swagger_meta_file = "psc/threathunter/models/report_severity.yaml"
+
+    def __init__(self, cb, initial_data=None):
+        if not initial_data:
+            raise ApiError("ReportSeverity can only be initialized from initial_data")
+
+        super(ReportSeverity, self).__init__(cb, model_unique_id=initial_data.get(self.primary_key),
+                                             initial_data=initial_data, force_init=False,
+                                             full_doc=True)
