@@ -126,8 +126,6 @@ def create_watchlist(cb, parser, args):
     report_id = hashlib.md5()
     report_id.update(str(time.time()).encode("utf-8"))
 
-    # TODO(ww): Instead of validating here, create an IOCs
-    # object, populate it with these, and run _validate()
     for idx, line in enumerate(sys.stdin):
         line = line.rstrip("\r\n")
         report_id.update(line.encode("utf-8"))
