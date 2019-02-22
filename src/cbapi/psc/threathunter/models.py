@@ -785,6 +785,7 @@ class Watchlist(FeedModel):
         if not self.classifier:
             return None
         if self.classifier["key"] != "feed_id":
+            log.warning("Unexpected classifier type: {}".format(self.classifier["key"]))
             return None
 
         return self._cb.select(Feed, self.classifier["value"])
