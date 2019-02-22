@@ -62,6 +62,9 @@ def list_watchlists(cb, parser, args):
         if args.reports:
             for report in watchlist.reports:
                 print(report)
+            if watchlist.feed:
+                for report in watchlist.feed.reports:
+                    print(report)
 
 
 def subscribe_watchlist(cb, parser, args):
