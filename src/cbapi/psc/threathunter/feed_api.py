@@ -50,3 +50,15 @@ class CbThreatHunterFeedAPI(BaseAPI):
         resp = self.get_object("/pscr/query/v1/validate", query_parameters=args)
 
         return resp.get("valid", False)
+
+    def convert_query(self, query):
+        """Converts a legacy CB Response query to a ThreatHunter query.
+
+        :param str query: the query to convert
+        :return: the converted query
+        :rtype: str
+        """
+        args = {"query": query}
+        resp = self.get_object("/threathunter/feedmgr/v1/query/translate", query_parameters=args)
+
+        return resp.get("query")
