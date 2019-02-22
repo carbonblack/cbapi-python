@@ -2,8 +2,9 @@
 #
 
 import sys
-from cbapi.psc.threathunter.models import Watchlist, Report
+from cbapi.psc.threathunter.models import Watchlist, Report, Feed
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_object
+from cbapi.errors import ObjectNotFoundError
 import logging
 import json
 import time
@@ -68,6 +69,12 @@ def list_watchlists(cb, parser, args):
 
 
 def subscribe_watchlist(cb, parser, args):
+    try:
+        cb.select(Feed, args.feed_id)
+    except ObjectNotFoundError:
+        eprint("Nonexistent or private feed: {}".format(args.feed_id))
+        sys.exit(1)
+
     classifier = {
         "key": "feed_id",
         "value": args.feed_id,
