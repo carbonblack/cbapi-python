@@ -452,6 +452,9 @@ class Report(FeedModel):
 
         Only watchlist reports have an ignore status.
 
+        >>> if report.ignored:
+        ...     report.unignore()
+
         :return: whether or not this report is ignored
         :rtype: bool
         :raises InvalidObjectError: if `id` is missing or this report is not from a watchlist
@@ -497,6 +500,9 @@ class Report(FeedModel):
     @property
     def iocs_(self):
         """Returns a list of :py:class:`IOC_V2` associated with this report.
+
+        >>> for ioc in report.iocs_:
+        ...     print(ioc.values)
 
         :return: a list of IOCs
         :rtype: list(:py:class:`IOC_V2`)
@@ -585,6 +591,9 @@ class IOC_V2(FeedModel):
     @property
     def ignored(self):
         """Returns whether or not this IOC is ignored
+
+        >>> if ioc.ignored:
+        ...     ioc.unignore()
 
         :return: the ignore status
         :rtype: bool
@@ -767,8 +776,30 @@ class Watchlist(FeedModel):
         self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
 
     @property
+    def feed(self):
+        """Returns the feed linked to this watchlist, if there is one.
+
+        :return: the feed linked to this watchlist, if any
+        :rtype: :py:class:`Feed` or None
+        """
+        if not self.classifier:
+            return None
+        if self.classifier["key"] != "feed_id":
+            return None
+
+        return self._cb.select(Feed, self.classifier["value"])
+
+    @property
     def reports(self):
         """Returns a list of :py:class:`Report` instances associated with this watchlist.
+
+        .. NOTE::
+            If this watchlist is a classifier (i.e. feed-linked) watchlist,
+            `reports` will be empty. To get the reports associated with the linked
+            feed, use :py:attr:`feed` like:
+
+            >>> for report in watchlist.feed.reports:
+            ...     print(report.title)
 
         :return: A list of reports
         :rtype: list(:py:class:`Report`)
