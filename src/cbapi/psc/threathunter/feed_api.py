@@ -1,5 +1,6 @@
 from cbapi.connection import BaseAPI
 from cbapi.errors import ApiError
+from cbapi.psc.threathunter.models import ReportSeverity
 import logging
 log = logging.getLogger(__name__)
 
@@ -62,3 +63,14 @@ class CbThreatHunterFeedAPI(BaseAPI):
         resp = self.get_object("/threathunter/feedmgr/v1/query/translate", query_parameters=args)
 
         return resp.get("query")
+
+    @property
+    def custom_severities(self):
+        """Returns a list of active :py:class:`ReportSeverity` instances
+
+        :rtype: list[:py:class:`ReportSeverity`]
+        """
+        # TODO(ww): There's probably a better place to put this.
+        resp = self.get_object("/threathunter/watchlistmgr/v1/severity")
+        items = resp.get("results", [])
+        return [self.create(ReportSeverity, item) for item in items]
