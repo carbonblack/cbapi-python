@@ -55,6 +55,26 @@ def get_report(watchlist, report_id=None, report_name=None):
     return reports[0]
 
 
+def get_report_feed(watchlist, report_id=None, report_name=None):
+    reports = watchlist.feed.reports
+
+    if report_id:
+        reports = [report for report in reports if report.id == report_id]
+    elif report_name:
+        reports = [report for report in reports if report.title == report_name]
+    else:
+        raise ValueError("expected either report_id or report_name")
+
+    if not reports:
+        eprint("No matching reports found.")
+        sys.exit(1)
+    if len(reports) > 1:
+        eprint("More than one matching report found.")
+        sys.exit(1)
+
+    return reports[0]
+
+
 def list_watchlists(cb, parser, args):
     watchlists = cb.select(Watchlist)
 
@@ -168,15 +188,22 @@ def delete_watchlist(cb, parser, args):
 
 def alter_report(cb, parser, args):
     watchlist = get_watchlist(cb, watchlist_id=args.watchlist_id)
-    report = get_report(watchlist, report_id=args.report_id)
+
+    if watchlist.reports:
+        report = get_report(watchlist, report_id=args.report_id)
+    else:
+        report = get_report_feed(watchlist, report_id=args.report_id)
+
+    if args.severity:
+        if watchlist.reports:
+            report.update(severity=args.severity)
+        else:
+            report.custom_severity = args.severity
 
     if args.activate:
         report.unignore()
     elif args.deactivate:
         report.ignore()
-
-    if args.severity:
-        report.update(severity=args.severity)
 
 
 def alter_ioc(cb, parser, args):
