@@ -502,14 +502,42 @@ class Report(FeedModel):
 
         :return: The custom severity for this report, if it exists
         :rtype: :py:class:`ReportSeverity`
-        :raise InvalidObjectError: if `id` is missing or this report is not from a watchlist
+        :raise InvalidObjectError: if `id` is missing or this report is from a watchlist
         """
         if not self.id:
             raise InvalidObjectError("missing report ID")
-        if not self._from_watchlist:
-            raise InvalidObjectError("custom severities only exist on watchlist reports")
+        if self._from_watchlist:
+            raise InvalidObjectError("watchlist reports don't have custom severities")
 
         resp = self._cb.get_object("/threathunter/watchlistmgr/v1/severity/report/{}".format(self.id))
+        return ReportSeverity(self._cb, initial_data=resp)
+
+    @custom_severity.setter
+    def custom_severity(self, sev_level):
+        """Sets or removed the custom severity for this report
+
+        :param int sev_level: the new severity, or None to remove the custom severity
+        :return: The new custom severity, or None if removed
+        :rtype: :py:class:`ReportSeverity` or None
+        :raise InvalidObjectError: if `id` is missing or this report is from a watchlist
+        """
+        if not self.id:
+            raise InvalidObjectError("missing report ID")
+        if self._from_watchlist:
+            raise InvalidObjectError("watchlist reports don't have custom severities")
+
+        url = "/threathunter/watchlistmgr/v1/severity/report/{}".format(self.id)
+
+        if sev_level is None:
+            self._cb.delete_object(url)
+            return
+
+        args = {
+            "report_id": self.id,
+            "severity": sev_level,
+        }
+
+        resp = self._cb.put_object(url, args).json()
         return ReportSeverity(self._cb, initial_data=resp)
 
     @property
@@ -830,7 +858,7 @@ class Watchlist(FeedModel):
 
 
 class ReportSeverity(FeedModel):
-    """Represents a custom report severity.
+    """Represents severity information for a watchlist report.
     """
     primary_key = "report_id"
     swagger_meta_file = "psc/threathunter/models/report_severity.yaml"
