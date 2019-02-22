@@ -51,3 +51,6 @@ Models
     :members:
     :inherited-members:
 
+.. autoclass:: cbapi.psc.threathunter.models.ReportSeverity
+    :members:
+    :inherited-members:
