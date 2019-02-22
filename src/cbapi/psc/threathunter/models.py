@@ -196,7 +196,7 @@ class Feed(FeedModel):
     def _query_implementation(cls, cb):
         return FeedQuery(cls, cb)
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+    def __init__(self, cb, model_unique_id=None, initial_data=None):
         item = {}
         reports = []
 
@@ -217,7 +217,7 @@ class Feed(FeedModel):
         feed_id = item.get("id")
 
         super(Feed, self).__init__(cb, model_unique_id=feed_id, initial_data=item,
-                                   force_init=force_init, full_doc=full_doc)
+                                   force_init=False, full_doc=True)
 
         self._reports = [Report(cb, initial_data=report, feed_id=feed_id) for report in reports]
 
@@ -332,17 +332,16 @@ class Report(FeedModel):
         return ReportQuery(cls, cb)
 
     def __init__(self, cb, model_unique_id=None, initial_data=None,
-                 force_init=False, full_doc=True, feed_id=None,
-                 from_watchlist=False):
+                 feed_id=None, from_watchlist=False):
 
         super(Report, self).__init__(cb, model_unique_id=initial_data.get("id"),
                                      initial_data=initial_data,
-                                     force_init=force_init, full_doc=full_doc)
+                                     force_init=False, full_doc=True)
 
         # NOTE(ww): Warn instead of failing, since not all report operations
         # on feed reports require a feed_id.
         if not feed_id and not from_watchlist:
-            log.warning("Report created without feed ID")
+            log.warning("Report created without feed ID or not from watchlist")
 
         self._feed_id = feed_id
         self._from_watchlist = from_watchlist
@@ -519,8 +518,7 @@ class IOCs(FeedModel):
     """
     swagger_meta_file = "psc/threathunter/models/iocs.yaml"
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None,
-                 force_init=False, full_doc=True, report_id=None):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, report_id=None):
         """Creates a new IOCs instance.
 
         :raise ApiError: if `initial_data` is `None`
@@ -529,7 +527,7 @@ class IOCs(FeedModel):
             raise ApiError("IOCs can only be initialized from initial_data")
 
         super(IOCs, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
-                                   force_init=force_init, full_doc=full_doc)
+                                   force_init=False, full_doc=True)
 
         self._report_id = report_id
 
@@ -563,8 +561,7 @@ class IOC_V2(FeedModel):
     primary_key = "id"
     swagger_meta_file = "psc/threathunter/models/ioc_v2.yaml"
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None,
-                 force_init=False, full_doc=True, report_id=None):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, report_id=None):
         """Creates a new IOC_V2 instance.
 
         :raise ApiError: if `initial_data` is `None`
@@ -573,8 +570,8 @@ class IOC_V2(FeedModel):
             raise ApiError("IOC_V2 can only be initialized from initial_data")
 
         super(IOC_V2, self).__init__(cb, model_unique_id=initial_data.get(self.primary_key),
-                                     initial_data=initial_data, force_init=force_init,
-                                     full_doc=full_doc)
+                                     initial_data=initial_data, force_init=False,
+                                     full_doc=True)
 
         self._report_id = report_id
 
@@ -651,7 +648,7 @@ class Watchlist(FeedModel):
     def _query_implementation(cls, cb):
         return WatchlistQuery(cls, cb)
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+    def __init__(self, cb, model_unique_id=None, initial_data=None):
         item = {}
 
         if initial_data:
@@ -664,7 +661,7 @@ class Watchlist(FeedModel):
         feed_id = item.get("id")
 
         super(Watchlist, self).__init__(cb, model_unique_id=feed_id, initial_data=item,
-                                        force_init=force_init, full_doc=full_doc)
+                                        force_init=False, full_doc=True)
 
     def save(self):
         """Saves this watchlist on the ThreatHunter server.
