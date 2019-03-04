@@ -135,11 +135,6 @@ class Process(UnrefreshableModelMixin):
         # which is misleading. We just give a slightly clearer name.
         return self.process_pid
 
-    def __repr__(self):
-        return "<%s.%s: process id %s document id %s> @ %s" % (self.__class__.__module__, self.__class__.__name__,
-                                                               self.process_guid, self.document_guid,
-                                                               self._cb.session.server)
-
 
 class Event(UnrefreshableModelMixin):
     """Events can be queried for via ``CbThreatHunterAPI.select``
