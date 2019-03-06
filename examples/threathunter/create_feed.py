@@ -6,7 +6,7 @@ from collections import defaultdict
 import validators
 import hashlib
 
-from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_object
+from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
 from cbapi.psc.threathunter import Feed
 
 
@@ -35,7 +35,7 @@ def main():
     parser.add_argument("--rep_visibility", type=str, help="Report visibility")
 
     args = parser.parse_args()
-    cb = get_cb_threathunter_feed_object(args)
+    cb = get_cb_threathunter_object(args)
 
     feed_info = {
         "name": args.name,

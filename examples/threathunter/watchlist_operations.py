@@ -3,7 +3,7 @@
 
 import sys
 from cbapi.psc.threathunter.models import Watchlist, Report, Feed
-from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_object
+from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
 from cbapi.errors import ObjectNotFoundError
 import logging
 import json
@@ -329,7 +329,7 @@ def main():
     commands.add_parser("import", help="Import a previously exported watchlist")
 
     args = parser.parse_args()
-    cb = get_cb_threathunter_feed_object(args)
+    cb = get_cb_threathunter_object(args)
 
     if args.command_name == "list":
         return list_watchlists(cb, parser, args)

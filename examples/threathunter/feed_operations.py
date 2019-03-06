@@ -3,7 +3,7 @@
 
 import sys
 from cbapi.psc.threathunter.models import Feed, Report
-from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_object
+from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
 import logging
 import json
 
@@ -206,7 +206,7 @@ def main():
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
 
     args = parser.parse_args()
-    cb = get_cb_threathunter_feed_object(args)
+    cb = get_cb_threathunter_object(args)
 
     if args.command_name == "list":
         return list_feeds(cb, parser, args)
