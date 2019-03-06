@@ -10,6 +10,10 @@ from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_feed_obj
 from cbapi.psc.threathunter import Feed
 
 
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
 def main():
     parser = build_cli_parser("Create a CbTH feed and report from a stream of IOCs")
 
@@ -69,6 +73,7 @@ def main():
         if validators.md5(line):
             iocs["md5"].append(line)
         elif validators.sha256(line):
+            eprint("line {}: sha256 provided but not yet supported by backend".format(idx + 1))
             iocs["sha256"].append(line)
         elif validators.ipv4(line):
             iocs["ipv4"].append(line)
@@ -81,7 +86,7 @@ def main():
                 query_ioc = {"search_query": line}
                 iocs["query"].append(query_ioc)
             else:
-                print("line {}: invalid query".format(idx + 1))
+                eprint("line {}: invalid query".format(idx + 1))
 
     report["id"] = report_id.hexdigest()
     report["iocs"] = dict(iocs)
