@@ -26,19 +26,62 @@ instances manually, or allow ``CbThreatHunterAPI.select()`` to do it for you:
 
 .. autoclass:: cbapi.psc.threathunter.query.QueryBuilder
     :members:
+    :inherited-members:
 
 .. autoclass:: cbapi.psc.threathunter.query.Query
     :members:
+    :inherited-members:
+
 .. autoclass:: cbapi.psc.threathunter.models.AsyncProcessQuery
     :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.query.FeedQuery
+    :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.query.ReportQuery
+    :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.query.WatchlistQuery
+    :members:
+    :inherited-members:
 
 Models
 ------
 
 .. autoclass:: cbapi.psc.threathunter.models.Process
     :members:
+    :inherited-members:
+
 .. autoclass:: cbapi.psc.threathunter.models.Event
     :members:
+    :inherited-members:
+
 .. autoclass:: cbapi.psc.threathunter.models.Tree
     :members:
 
+.. autoclass:: cbapi.psc.threathunter.models.Feed
+    :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.models.Report
+    :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.models.IOCs
+    :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.models.IOC_V2
+    :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.models.Watchlist
+    :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.models.ReportSeverity
+    :members:
+    :inherited-members:
