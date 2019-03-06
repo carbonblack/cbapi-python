@@ -545,6 +545,9 @@ class Report(FeedModel):
         :return: a list of IOCs
         :rtype: list(:py:class:`IOC_V2`)
         """
+        if not self.iocs_v2:
+            return []
+
         # NOTE(ww): This name is underscored because something in the model
         # hierarchy is messing up method resolution -- self.iocs and self.iocs_v2
         # are resolving to the attributes rather than the attribute-ified
