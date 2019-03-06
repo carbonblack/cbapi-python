@@ -152,6 +152,7 @@ def create_watchlist(cb, parser, args):
         if validators.md5(line):
             iocs["md5"].append(line)
         elif validators.sha256(line):
+            eprint("line {}: sha256 provided but not yet supported by backend".format(idx + 1))
             iocs["sha256"].append(line)
         elif validators.ipv4(line):
             iocs["ipv4"].append(line)
@@ -164,7 +165,7 @@ def create_watchlist(cb, parser, args):
                 query_ioc = {"search_query": line}
                 iocs["query"].append(query_ioc)
             else:
-                print("line {}: invalid query".format(idx + 1))
+                eprint("line {}: invalid query".format(idx + 1))
 
     report_dict["id"] = report_id.hexdigest()
     report_dict["iocs"] = dict(iocs)
