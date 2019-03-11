@@ -3,15 +3,11 @@
 
 import sys
 from cbapi.psc.threathunter.models import Feed, Report
-from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
+from cbapi.example_helpers import eprint, build_cli_parser, get_cb_threathunter_object
 import logging
 import json
 
 log = logging.getLogger(__name__)
-
-
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
 
 
 def get_feed(cb, feed_id=None, feed_name=None):
@@ -87,7 +83,6 @@ def export_feed(cb, parser, args):
 
     exported = {}
 
-    # TODO(ww): Maybe add metadata about when the feed was exported?
     exported["feedinfo"] = feed._info
     exported["reports"] = [report._info for report in feed.reports]
     print(json.dumps(exported))

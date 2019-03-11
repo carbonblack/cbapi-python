@@ -24,6 +24,10 @@ if not PY3:
     sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
 
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
 def build_cli_parser(description="Cb Example Script"):
     parser = argparse.ArgumentParser(description=description)
 

@@ -3,7 +3,7 @@
 
 import sys
 from cbapi.psc.threathunter.models import Watchlist, Report, Feed
-from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
+from cbapi.example_helpers import eprint, build_cli_parser, get_cb_threathunter_object
 from cbapi.errors import ObjectNotFoundError
 import logging
 import json
@@ -13,10 +13,6 @@ import validators
 from collections import defaultdict
 
 log = logging.getLogger(__name__)
-
-
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
 
 
 def get_watchlist(cb, watchlist_id=None, watchlist_name=None):

@@ -203,8 +203,6 @@ class Feed(FeedModel):
             else:
                 item = initial_data
         elif model_unique_id:
-            # TODO(ww): It's probably bad practice to make a request here.
-            # Maybe abstract this into a separate method?
             resp = cb.get_object(self.urlobject_single.format(model_unique_id))
             item = resp.get("feedinfo", {})
             reports = resp.get("reports", [])
@@ -696,8 +694,6 @@ class Watchlist(FeedModel):
         if initial_data:
             item = initial_data
         elif model_unique_id:
-            # TODO(ww): It's probably bad practice to make a request here.
-            # Maybe abstract this into a separate method?
             item = cb.get_object(self.urlobject_single.format(model_unique_id))
 
         feed_id = item.get("id")

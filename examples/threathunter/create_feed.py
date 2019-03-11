@@ -6,12 +6,8 @@ from collections import defaultdict
 import validators
 import hashlib
 
-from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
+from cbapi.example_helpers import eprint, build_cli_parser, get_cb_threathunter_object
 from cbapi.psc.threathunter import Feed
-
-
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
 
 
 def main():
@@ -65,8 +61,6 @@ def main():
     report_id = hashlib.md5()
     report_id.update(str(time.time()).encode("utf-8"))
 
-    # TODO(ww): Instead of validating here, create an IOCs
-    # object, populate it with these, and run _validate()
     for idx, line in enumerate(sys.stdin):
         line = line.rstrip("\r\n")
         report_id.update(line.encode("utf-8"))
