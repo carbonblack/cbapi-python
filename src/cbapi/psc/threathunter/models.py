@@ -639,7 +639,7 @@ class IOC_V2(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing IOC ID")
         if not self._report_id:
-            raise InvalidObjectError("ignore status only spplies to watchlist IOCs")
+            raise InvalidObjectError("ignore status only applies to watchlist IOCs")
 
         url = "/threathunter/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
         resp = self._cb.get_object(url)
