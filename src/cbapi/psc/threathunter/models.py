@@ -331,8 +331,9 @@ class Report(FeedModel):
                                      initial_data=initial_data,
                                      force_init=False, full_doc=True)
 
-        # NOTE(ww): Warn instead of failing, since not all report operations
-        # on feed reports require a feed_id.
+        # NOTE(ww): Warn instead of failing since we allow Watchlist reports
+        # to be created via create(), but we don't actually know that the user
+        # intends to use them with a watchlist until they call save().
         if not feed_id and not from_watchlist:
             log.warning("Report created without feed ID or not from watchlist")
 
