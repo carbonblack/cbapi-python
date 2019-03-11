@@ -123,7 +123,7 @@ def import_report(cb, parser, args):
         sys.exit(1)
     else:
         imp_report = cb.create(Report, imp_dict)
-        feed.replace([imp_report], append=True)
+        feed.append_reports([imp_report])
 
 
 def delete_report(cb, parser, args):

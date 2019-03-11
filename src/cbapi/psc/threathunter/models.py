@@ -291,23 +291,33 @@ class Feed(FeedModel):
         """
         return self._cb.select(Report).where(feed_id=self.id)
 
-    def replace(self, reports, append=False):
-        """Replace this feed's report with the given reports, appending
-        if requested.
+    def replace_reports(self, reports):
+        """Replace this feed's reports with the given reports.
 
         :param reports: the reports to replace with
         :type reports: list(:py:class:`Report`)
-        :param bool append: whether or not to append the given reports to the current list
         :raise InvalidObjectError: if `id` is missing
         """
         if not self.id:
             raise InvalidObjectError("missing feed ID")
 
         rep_dicts = [report._info for report in reports]
+        body = {"reports": rep_dicts}
 
-        if append:
-            rep_dicts += [report._info for report in self._reports]
+        self._cb.post_object("/threathunter/feedmgr/v1/{}/report".format(self.id), body)
 
+    def append_reports(self, reports):
+        """Append the given reports to this feed's current reports.
+
+        :param reports: the reports to append
+        :type reports: list(:py:class:`Report`)
+        :raise InvalidObjectError: if `id` is missing
+        """
+        if not self.id:
+            raise InvalidObjectError("missing feed ID")
+
+        rep_dicts = [report._info for report in reports]
+        rep_dicts += [report._info for report in self._reports]
         body = {"reports": rep_dicts}
 
         self._cb.post_object("/threathunter/feedmgr/v1/{}/report".format(self.id), body)
