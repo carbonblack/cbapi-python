@@ -70,7 +70,7 @@ Models
     :members:
     :inherited-members:
 
-.. autoclass:: cbapi.psc.threathunter.models.IOCs
+.. autoclass:: cbapi.psc.threathunter.models.IOC
     :members:
     :inherited-members:
 

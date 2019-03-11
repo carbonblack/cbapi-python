@@ -340,7 +340,7 @@ class Report(FeedModel):
         self._from_watchlist = from_watchlist
 
         if self.iocs:
-            self._iocs = IOCs(cb, initial_data=self.iocs, report_id=self.id)
+            self._iocs = IOC(cb, initial_data=self.iocs, report_id=self.id)
         if self.iocs_v2:
             self._iocs_v2 = [IOC_V2(cb, initial_data=ioc, report_id=self.id) for ioc in self.iocs_v2]
 
@@ -553,30 +553,30 @@ class Report(FeedModel):
         return self._iocs_v2
 
 
-class IOCs(FeedModel):
+class IOC(FeedModel):
     """Represents a collection of categorized IOCs.
     """
     swagger_meta_file = "psc/threathunter/models/iocs.yaml"
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, report_id=None):
-        """Creates a new IOCs instance.
+        """Creates a new IOC instance.
 
         :raise ApiError: if `initial_data` is `None`
         """
         if not initial_data:
-            raise ApiError("IOCs can only be initialized from initial_data")
+            raise ApiError("IOC can only be initialized from initial_data")
 
-        super(IOCs, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
-                                   force_init=False, full_doc=True)
+        super(IOC, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
+                                  force_init=False, full_doc=True)
 
         self._report_id = report_id
 
     def validate(self):
-        """Validates this IOCs structure's state.
+        """Validates this IOC structure's state.
 
-        :raise InvalidObjectError: if the IOCs structure's state is invalid
+        :raise InvalidObjectError: if the IOC structure's state is invalid
         """
-        super(IOCs, self).validate()
+        super(IOC, self).validate()
 
         for md5 in self.md5:
             if not validators(md5):
