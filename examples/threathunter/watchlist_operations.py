@@ -3,7 +3,7 @@
 
 import sys
 from cbapi.psc.threathunter.models import Watchlist, Report, Feed
-from cbapi.example_helpers import eprint, build_cli_parser, get_cb_threathunter_object
+from cbapi.example_helpers import eprint, read_iocs, build_cli_parser, get_cb_threathunter_object
 from cbapi.errors import ObjectNotFoundError
 import logging
 import json
@@ -123,8 +123,6 @@ def create_watchlist(cb, parser, args):
         "classifier": None,
     }
 
-    iocs = defaultdict(list)
-
     rep_tags = []
     if args.rep_tags:
         rep_tags = args.rep_tags.split(",")
@@ -139,32 +137,10 @@ def create_watchlist(cb, parser, args):
         "iocs_v2": [],  # NOTE(ww): The feed server will convert IOCs to v2s for us.
     }
 
-    report_id = hashlib.md5()
-    report_id.update(str(time.time()).encode("utf-8"))
+    report_id, iocs = read_iocs(cb)
 
-    for idx, line in enumerate(sys.stdin):
-        line = line.rstrip("\r\n")
-        report_id.update(line.encode("utf-8"))
-        if validators.md5(line):
-            iocs["md5"].append(line)
-        elif validators.sha256(line):
-            eprint("line {}: sha256 provided but not yet supported by backend".format(idx + 1))
-            iocs["sha256"].append(line)
-        elif validators.ipv4(line):
-            iocs["ipv4"].append(line)
-        elif validators.ipv6(line):
-            iocs["ipv6"].append(line)
-        elif validators.domain(line):
-            iocs["dns"].append(line)
-        else:
-            if cb.validate_query(line):
-                query_ioc = {"search_query": line}
-                iocs["query"].append(query_ioc)
-            else:
-                eprint("line {}: invalid query".format(idx + 1))
-
-    report_dict["id"] = report_id.hexdigest()
-    report_dict["iocs"] = dict(iocs)
+    report_dict["id"] = report_id
+    report_dict["iocs"] = iocs
 
     report = cb.create(Report, report_dict)
     report.save()
