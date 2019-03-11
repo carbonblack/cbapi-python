@@ -292,7 +292,7 @@ class Feed(FeedModel):
         return self._cb.select(Report).where(feed_id=self.id)
 
     def replace(self, reports, append=False):
-        """Repace this feed's report with the given reports, appending
+        """Replace this feed's report with the given reports, appending
         if requested.
 
         :param reports: the reports to replace with
