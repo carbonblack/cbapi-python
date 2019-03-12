@@ -1,0 +1,45 @@
+type: object
+required:
+  - id
+  - timestamp
+  - title
+  - description
+  - severity
+properties:
+  id:
+    type: string
+    description: The report's unique ID
+  timestamp:
+    type: integer
+    format: int32
+    description: When this report was created
+  title:
+    type: string
+    description: A human-friendly title for this report
+  description:
+    type: string
+    description: A human-friendly description for this report
+  severity:
+    type: integer
+    format: int32
+    description: The severity of the IOCs within this report
+  link:
+    type: string
+    description: A URL for some reference for this report
+  tags:
+    type: array
+    items:
+      type: string
+    description: A list of tags for this report
+  iocs:
+    type: object
+    # NOTE(ww): Explicitly not documented, since we do almost everything
+    # through IOC_V2
+  iocs_v2:
+    type: array
+    items:
+      type: object
+    description: A list of IOC_V2 dicts associated with this report
+  visibility:
+    type: string
+    description: The visibility of this report

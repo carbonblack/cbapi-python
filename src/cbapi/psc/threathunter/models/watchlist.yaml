@@ -1,0 +1,43 @@
+type: object
+required:
+  - name
+  - description
+  - create_timestamp
+  - last_update_timestamp
+properties:
+  name:
+    type: string
+    description: A human-friendly name for the watchlist
+  description:
+    type: string
+    description: A short description of the watchlist
+  id:
+    type: string
+    description: The watchlist's unique id
+  tags_enabled:
+    type: boolean
+    description: Whether tags are currently enabled
+  alerts_enabled:
+    type: boolean
+    description: Whether alerts are currently enabled
+  create_timestamp:
+    type: integer
+    format: int32
+    description: When this watchlist was created
+  last_update_timestamp:
+    type: integer
+    format: int32
+    description: Report IDs associated with this watchlist
+  report_ids:
+    type: array
+    items:
+      type: string
+    description: Report IDs associated with this watchlist
+  classifier:
+    type: object # ClassifierKeyValue
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    description: A key, value pair specifying an associated feed

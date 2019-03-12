@@ -1,0 +1,32 @@
+type: object
+properties:
+  md5:
+    type: array
+    items:
+      type: string
+    description: A list of MD5 checksums
+  ipv4:
+    type: array
+    items:
+      type: string
+    description: A list of IPv4 addresses
+  ipv6:
+    type: array
+    items:
+      type: string
+    description: A list of IPv6 addresses
+  dns:
+    type: array
+    items:
+      type: string
+    description: A list of domain names
+  query:
+    type: array
+    items:
+      type: object # QueryIOC
+      properties:
+        index_type:
+          type: string
+        search_query:
+          type: string
+    description: A list of dicts, each containing an IOC query

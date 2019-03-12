@@ -9,6 +9,9 @@ import ntpath
 import shutil
 import subprocess
 from optparse import OptionParser
+from collections import defaultdict
+import validators
+import hashlib
 
 from cbapi.protection import CbEnterpriseProtectionAPI
 from cbapi.psc.defense import CbDefenseAPI
@@ -22,6 +25,10 @@ log = logging.getLogger(__name__)
 from cbapi.six import PY3
 if not PY3:
     sys.stdout = codecs.getwriter('utf8')(sys.stdout)
+
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 
 def build_cli_parser(description="Cb Example Script"):
@@ -101,6 +108,7 @@ def get_cb_threathunter_object(args):
 
     return cb
 
+
 def get_object_by_name_or_id(cb, cls, name_field="name", id=None, name=None, force_init=True):
     clsname = cls.__name__
     try:
@@ -118,6 +126,33 @@ def get_object_by_name_or_id(cb, cls, name_field="name", id=None, name=None, for
         return objs
 
 
+def read_iocs(cb, file=sys.stdin):
+    iocs = defaultdict(list)
+    report_id = hashlib.md5()
+    report_id.update(str(time.time()).encode("utf-8"))
+
+    for idx, line in enumerate(sys.stdin):
+        line = line.rstrip("\r\n")
+        report_id.update(line.encode("utf-8"))
+        if validators.md5(line):
+            iocs["md5"].append(line)
+        elif validators.sha256(line):
+            eprint("line {}: sha256 provided but not yet supported by backend".format(idx + 1))
+            iocs["sha256"].append(line)
+        elif validators.ipv4(line):
+            iocs["ipv4"].append(line)
+        elif validators.ipv6(line):
+            iocs["ipv6"].append(line)
+        elif validators.domain(line):
+            iocs["dns"].append(line)
+        else:
+            if cb.validate_query(line):
+                query_ioc = {"search_query": line}
+                iocs["query"].append(query_ioc)
+            else:
+                eprint("line {}: invalid query".format(idx + 1))
+
+    return (report_id.hexdigest(), dict(iocs))
 #
 # Live Response
 #

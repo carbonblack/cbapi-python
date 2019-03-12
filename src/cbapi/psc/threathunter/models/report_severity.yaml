@@ -1,0 +1,12 @@
+type: object
+required:
+  - report_id
+  - severity
+properties:
+  report_id:
+    type: string
+    description: The unique ID for the corresponding report
+  severity:
+    type: integer
+    format: int32
+    description: The severity level

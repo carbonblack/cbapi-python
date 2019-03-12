@@ -64,3 +64,6 @@ target/
 .idea/
 *.ipynb
 .DS_Store
+
+# Credential files
+.carbonblack/

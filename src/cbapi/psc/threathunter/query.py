@@ -1,4 +1,4 @@
-from cbapi.query import PaginatedQuery, BaseQuery
+from cbapi.query import PaginatedQuery, BaseQuery, SimpleQuery
 from cbapi.errors import ServerError, ApiError, TimeoutError
 import time
 from solrq import Q
@@ -505,3 +505,73 @@ class TreeQuery(BaseQuery):
             results["incomplete_results"] = result["incomplete_results"]
 
         return results
+
+
+class FeedQuery(SimpleQuery):
+    """Represents the logic for a :py:class:`Feed` query.
+
+    >>> cb.select(Feed)
+    >>> cb.select(Feed, id)
+    >>> cb.select(Feed).where(include_public=True)
+    """
+    def __init__(self, doc_class, cb):
+        super(FeedQuery, self).__init__(doc_class, cb)
+        self._args = {}
+
+    def where(self, **kwargs):
+        self._args = dict(self._args, **kwargs)
+        return self
+
+    @property
+    def results(self):
+        log.debug("Fetching all feeds")
+        resp = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+        results = resp.get("results", [])
+        return [self._doc_class(self._cb, initial_data=item) for item in results]
+
+
+class ReportQuery(SimpleQuery):
+    """Represents the logic for a :py:class:`Report` query.
+
+    >>> cb.select(Report).where(feed_id=id)
+
+    .. NOTE::
+        Only feed reports can be queried. Watchlist reports
+        should be interacted with via :py:meth:`Watchlist.reports`.
+    """
+    def __init__(self, doc_class, cb):
+        super(ReportQuery, self).__init__(doc_class, cb)
+        self._args = {}
+
+    def where(self, **kwargs):
+        self._args = dict(self._args, **kwargs)
+        return self
+
+    @property
+    def results(self):
+        if "feed_id" not in self._args:
+            raise ApiError("required parameter feed_id missing")
+
+        feed_id = self._args["feed_id"]
+
+        log.debug("Fetching all reports")
+        resp = self._cb.get_object(self._doc_class.urlobject.format(feed_id))
+        results = resp.get("results", [])
+        return [self._doc_class(self._cb, initial_data=item, feed_id=feed_id) for item in results]
+
+
+class WatchlistQuery(SimpleQuery):
+    """Represents the logic for a :py:class:`Watchlist` query.
+
+    >>> cb.select(Watchlist)
+    """
+    def __init__(self, doc_class, cb):
+        super(WatchlistQuery, self).__init__(doc_class, cb)
+
+    @property
+    def results(self):
+        log.debug("Fetching all watchlists")
+
+        resp = self._cb.get_object(self._doc_class.urlobject)
+        results = resp.get("results", [])
+        return [self._doc_class(self._cb, initial_data=item) for item in results]

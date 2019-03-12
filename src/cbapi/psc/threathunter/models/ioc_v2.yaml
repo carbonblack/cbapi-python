@@ -1,0 +1,23 @@
+type: object
+required:
+  - id
+  - match_type
+  - values
+properties:
+  id:
+    type: string
+    description: The IOC_V2's unique ID
+  match_type:
+    type: string
+    description: How IOCs in this IOC_V2 are matched
+  values:
+    type: array
+    items:
+      type: string
+    description: A list of IOCs
+  field:
+    type: string
+    description: The kind of IOCs contained in this IOC_V2
+  link:
+    type: string
+    description: A URL for some reference for this IOC_V2

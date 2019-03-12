@@ -1,0 +1,30 @@
+type: object
+required:
+  - name
+  - owner
+  - provider_url
+  - summary
+  - category
+  - access
+properties:
+  name:
+    type: string
+    description: A human-friendly name for this feed
+  owner:
+    type: string
+    description: The feed owner's connector ID
+  provider_url:
+    type: string
+    description: A URL supplied by the feed's provider
+  summary:
+    type: string
+    description: A human-friendly summary for the feed
+  category:
+    type: string
+    description: The feed's category
+  access:
+    type: string
+    description: The feed's access (public or private)
+  id:
+    type: string
+    description: The feed's unique ID
