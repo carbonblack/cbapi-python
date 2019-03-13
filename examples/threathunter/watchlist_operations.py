@@ -9,8 +9,6 @@ import logging
 import json
 import time
 import hashlib
-import validators
-from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
