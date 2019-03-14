@@ -31,7 +31,7 @@ import json
 from cbapi.six import iteritems
 from cbapi.six.moves import urllib
 
-from .auth import CredentialStore, Credentials
+from .auth import CredentialStoreFactory, Credentials
 from .errors import ServerError, TimeoutError, ApiError, ObjectNotFoundError, UnauthorizedError, CredentialError, \
     ConnectionError
 from . import __version__
@@ -214,8 +214,7 @@ class BaseAPI(object):
         product_name = kwargs.pop("product_name", None)
         credential_file = kwargs.pop("credential_file", None)
         integration_name = kwargs.pop("integration_name", None)
-
-        self.credential_store = CredentialStore(product_name, credential_file=credential_file)
+        self.credential_store = CredentialStoreFactory.getCredentialStore(product_name,credential_file)
 
         url, token = kwargs.pop("url", None), kwargs.pop("token", None)
         if url and token:
