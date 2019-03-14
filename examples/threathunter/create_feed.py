@@ -2,11 +2,8 @@
 
 import sys
 import time
-from collections import defaultdict
-import validators
-import hashlib
 
-from cbapi.example_helpers import eprint, read_iocs, build_cli_parser, get_cb_threathunter_object
+from cbapi.example_helpers import read_iocs, build_cli_parser, get_cb_threathunter_object
 from cbapi.psc.threathunter import Feed
 
 

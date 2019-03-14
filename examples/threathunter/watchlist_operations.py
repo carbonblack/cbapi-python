@@ -9,8 +9,6 @@ import logging
 import json
 import time
 import hashlib
-import validators
-from collections import defaultdict
 
 log = logging.getLogger(__name__)
 
@@ -143,7 +141,7 @@ def create_watchlist(cb, parser, args):
     report_dict["iocs"] = iocs
 
     report = cb.create(Report, report_dict)
-    report.save()
+    report.save_watchlist()
 
     watchlist_dict["report_ids"].append(report.id)
     watchlist = cb.create(Watchlist, watchlist_dict)
@@ -232,7 +230,7 @@ def import_watchlist(cb, parser, args):
                 [ioc_id.update(value.encode("utf-8")) for value in ioc["values"]]
                 ioc["id"] = ioc_id.hexdigest()
         report = cb.create(Report, rep_dict)
-        report.save()
+        report.save_watchlist()
         report_ids.append(report.id)
 
     # finally, update our new watchlist with the imported reports

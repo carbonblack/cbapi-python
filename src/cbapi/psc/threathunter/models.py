@@ -355,7 +355,7 @@ class Report(FeedModel):
         if self.iocs_v2:
             self._iocs_v2 = [IOC_V2(cb, initial_data=ioc, report_id=self.id) for ioc in self.iocs_v2]
 
-    def save(self):
+    def save_watchlist(self):
         """Saves this report *as a watchlist report*.
 
         .. NOTE::
