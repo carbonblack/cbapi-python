@@ -248,6 +248,17 @@ The possible options for each credential profile are:
 Future versions of cbapi will also provide the ability to "pin" the TLS certificate so as to provide certificate
 verification on self-signed or internal CA signed certificates.
 
+Environment Variable Support
+
+The latest cbapi for python supports specifying API credentials in the following three environment variables:
+
+`CBAPI-TOKEN` the envar for holding the CbR/CbP api token or the ConnectorId/APIKEY combination for Cb Defense/PSC.
+
+The `CBAPI_URL` envar holds the FQDN of the target, a CbR , CBD, or CbD/PSC server specified just as they are in the
+configuration file format specified above.
+
+The `CBAPI_SSL_VERIFY` envar can be used to control SSL validation, which will default to ON.
+
 Backwards & Forwards Compatibility
 ----------------------------------
 
