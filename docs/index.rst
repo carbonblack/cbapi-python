@@ -252,12 +252,13 @@ Environment Variable Support
 
 The latest cbapi for python supports specifying API credentials in the following three environment variables:
 
-`CBAPI-TOKEN` the envar for holding the CbR/CbP api token or the ConnectorId/APIKEY combination for Cb Defense/PSC.
+`CBAPI_TOKEN` the envar for holding the CbR/CbP api token or the ConnectorId/APIKEY combination for Cb Defense/PSC.
 
 The `CBAPI_URL` envar holds the FQDN of the target, a CbR , CBD, or CbD/PSC server specified just as they are in the
 configuration file format specified above.
 
-The `CBAPI_SSL_VERIFY` envar can be used to control SSL validation, which will default to ON.
+The  optional `CBAPI_SSL_VERIFY` envar can be used to control SSL validation(True/False or 0/1), which will default to ON when
+not explicitly set by the user.
 
 Backwards & Forwards Compatibility
 ----------------------------------
