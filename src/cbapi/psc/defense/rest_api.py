@@ -174,6 +174,10 @@ class Query(PaginatedQuery):
 
             if current >= self._total_results:
                 break
+            #Terminate cleanly from maximum 100k
+            if current >= 100000:
+                log.info("WARNING: Hit Max Search Result Set Limit(100k)")
+                break
             if not results:
                 log.debug("server reported total_results overestimated the number of results for this query by {0}"
                           .format(self._total_results - current))
