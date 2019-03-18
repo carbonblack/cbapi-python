@@ -165,7 +165,7 @@ class Query(PaginatedQuery):
             if results is None:
                 log.debug("Results are None")
                 if current >= 100000:
-                    log.info("Max result size exceded. Truncated to 100k.")
+                    log.info("Max result size exceeded. Truncated to 100k.")
                 break
 
             for item in results:
