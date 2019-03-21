@@ -162,6 +162,12 @@ class Query(PaginatedQuery):
 
             results = result.get('results', [])
 
+            if results is None:
+                log.debug("Results are None")
+                if current >= 100000:
+                    log.info("Max result size exceeded. Truncated to 100k.")
+                break
+
             for item in results:
                 yield item
                 current += 1
@@ -174,6 +180,7 @@ class Query(PaginatedQuery):
 
             if current >= self._total_results:
                 break
+
             if not results:
                 log.debug("server reported total_results overestimated the number of results for this query by {0}"
                           .format(self._total_results - current))
