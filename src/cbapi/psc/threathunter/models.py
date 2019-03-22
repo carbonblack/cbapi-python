@@ -884,9 +884,24 @@ class Binary(UnrefreshableModelMixin):
     swagger_meta_file = "psc/threathunter/models/binary.yaml"
     urlobject_single = "/ubs/v1/orgs/{}/sha256/{}/metadata"
 
+    class Summary(UnrefreshableModelMixin):
+        primary_key = "sha256"
+        urlobject_single = "/ubs/v1/orgs/{}/sha256/{}/summary/device"
+
+        def __init__(self, cb, model_unique_id):
+            if not validators.sha256(model_unique_id):
+                raise ApiError("model_unique_id must be a valid SHA256")
+
+            url = self.urlobject_single.format(cb.credentials.org_key, model_unique_id)
+            item = cb.get_object(url)
+
+            super(Binary.Summary, self).__init__(cb, model_unique_id=model_unique_id,
+                                                 initial_data=item, force_init=False,
+                                                 full_doc=True)
+
     def __init__(self, cb, model_unique_id):
         if not validators.sha256(model_unique_id):
-            raise ApiError("model_unique_id should be a valid SHA256")
+            raise ApiError("model_unique_id must be a valid SHA256")
 
         url = self.urlobject_single.format(cb.credentials.org_key, model_unique_id)
         item = cb.get_object(url)
@@ -894,3 +909,7 @@ class Binary(UnrefreshableModelMixin):
         super(Binary, self).__init__(cb, model_unique_id=model_unique_id,
                                      initial_data=item, force_init=False,
                                      full_doc=True)
+
+    @property
+    def summary(self):
+        return self._cb.select(Binary.Summary, self.sha256)
