@@ -875,3 +875,22 @@ class ReportSeverity(FeedModel):
         super(ReportSeverity, self).__init__(cb, model_unique_id=initial_data.get(self.primary_key),
                                              initial_data=initial_data, force_init=False,
                                              full_doc=True)
+
+
+class Binary(UnrefreshableModelMixin):
+    """Represents a retrievable binary.
+    """
+    primary_key = "sha256"
+    swagger_meta_file = "psc/threathunter/models/binary.yaml"
+    urlobject_single = "/ubs/v1/orgs/{}/sha256/{}/metadata"
+
+    def __init__(self, cb, model_unique_id):
+        if not validators.sha256(model_unique_id):
+            raise ApiError("model_unique_id should be a valid SHA256")
+
+        url = self.urlobject_single.format(cb.credentials.org_key, model_unique_id)
+        item = cb.get_object(url)
+
+        super(Binary, self).__init__(cb, model_unique_id=model_unique_id,
+                                     initial_data=item, force_init=False,
+                                     full_doc=True)

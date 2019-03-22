@@ -1,0 +1,79 @@
+type: object
+required:
+  - sha256
+  - md5
+  - file_available
+  - available_file_size
+  - file_size
+  - os_type
+  - architecture
+properties:
+  sha256:
+    type: string
+    description: The SHA-256 hash of the file
+  md5:
+    type: string
+    description: The MD5 hash of the file
+  file_available:
+    type: boolean
+    description: If true, the file is available for download
+  available_file_size:
+    type: integer
+    format: int64 # NOTE(ww): docs say long integer
+    description: The size of the file available for download
+  file_size:
+    type: integer
+    format: int64
+    description: The size of the actual file (represented by the hash)
+  os_type:
+    type: string
+    description: The OS that this file is designed for
+  architecture:
+    type: array
+    items:
+      type: string
+    description: The set of architectures that this file was compiled for
+  lang_id:
+    type: integer
+    format: int32 # NOTE(ww): Swagger doesn't have a (u)int16
+    description: The Language ID value for the Windows VERSIONINFO resource
+  charset_id:
+    type: integer
+    format: int32
+    description: The Character set ID value for the Windows VERSIONINFO resource
+  internal_name:
+    type: string
+    description: The internal name from FileVersionInformation
+  product_name:
+    type: string
+    description: The product name from FileVersionInformation
+  company_name:
+    type: string
+    description: The company name from FileVersionInformation
+  trademark:
+    type: string
+    description: The trademark from FileVersionInformation
+  file_description:
+    type: string
+    description: The file description from FileVersionInformation
+  file_version:
+    type: string
+    description: The file version from FileVersionInformation
+  comments:
+    type: string
+    description: Comments from FileVersionInformation
+  original_filename:
+    type: string
+    description: The original filename from FileVersionInformation
+  product_description:
+    type: string
+    description: The product description from FileVersionInformation
+  product_version:
+    type: string
+    description: The product version from FileVersionInformation
+  private_build:
+    type: string
+    description: The private build from FileVersionInformation
+  special_build:
+    type: string
+    description: The special build from FileVersionInformation
