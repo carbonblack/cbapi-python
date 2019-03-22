@@ -4,6 +4,7 @@ import sys
 
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
 from cbapi.psc.threathunter import Process, Binary
+from cbapi.errors import ObjectNotFoundError
 
 
 def main():
@@ -27,8 +28,12 @@ def main():
         print("\tGUID: {}".format(process.process_guid))
 
         if args.b:
-            binary = cb.select(Binary, process.process_sha256)
-            print("\t{}".format(binary))
+            try:
+                binary = cb.select(Binary, process.process_sha256)
+                print(binary)
+                print(binary.summary)
+            except ObjectNotFoundError:
+                print("No binary found for process with hash: {}".format(process.process_sha256))
 
 if __name__ == "__main__":
     sys.exit(main())
