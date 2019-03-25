@@ -1,6 +1,5 @@
 type: object
 required:
-  - alliance_score_virustotal
   - company_name
   - copied_mod_len
   - digsig_issuer
@@ -68,9 +67,6 @@ properties:
   company_name:
     type: string
     description: 'If present, Company name from [FileVersionInformation](http://msdn.microsoft.com/en-us/library/system.diagnostics.fileversioninfo.aspx)'
-  alliance_score_virustotal:
-    type: string
-    description: 'If enabled and the hit count > 1, the number of [VirusTotal](http://virustotal.com) hits for this md5'
   server_added_timestamp:
     type: string
     format: iso-date-time
