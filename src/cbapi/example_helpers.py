@@ -1,6 +1,6 @@
+from __future__ import print_function
 import sys
 import time
-
 import argparse
 import cmd
 import codecs
@@ -26,10 +26,8 @@ from cbapi.six import PY3
 if not PY3:
     sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
-
 def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-
+    _print(*args, file=sys.stderr, **kwargs)
 
 def build_cli_parser(description="Cb Example Script"):
     parser = argparse.ArgumentParser(description=description)
