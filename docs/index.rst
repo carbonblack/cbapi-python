@@ -8,8 +8,8 @@ cbapi: Carbon Black API for Python
 
 Release v\ |release|.
 
-cbapi provides a straightforward interface to the Carbon Black products: Cb Protection, Response, and Defense.
-This library provides a Pythonic layer to access the raw power of the REST APIs of all Cb products, making it trivial
+cbapi provides a straightforward interface to the Carbon Black products: CB Protection, Response, and Defense.
+This library provides a Pythonic layer to access the raw power of the REST APIs of all CB products, making it trivial
 to do the easy stuff and handling all of the "sharp corners" behind the scenes for you. Take a look::
 
    >>> from cbapi.response import CbResponseAPI, Process, Binary, Sensor
@@ -39,12 +39,12 @@ to do the easy stuff and handling all of the "sharp corners" behind the scenes f
    ...     s.network_isolation_enabled = True
    ...     s.save()
 
-If you're more a Cb Protection fellow, then you're in luck as well::
+If you're more a CB Protection fellow, then you're in luck as well::
 
    >>> from cbapi.protection.models import FileInstance
    >>> from cbapi.protection import CbProtectionAPI
    >>> #
-   >>> # Create our Cb Protection API object
+   >>> # Create our CB Protection API object
    >>> #
    >>> p = CbProtectionAPI()
    >>> #
@@ -62,12 +62,12 @@ If you're more a Cb Protection fellow, then you're in luck as well::
    >>> fi.computer.policyId = 3
    >>> fi.computer.save()
 
-As of version 1.2, cbapi now provides support for Cb Defense too!
+As of version 1.2, cbapi now provides support for CB Defense too!
 
    >>> from cbapi.psc.defense import Device
    >>> from cbapi.defense import CbDefenseAPI
    >>> #
-   >>> # Create our Cb Defense API object
+   >>> # Create our CB Defense API object
    >>> #
    >>> p = CbDefenseAPI()
    >>> #
@@ -87,7 +87,7 @@ As of version 1.2, cbapi now provides support for Cb Defense too!
    >>> from cbapi.psc.defense import Device
    >>> from cbapi.defense import CbDefenseAPI
    >>> #
-   >>> # Create our Cb Defense API object
+   >>> # Create our CB Defense API object
    >>> #
    >>> p = CbDefenseAPI()
    >>> #
@@ -107,7 +107,7 @@ As of version 1.2, cbapi now provides support for Cb Defense too!
    >>> from cbapi.defense.models import Device
    >>> from cbapi.psc.defense import CbDefenseAPI
    >>> #
-   >>> # Create our Cb Defense API object
+   >>> # Create our CB Defense API object
    >>> #
    >>> p = CbDefenseAPI()
    >>> #
@@ -127,7 +127,7 @@ As of version 1.2, cbapi now provides support for Cb Defense too!
    >>> from cbapi.defense.models import Device
    >>> from cbapi.psc.defense import CbDefenseAPI
    >>> #
-   >>> # Create our Cb Defense API object
+   >>> # Create our CB Defense API object
    >>> #
    >>> p = CbDefenseAPI()
    >>> #
@@ -147,7 +147,7 @@ As of version 1.2, cbapi now provides support for Cb Defense too!
    >>> from cbapi.defense.models import Device
    >>> from cbapi.defense import CbDefenseAPI
    >>> #
-   >>> # Create our Cb Defense API object
+   >>> # Create our CB Defense API object
    >>> #
    >>> d = CbDefenseAPI()
    >>> #
@@ -166,19 +166,19 @@ Major Features
 --------------
 
 - **Enhanced Live Response API**
-    The new cbapi now provides a robust interface to the Cb Response Live Response capability.
+    The new cbapi now provides a robust interface to the CB Response Live Response capability.
     Easily create Live Response sessions, initiate commands on remote hosts, and pull down data as
     necessary to make your Incident Response process much more efficient and automated.
 
-- **Consistent API for Cb Response, Protection and Defense platforms**
-    We now support Cb Response, Protection and Defense users in the same API layer. Even better,
+- **Consistent API for CB Response, Protection and Defense platforms**
+    We now support CB Response, Protection and Defense users in the same API layer. Even better,
     the object model is the same for both; if you know one API you can easily transition to the other. cbapi
     hides all the differences between the three REST APIs behind a single, consistent Python-like interface.
 
 - **Enhanced Performance**
     cbapi now provides a built in caching layer to reduce the query load on the Carbon Black server. This is especially
     useful when taking advantage of cbapi's new "joining" features. You can transparently access, for example, the
-    binary associated with a given process in Cb Response. Since many processes may be associated
+    binary associated with a given process in CB Response. Since many processes may be associated
     with the same binary, it does not make sense to repeatedly request the same binary information from the server
     over and over again. Therefore cbapi now caches this information to avoid unnecessary requests.
 
@@ -190,9 +190,9 @@ Major Features
     Use all the new features and modules available in Python 3 with cbapi. This module is compatible with Python
     versions 2.6.6 and above, 2.7.x, 3.4.x, and 3.5.x.
 
-- **Better support for multiple Cb servers**
+- **Better support for multiple CB servers**
     cbapi now introduces the concept of Credential Profiles; named collections of URL, API keys, and optional proxy
-    configuration for connecting to any number of Cb Protection, Defense, or Response servers.
+    configuration for connecting to any number of CB Protection, Defense, or Response servers.
 
 
 API Credentials
@@ -200,15 +200,15 @@ API Credentials
 
 The new cbapi as of version 0.9.0 enforces the use of credential files.
 
-In order to perform any queries via the API, you will need to get the API token for your Cb user. See the documentation
+In order to perform any queries via the API, you will need to get the API token for your CB user. See the documentation
 on the Developer Network website on how to acquire the API token for
-`Cb Response <http://developer.carbonblack.com/reference/enterprise-response/authentication/>`_,
-`Cb Protection <http://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_, or
-`Cb Defense <http://developer.carbonblack.com/reference/cb-defense/authentication/>`_.
+`CB Response <http://developer.carbonblack.com/reference/enterprise-response/authentication/>`_,
+`CB Protection <http://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_, or
+`CB Defense <http://developer.carbonblack.com/reference/cb-defense/authentication/>`_.
 
 Once you acquire your API token, place it in one of the default credentials file locations:
 
-* ``/etc/carbonblack/credentials.response`` (``credentials.protection`` for Cb Protection, or ``credentials.defense`` for Cb Defense)
+* ``/etc/carbonblack/credentials.response`` (``credentials.protection`` for CB Protection, or ``credentials.defense`` for CB Defense)
 * ``~/.carbonblack/credentials.response``
 * (current working directory) ``.carbonblack/credentials.response``
 
@@ -234,16 +234,16 @@ by key-value pairs providing the necessary credential information::
 
 The possible options for each credential profile are:
 
-* **url**: The base URL of the Cb server. This should include the protocol (https) and the hostname, and nothing else.
+* **url**: The base URL of the CB server. This should include the protocol (https) and the hostname, and nothing else.
 * **token**: The API token for the user ID. More than one credential profile can be specified for a given server, with
   different tokens for each.
 * **ssl_verify**: True or False; controls whether the SSL/TLS certificate presented by the server is validated against
   the local trusted CA store.
-* **proxy**: A proxy specification that will be used when connecting to the Cb server. The format is:
+* **proxy**: A proxy specification that will be used when connecting to the CB server. The format is:
   ``http://myusername:mypassword@proxy.company.com:8001/`` where the hostname of the proxy is ``proxy.company.com``, port
   8001, and using username/password ``myusername`` and ``mypassword`` respectively.
 * **ignore_system_proxy**: If you have a system-wide proxy specified, setting this to True will force cbapi to bypass
-  the proxy and directly connect to the Cb server.
+  the proxy and directly connect to the CB server.
 
 Future versions of cbapi will also provide the ability to "pin" the TLS certificate so as to provide certificate
 verification on self-signed or internal CA signed certificates.
@@ -252,7 +252,7 @@ Environment Variable Support
 
 The latest cbapi for python supports specifying API credentials in the following three environment variables:
 
-`CBAPI_TOKEN` the envar for holding the CbR/CbP api token or the ConnectorId/APIKEY combination for Cb Defense/PSC.
+`CBAPI_TOKEN` the envar for holding the CbR/CbP api token or the ConnectorId/APIKEY combination for CB Defense/PSC.
 
 The `CBAPI_URL` envar holds the FQDN of the target, a CbR , CBD, or CbD/PSC server specified just as they are in the
 configuration file format specified above.
@@ -275,8 +275,8 @@ legacy scripts cannot run under Python 3.
 Once cbapi 1.0.0 is released, the old :py:mod:`cbapi.legacy.CbApi` will be deprecated and removed entirely no earlier
 than January 2017.
 New scripts should use the :py:mod:`cbapi.response.rest_api.CbResponseAPI`
-(for Cb Response), :py:mod:`cbapi.protection.rest_api.CbProtectionAPI`
-(for Cb Protection), or :py:mod:`cbapi.defense.rest_api.CbDefenseAPI` API entry points.
+(for CB Response), :py:mod:`cbapi.protection.rest_api.CbProtectionAPI`
+(for CB Protection), or :py:mod:`cbapi.defense.rest_api.CbDefenseAPI` API entry points.
 
 The API is frozen as of version 1.0; afterward, any changes in the 1.x version branch
 will be additions/bug fixes only. Breaking changes to the API will increment the major version number (2.x).

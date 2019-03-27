@@ -1,6 +1,6 @@
 .. _protection_api:
 
-Cb Protection API
+CB Protection API
 =================
 
 This page documents the public interfaces exposed by cbapi when communicating with a Carbon Black Enterprise

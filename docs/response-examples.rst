@@ -1,9 +1,9 @@
-Cb Response API Examples
+CB Response API Examples
 ========================
 
-Now that we've covered the basics, let's step through a few examples using the Cb Response API. In these examples,
+Now that we've covered the basics, let's step through a few examples using the CB Response API. In these examples,
 we will assume the following boilerplate code to enable logging and establish a connection to the "default"
-Cb Response server in our credential file::
+CB Response server in our credential file::
 
     >>> import logging
     >>> root = logging.getLogger()
@@ -15,10 +15,10 @@ Cb Response server in our credential file::
 
 With that boilerplate out of the way, let's take a look at a few examples.
 
-Download a Binary from Cb Response
+Download a Binary from CB Response
 ----------------------------------
 
-Let's grab a binary that Cb Response has collected from one of the endpoints. This can be useful if you want to
+Let's grab a binary that CB Response has collected from one of the endpoints. This can be useful if you want to
 send this binary for further automated analysis or pull it down for manual reverse engineering. You can see a full
 example with command line options in the examples directory: ``binary_download.py``.
 
@@ -58,13 +58,13 @@ Now let's take this binary and add a Banning rule for it. To do this, we create 
     Received response: {u'result': u'success'}
     HTTP GET /api/v1/banning/blacklist/7FB55F5A62E78AF9B58D08AAEEAEF848 took 0.039s (response 200)
 
-Note that if the hash is already banned in Cb Response, then you will receive a `ServerError` exception with the message that
+Note that if the hash is already banned in CB Response, then you will receive a `ServerError` exception with the message that
 the banned hash already exists.
 
 Isolate a Sensor
 ----------------
 
-Switching gears, let's take a Sensor and quarantine it from the network. The Cb Response network isolation
+Switching gears, let's take a Sensor and quarantine it from the network. The CB Response network isolation
 functionality allows administrators to isolate endpoints that may be actively involved in an incident, while preserving
 access to perform Live Response on that endpoint and collect further endpoint telemetry.
 
@@ -82,7 +82,7 @@ This will select the first sensor that matches the hostname ``HOSTNAME``. Now we
     ...
     True
 
-The ``.isolate()`` method will keep polling the Cb Response server until the sensor has confirmed that it is now
+The ``.isolate()`` method will keep polling the CB Response server until the sensor has confirmed that it is now
 isolated from the network. If the sensor is offline or otherwise unreachable, this call could never return. Therefore,
 there is also a ``timeout=`` keyword parameter that can be used to set an optional timeout that, if reached,
 will throw a ``TimeoutError`` exception. The ``.isolate()`` function returns True when the sensor is successfully
@@ -104,7 +104,7 @@ you can optionally specify a timeout using the ``timeout=`` keyword parameter.
 Querying Processes and Events
 -----------------------------
 
-Now, let's do some queries into the Cb Response database. The true power of Cb Response is its continuous recording
+Now, let's do some queries into the CB Response database. The true power of CB Response is its continuous recording
 and powerful query language that allows you to go back in time and track the root cause of any security incident on
 your endpoints. Let's start with a simple query to find instances of a specific behavioral IOC, where our attacker
 used the built-in Windows tool ``net.exe`` to mount an internal network share. We will iterate over all uses
@@ -175,42 +175,42 @@ New Filters: Group By, Time Restrictions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the query above, there is an extra ``.group_by()`` method. This method is new in cbapi 1.1.0 and is part of five
-new query filters available when communicating with a Cb Response 6.1 server. These filters are accessible via methods
+new query filters available when communicating with a CB Response 6.1 server. These filters are accessible via methods
 on the ``Process`` Query object. These new methods are:
 
 * ``.group_by()`` - Group the result set by a field in the response. Typically you will want to group by ``id``, which
   will ensure that the result set only has one result per *process* rather than one result per *event segment*. For
-  more information on processes, process segments, and how segments are stored in Cb Response 6.0, see the
-  `Process API Changes for Cb Response 6.0 <https://developer.carbonblack.com/reference/enterprise-response/6.1/process-api-changes/>`_
+  more information on processes, process segments, and how segments are stored in CB Response 6.0, see the
+  `Process API Changes for CB Response 6.0 <https://developer.carbonblack.com/reference/enterprise-response/6.1/process-api-changes/>`_
   page on the Developer Network website.
 * ``.min_last_update()`` - Only return processes that have events after a given date/time stamp (relative to the
   individual sensor's clock)
 * ``.max_last_update()`` - Only return processes that have events before a given date/time stamp (relative to the
   individual sensor's clock)
 * ``.min_last_server_update()`` - Only return processes that have events after a given date/time stamp (relative to the
-  Cb Response server's clock)
+  CB Response server's clock)
 * ``.max_last_server_update()`` - Only return processes that have events before a given date/time stamp (relative to the
-  Cb Response server's clock)
+  CB Response server's clock)
 
-Cb Response 6.1 uses a new way of recording process events that greatly increases the speed and scale of collection,
+CB Response 6.1 uses a new way of recording process events that greatly increases the speed and scale of collection,
 allowing you to store and search data for more endpoints on the same hardware. Details on the new database format
-can be found on the Developer Network website at the `Process API Changes for Cb Response 6.0
+can be found on the Developer Network website at the `Process API Changes for CB Response 6.0
 <https://developer.carbonblack.com/reference/enterprise-response/6.1/process-api-changes/>`_ page.
 
-The ``Process`` Model Object traditionally referred to a single "segment" of events in the Cb Response database. In
-Cb Response versions prior to 6.0, a single segment will include up to 10,000 individual endpoint events, enough to
+The ``Process`` Model Object traditionally referred to a single "segment" of events in the CB Response database. In
+CB Response versions prior to 6.0, a single segment will include up to 10,000 individual endpoint events, enough to
 handle over 95% of the typical event activity for a given process. Therefore, even though a ``Process`` Model Object
 technically refers to a single *segment* in a process, since most processes had less than 10,000 events and therefore
 were only comprised of a single segment, this distinction wasn't necessary.
 
 However, now that processes are split across many segments, a better way of handling this is necessary. Therefore,
-Cb Response 6.0 introduces the new ``.group_by()`` method.
+CB Response 6.0 introduces the new ``.group_by()`` method.
 
 More on Filters
 ~~~~~~~~~~~~~~~
 
 Querying for a process will return *all* segments that match. For example, if you search for ``process_name:cmd.exe``,
-the result set will include *all* segments of *all* ``cmd.exe`` processes. Therefore, Cb Response 6.1 introduced
+the result set will include *all* segments of *all* ``cmd.exe`` processes. Therefore, CB Response 6.1 introduced
 the ability to "group" result sets by a field in the result. Typically you will want to group by the internal process
 id (the ``id`` field), and this is what we did in the query above. Grouping by the ``id`` field will ensure that only
 one result is returned per *process* rather than per *segment*.
@@ -230,7 +230,7 @@ Let's take a look at an example::
     00000001-0000-0e48-01d2-c2a397f4cfe0 1495463176570
     00000001-0000-0e48-01d2-c2a397f4cfe0 1495463243492
 
-Notice that the "same" process ID is returned seven times, but with seven different segment IDs. Cb Response will
+Notice that the "same" process ID is returned seven times, but with seven different segment IDs. CB Response will
 return *every* process event segment that matches a given query, in this case, any event segment that contains the
 process command name ``cmd.exe``.
 
@@ -248,7 +248,7 @@ Feed and Watchlist Maintenance
 
 The cbapi provides several helper functions to assist in creating watchlists and
 
-Watchlists are simply saved Queries that are automatically run on the Cb Response server on a periodic basis. Results
+Watchlists are simply saved Queries that are automatically run on the CB Response server on a periodic basis. Results
 of the watchlist are tagged in the database and optionally trigger alerts. Therefore, a cbapi Query can easily be
 converted into a watchlist through the Query ``.create_watchlist()`` function::
 
@@ -359,7 +359,7 @@ Those few lines of Python above are jam-packed with functionality. Now for each 
 contextual information on the source host, the group that host is part of, and details about the signing status of the
 binary that was executed. The magic is performed behind the scenes when we use the ``.binary`` and ``.sensor`` properties
 on the Process Model Object. Just like our previous example, cbapi's caching layer ensures that we do not overload
-the Cb Response server with duplicate requests for the same data. In this example, multiple redundant requests for sensor,
+the CB Response server with duplicate requests for the same data. In this example, multiple redundant requests for sensor,
 sensor group, and binary data are all eliminated by cbapi's cache.
 
 Facets
@@ -395,7 +395,7 @@ Administrative Tasks
 
 In addition to querying data, you can also perform various administrative tasks using cbapi.
 
-Let's create a user on our Cb Response server::
+Let's create a user on our CB Response server::
 
     >>> user = cb.create(User)
     >>> user.username = "jgarman"

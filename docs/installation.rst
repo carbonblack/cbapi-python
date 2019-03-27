@@ -1,8 +1,8 @@
 Installation
 ============
 
-Before installing cbapi, make sure that you have access to a working Cb Response or Cb Protection server. The server
-can be either on-premise or in the cloud. Cb Response clusters are also supported. Once you have access to a working
+Before installing cbapi, make sure that you have access to a working CB Response or CB Protection server. The server
+can be either on-premise or in the cloud. CB Response clusters are also supported. Once you have access to a working
 can use the standard Python packaging tools to install cbapi on your local machine.
 
 Feel free to follow along with this document or watch the `Development Environment Setup video <https://developer.carbonblack.com/guide/enterprise-response/development-environment-video/>`_

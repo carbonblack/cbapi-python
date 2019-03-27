@@ -3,7 +3,7 @@ CbAPI Changelog
 CbAPI 1.4.2 - Released March 27, 2019
 ----------------------------------------
 
-This release introduces additional support for Cb PSC's ThreatHunter APIs
+This release introduces additional support for CB PSC's ThreatHunter APIs
 
 * Threat Intelligence APIs
 
@@ -16,7 +16,7 @@ CbAPI 1.4.1 - Released January 10, 2019
 CbAPI 1.4.0 - Released January 10, 2019
 ----------------------------------------
 
-This release introduces support for Cb PSC's ThreatHunter APIs
+This release introduces support for CB PSC's ThreatHunter APIs
 
 * Process, Tree, and Search are supported with more to come
 
@@ -25,7 +25,7 @@ CbAPI 1.3.6 - Released February 14, 2018
 
 This release has one critical fix:
 
-* Fix a fatal exception when connecting to Cb Response 6.1.x servers
+* Fix a fatal exception when connecting to CB Response 6.1.x servers
 
 CbAPI 1.3.5 - Released February 2, 2018
 ---------------------------------------
@@ -45,15 +45,15 @@ All products:
   ``HTTPAdapter`` used when connecting to the Carbon Black server. For more information on these parameters, see
   the `Python requests module API documentation for HTTPAdapter <http://docs.python-requests.org/en/master/api/#requests.adapters.HTTPAdapter>`_.
 
-Cb Defense:
+CB Defense:
 
 * Date/time stamps in the Device model object are now represented as proper Python datetime objects, rather than
   integers.
 * The ``policy_operations.py`` example script's "Replace Rule" command is fixed.
-* Add the Cb Live Response job-based API.
+* Add the CB Live Response job-based API.
 * Add a new example script ``list_devices.py``
 
-Cb Response:
+CB Response:
 
 * The ``Process`` and ``Binary`` model objects now return None by default when a non-existent attribute is referenced,
   rather than throwing an exception.
@@ -62,14 +62,14 @@ Cb Response:
 * Multiple ``.where()`` clauses can now be used in the ``Sensor`` model object.
 * Workaround implemented for retrieving/managing more than 500 banned hashes.
 * Alert bulk operations now work on batches of 500 alerts.
-* ``.flush_events()`` method on ``Sensor`` model object no longer throws an exception on Cb Response 6.x servers.
+* ``.flush_events()`` method on ``Sensor`` model object no longer throws an exception on CB Response 6.x servers.
 * ``.restart_sensor()`` method now available for ``Sensor`` model object.
 * Fix ``user_operations.py`` example script to eliminate exception when adding a new user to an existing team.
 * Add ``.remove_team()`` method on ``User`` model object.
 * Automatically set ``cb.legacy_5x_mode`` query parameter for all Process queries whenever a legacy Solr core (from
-  Cb Response 5.x) is loaded.
+  CB Response 5.x) is loaded.
 * Added ``.use_comprehensive_search()`` method to enable the "comprehensive search" option on a Process query.
-  See the `Cb Developer Network documentation on Comprehensive Search
+  See the `CB Developer Network documentation on Comprehensive Search
   <https://developer.carbonblack.com/reference/enterprise-response/6.1/process-api-changes/#process-joining-comprehensive-search>`_
   for more information on "comprehensive search".
 * Add ``.all_childprocs()``, ``.all_modloads()``, ``.all_filemods()``, ``.all_regmods()``, ``.all_crossprocs()``,
@@ -77,7 +77,7 @@ Cb Response:
   You can also use the special segment "0" to retrieve process events across all segments.
 * Fix ``cmdline_filters`` in the ``IngressFilter`` model object.
 
-Cb Protection:
+CB Protection:
 
 * Tamper Protection can now be set and cleared in the ``Computer`` model object.
 
@@ -96,9 +96,9 @@ Security fix:
 
 Bug fixes:
 
-* Add rule filename parameter to Cb Defense ``policy_operations.py`` script's ``add-rule`` command.
-* Add support for ``tamperProtectionActive`` attribute to Cb Protection's ``Computer`` object.
-* Work around Cb Response issue- the ``/api/v1/sensor`` route incorrectly returns an HTTP 500 if no sensors match the
+* Add rule filename parameter to CB Defense ``policy_operations.py`` script's ``add-rule`` command.
+* Add support for ``tamperProtectionActive`` attribute to CB Protection's ``Computer`` object.
+* Work around CB Response issue- the ``/api/v1/sensor`` route incorrectly returns an HTTP 500 if no sensors match the
   provided query. CbAPI now catches this exception and will instead return an empty set back to the caller.
 
 
@@ -109,43 +109,43 @@ This release includes security improvements and bugfixes.
 
 Security changes:
 
-* CbAPI enforces the use of HTTPS when connecting to on-premise Cb Response servers.
+* CbAPI enforces the use of HTTPS when connecting to on-premise CB Response servers.
 * CbAPI can optionally require TLSv1.2 when connecting to Carbon Black servers.
 
   * Note that some versions of Python and OpenSSL, notably the version of OpenSSL packaged with Mac OS X, do not support
-    TLSv1.2. This will cause CbAPI to fail to connect to Cb Response 6.1+ servers which require TLSv1.2 cipher suites.
+    TLSv1.2. This will cause CbAPI to fail to connect to CB Response 6.1+ servers which require TLSv1.2 cipher suites.
   * A new command, ``cbapi check-tls``, will report the TLS version supported by your platform.
   * To enforce the use of TLSv1.2 when connecting to a server, add ``ssl_force_tls_1_2=True`` to that server's
     credential profile.
 
 * Add the ability to "pin" a specific server certificate to a credential profile.
 
-  * You can now force TLS certificate verification on self-signed, on-premise installations of Cb Response or Protection
+  * You can now force TLS certificate verification on self-signed, on-premise installations of CB Response or Protection
     through the ``ssl_cert_file`` option in the credential profile.
   * To "pin" a server certificate, save the PEM-formatted server certificate to a file, and put the full path to that
     PEM file in the ``ssl_cert_file`` option of that server's credential profile.
-  * When using this option with on-premise Cb Response servers, you may also have to set
+  * When using this option with on-premise CB Response servers, you may also have to set
     ``ssl_verify_hostname=False`` as the hostname in the certificate generated at install time is ``localhost`` and
     will not match the server's hostname or IP address. This option will still validate that the server's certificate
     is valid and matches the copy in the ``ssl_cert_file`` option.
 
-Changes for Cb Protection:
+Changes for CB Protection:
 
 * The API now sets the appropriate "GET" query fields when changing fields such as the ``debugFlags`` on the Computer
   object.
 * The ``.template`` attribute on the Computer model object has been renamed ``.templateComputer``.
 * Remove AppCatalog and AppTemplate model objects.
 
-Changes for Cb Response:
+Changes for CB Response:
 
-* Added ``.webui_link`` property to Cb Response Query objects.
+* Added ``.webui_link`` property to CB Response Query objects.
 * Added ``ban_hash.py`` example.
 
 Bug Fixes:
 
 * Error handling is improved on Python 3. Live Response auto-reconnect functionality is now fixed on Python 3 as
   a result.
-* Workaround implemented for Cb Response 6.1 where segment_ids are truncated on Alerts. The ``.process`` attribute on
+* Workaround implemented for CB Response 6.1 where segment_ids are truncated on Alerts. The ``.process`` attribute on
   an Alert now ignores the ``segment_id`` and links to the first Process segment.
 * Fixed issue with ``Binary.signed`` and ``CbModLoadEvent.is_signed``.
 
@@ -153,12 +153,12 @@ Bug Fixes:
 CbAPI 1.3.2 - Released August 10, 2017
 --------------------------------------
 
-This release introduces the Policy API for Cb Defense. A sample ``policy_operations.py`` script is now included
-in the ``examples`` directory for Cb Defense.
+This release introduces the Policy API for CB Defense. A sample ``policy_operations.py`` script is now included
+in the ``examples`` directory for CB Defense.
 
 Other changes:
 
-* Cb Response
+* CB Response
 
   * Bugfixes to the ``User`` Model Object.
   * New ``user_operations.py`` example script to manage users & teams.
@@ -173,7 +173,7 @@ CbAPI 1.3.1 - Released August 3, 2017
 
 This is a bugfix release with minor changes:
 
-* Cb Response
+* CB Response
 
   * Add ``partition_operations.py`` script to demonstrate the use of the StoragePartition model object.
   * Fix errors when accessing the ``.start`` attribute of child processes.
@@ -186,7 +186,7 @@ This is a bugfix release with minor changes:
   * Add ``wait_for_completion`` flag to ``create_process`` Live Response method, and default to ``True``. The
     ``create_process`` method will now wait for the target process to complete before returning.
 
-* Cb Defense
+* CB Defense
 
   * Add ``wait_for_completion`` flag to ``create_process`` Live Response method, and default to ``True``. The
     ``create_process`` method will now wait for the target process to complete before returning.
@@ -195,19 +195,19 @@ This is a bugfix release with minor changes:
 CbAPI 1.3.0 - Released July 27, 2017
 ------------------------------------
 
-This release introduces the Live Response API for Cb Defense. A sample ``cblr_cli.py`` script is now included in the
-``examples`` directory for both Cb Response and Cb Defense.
+This release introduces the Live Response API for CB Defense. A sample ``cblr_cli.py`` script is now included in the
+``examples`` directory for both CB Response and CB Defense.
 
 Other changes:
 
-* Cb Protection
+* CB Protection
 
   * You can now create new ``FileRule`` and ``Policy`` model objects in cbapi.
 
-* Cb Response
+* CB Response
 
-  * Added ``watchlist_exporter.py`` and ``watchlist_importer.py`` scripts to the Cb Response examples directory.
-    These scripts allow you to export Watchlist data in a human- and machine-readable JSON format and then re-import them into another Cb Response server.
+  * Added ``watchlist_exporter.py`` and ``watchlist_importer.py`` scripts to the CB Response examples directory.
+    These scripts allow you to export Watchlist data in a human- and machine-readable JSON format and then re-import them into another CB Response server.
   * The ``Sensor`` Model Object now uses the non-paginated (v1) API by default. This fixes any issues encountered when
     iterating over all the sensors and receiving duplicate and/or missing sensors.
   * Fix off-by-one error in ``CbCrossProcess`` object.
@@ -215,7 +215,7 @@ Other changes:
     after upgrading to 6.1.
   * Reduce number of API requests required when accessing sibling information (parents, children, and siblings) from the
     ``Process`` Model Object.
-  * Retrieve all events for a process when using ``segment`` ID of zero on a Cb Response 6.1 server.
+  * Retrieve all events for a process when using ``segment`` ID of zero on a CB Response 6.1 server.
   * Behavior of ``Process.children`` attribute has changed:
 
     * Only one entry is present per child (before there were up to two; one for the spawn event, one for the
@@ -232,12 +232,12 @@ Other changes:
 CbAPI 1.2.0 - Released June 22, 2017
 ------------------------------------
 
-This release introduces compatibility with our new product, Cb Defense, as well as adding new Model Objects introduced
-in the Cb Protection 8.0 APIs.
+This release introduces compatibility with our new product, CB Defense, as well as adding new Model Objects introduced
+in the CB Protection 8.0 APIs.
 
 Other changes:
 
-* Cb Response
+* CB Response
 
   * New method ``synchronize()`` added to the ``Feed`` Model Object
 
@@ -246,14 +246,14 @@ Other changes:
 CbAPI 1.1.1 - Released June 2, 2017
 -----------------------------------
 
-This release includes compatibility fixes for Cb Response 6.1. Changes from 1.0.1 include:
+This release includes compatibility fixes for CB Response 6.1. Changes from 1.0.1 include:
 
-* Substantial changes to the ``Process`` Model Object for Cb Response 6.1. See details below.
-* New ``StoragePartition`` Model Object to control Solr core loading/unloading in Cb Response 6.1.
-* New ``IngressFilter`` Model Object to control ingress filter settings in Cb Response 6.1.
+* Substantial changes to the ``Process`` Model Object for CB Response 6.1. See details below.
+* New ``StoragePartition`` Model Object to control Solr core loading/unloading in CB Response 6.1.
+* New ``IngressFilter`` Model Object to control ingress filter settings in CB Response 6.1.
 * Fix issues with ``event_export.py`` example script.
 * Add ``.all_events`` property to the ``Process`` Model Object to expose a list of all events across all segments.
-* Add example script to perform auto-banning based on watchlist hits from Cb Event Forwarder S3 output files.
+* Add example script to perform auto-banning based on watchlist hits from CB Event Forwarder S3 output files.
 * Add bulk operations to the ``ThreatReport`` and ``Alert`` Query objects:
 
   * You can now call ``.set_ignored()``, ``.assign()``, and ``.change_status()`` on an ``Alert`` Query object to change
@@ -261,38 +261,38 @@ This release includes compatibility fixes for Cb Response 6.1. Changes from 1.0.
   * You can now call ``.set_ignored()`` on a ``ThreatReport`` Query object to set or clear the ignored flag for every
     ThreatReport that matches the query.
 
-Changes to ``Process`` Model Object for Cb Response 6.1
+Changes to ``Process`` Model Object for CB Response 6.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Cb Response 6.1 uses a new way of recording process events that greatly increases the speed and scale of collection,
+CB Response 6.1 uses a new way of recording process events that greatly increases the speed and scale of collection,
 allowing you to store and search data for more endpoints on the same hardware. Details on the new database format
-can be found on the Developer Network website at the `Process API Changes for Cb Response 6.0
+can be found on the Developer Network website at the `Process API Changes for CB Response 6.0
 <https://developer.carbonblack.com/reference/enterprise-response/6.1/process-api-changes/>`_ page.
 
-The ``Process`` Model Object traditionally referred to a single "segment" of events in the Cb Response database. In
-Cb Response versions prior to 6.0, a single segment will include up to 10,000 individual endpoint events, enough to
+The ``Process`` Model Object traditionally referred to a single "segment" of events in the CB Response database. In
+CB Response versions prior to 6.0, a single segment will include up to 10,000 individual endpoint events, enough to
 handle over 95% of the typical event activity for a given process. Therefore, even though a ``Process`` Model Object
 technically refers to a single *segment* in a process, since most processes had less than 10,000 events and therefore
 were only comprised of a single segment, this distinction wasn't necessary.
 
 However, now that processes are split across many segments, a better way of handling this is necessary. Therefore,
-Cb Response 6.0 introduces the new ``.group_by()`` method. This method is new in cbapi 1.1.0 and is part of five
-new query filters available when communicating with a Cb Response 6.1 server. These filters are accessible via methods
+CB Response 6.0 introduces the new ``.group_by()`` method. This method is new in cbapi 1.1.0 and is part of five
+new query filters available when communicating with a CB Response 6.1 server. These filters are accessible via methods
 on the ``Process`` Query object. These new methods are:
 
 * ``.group_by()`` - Group the result set by a field in the response. Typically you will want to group by ``id``, which
   will ensure that the result set only has one result per *process* rather than one result per *event segment*. For
-  more information on processes, process segments, and how segments are stored in Cb Response 6.0, see the
-  `Process API Changes for Cb Response 6.0 <https://developer.carbonblack.com/reference/enterprise-response/6.1/process-api-changes/>`_
+  more information on processes, process segments, and how segments are stored in CB Response 6.0, see the
+  `Process API Changes for CB Response 6.0 <https://developer.carbonblack.com/reference/enterprise-response/6.1/process-api-changes/>`_
   page on the Developer Network website.
 * ``.min_last_update()`` - Only return processes that have events after a given date/time stamp (relative to the
   individual sensor's clock)
 * ``.max_last_update()`` - Only return processes that have events before a given date/time stamp (relative to the
   individual sensor's clock)
 * ``.min_last_server_update()`` - Only return processes that have events after a given date/time stamp (relative to the
-  Cb Response server's clock)
+  CB Response server's clock)
 * ``.max_last_server_update()`` - Only return processes that have events before a given date/time stamp (relative to the
-  Cb Response server's clock)
+  CB Response server's clock)
 
 Examples for new Filters
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -312,7 +312,7 @@ Let's take a look at an example::
     00000001-0000-0e48-01d2-c2a397f4cfe0 1495463176570
     00000001-0000-0e48-01d2-c2a397f4cfe0 1495463243492
 
-Notice that the "same" process ID is returned seven times, but with seven different segment IDs. Cb Response will
+Notice that the "same" process ID is returned seven times, but with seven different segment IDs. CB Response will
 return *every* process event segment that matches a given query, in this case, any event segment that contains the
 process command name ``cmd.exe``.
 
