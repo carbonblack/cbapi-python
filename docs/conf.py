@@ -296,3 +296,6 @@ latex_elements = {
 }
 
 autoclass_content = 'both'
+
+def setup(app):
+    app.add_stylesheet('css/custom.css')

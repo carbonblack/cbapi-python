@@ -1,6 +1,6 @@
 # Python bindings for Carbon Black REST API
 
-**Latest Version: 1.4.0**
+**Latest Version: 1.4.2**
 
 [![Build Status](https://travis-ci.org/carbonblack/cbapi-python.svg?branch=master)](https://travis-ci.org/carbonblack/cbapi-python)
 
@@ -31,8 +31,8 @@ Backwards compatibility with old scripts is maintained through the `cbapi.legacy
 `cbapi.CbApi` directly will continue to work. Once cbapi 2.0.0 is released, the old `CbApi` will be deprecated and
 removed entirely no earlier than January 2017.
 
-New scripts should use the `cbapi.CbResponseAPI` (for Cb Response) and 
-`cbapi.CbProtectionAPI` (for Cb Protection / former Bit9) API entry points.
+New scripts should use the `cbapi.CbResponseAPI` (for CB Response) and 
+`cbapi.CbProtectionAPI` (for CB Protection / former Bit9) API entry points.
 
 ## Getting Started
 
@@ -98,14 +98,14 @@ will be adding more samples over time. For a quick start, see the following code
     
 ### API Token
 
-In order to perform any queries via the API, you will need to get the API token for your Cb user. See the documentation
+In order to perform any queries via the API, you will need to get the API token for your CB user. See the documentation
 on the Developer Network website on how to acquire the API token for 
 [Enterprise Response](http://developer.carbonblack.com/reference/enterprise-response/authentication/) or
 [Enterprise Protection](http://developer.carbonblack.com/reference/enterprise-protection/authentication/)
 
 Once you acquire your API token, place it in one of the default credentials file locations:
 
-* ``/etc/carbonblack/credentials.response`` (or ``.protection`` for Cb Enterprise Protection)
+* ``/etc/carbonblack/credentials.response`` (or ``.protection`` for CB Enterprise Protection)
 * ``~/.carbonblack/credentials.response``
 * (current working directory) ``.carbonblack/credentials.response``
 
@@ -131,16 +131,16 @@ by comma separated key-value pairs providing the necessary credential informatio
 
 The possible options for each credential profile are:
 
-* **url**: The base URL of the Cb server. This should include the protocol (https) and the hostname, and nothing else.
+* **url**: The base URL of the CB server. This should include the protocol (https) and the hostname, and nothing else.
 * **token**: The API token for the user ID. More than one credential profile can be specified for a given server, with
   different tokens for each.
 * **ssl_verify**: True or False; controls whether the SSL/TLS certificate presented by the server is validated against
   the local trusted CA store.
-* **proxy**: A proxy specification that will be used when connecting to the Cb server. The format is:
+* **proxy**: A proxy specification that will be used when connecting to the CB server. The format is:
   ``http://myusername:mypassword@proxy.company.com:8001/`` where the hostname of the proxy is ``proxy.company.com``, port
   8001, and using username/password ``myusername`` and ``mypassword`` respectively.
 * **ignore_system_proxy**: If you have a system-wide proxy specified, setting this to True will force cbapi to bypass
-  the proxy and directly connect to the Cb server.
+  the proxy and directly connect to the CB server.
 
 Future versions of cbapi will also provide the ability to "pin" the TLS certificate so as to provide certificate
 verification on self-signed or internal CA signed certificates.
