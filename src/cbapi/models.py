@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 from copy import deepcopy
 
-from cbapi.six import python_2_unicode_compatible
+from cbapi.six import PY2, python_2_unicode_compatible
 
 import base64
 import os.path
@@ -317,7 +317,12 @@ class NewBaseModel(object):
                     status = "(+)"
                 else:
                     status = "(*)"
-            val = str(self._info[attr])
+            # NOTE(ww): Python 2's str() can't do unicode objects.
+            # Use repr() instead.
+            if PY2 and isinstance(self._info[attr], unicode):
+                val = repr(self._info[attr])
+            else:
+                val = str(self._info[attr])
             if len(val) > 50:
                 val = val[:47] + u"..."
             lines.append(u"{0:s} {1:>20s}: {2:s}".format(status, attr, val))
