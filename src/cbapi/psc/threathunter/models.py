@@ -912,4 +912,68 @@ class Binary(UnrefreshableModelMixin):
 
     @property
     def summary(self):
+        """Returns organization-specific information about this binary.
+        """
         return self._cb.select(Binary.Summary, self.sha256)
+
+    @property
+    def download_url(self, expiration_seconds=3600):
+        """Returns a URL that can be used to download the file
+        for this binary. Returns None if no download can be found.
+
+        :param expiration_seconds: How long the download should be valid for
+        :raise InvalidObjectError: if the binary's hash should be retired
+        :return: A pre-signed AWS download URL
+        :rtype: str
+        """
+        downloads = self._cb.select(Downloads, [self.sha256],
+                                    expiration_seconds=expiration_seconds)
+
+        if self.sha256 in downloads.not_found:
+            return None
+        elif self.sha256 in downloads.error:
+            # TODO(ww): Maybe return None here?
+            # The docs say these hashes "should be retired"; what does that
+            # mean to the user?
+            raise InvalidObjectError("{} should be retired".format(self.sha256))
+        else:
+            return next((item.url
+                        for item in downloads.found()
+                        if self.sha256 == item.sha256), None)
+
+
+class Downloads(UnrefreshableModelMixin):
+    """Represents download information for a list of process hashes.
+    """
+    urlobject = "/ubs/v1/orgs/{}/file/_download"
+
+    class FoundItem(UnrefreshableModelMixin):
+        """Represents the download URL and process hash for a successfully
+        located binary.
+        """
+        primary_key = "sha256"
+
+        def __init__(self, cb, item):
+            super(Downloads.FoundItem, self).__init__(cb, model_unique_id=item["sha256"],
+                                                      initial_data=item, force_init=False,
+                                                      full_doc=True)
+
+    def __init__(self, cb, shas, expiration_seconds=3600):
+        body = {
+            "sha256": shas,
+            "expiration_seconds": expiration_seconds,
+        }
+
+        url = self.urlobject.format(cb.credentials.org_key)
+        item = cb.post_object(url, body).json()
+
+        super(Downloads, self).__init__(cb, model_unique_id=None,
+                                        initial_data=item, force_init=False,
+                                        full_doc=True)
+
+    @property
+    def found(self):
+        """Returns a list of :py:class:`Downloads.FoundItem`, one
+        for each binary found in the binary store.
+        """
+        return [Downloads.FoundItem(self._cb, item) for item in self._info["found"]]
