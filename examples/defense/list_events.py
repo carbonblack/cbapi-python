@@ -12,7 +12,7 @@
 import sys
 import re
 from datetime import datetime
-from cbapi.defense.models import Event
+from cbapi.psc.defense.models import Event
 from cbapi.example_helpers import build_cli_parser, get_cb_defense_object
 
 
