@@ -25,7 +25,7 @@ CB Response or CB Protection servers inside the API credential file and select w
 at runtime.
 
 To create the initial credential file, a simple-to-use script is provided. Just run the ``cbapi-response``,
-``cbapi-protection``, or ``cbapi-defense`` script with the ``configure`` argument. On Mac OS X and Linux::
+``cbapi-protection``,``cbapi-psc`` or ``cbapi-defense`` script with the ``configure`` argument. On Mac OS X and Linux::
 
     $ cbapi-response configure
 

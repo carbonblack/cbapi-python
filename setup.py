@@ -55,5 +55,5 @@ setup(
         'Programming Language :: Python',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
-    scripts=['bin/cbapi-response', 'bin/cbapi-protection', 'bin/cbapi-defense', 'bin/cbapi']
+    scripts=['bin/cbapi-response', 'bin/cbapi-protection', 'bin/cbapi-defense', 'bin/cbapi', 'bin/cbapi-psc']
 )
