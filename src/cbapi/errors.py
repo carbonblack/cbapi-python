@@ -2,10 +2,6 @@
 from cbapi.six import python_2_unicode_compatible
 
 
-class ConnectionError(Exception):
-    pass
-
-
 class ApiError(Exception):
     def __init__(self, message=None, original_exception=None):
         self.original_exception = original_exception
@@ -85,6 +81,10 @@ class UnauthorizedError(ApiError):
             return "Check your API Credentials: " + str(self.message)
 
         return "Unauthorized (Check API creds): attempted to {0:s} {1:s}".format(self.action, self.uri)
+
+
+class ConnectionError(ApiError):
+    pass
 
 
 class CredentialError(ApiError):

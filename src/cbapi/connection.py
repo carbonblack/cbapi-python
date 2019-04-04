@@ -180,7 +180,7 @@ class Connection(object):
         except requests.Timeout as timeout_error:
             raise TimeoutError(uri=uri, original_exception=timeout_error)
         except requests.ConnectionError as connection_error:
-            raise ApiError("Received a network connection error from {0:s}: {1:s}".format(self.server,
+            raise ConnectionError("Received a network connection error from {0:s}: {1:s}".format(self.server,
                                                                                           str(connection_error)),
                            original_exception=connection_error)
         except Exception as e:
