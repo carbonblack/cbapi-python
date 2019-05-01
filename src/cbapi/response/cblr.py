@@ -14,7 +14,7 @@ class LiveResponseSessionManager(CbLRManagerBase):
     cblr_session_cls = LiveResponseSession
 
     def _get_or_create_session(self, sensor_id):
-        sensor_sessions = [s for s in self._cb.get_object("{cblr_base}/session".format(cblr_base=self.cblr_base))
+        sensor_sessions = [s for s in self._cb.get_object("{cblr_base}/session?active_only=true".format(cblr_base=self.cblr_base))
                            if s["sensor_id"] == sensor_id and s["status"] in ("pending", "active")]
 
         if len(sensor_sessions) > 0:
