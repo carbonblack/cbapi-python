@@ -1531,15 +1531,6 @@ class ProcessQuery(WatchlistEnabledQuery):
 @immutable
 class Binary(TaggedModel):
 
-    class VirusTotal(namedtuple('VirusTotal', 'score link')):
-        """
-        Class containing information associated with a Virus Total Score
-
-        :param int score: Virus Total score
-        :param str link: Virus Total link for this md5
-        """
-        pass
-
     class SigningData(namedtuple('SigningData', 'result publisher issuer subject sign_time program_name')):
         """
         Class containing binary signing information
@@ -1787,17 +1778,6 @@ class Binary(TaggedModel):
         """
         return self._attribute('is_executable_image', False)
 
-    @property
-    def virustotal(self):
-        """
-        Returns a :class:`.VirusTotal` object containing detailed Virus Total information about this binary.
-        """
-        virustotal_score = self._attribute('alliance_score_virustotal', 0)
-        if virustotal_score:
-            ret = Binary.VirusTotal._make([int(virustotal_score), self._attribute('alliance_link_virustotal', "")])
-        else:
-            ret = Binary.VirusTotal._make([0, ''])
-        return ret
 
     @property
     def icon(self):
