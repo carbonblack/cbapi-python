@@ -271,7 +271,7 @@ class AlertQuery(Query):
 
 
 class Alert(MutableBaseModel):
-    urlobject = "/api/v1/alert"
+    urlobject = "/api/v2/alert"
     swagger_meta_file = "response/models/alert.yaml"
     _change_object_http_method = "POST"
     primary_key = "unique_id"
