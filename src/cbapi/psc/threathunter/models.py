@@ -304,7 +304,7 @@ class Feed(FeedModel):
         rep_dicts = [report._info for report in reports]
         body = {"reports": rep_dicts}
 
-        self._cb.post_object("/threathunter/feedmgr/v1/{}/report".format(self.id), body)
+        self._cb.post_object("/threathunter/feedmgr/v1/feed/{}/report".format(self.id), body)
 
     def append_reports(self, reports):
         """Append the given reports to this feed's current reports.
@@ -317,10 +317,10 @@ class Feed(FeedModel):
             raise InvalidObjectError("missing feed ID")
 
         rep_dicts = [report._info for report in reports]
-        rep_dicts += [report._info for report in self._reports]
+        rep_dicts += [report._info for report in self.reports]
         body = {"reports": rep_dicts}
 
-        self._cb.post_object("/threathunter/feedmgr/v1/{}/report".format(self.id), body)
+        self._cb.post_object("/threathunter/feedmgr/v1/feed/{}/report".format(self.id), body)
 
 
 class Report(FeedModel):
