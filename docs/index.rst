@@ -64,7 +64,7 @@ If you're more a CB Protection fellow, then you're in luck as well::
 
 As of version 1.2, cbapi now provides support for CB Defense too!
 
-   >>> from cbapi.psc.defense import Device
+   >>> from cbapi.psc.defense import *
    >>> from cbapi.defense import CbDefenseAPI
    >>> #
    >>> # Create our CB Defense API object
@@ -74,86 +74,6 @@ As of version 1.2, cbapi now provides support for CB Defense too!
    >>> # Select any devices that have the hostname WIN-IA9NQ1GN8OI and an internal IP address of 192.168.215.150
    >>> #
    >>> devices = c.select(Device).where('hostNameExact:WIN-IA9NQ1GN8OI').and_("ipAddress:192.168.215.150").first()
-   >>> #
-   >>> # Change those devices' policy into the Windows_Restrictive_Workstation policy.
-   >>> #
-   >>> for dev in devices:
-   >>>     dev.policyName = "Restrictive_Windows_Workstation"
-   >>>     dev.save()
-
-
-
-
-   >>> from cbapi.psc.defense import Device
-   >>> from cbapi.defense import CbDefenseAPI
-   >>> #
-   >>> # Create our CB Defense API object
-   >>> #
-   >>> p = CbDefenseAPI()
-   >>> #
-   >>> # Select any devices that have the hostname WIN-IA9NQ1GN8OI and an internal IP address of 192.168.215.150
-   >>> #
-   >>> devices = c.select(Device).where('hostNameExact:WIN-IA9NQ1GN8OI').and_("ipAddress:192.168.215.150").first()
-   >>> #
-   >>> # Change those devices' policy into the Windows_Restrictive_Workstation policy.
-   >>> #
-   >>> for dev in devices:
-   >>>     dev.policyName = "Restrictive_Windows_Workstation"
-   >>>     dev.save()
-
-
-
-
-   >>> from cbapi.defense.models import Device
-   >>> from cbapi.psc.defense import CbDefenseAPI
-   >>> #
-   >>> # Create our CB Defense API object
-   >>> #
-   >>> p = CbDefenseAPI()
-   >>> #
-   >>> # Select any devices that have the hostname WIN-IA9NQ1GN8OI and an internal IP address of 192.168.215.150
-   >>> #
-   >>> devices = c.select(Device).where('hostNameExact:WIN-IA9NQ1GN8OI').and_("ipAddress:192.168.215.150").first()
-   >>> #
-   >>> # Change those devices' policy into the Windows_Restrictive_Workstation policy.
-   >>> #
-   >>> for dev in devices:
-   >>>     dev.policyName = "Restrictive_Windows_Workstation"
-   >>>     dev.save()
-
-
-
-
-   >>> from cbapi.defense.models import Device
-   >>> from cbapi.psc.defense import CbDefenseAPI
-   >>> #
-   >>> # Create our CB Defense API object
-   >>> #
-   >>> p = CbDefenseAPI()
-   >>> #
-   >>> # Select any devices that have the hostname WIN-IA9NQ1GN8OI and an internal IP address of 192.168.215.150
-   >>> #
-   >>> devices = c.select(Device).where('hostNameExact:WIN-IA9NQ1GN8OI').and_("ipAddress:192.168.215.150").first()
-   >>> #
-   >>> # Change those devices' policy into the Windows_Restrictive_Workstation policy.
-   >>> #
-   >>> for dev in devices:
-   >>>     dev.policyName = "Restrictive_Windows_Workstation"
-   >>>     dev.save()
-
-
-
-
-   >>> from cbapi.defense.models import Device
-   >>> from cbapi.defense import CbDefenseAPI
-   >>> #
-   >>> # Create our CB Defense API object
-   >>> #
-   >>> d = CbDefenseAPI()
-   >>> #
-   >>> # Select any devices that have the hostname WIN-IA9NQ1GN8OI and an internal IP address of 192.168.215.150
-   >>> #
-   >>> devices = d.select(Device).where('hostNameExact:WIN-IA9NQ1GN8OI').and_("ipAddress:192.168.215.150").first()
    >>> #
    >>> # Change those devices' policy into the Windows_Restrictive_Workstation policy.
    >>> #
