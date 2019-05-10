@@ -65,7 +65,6 @@ If you're more a CB Protection fellow, then you're in luck as well::
 As of version 1.2, cbapi now provides support for CB Defense too!
 
    >>> from cbapi.psc.defense import *
-   >>> from cbapi.defense import CbDefenseAPI
    >>> #
    >>> # Create our CB Defense API object
    >>> #
