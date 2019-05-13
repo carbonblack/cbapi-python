@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 from copy import deepcopy
 
-from cbapi.six import PY2, python_2_unicode_compatible
+from cbapi.six import python_2_unicode_compatible
 
 import base64
 import os.path
