@@ -317,12 +317,10 @@ class NewBaseModel(object):
                     status = "(+)"
                 else:
                     status = "(*)"
-            # NOTE(ww): Python 2's str() can't do unicode objects.
-            # Use repr() instead.
-            if PY2 and isinstance(self._info[attr], unicode):
-                val = repr(self._info[attr])
-            else:
+            try:
                 val = str(self._info[attr])
+            except UnicodeDecodeError:
+                val = repr(self._info[attr])
             if len(val) > 50:
                 val = val[:47] + u"..."
             lines.append(u"{0:s} {1:>20s}: {2:s}".format(status, attr, val))

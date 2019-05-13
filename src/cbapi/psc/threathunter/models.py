@@ -922,7 +922,7 @@ class Binary(UnrefreshableModelMixin):
         for this binary. Returns None if no download can be found.
 
         :param expiration_seconds: How long the download should be valid for
-        :raise InvalidObjectError: if the binary's hash should be retired
+        :raise InvalidObjectError: if URL retrieval should be retried
         :return: A pre-signed AWS download URL
         :rtype: str
         """
@@ -932,10 +932,7 @@ class Binary(UnrefreshableModelMixin):
         if self.sha256 in downloads.not_found:
             return None
         elif self.sha256 in downloads.error:
-            # TODO(ww): Maybe return None here?
-            # The docs say these hashes "should be retired"; what does that
-            # mean to the user?
-            raise InvalidObjectError("{} should be retired".format(self.sha256))
+            raise InvalidObjectError("{} should be retried".format(self.sha256))
         else:
             return next((item.url
                         for item in downloads.found()
