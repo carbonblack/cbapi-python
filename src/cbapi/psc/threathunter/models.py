@@ -875,3 +875,102 @@ class ReportSeverity(FeedModel):
         super(ReportSeverity, self).__init__(cb, model_unique_id=initial_data.get(self.primary_key),
                                              initial_data=initial_data, force_init=False,
                                              full_doc=True)
+
+
+class Binary(UnrefreshableModelMixin):
+    """Represents a retrievable binary.
+    """
+    primary_key = "sha256"
+    swagger_meta_file = "psc/threathunter/models/binary.yaml"
+    urlobject_single = "/ubs/v1/orgs/{}/sha256/{}/metadata"
+
+    class Summary(UnrefreshableModelMixin):
+        primary_key = "sha256"
+        urlobject_single = "/ubs/v1/orgs/{}/sha256/{}/summary/device"
+
+        def __init__(self, cb, model_unique_id):
+            if not validators.sha256(model_unique_id):
+                raise ApiError("model_unique_id must be a valid SHA256")
+
+            url = self.urlobject_single.format(cb.credentials.org_key, model_unique_id)
+            item = cb.get_object(url)
+
+            super(Binary.Summary, self).__init__(cb, model_unique_id=model_unique_id,
+                                                 initial_data=item, force_init=False,
+                                                 full_doc=True)
+
+    def __init__(self, cb, model_unique_id):
+        if not validators.sha256(model_unique_id):
+            raise ApiError("model_unique_id must be a valid SHA256")
+
+        url = self.urlobject_single.format(cb.credentials.org_key, model_unique_id)
+        item = cb.get_object(url)
+
+        super(Binary, self).__init__(cb, model_unique_id=model_unique_id,
+                                     initial_data=item, force_init=False,
+                                     full_doc=True)
+
+    @property
+    def summary(self):
+        """Returns organization-specific information about this binary.
+        """
+        return self._cb.select(Binary.Summary, self.sha256)
+
+    @property
+    def download_url(self, expiration_seconds=3600):
+        """Returns a URL that can be used to download the file
+        for this binary. Returns None if no download can be found.
+
+        :param expiration_seconds: How long the download should be valid for
+        :raise InvalidObjectError: if URL retrieval should be retried
+        :return: A pre-signed AWS download URL
+        :rtype: str
+        """
+        downloads = self._cb.select(Downloads, [self.sha256],
+                                    expiration_seconds=expiration_seconds)
+
+        if self.sha256 in downloads.not_found:
+            return None
+        elif self.sha256 in downloads.error:
+            raise InvalidObjectError("{} should be retried".format(self.sha256))
+        else:
+            return next((item.url
+                        for item in downloads.found()
+                        if self.sha256 == item.sha256), None)
+
+
+class Downloads(UnrefreshableModelMixin):
+    """Represents download information for a list of process hashes.
+    """
+    urlobject = "/ubs/v1/orgs/{}/file/_download"
+
+    class FoundItem(UnrefreshableModelMixin):
+        """Represents the download URL and process hash for a successfully
+        located binary.
+        """
+        primary_key = "sha256"
+
+        def __init__(self, cb, item):
+            super(Downloads.FoundItem, self).__init__(cb, model_unique_id=item["sha256"],
+                                                      initial_data=item, force_init=False,
+                                                      full_doc=True)
+
+    def __init__(self, cb, shas, expiration_seconds=3600):
+        body = {
+            "sha256": shas,
+            "expiration_seconds": expiration_seconds,
+        }
+
+        url = self.urlobject.format(cb.credentials.org_key)
+        item = cb.post_object(url, body).json()
+
+        super(Downloads, self).__init__(cb, model_unique_id=None,
+                                        initial_data=item, force_init=False,
+                                        full_doc=True)
+
+    @property
+    def found(self):
+        """Returns a list of :py:class:`Downloads.FoundItem`, one
+        for each binary found in the binary store.
+        """
+        return [Downloads.FoundItem(self._cb, item) for item in self._info["found"]]

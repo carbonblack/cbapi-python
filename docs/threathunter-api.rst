@@ -85,3 +85,11 @@ Models
 .. autoclass:: cbapi.psc.threathunter.models.ReportSeverity
     :members:
     :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.models.Binary
+    :members:
+    :inherited-members:
+
+.. autoclass:: cbapi.psc.threathunter.models.Downloads
+    :members:
+    :inherited-members:

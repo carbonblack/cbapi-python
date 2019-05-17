@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 default_profile = {
     "url": None,
     "token": None,
+    "org_key": None,
 
     "ssl_verify": "True",
     "ssl_verify_hostname": "True",
