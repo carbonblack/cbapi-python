@@ -61,7 +61,7 @@ class CbThreatHunterAPI(BaseAPI):
         :rtype: str
         """
         args = {"query": query}
-        resp = self.get_object("/threathunter/feedmgr/v1/query/translate", query_parameters=args)
+        resp = self.post_object("/threathunter/feedmgr/v2/query/translate", args).json()
 
         return resp.get("query")
 
