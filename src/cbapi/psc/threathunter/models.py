@@ -90,6 +90,12 @@ class Process(UnrefreshableModelMixin):
         :return: Returns a list of process objects
         :rtype: list of :py:class:`Process`
         """
+        # NOTE: If this process was created from a tree query, then it might
+        # already have its child information contained within.
+        if "children" in self._info:
+            return [Process(self._cb, initial_data=child) for child in self._info["children"]]
+        if not self.process_guid:
+            raise ApiError("children() requires a process with a process GUID")
         return self.tree().children
 
     @property
@@ -158,7 +164,7 @@ class Tree(UnrefreshableModelMixin):
     """The preferred interface for interacting with Tree models
     is ``Process.tree()``.
     """
-    urlobject = '/pscr/query/v2/tree'
+    urlobject = '/threathunter/search/v1/orgs/{}/processes/tree'
     primary_key = 'process_guid'
 
     @classmethod

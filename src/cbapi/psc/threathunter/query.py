@@ -498,7 +498,8 @@ class TreeQuery(BaseQuery):
 
         log.debug("Fetching process tree")
 
-        results = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+        url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
+        results = self._cb.get_object(url, query_parameters=self._args)
 
         while results["incomplete_results"]:
             result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
