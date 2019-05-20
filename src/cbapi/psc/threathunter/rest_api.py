@@ -1,6 +1,7 @@
 from cbapi.psc.threathunter.query import Query
 from cbapi.connection import BaseAPI
 from cbapi.psc.threathunter.models import ReportSeverity
+from cbapi.errors import CredentialError
 import logging
 
 log = logging.getLogger(__name__)
@@ -20,6 +21,9 @@ class CbThreatHunterAPI(BaseAPI):
     def __init__(self, *args, **kwargs):
         super(CbThreatHunterAPI, self).__init__(product_name="psc", *args, **kwargs)
         self._lr_scheduler = None
+
+        if not self.credentials.get("org_key", None):
+            raise CredentialError("No organization key specified")
 
     def _perform_query(self, cls, **kwargs):
         if hasattr(cls, "_query_implementation"):
