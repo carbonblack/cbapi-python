@@ -28,7 +28,7 @@ class Process(UnrefreshableModelMixin):
     """
     default_sort = 'last_update desc'
     primary_key = "process_guid"
-    validation_url = "/pscr/query/v1/validate"
+    validation_url = "/threathunter/search/v1/orgs/{}/processes/search_validation"
 
     @classmethod
     def _query_implementation(cls, cb):
