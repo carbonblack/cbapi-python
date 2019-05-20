@@ -297,7 +297,8 @@ class Query(PaginatedQuery):
         still_querying = True
 
         while still_querying:
-            resp = self._cb.post_object(self._doc_class.urlobject, body=args)
+            url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
+            resp = self._cb.post_object(url, body=args)
             result = resp.json()
 
             self._total_results = result.get("response_header", {}).get("num_found", 0)

@@ -140,8 +140,8 @@ class Event(UnrefreshableModelMixin):
     """Events can be queried for via ``CbThreatHunterAPI.select``
     or though an already selected process with ``Process.events()``.
     """
-    urlobject = '/pscr/query/v1/events'
-    validation_url = '/pscr/query/v1/events/validate'
+    urlobject = '/threathunter/search/v1/orgs/{}/events/_search'
+    validation_url = '/threathunter/search/v1/orgs/{}/events/search_validation'
     default_sort = 'last_update desc'
     primary_key = "process_guid"
 
