@@ -800,7 +800,10 @@ class Watchlist(FeedModel):
         """
         self.validate()
 
-        new_info = self._cb.post_object("/threathunter/watchlistmgr/v2/watchlist", self._info).json()
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists".format(
+            self._cb.credentials.org_key
+        )
+        new_info = self._cb.post_object(url, self._info).json()
         self._info.update(new_info)
         return self
 
@@ -834,7 +837,11 @@ class Watchlist(FeedModel):
 
         self.validate()
 
-        new_info = self._cb.put_object("/threathunter/watchlistmgr/v2/watchlist/{}".format(self.id), self._info).json()
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        new_info = self._cb.put_object(url, self._info).json()
         self._info.update(new_info)
 
     @property
@@ -858,7 +865,11 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}".format(self.id))
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.delete_object(url)
 
     def enable_alerts(self):
         """Enable alerts for this watchlist. Alerts are not retroactive.
@@ -868,7 +879,11 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/alert".format(self.id), None)
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}/alert".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.put_object(url, None)
 
     def disable_alerts(self):
         """Disable alerts for this watchlist.
@@ -878,7 +893,11 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}/alert".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.delete_object(url)
 
     def enable_tags(self):
         """Enable tagging for this watchlist.
@@ -888,7 +907,11 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id), None)
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}/tag".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.put_object(url, None)
 
     def disable_tags(self):
         """Disable tagging for this watchlist.
@@ -898,7 +921,11 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}/tag".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.delete_object(url)
 
     @property
     def feed(self):
@@ -933,9 +960,11 @@ class Watchlist(FeedModel):
         if not self.report_ids:
             return []
 
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}"
         reports_ = []
         for rep_id in self.report_ids:
-            resp = self._cb.get_object("/threathunter/watchlistmgr/v1/report/{}".format(rep_id))
+            url = url.format(self._cb.credentials.org_key, rep_id)
+            resp = self._cb.get_object(url)
             reports_.append(Report(self._cb, initial_data=resp, from_watchlist=True))
 
         return reports_
