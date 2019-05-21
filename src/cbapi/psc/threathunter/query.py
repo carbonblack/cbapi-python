@@ -527,7 +527,8 @@ class FeedQuery(SimpleQuery):
     @property
     def results(self):
         log.debug("Fetching all feeds")
-        resp = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+        url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
+        resp = self._cb.get_object(url, query_parameters=self._args)
         results = resp.get("results", [])
         return [self._doc_class(self._cb, initial_data=item) for item in results]
 
@@ -557,7 +558,11 @@ class ReportQuery(SimpleQuery):
         feed_id = self._args["feed_id"]
 
         log.debug("Fetching all reports")
-        resp = self._cb.get_object(self._doc_class.urlobject.format(feed_id))
+        url = self._doc_class.urlobject.format(
+            self._cb.credentials.org_key,
+            feed_id,
+        )
+        resp = self._cb.get_object(url)
         results = resp.get("results", [])
         return [self._doc_class(self._cb, initial_data=item, feed_id=feed_id) for item in results]
 

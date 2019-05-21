@@ -53,7 +53,10 @@ class CbThreatHunterAPI(BaseAPI):
         :rtype: bool
         """
         args = {"q": query}
-        resp = self.get_object("/pscr/query/v1/validate", query_parameters=args)
+        url = "/threathunter/search/v1/orgs/{}/processes/search_validation".format(
+            self.credentials.org_key
+        )
+        resp = self.get_object(url, query_parameters=args)
 
         return resp.get("valid", False)
 
@@ -76,7 +79,10 @@ class CbThreatHunterAPI(BaseAPI):
         :rtype: list[:py:class:`ReportSeverity`]
         """
         # TODO(ww): There's probably a better place to put this.
-        resp = self.get_object("/threathunter/watchlistmgr/v1/severity")
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/severity".format(
+            self.credentials.org_key
+        )
+        resp = self.get_object(url)
         items = resp.get("results", [])
         return [self.create(ReportSeverity, item) for item in items]
 
@@ -87,7 +93,10 @@ class CbThreatHunterAPI(BaseAPI):
         :return: a list of query ids
         :rtype: list(str)
         """
-        ids = self.get_object("/pscr/query/v1/list")
+        url = "/threathunter/search/v1/orgs/{}/processes/search_jobs".format(
+            self.credentials.org_key
+        )
+        ids = self.get_object(url)
         return ids.get("query_ids", [])
 
     def limits(self):
@@ -101,4 +110,7 @@ class CbThreatHunterAPI(BaseAPI):
         :return: a dict of limiting information
         :rtype: dict(str, str)
         """
-        return self.get_object("/pscr/query/v1/limits")
+        url = "/threathunter/search/v1/orgs/{}/processes/limits".format(
+            self.credentials.org_key
+        )
+        return self.get_object(url)
