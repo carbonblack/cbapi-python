@@ -35,9 +35,32 @@ class Process(UnrefreshableModelMixin):
         # This will emulate a synchronous process query, for now.
         return AsyncProcessQuery(cls, cb)
 
-    def __init__(self, cb,  model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         super(Process, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                       force_init=force_init, full_doc=full_doc)
+
+    def _summary(self):
+        url = "/threathunter/search/v1/orgs/{}/processes/summary".format(
+            self._cb.credentials.org_key
+        )
+        summary = self._cb.get_object(
+            url, query_parameters={"process_guid": self.process_guid}
+        )
+
+        siblings = set(summary["siblings"])
+        children = set(summary["children"])
+
+        while summary["incomplete_results"]:
+            log.debug("summary incomplete, requesting again")
+            more_summary = self._cb.get_object(
+                url, query_parameters={"process_guid": self.process_guid}
+            )
+            siblings.update(more_summary["siblings"])
+            children.update(more_summary["children"])
+
+        summary["siblings"] = list(siblings)
+        summary["children"] = list(children)
+        return summary
 
     def events(self, **kwargs):
         """Returns a query for events associated with this process's process GUID.
@@ -90,19 +113,24 @@ class Process(UnrefreshableModelMixin):
         :return: Returns a list of process objects
         :rtype: list of :py:class:`Process`
         """
-        # NOTE: If this process was created from a tree query, then it might
-        # already have its child information contained within.
-        if "children" in self._info:
-            return [Process(self._cb, initial_data=child) for child in self._info["children"]]
-        if not self.process_guid:
-            raise ApiError("children() requires a process with a process GUID")
-        return self.tree().children
+        summary = self._summary()
+        return [
+            Process(self._cb, initial_data=child)
+            for child in summary["children"]
+        ]
 
     @property
     def siblings(self):
-        # NOTE(ww): This shold be provided by the /tree endpoint eventually,
-        # but currently isn't.
-        raise ApiError("siblings() unimplemented")
+        """Returns a list of sibling processes for this process.
+
+        :return: Returns a list of process objects
+        :rtype: list of :py:class:`Process`
+        """
+        summary = self._summary()
+        return [
+            Process(self._cb, initial_data=sibling)
+            for sibling in summary["siblings"]
+        ]
 
     @property
     def process_md5(self):
