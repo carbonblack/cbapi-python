@@ -30,6 +30,36 @@ class Process(UnrefreshableModelMixin):
     primary_key = "process_guid"
     validation_url = "/threathunter/search/v1/orgs/{}/processes/search_validation"
 
+    class Summary(UnrefreshableModelMixin):
+        """Represents a summary of organization-specific information for
+        a process.
+        """
+        default_sort = "last_update desc"
+        primary_key = "process_guid"
+        urlobject_single = "/threathunter/search/v1/orgs/{}/processes/summary"
+
+        def __init__(self, cb, model_unique_id):
+            url = self.urlobject_single.format(cb.credentials.org_key)
+            summary = cb.get_object(url, query_parameters={"process_guid": model_unique_id})
+
+            siblings = set(summary["siblings"])
+            children = set(summary["children"])
+
+            while summary["incomplete_results"]:
+                log.debug("summary incomplete, requesting again")
+                more_summary = self._cb.get_object(
+                    url, query_parameters={"process_guid": self.process_guid}
+                )
+                siblings.update(more_summary["siblings"])
+                children.update(more_summary["children"])
+
+            summary["siblings"] = list(siblings)
+            summary["children"] = list(children)
+
+            super(Process.Summary, self).__init__(cb, model_unique_id=model_unique_id,
+                                                  initial_data=summary, force_init=False,
+                                                  full_doc=True)
+
     @classmethod
     def _query_implementation(cls, cb):
         # This will emulate a synchronous process query, for now.
@@ -39,28 +69,11 @@ class Process(UnrefreshableModelMixin):
         super(Process, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                       force_init=force_init, full_doc=full_doc)
 
-    def _summary(self):
-        url = "/threathunter/search/v1/orgs/{}/processes/summary".format(
-            self._cb.credentials.org_key
-        )
-        summary = self._cb.get_object(
-            url, query_parameters={"process_guid": self.process_guid}
-        )
-
-        siblings = set(summary["siblings"])
-        children = set(summary["children"])
-
-        while summary["incomplete_results"]:
-            log.debug("summary incomplete, requesting again")
-            more_summary = self._cb.get_object(
-                url, query_parameters={"process_guid": self.process_guid}
-            )
-            siblings.update(more_summary["siblings"])
-            children.update(more_summary["children"])
-
-        summary["siblings"] = list(siblings)
-        summary["children"] = list(children)
-        return summary
+    @property
+    def summary(self):
+        """Returns organization-specific information about this process.
+        """
+        return self._cb.select(Process.Summary, self.process_guid)
 
     def events(self, **kwargs):
         """Returns a query for events associated with this process's process GUID.
@@ -82,7 +95,8 @@ class Process(UnrefreshableModelMixin):
         return query
 
     def tree(self):
-        """Returns a :py:class:`Tree` of children (and possibly siblings) associated with this process.
+        """Returns a :py:class:`Tree` of children (and possibly siblings)
+        associated with this process.
 
         :return: Returns a :py:class:`Tree` object
         :rtype: :py:class:`Tree`
@@ -113,10 +127,9 @@ class Process(UnrefreshableModelMixin):
         :return: Returns a list of process objects
         :rtype: list of :py:class:`Process`
         """
-        summary = self._summary()
         return [
             Process(self._cb, initial_data=child)
-            for child in summary["children"]
+            for child in self.summary.children
         ]
 
     @property
@@ -126,10 +139,9 @@ class Process(UnrefreshableModelMixin):
         :return: Returns a list of process objects
         :rtype: list of :py:class:`Process`
         """
-        summary = self._summary()
         return [
             Process(self._cb, initial_data=sibling)
-            for sibling in summary["siblings"]
+            for sibling in self.summary.siblings
         ]
 
     @property
@@ -1021,6 +1033,9 @@ class Binary(UnrefreshableModelMixin):
     urlobject_single = "/ubs/v1/orgs/{}/sha256/{}/metadata"
 
     class Summary(UnrefreshableModelMixin):
+        """Represents a summary of organization-specific information
+        for a retrievable binary.
+        """
         primary_key = "sha256"
         urlobject_single = "/ubs/v1/orgs/{}/sha256/{}/summary/device"
 
