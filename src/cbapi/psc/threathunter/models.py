@@ -28,16 +28,52 @@ class Process(UnrefreshableModelMixin):
     """
     default_sort = 'last_update desc'
     primary_key = "process_guid"
-    validation_url = "/pscr/query/v1/validate"
+    validation_url = "/threathunter/search/v1/orgs/{}/processes/search_validation"
+
+    class Summary(UnrefreshableModelMixin):
+        """Represents a summary of organization-specific information for
+        a process.
+        """
+        default_sort = "last_update desc"
+        primary_key = "process_guid"
+        urlobject_single = "/threathunter/search/v1/orgs/{}/processes/summary"
+
+        def __init__(self, cb, model_unique_id):
+            url = self.urlobject_single.format(cb.credentials.org_key)
+            summary = cb.get_object(url, query_parameters={"process_guid": model_unique_id})
+
+            siblings = set(summary["siblings"])
+            children = set(summary["children"])
+
+            while summary["incomplete_results"]:
+                log.debug("summary incomplete, requesting again")
+                more_summary = self._cb.get_object(
+                    url, query_parameters={"process_guid": self.process_guid}
+                )
+                siblings.update(more_summary["siblings"])
+                children.update(more_summary["children"])
+
+            summary["siblings"] = list(siblings)
+            summary["children"] = list(children)
+
+            super(Process.Summary, self).__init__(cb, model_unique_id=model_unique_id,
+                                                  initial_data=summary, force_init=False,
+                                                  full_doc=True)
 
     @classmethod
     def _query_implementation(cls, cb):
         # This will emulate a synchronous process query, for now.
         return AsyncProcessQuery(cls, cb)
 
-    def __init__(self, cb,  model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         super(Process, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                       force_init=force_init, full_doc=full_doc)
+
+    @property
+    def summary(self):
+        """Returns organization-specific information about this process.
+        """
+        return self._cb.select(Process.Summary, self.process_guid)
 
     def events(self, **kwargs):
         """Returns a query for events associated with this process's process GUID.
@@ -59,7 +95,8 @@ class Process(UnrefreshableModelMixin):
         return query
 
     def tree(self):
-        """Returns a :py:class:`Tree` of children (and possibly siblings) associated with this process.
+        """Returns a :py:class:`Tree` of children (and possibly siblings)
+        associated with this process.
 
         :return: Returns a :py:class:`Tree` object
         :rtype: :py:class:`Tree`
@@ -90,13 +127,22 @@ class Process(UnrefreshableModelMixin):
         :return: Returns a list of process objects
         :rtype: list of :py:class:`Process`
         """
-        return self.tree().children
+        return [
+            Process(self._cb, initial_data=child)
+            for child in self.summary.children
+        ]
 
     @property
     def siblings(self):
-        # NOTE(ww): This shold be provided by the /tree endpoint eventually,
-        # but currently isn't.
-        raise ApiError("siblings() unimplemented")
+        """Returns a list of sibling processes for this process.
+
+        :return: Returns a list of process objects
+        :rtype: list of :py:class:`Process`
+        """
+        return [
+            Process(self._cb, initial_data=sibling)
+            for sibling in self.summary.siblings
+        ]
 
     @property
     def process_md5(self):
@@ -140,8 +186,8 @@ class Event(UnrefreshableModelMixin):
     """Events can be queried for via ``CbThreatHunterAPI.select``
     or though an already selected process with ``Process.events()``.
     """
-    urlobject = '/pscr/query/v1/events'
-    validation_url = '/pscr/query/v1/events/validate'
+    urlobject = '/threathunter/search/v1/orgs/{}/events/_search'
+    validation_url = '/threathunter/search/v1/orgs/{}/events/search_validation'
     default_sort = 'last_update desc'
     primary_key = "process_guid"
 
@@ -158,7 +204,7 @@ class Tree(UnrefreshableModelMixin):
     """The preferred interface for interacting with Tree models
     is ``Process.tree()``.
     """
-    urlobject = '/pscr/query/v2/tree'
+    urlobject = '/threathunter/search/v1/orgs/{}/processes/tree'
     primary_key = 'process_guid'
 
     @classmethod
@@ -182,8 +228,8 @@ class Tree(UnrefreshableModelMixin):
 class Feed(FeedModel):
     """Represents a ThreatHunter feed's metadata.
     """
-    urlobject = "/threathunter/feedmgr/v1/feed"
-    urlobject_single = "/threathunter/feedmgr/v1/feed/{}"
+    urlobject = "/threathunter/feedmgr/v2/orgs/{}/feeds"
+    urlobject_single = "/threathunter/feedmgr/v2/orgs/{}/feeds/{}"
     primary_key = "id"
     swagger_meta_file = "psc/threathunter/models/feed.yaml"
 
@@ -203,7 +249,10 @@ class Feed(FeedModel):
             else:
                 item = initial_data
         elif model_unique_id:
-            resp = cb.get_object(self.urlobject_single.format(model_unique_id))
+            url = self.urlobject_single.format(
+                cb.credentials.org_key, model_unique_id
+            )
+            resp = cb.get_object(url)
             item = resp.get("feedinfo", {})
             reports = resp.get("reports", [])
 
@@ -214,9 +263,10 @@ class Feed(FeedModel):
 
         self._reports = [Report(cb, initial_data=report, feed_id=feed_id) for report in reports]
 
-    def save(self):
+    def save(self, public=False):
         """Saves this feed on the ThreatHunter server.
 
+        :param public:  Whether to make the feed publicly available
         :return: The saved feed
         :rtype: :py:class:`Feed`
         """
@@ -227,7 +277,13 @@ class Feed(FeedModel):
             'reports': [report._info for report in self._reports],
         }
 
-        new_info = self._cb.post_object("/threathunter/feedmgr/v1/feed", body).json()
+        url = "/threathunter/feedmgr/v2/orgs/{}/feeds".format(
+            self._cb.credentials.org_key
+        )
+        if public:
+            url = url + "/public"
+
+        new_info = self._cb.post_object(url, body).json()
         self._info.update(new_info)
         return self
 
@@ -255,7 +311,11 @@ class Feed(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing feed ID")
 
-        self._cb.delete_object("/threathunter/feedmgr/v1/feed/{}".format(self.id))
+        url = "/threathunter/feedmgr/v2/orgs/{}/feeds/{}".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.delete_object(url)
 
     def update(self, **kwargs):
         """Update this feed's metadata with the given arguments.
@@ -276,7 +336,10 @@ class Feed(FeedModel):
 
         self.validate()
 
-        url = "/threathunter/feedmgr/v1/feed/{}/feedinfo".format(self.id)
+        url = "/threathunter/feedmgr/v2/orgs/{}/feeds/{}/feedinfo".format(
+            self._cb.credentials.org_key,
+            self.id,
+        )
         new_info = self._cb.put_object(url, self._info).json()
         self._info.update(new_info)
 
@@ -304,7 +367,11 @@ class Feed(FeedModel):
         rep_dicts = [report._info for report in reports]
         body = {"reports": rep_dicts}
 
-        self._cb.post_object("/threathunter/feedmgr/v1/feed/{}/report".format(self.id), body)
+        url = "/threathunter/feedmgr/v2/orgs/{}/feeds/{}/reports".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.post_object(url, body)
 
     def append_reports(self, reports):
         """Append the given reports to this feed's current reports.
@@ -320,13 +387,17 @@ class Feed(FeedModel):
         rep_dicts += [report._info for report in self.reports]
         body = {"reports": rep_dicts}
 
-        self._cb.post_object("/threathunter/feedmgr/v1/feed/{}/report".format(self.id), body)
+        url = "/threathunter/feedmgr/v2/orgs/{}/feeds/{}/reports".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.post_object(url, body)
 
 
 class Report(FeedModel):
     """Represents reports retrieved from a ThreatHunter feed.
     """
-    urlobject = "/threathunter/feedmgr/v1/feed/{}/report"
+    urlobject = "/threathunter/feedmgr/v2/orgs/{}/feeds/{}/reports"
     primary_key = "id"
     swagger_meta_file = "psc/threathunter/models/report.yaml"
 
@@ -372,7 +443,10 @@ class Report(FeedModel):
         # and delete() to the correct (watchlist) endpoints.
         self._from_watchlist = True
 
-        new_info = self._cb.post_object("/threathunter/watchlistmgr/v1/report", self._info).json()
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports".format(
+            self._cb.credentials.org_key
+        )
+        new_info = self._cb.post_object(url, self._info).json()
         self._info.update(new_info)
         return self
 
@@ -410,11 +484,18 @@ class Report(FeedModel):
             raise InvalidObjectError("missing Report ID")
 
         if self._from_watchlist:
-            url = "/threathunter/watchlistmgr/v1/report/{}".format(self.id)
+            url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}".format(
+                self._cb.credentials.org_key,
+                self.id
+            )
         else:
             if not self._feed_id:
                 raise InvalidObjectError("missing Feed ID")
-            url = "/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id)
+            url = "/threathunter/feedmgr/v2/orgs/{}/feeds/{}/reports/{}".format(
+                self._cb.credentials.org_key,
+                self._feed_id,
+                self.id
+            )
 
         for key, value in kwargs.items():
             if key in self._info:
@@ -441,11 +522,18 @@ class Report(FeedModel):
             raise InvalidObjectError("missing Report ID")
 
         if self._from_watchlist:
-            url = "/threathunter/watchlistmgr/v1/report/{}".format(self.id)
+            url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}".format(
+                self._cb.credentials.org_key,
+                self.id
+            )
         else:
             if not self._feed_id:
                 raise InvalidObjectError("missing Feed ID")
-            url = "/threathunter/feedmgr/v1/feed/{}/report/{}".format(self._feed_id, self.id)
+            url = "/threathunter/feedmgr/v2/orgs/{}/feeds/{}/reports/{}".format(
+                self._cb.credentials.org_key,
+                self._feed_id,
+                self.id
+            )
 
         self._cb.delete_object(url)
 
@@ -467,7 +555,11 @@ class Report(FeedModel):
         if not self._from_watchlist:
             raise InvalidObjectError("ignore status only applies to watchlist reports")
 
-        resp = self._cb.get_object("/threathunter/watchlistmgr/v1/report/{}/ignore".format(self.id))
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}/ignore".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        resp = self._cb.get_object(url)
         return resp["ignored"]
 
     def ignore(self):
@@ -483,7 +575,11 @@ class Report(FeedModel):
         if not self._from_watchlist:
             raise InvalidObjectError("ignoring only applies to watchlist reports")
 
-        self._cb.put_object("/threathunter/watchlistmgr/v1/report/{}/ignore".format(self.id), None)
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}/ignore".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.put_object(url, None)
 
     def unignore(self):
         """Removes the ignore status on this report.
@@ -498,7 +594,11 @@ class Report(FeedModel):
         if not self._from_watchlist:
             raise InvalidObjectError("ignoring only applies to watchlist reports")
 
-        self._cb.delete_object("/threathunter/watchlistmgr/v1/report/{}/ignore".format(self.id))
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}/ignore".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.delete_object(url)
 
     @property
     def custom_severity(self):
@@ -513,7 +613,11 @@ class Report(FeedModel):
         if self._from_watchlist:
             raise InvalidObjectError("watchlist reports don't have custom severities")
 
-        resp = self._cb.get_object("/threathunter/watchlistmgr/v1/severity/report/{}".format(self.id))
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}/severity".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        resp = self._cb.get_object(url)
         return ReportSeverity(self._cb, initial_data=resp)
 
     @custom_severity.setter
@@ -530,7 +634,10 @@ class Report(FeedModel):
         if self._from_watchlist:
             raise InvalidObjectError("watchlist reports don't have custom severities")
 
-        url = "/threathunter/watchlistmgr/v1/severity/report/{}".format(self.id)
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}/severity".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
 
         if sev_level is None:
             self._cb.delete_object(url)
@@ -652,7 +759,11 @@ class IOC_V2(FeedModel):
         if not self._report_id:
             raise InvalidObjectError("ignore status only applies to watchlist IOCs")
 
-        url = "/threathunter/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}/iocs/{}/ignore".format(
+            self._cb.credentials.org_key,
+            self._report_id,
+            self.id
+        )
         resp = self._cb.get_object(url)
         return resp["ignored"]
 
@@ -668,7 +779,11 @@ class IOC_V2(FeedModel):
         if not self._report_id:
             raise InvalidObjectError("ignoring only applies to watchlist IOCs")
 
-        url = "/threathunter/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}/iocs/{}/ignore".format(
+            self._cb.credentials.org_key,
+            self._report_id,
+            self.id
+        )
         self._cb.put_object(url, None)
 
     def unignore(self):
@@ -683,7 +798,11 @@ class IOC_V2(FeedModel):
         if not self._report_id:
             raise InvalidObjectError("ignoring only applies to watchlist IOCs")
 
-        url = "/threathunter/watchlistmgr/v1/report/{}/ioc/{}/ignore".format(self._report_id, self.id)
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}/iocs/{}/ignore".format(
+            self._cb.credentials.org_key,
+            self._report_id,
+            self.id
+        )
         self._cb.delete_object(url)
 
 
@@ -721,7 +840,10 @@ class Watchlist(FeedModel):
         """
         self.validate()
 
-        new_info = self._cb.post_object("/threathunter/watchlistmgr/v2/watchlist", self._info).json()
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists".format(
+            self._cb.credentials.org_key
+        )
+        new_info = self._cb.post_object(url, self._info).json()
         self._info.update(new_info)
         return self
 
@@ -755,7 +877,11 @@ class Watchlist(FeedModel):
 
         self.validate()
 
-        new_info = self._cb.put_object("/threathunter/watchlistmgr/v2/watchlist/{}".format(self.id), self._info).json()
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        new_info = self._cb.put_object(url, self._info).json()
         self._info.update(new_info)
 
     @property
@@ -779,7 +905,11 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}".format(self.id))
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.delete_object(url)
 
     def enable_alerts(self):
         """Enable alerts for this watchlist. Alerts are not retroactive.
@@ -789,7 +919,11 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/alert".format(self.id), None)
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}/alert".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.put_object(url, None)
 
     def disable_alerts(self):
         """Disable alerts for this watchlist.
@@ -799,7 +933,11 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}/alert".format(self.id))
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}/alert".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.delete_object(url)
 
     def enable_tags(self):
         """Enable tagging for this watchlist.
@@ -809,7 +947,11 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.put_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id), None)
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}/tag".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.put_object(url, None)
 
     def disable_tags(self):
         """Disable tagging for this watchlist.
@@ -819,7 +961,11 @@ class Watchlist(FeedModel):
         if not self.id:
             raise InvalidObjectError("missing Watchlist ID")
 
-        self._cb.delete_object("/threathunter/watchlistmgr/v1/watchlist/{}/tag".format(self.id))
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/watchlists/{}/tag".format(
+            self._cb.credentials.org_key,
+            self.id
+        )
+        self._cb.delete_object(url)
 
     @property
     def feed(self):
@@ -854,9 +1000,11 @@ class Watchlist(FeedModel):
         if not self.report_ids:
             return []
 
+        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}"
         reports_ = []
         for rep_id in self.report_ids:
-            resp = self._cb.get_object("/threathunter/watchlistmgr/v1/report/{}".format(rep_id))
+            url = url.format(self._cb.credentials.org_key, rep_id)
+            resp = self._cb.get_object(url)
             reports_.append(Report(self._cb, initial_data=resp, from_watchlist=True))
 
         return reports_
@@ -885,6 +1033,9 @@ class Binary(UnrefreshableModelMixin):
     urlobject_single = "/ubs/v1/orgs/{}/sha256/{}/metadata"
 
     class Summary(UnrefreshableModelMixin):
+        """Represents a summary of organization-specific information
+        for a retrievable binary.
+        """
         primary_key = "sha256"
         urlobject_single = "/ubs/v1/orgs/{}/sha256/{}/summary/device"
 

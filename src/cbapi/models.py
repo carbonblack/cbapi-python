@@ -210,7 +210,8 @@ class NewBaseModel(object):
         else:
             self._info = {}
 
-        self._info[self.__class__.primary_key] = model_unique_id
+        if model_unique_id is not None:
+            self._info[self.__class__.primary_key] = model_unique_id
 
         self._dirty_attributes = {}
         self._full_init = full_doc

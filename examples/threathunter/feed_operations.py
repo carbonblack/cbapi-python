@@ -95,7 +95,7 @@ def import_feed(cb, parser, args):
         imported["feedinfo"]["name"] = args.feedname
 
     feed = cb.create(Feed, imported)
-    feed.save()
+    feed.save(public=args.public)
 
 
 def delete_feed(cb, parser, args):
@@ -116,7 +116,9 @@ def import_report(cb, parser, args):
     imp_dict = json.loads(sys.stdin.read())
 
     reports = feed.reports
-    existing_report = next((report for report in reports if imp_dict["id"] == report.id), None)
+    existing_report = next(
+        (report for report in reports if imp_dict["id"] == report.id), None
+    )
 
     if existing_report:
         eprint("Report already exists; use replace-report.")
@@ -138,7 +140,9 @@ def replace_report(cb, parser, args):
     imported = json.loads(sys.stdin.read())
 
     reports = feed.reports
-    existing_report = next((report for report in reports if imported["id"] == report.id), None)
+    existing_report = next(
+        (report for report in reports if imported["id"] == report.id), None
+    )
 
     if existing_report:
         existing_report.update(**imported)
@@ -152,29 +156,60 @@ def main():
     commands = parser.add_subparsers(help="Feed commands", dest="command_name")
 
     list_command = commands.add_parser("list", help="List all configured feeds")
-    list_command.add_argument("-P", "--public", help="Include public feeds", action="store_true", default=False)
-    list_command.add_argument("-r", "--reports", help="Include reports for each feed", action="store_true", default=False)
-    list_command.add_argument("-i", "--iocs", help="Include IOCs for each feed's reports", action="store_true", default=False)
+    list_command.add_argument(
+        "-P",
+        "--public",
+        help="Include public feeds",
+        action="store_true",
+        default=False,
+    )
+    list_command.add_argument(
+        "-r",
+        "--reports",
+        help="Include reports for each feed",
+        action="store_true",
+        default=False,
+    )
+    list_command.add_argument(
+        "-i",
+        "--iocs",
+        help="Include IOCs for each feed's reports",
+        action="store_true",
+        default=False,
+    )
 
-    list_iocs_command = commands.add_parser("list-iocs", help="List all IOCs for a feed")
+    list_iocs_command = commands.add_parser(
+        "list-iocs", help="List all IOCs for a feed"
+    )
     specifier = list_iocs_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
 
-    export_command = commands.add_parser("export", help="Export a feed into an importable format")
+    export_command = commands.add_parser(
+        "export", help="Export a feed into an importable format"
+    )
     specifier = export_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
 
-    import_command = commands.add_parser("import", help="Import a previously exported feed")
-    import_command.add_argument("-f", "--feedname", type=str, help="Renames the imported feed")
+    import_command = commands.add_parser(
+        "import", help="Import a previously exported feed"
+    )
+    import_command.add_argument(
+        "-f", "--feedname", type=str, help="Renames the imported feed"
+    )
+    import_command.add_argument(
+        "-P", "--public", help="Make the feed public", action="store_true"
+    )
 
     del_command = commands.add_parser("delete", help="Delete feed")
     specifier = del_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
 
-    export_report_command = commands.add_parser("export-report", help="Export a feed's report into an importable format")
+    export_report_command = commands.add_parser(
+        "export-report", help="Export a feed's report into an importable format"
+    )
     specifier = export_report_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
@@ -182,12 +217,16 @@ def main():
     specifier.add_argument("-I", "--reportid", type=str, help="Report ID")
     specifier.add_argument("-r", "--reportname", type=str, help="Report Name")
 
-    import_report_command = commands.add_parser("import-report", help="Import a previously exported report")
+    import_report_command = commands.add_parser(
+        "import-report", help="Import a previously exported report"
+    )
     specifier = import_report_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
 
-    delete_report_command = commands.add_parser("delete-report", help="Delete a report from a feed")
+    delete_report_command = commands.add_parser(
+        "delete-report", help="Delete a report from a feed"
+    )
     specifier = delete_report_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")
@@ -195,7 +234,9 @@ def main():
     specifier.add_argument("-I", "--reportid", type=str, help="Report ID")
     specifier.add_argument("-r", "--reportname", type=str, help="Report Name")
 
-    replace_report_command = commands.add_parser("replace-report", help="Replace a feed's report")
+    replace_report_command = commands.add_parser(
+        "replace-report", help="Replace a feed's report"
+    )
     specifier = replace_report_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--id", type=str, help="Feed ID")
     specifier.add_argument("-f", "--feedname", type=str, help="Feed Name")

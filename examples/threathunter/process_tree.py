@@ -18,10 +18,10 @@ def main():
         sys.exit(1)
 
     tree = cb.select(Process).where(process_guid=args.p)[0].tree()
-
     for idx, child in enumerate(tree.children):
         print("Child #{}".format(idx))
         print("\tName: {}".format(child.process_name))
+        print("\tGUID: {}".format(child.process_guid))
         print("\tNumber of children: {}".format(len(child.children)))
 
 if __name__ == "__main__":
