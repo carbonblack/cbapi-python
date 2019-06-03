@@ -56,9 +56,9 @@ def main():
     else:
         events = list(cb.select(Event))
 
-	# print the column headers
-	print "Event Time|Event ID|Create Time|Event Type|Description|Command Line"
-	
+    # print the column headers
+    print("Event Time|Event ID|Create Time|Event Type|Description|Command Line")
+
     for event in events:
         # convert event and create times
         event_time = str(convert_time(event.createTime))
