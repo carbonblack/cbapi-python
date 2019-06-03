@@ -16,6 +16,7 @@ def main():
     parser.add_argument("--url", type=str, help="Feed provider url", required=True)
     parser.add_argument("--summary", type=str, help="Feed summary", required=True)
     parser.add_argument("--category", type=str, help="Feed category", required=True)
+    parser.add_argument("--source_label", type=str, help="Feed source label", required=True)
     parser.add_argument("--access", type=str, help="Feed access scope", default="private")
 
     # Report metadata arguments.

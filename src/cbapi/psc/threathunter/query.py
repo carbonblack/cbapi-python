@@ -274,7 +274,8 @@ class Query(PaginatedQuery):
         if not self._doc_class.validation_url:
             return
 
-        validated = self._cb.get_object(self._doc_class.validation_url, query_parameters=args)
+        url = self._doc_class.validation_url.format(self._cb.credentials.org_key)
+        validated = self._cb.get_object(url, query_parameters=args)
 
         if not validated.get("valid"):
             raise ApiError("Invalid query: {}: {}".format(args, validated["invalid_message"]))
@@ -296,7 +297,8 @@ class Query(PaginatedQuery):
         still_querying = True
 
         while still_querying:
-            resp = self._cb.post_object(self._doc_class.urlobject, body=args)
+            url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
+            resp = self._cb.post_object(url, body=args)
             result = resp.json()
 
             self._total_results = result.get("response_header", {}).get("num_found", 0)
@@ -357,7 +359,8 @@ class AsyncProcessQuery(Query):
         args = self._get_query_parameters()
         self._validate(args)
 
-        query_start = self._cb.post_object("/pscr/query/v1/start", body={"search_params": args})
+        url = "/threathunter/search/v1/orgs/{}/processes/search_jobs".format(self._cb.credentials.org_key)
+        query_start = self._cb.post_object(url, body={"search_params": args})
 
         self._query_token = query_start.json().get("query_id")
         self._timed_out = False
@@ -367,12 +370,11 @@ class AsyncProcessQuery(Query):
         if not self._query_token:
             self._submit()
 
-        args = {"query_id": self._query_token}
-
-        result = self._cb.get_object("/pscr/query/v1/status", query_parameters=args)
-
-        if result.get("status_code") != 200:
-            raise ServerError(result["status_code"], result["errorMessage"])
+        status_url = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}".format(
+            self._cb.credentials.org_key,
+            self._query_token,
+        )
+        result = self._cb.get_object(status_url)
 
         searchers_contacted = result.get("contacted", 0)
         searchers_completed = result.get("completed", 0)
@@ -397,9 +399,11 @@ class AsyncProcessQuery(Query):
         if self._timed_out:
             raise TimeoutError(message="user-specified timeout exceeded while waiting for results")
 
-        args = {"query_id": self._query_token, "row_count": 0}
-
-        result = self._cb.get_object("/pscr/query/v1/results", query_parameters=args)
+        result_url = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}/results".format(
+            self._cb.credentials.org_key,
+            self._query_token,
+        )
+        result = self._cb.get_object(result_url)
 
         self._total_results = result.get('response_header', {}).get('num_found', 0)
         self._count_valid = True
@@ -410,8 +414,6 @@ class AsyncProcessQuery(Query):
         if not self._query_token:
             self._submit()
 
-        query_id = {"query_id": self._query_token}
-
         while self._still_querying():
             time.sleep(.5)
 
@@ -420,15 +422,15 @@ class AsyncProcessQuery(Query):
 
         log.debug("Pulling results, timed_out={}".format(self._timed_out))
 
-        query_id["start_row"] = start
-        query_id["row_count"] = self._batch_size
-
         current = start
         rows_fetched = 0
         still_fetching = True
-
+        result_url = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}/results".format(
+            self._cb.credentials.org_key,
+            self._query_token,
+        )
         while still_fetching:
-            result = self._cb.get_object("/pscr/query/v1/results", query_parameters=query_id)
+            result = self._cb.get_object(result_url)
 
             self._total_results = result.get('response_header', {}).get('num_found', 0)
             self._count_valid = True
@@ -448,7 +450,6 @@ class AsyncProcessQuery(Query):
                 still_fetching = False
 
             log.debug("current: {}, total_results: {}".format(current, self._total_results))
-            query_id["start_row"] = current
 
 
 class TreeQuery(BaseQuery):
@@ -497,7 +498,8 @@ class TreeQuery(BaseQuery):
 
         log.debug("Fetching process tree")
 
-        results = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+        url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
+        results = self._cb.get_object(url, query_parameters=self._args)
 
         while results["incomplete_results"]:
             result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
@@ -525,7 +527,8 @@ class FeedQuery(SimpleQuery):
     @property
     def results(self):
         log.debug("Fetching all feeds")
-        resp = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+        url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
+        resp = self._cb.get_object(url, query_parameters=self._args)
         results = resp.get("results", [])
         return [self._doc_class(self._cb, initial_data=item) for item in results]
 
@@ -555,7 +558,11 @@ class ReportQuery(SimpleQuery):
         feed_id = self._args["feed_id"]
 
         log.debug("Fetching all reports")
-        resp = self._cb.get_object(self._doc_class.urlobject.format(feed_id))
+        url = self._doc_class.urlobject.format(
+            self._cb.credentials.org_key,
+            feed_id,
+        )
+        resp = self._cb.get_object(url)
         results = resp.get("results", [])
         return [self._doc_class(self._cb, initial_data=item, feed_id=feed_id) for item in results]
 
