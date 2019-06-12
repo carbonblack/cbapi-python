@@ -341,6 +341,16 @@ class AsyncProcessQuery(Query):
         self._sort_direction = "ASC"
 
     def sort_by(self, key, direction="ASC"):
+        """Sets the sorting behavior on a query's results.
+
+        Example::
+
+        >>> cb.select(Process).where(process_name="cmd.exe").sort_by("device_timestamp")
+
+        :param key: the key in the schema to sort by
+        :param direction: the sort order, either "ASC" or "DESC"
+        :rtype: :py:class:`AsyncProcessQuery`
+        """
         self._sort_by = key
         self._sort_direction = direction
         return self
