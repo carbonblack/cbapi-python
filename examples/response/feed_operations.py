@@ -48,9 +48,9 @@ def add_feed(cb, parser, args):
         f.password = args.password
 
     if args.cert:
-        f.ssl_client_crt = open(args.cert, "rb").read()
+        f.ssl_client_crt = open(args.cert, "r").read()
     if args.key:
-        f.ssl_client_key = open(args.key, "rb").read()
+        f.ssl_client_key = open(args.key, "r").read()
 
     if args.use_proxy:
         f.use_proxy = True
