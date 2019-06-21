@@ -64,7 +64,8 @@ def getTestResult(testname):
 
 class TestCbResponse(unittest.TestCase):
     def setUp(self):
-        requests_cache.install_cache(cache_file_name, allowable_methods=('GET', 'POST'), deny_outbound=use_golden)
+        requests_cache.install_cache(cache_file_name, allowable_methods=('GET', 'POST'), deny_outbound=use_golden,
+                                     ignored_parameters=["active_only"])
         if use_golden:
             #
             # We don't want to connect to a cbserver so using bogus values
