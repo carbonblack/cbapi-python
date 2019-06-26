@@ -1,20 +1,12 @@
 from __future__ import absolute_import
 from cbapi.errors import ApiError, InvalidObjectError
-from cbapi.models import NewBaseModel, CreatableModelMixin, MutableBaseModel
+from cbapi.models import CreatableModelMixin, MutableBaseModel, UnrefreshableModelMixin
 import logging
 from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, FeedQuery, ReportQuery, WatchlistQuery
 import validators
 import time
 
 log = logging.getLogger(__name__)
-
-
-class UnrefreshableModelMixin(NewBaseModel):
-    """Represents a model that can't be refreshed, i.e. for which ``reset()``
-    is not a valid operation.
-    """
-    def refresh(self):
-        raise ApiError("refresh() called on an unrefreshable model")
 
 
 class FeedModel(UnrefreshableModelMixin, CreatableModelMixin, MutableBaseModel):

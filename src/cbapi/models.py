@@ -14,7 +14,7 @@ from .response.utils import convert_from_cb, convert_to_cb
 import yaml
 import json
 import time
-from .errors import ServerError, InvalidObjectError
+from .errors import ApiError, ServerError, InvalidObjectError
 from .oldmodels import BaseModel
 import logging
 from datetime import datetime
@@ -338,6 +338,14 @@ class NewBaseModel(object):
             return None
 
         return self._cb.select(join_cls, field_value)
+
+
+class UnrefreshableModelMixin(NewBaseModel):
+    """Represents a model that can't be refreshed, i.e. for which ``reset()``
+    is not a valid operation.
+    """
+    def refresh(self):
+        raise ApiError("refresh() called on an unrefreshable model")
 
 
 class MutableBaseModel(NewBaseModel):
