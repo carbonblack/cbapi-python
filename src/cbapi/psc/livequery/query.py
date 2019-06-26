@@ -1,13 +1,14 @@
-from cbapi.query import PaginatedQuery
 from cbapi.errors import ApiError
+from cbapi.psc.livequery.models import Run
 import logging
 
 log = logging.getLogger(__name__)
 
 
-class Query(PaginatedQuery):
+class Query:
     def __init__(self, doc_class, cb):
-        super(Query, self).__init__(doc_class, cb)
+        self._doc_class = doc_class
+        self._cb = cb
         self._query_token = None
         self._query_body = {"device_filter": {}}
         self._device_filter = self._query_body["device_filter"]
@@ -30,7 +31,20 @@ class Query(PaginatedQuery):
         self._device_filter["policy_ids"] = policy_ids
         return self
 
-    def _submit(self):
-        if self._query_token is not None:
-            raise ApiError("Query already submitted: token {0}".format(self._query_token))
+    def where(self, sql):
+        self._query_body["sql"] = sql
+        return self
 
+    def submit(self):
+        if self._query_token is not None:
+            raise ApiError(
+                "Query already submitted: token {0}".format(self._query_token)
+            )
+
+        if "sql" not in self._query_body:
+            raise ApiError("Missing LiveQuery SQL")
+
+        url = self._doc_class.format(self._cb.credentials.org_key)
+        resp = self._cb.post_object(url, body=self._query_body)
+
+        return self._doc_class(self._cb, initial_data=resp.json())

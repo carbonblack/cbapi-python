@@ -1,5 +1,5 @@
 from cbapi.psc.livequery.query import Query
-from cbapi.psc.livequery.models import Result
+from cbapi.psc.livequery.models import Run
 from cbapi.connection import BaseAPI
 from cbapi.errors import CredentialError
 import logging
@@ -19,4 +19,4 @@ class CbLiveQueryAPI(BaseAPI):
         return Query(cls, self, **kwargs)
 
     def query(self, sql):
-        return self.select(Result).where(sql=sql)
+        return self.select(Run).where(sql=sql)

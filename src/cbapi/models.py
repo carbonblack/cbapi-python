@@ -340,7 +340,7 @@ class NewBaseModel(object):
         return self._cb.select(join_cls, field_value)
 
 
-class UnrefreshableModelMixin(NewBaseModel):
+class UnrefreshableModel(NewBaseModel):
     """Represents a model that can't be refreshed, i.e. for which ``reset()``
     is not a valid operation.
     """

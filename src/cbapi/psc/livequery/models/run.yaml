@@ -1,0 +1,86 @@
+type: object
+required: # TODO(ww): Find out which run fields are required
+  - id
+properties:
+  template_id:
+    type: string # NOTE(ww): This is a guess
+    description: Placeholder # TODO(ww): Needs description
+  org_key:
+    type: string
+    description: The organization key for this run
+  name:
+    type: string
+    description: The name of the LiveQuery run
+  id:
+    type: string
+    description: The run's unique ID
+  sql:
+    type: string
+    description: The LiveQuery query
+  created_by:
+    type: string
+    description: Placeholder # TODO(ww): Needs description
+  create_time:
+    type: string
+    description: When this run was created
+  status_update_time:
+    type: string
+    description: When the status of this run was last updated
+  timeout_time:
+    type: string
+    description: Placeholder # TODO(ww): Needs description
+  cancellation_time:
+    type: string
+    description: Placeholder # TODO(ww): Needs description
+  cancelled_by:
+    type: string # NOTE(ww): This is a guess
+    description: Placeholder # TODO(ww): Needs description
+  archive_time:
+    type: string
+    description: Placeholder # TODO(ww): Needs description
+  archived_by:
+    type: string # NOTE(ww): This is a guess
+    description: Placeholder # TODO(ww): Needs description
+  notify_on_finish:
+    type: boolean
+    description: Whether or not to send an email on query completion
+  active_org_devices:
+    type: integer
+    format: int32 # NOTE(ww): This is a guess
+    description: The number of devices active in the organization
+  status:
+    type: string
+    description: The run status
+  device_filter:
+    type: object
+    description: Any device filter rules associated with the run
+  schedule:
+    type: string # NOTE(ww): This is a guess
+    description: Placeholder # TODO(ww): Needs description
+  last_result_time:
+    type: string
+    description: When the most recent result for this run was reported
+  total_results:
+    type: integer
+    format: int32
+    description: Placeholder # TODO(ww): Needs description
+  match_count:
+    type: integer
+    format: int32 # NOTE(ww): This is a guess
+    description: Placeholder # TODO(ww): Needs description
+  no_match_count:
+    type: integer
+    format: int32 # NOTE(ww): This is a guess
+    description: Placeholder # TODO(ww): Needs description
+  error_count:
+    type: integer
+    format: int32 # NOTE(ww): This is a guess
+    description: Placeholder # TODO(ww): Needs description
+  not_supported_count:
+    type: integer
+    format: int32 # NOTE(ww): This is a guess
+    description: Placeholder # TODO(ww): Needs description
+  cancelled_count:
+    type: integer
+    format: int32 # NOTE(ww): This is a guess
+    description: Placeholder # TODO(ww): Needs description
