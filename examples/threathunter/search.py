@@ -16,11 +16,20 @@ def main():
     parser.add_argument("-c", help="show children for query results", action="store_true", default=False)
     parser.add_argument("-p", help="show parents for query results", action="store_true", default=False)
     parser.add_argument("-t", help="show tree for query results", action="store_true", default=False)
+    parser.add_argument("-S", type=str, help="sory by this field", required=False)
+    parser.add_argument("-D", help="return results in descending order", action="store_true")
 
     args = parser.parse_args()
     cb = get_cb_threathunter_object(args)
 
     processes = cb.select(Process).where(args.q)
+
+    direction = "ASC"
+    if args.D:
+        direction = "DESC"
+
+    if args.S:
+        processes.sort_by(args.S, direction=direction)
 
     print("Number of processes: {}".format(len(processes)))
 
@@ -31,7 +40,7 @@ def main():
         if args.f:
             print(process)
         else:
-            print("{}: {}".format(process.process_guid, process.process_sha256))
+            print("{} ({}): {}".format(process.process_name, process.process_guid, process.process_sha256))
 
         if args.e:
             print("=========== events ===========")

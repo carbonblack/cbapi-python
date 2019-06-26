@@ -337,6 +337,23 @@ class AsyncProcessQuery(Query):
         self._query_token = None
         self._timeout = 0
         self._timed_out = False
+        self._sort_by = None
+        self._sort_direction = "ASC"
+
+    def sort_by(self, key, direction="ASC"):
+        """Sets the sorting behavior on a query's results.
+
+        Example::
+
+        >>> cb.select(Process).where(process_name="cmd.exe").sort_by("device_timestamp")
+
+        :param key: the key in the schema to sort by
+        :param direction: the sort order, either "ASC" or "DESC"
+        :rtype: :py:class:`AsyncProcessQuery`
+        """
+        self._sort_by = key
+        self._sort_direction = direction
+        return self
 
     def timeout(self, msecs):
         """Sets the timeout on a process query.
@@ -429,8 +446,12 @@ class AsyncProcessQuery(Query):
             self._cb.credentials.org_key,
             self._query_token,
         )
+        query_parameters = {
+            "sort_by": self._sort_by,
+            "sort_direction": self._sort_direction,
+        }
         while still_fetching:
-            result = self._cb.get_object(result_url)
+            result = self._cb.get_object(result_url, query_parameters=query_parameters)
 
             self._total_results = result.get('response_header', {}).get('num_found', 0)
             self._count_valid = True
