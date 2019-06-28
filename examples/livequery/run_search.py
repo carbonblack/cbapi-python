@@ -7,7 +7,8 @@ from cbapi.psc.livequery.models import Result
 def main():
     parser = build_cli_parser("Search the results of a LiveQuery run")
     parser.add_argument("-i", "--id", type=str, required=True, help="Run ID")
-    parser.add_argument("-q", "--query", type=str, required=False, help="search query")
+    parser.add_argument("-q", "--query", type=str, required=False, help="Search query")
+    parser.add_argument("-F", "--fields_only", action="store_true", help="Show only fields")
 
     # TODO(ww): Flags for criteria, sort_by
 
@@ -19,7 +20,10 @@ def main():
         results = results.where(args.query)
 
     for result in results:
-        print(result)
+        if args.fields_only:
+            print(result.fields_)
+        else:
+            print(result)
 
 
 if __name__ == "__main__":
