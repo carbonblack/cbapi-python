@@ -44,7 +44,7 @@ class Query:
         if "sql" not in self._query_body:
             raise ApiError("Missing LiveQuery SQL")
 
-        url = self._doc_class.format(self._cb.credentials.org_key)
+        url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
         resp = self._cb.post_object(url, body=self._query_body)
 
         return self._doc_class(self._cb, initial_data=resp.json())
