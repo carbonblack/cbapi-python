@@ -1,6 +1,6 @@
 from __future__ import absolute_import
-from cbapi.errors import ApiError
 from cbapi.models import UnrefreshableModel, NewBaseModel
+from .query import RunQuery, ResultQuery
 import logging
 import time
 
@@ -30,6 +30,10 @@ class Run(NewBaseModel):
             full_doc=True,
         )
 
+    @classmethod
+    def _query_implementation(cls, cb):
+        return RunQuery(cls, cb)
+
     def _refresh(self):
         url = self.urlobject.format(self._cb.credentials.org_key, self.id)
         resp = self._cb.get_object(url)
@@ -41,3 +45,17 @@ class Run(NewBaseModel):
 class Result(UnrefreshableModel):
     primary_key = "id"
     swagger_meta_file = "psc/livequery/models/result.yaml"
+    urlobject = "/livequery/v1/orgs/{}/runs/{}/results/_search"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return ResultQuery(cls, cb)
+
+    def __init__(self, cb, initial_data):
+        super(Result, self).__init__(
+            cb,
+            model_unique_id=initial_data["id"],
+            initial_data=initial_data,
+            force_init=False,
+            full_doc=True,
+        )
