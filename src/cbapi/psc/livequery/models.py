@@ -47,6 +47,38 @@ class Result(UnrefreshableModel):
     swagger_meta_file = "psc/livequery/models/result.yaml"
     urlobject = "/livequery/v1/orgs/{}/runs/{}/results/_search"
 
+    class Device(UnrefreshableModel):
+        primary_key = "id"
+
+        def __init__(self, cb, initial_data):
+            super(Result.Device, self).__init__(
+                cb,
+                model_unique_id=initial_data["id"],
+                initial_data=initial_data,
+                force_init=False,
+                full_doc=True,
+            )
+
+    class Fields(UnrefreshableModel):
+        def __init__(self, cb, initial_data):
+            super(Result.Fields, self).__init__(
+                cb,
+                model_unique_id=None,
+                initial_data=initial_data,
+                force_init=False,
+                full_doc=True,
+            )
+
+    class Metrics(UnrefreshableModel):
+        def __init__(self, cb, initial_data):
+            super(Result.Metrics, self).__init__(
+                cb,
+                model_unique_id=None,
+                initial_data=initial_data,
+                force_init=False,
+                full_doc=True,
+            )
+
     @classmethod
     def _query_implementation(cls, cb):
         return ResultQuery(cls, cb)
@@ -59,3 +91,18 @@ class Result(UnrefreshableModel):
             force_init=False,
             full_doc=True,
         )
+        self._device = Result.Device(cb, initial_data=initial_data["device"])
+        self._fields = Result.Fields(cb, initial_data=initial_data["fields"])
+        self._metrics = Result.Metrics(cb, initial_data=initial_data["metrics"])
+
+    @property
+    def device_(self):
+        return self._device
+
+    @property
+    def fields_(self):
+        return self._fields
+
+    @property
+    def metrics_(self):
+        return self._metrics

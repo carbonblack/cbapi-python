@@ -212,6 +212,14 @@ class RunQuery(LiveQueryBase):
         self._query_body["sql"] = sql
         return self
 
+    def name(self, name):
+        self._query_body["name"] = name
+        return self
+
+    def notify_on_finish(self):
+        self._query_body["notify_on_finish"] = True
+        return self
+
     def submit(self):
         if self._query_token is not None:
             raise ApiError(
