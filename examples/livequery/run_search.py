@@ -32,8 +32,15 @@ def main():
         required=False,
         help="Policy IDs to filter on",
     )
-
-    # TODO(ww): Flags for criteria, sort_by
+    parser.add_argument(
+        "-S", "--sort_by", type=str, help="sory by this field", required=False
+    )
+    parser.add_argument(
+        "-D",
+        "--descending_results",
+        help="return results in descending order",
+        action="store_true",
+    )
 
     args = parser.parse_args()
     cb = get_cb_livequery_object(args)
@@ -48,6 +55,12 @@ def main():
         results.criteria(device_types=args.device_types)
     if args.policy_ids:
         results.criteria(policy_ids=args.policy_ids)
+
+    if args.sort_by:
+        direction = "ASC"
+        if args.descending_results:
+            direction = "DESC"
+        results.sort_by(args.sort_by, direction=direction)
 
     for result in results:
         if args.fields_only:
