@@ -7,6 +7,16 @@ log = logging.getLogger(__name__)
 
 
 class CbLiveQueryAPI(BaseAPI):
+    """The main entry point into the Cb PSC LiveQuery API.
+
+    :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server.
+        Uses the profile named 'default' when not specified.
+
+    Usage::
+
+    >>> from cbapi.psc.livequery import CbLiveQueryAPI
+    >>> cb = CbLiveQueryAPI(profile="production")
+    """
     def __init__(self, *args, **kwargs):
         super(CbLiveQueryAPI, self).__init__(product_name="psc", *args, **kwargs)
         self._lr_scheduler = None
