@@ -144,12 +144,20 @@ class QueryBuilder(object):
 
 
 class LiveQueryBase:
+    """
+    Represents the base of all LiveQuery query classes.
+    """
+
     def __init__(self, doc_class, cb):
         self._doc_class = doc_class
         self._cb = cb
 
 
 class IterableQueryMixin:
+    """
+    A mix-in to provide iterability to a query.
+    """
+
     def all(self):
         return self._perform_query()
 
@@ -184,6 +192,11 @@ class IterableQueryMixin:
 
 
 class RunQuery(LiveQueryBase):
+    """
+    Represents a query that either creates or retrieves the
+    status of a LiveQuery run.
+    """
+
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
         self._query_token = None
@@ -191,36 +204,79 @@ class RunQuery(LiveQueryBase):
         self._device_filter = self._query_body["device_filter"]
 
     def device_ids(self, device_ids):
+        """
+        Restricts the devices that this LiveQuery run is performed on
+        to the given IDs.
+
+        :param device_ids: list of ints
+        :return: This instance
+        """
         if not all(isinstance(device_id, int) for device_id in device_ids):
             raise ApiError("One or more invalid device IDs")
         self._device_filter["device_ids"] = device_ids
         return self
 
     def device_types(self, device_types):
+        """
+        Restricts the devices that this LiveQuery run is performed on
+        to the given device types.
+
+        :param device_types: list of strs
+        :return: This instance
+        """
         if not all(isinstance(device_type, str) for device_type in device_types):
             raise ApiError("One or more invalid device types")
         self._device_filter["device_types"] = device_types
         return self
 
     def policy_ids(self, policy_ids):
+        """
+        Restricts this LiveQuery run to the given policy IDs.
+
+        :param policy_ids: list of ints
+        :return: This instance
+        """
         if not all(isinstance(policy_id, int) for policy_id in policy_ids):
             raise ApiError("One or more invalid policy IDs")
         self._device_filter["policy_ids"] = policy_ids
         return self
 
     def where(self, sql):
+        """
+        Sets this LiveQuery run's underlying SQL.
+
+        :param sql: The SQL to execute
+        :return: This instance
+        """
         self._query_body["sql"] = sql
         return self
 
     def name(self, name):
+        """
+        Sets this LiveQuery run's name. If no name is explicitly set,
+        the run is named after its SQL.
+
+        :param name: The run name
+        :return: This instance
+        """
         self._query_body["name"] = name
         return self
 
     def notify_on_finish(self):
+        """
+        Sets the notify-on-finish flag on this LiveQuery run.
+
+        :return: This instance
+        """
         self._query_body["notify_on_finish"] = True
         return self
 
     def submit(self):
+        """
+        Submits this LiveQuery run.
+
+        :return: A new ``Run`` instance containing the run's status
+        """
         if self._query_token is not None:
             raise ApiError(
                 "Query already submitted: token {0}".format(self._query_token)

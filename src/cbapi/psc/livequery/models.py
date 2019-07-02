@@ -8,6 +8,16 @@ log = logging.getLogger(__name__)
 
 
 class Run(NewBaseModel):
+    """
+    Represents a LiveQuery run.
+
+    Example::
+
+    >>> run = cb.select(Run, run_id)
+    >>> print(run.name, run.sql, run.create_time)
+    >>> print(run.status, run.match_count)
+    >>> run.refresh()
+    """
     primary_key = "id"
     swagger_meta_file = "psc/livequery/models/run.yaml"
     urlobject = "/livequery/v1/orgs/{}/runs"
@@ -43,11 +53,17 @@ class Run(NewBaseModel):
 
 
 class Result(UnrefreshableModel):
+    """
+    Represents a single result from a LiveQuery ``Run``.
+    """
     primary_key = "id"
     swagger_meta_file = "psc/livequery/models/result.yaml"
     urlobject = "/livequery/v1/orgs/{}/runs/{}/results/_search"
 
     class Device(UnrefreshableModel):
+        """
+        Represents device information for a result.
+        """
         primary_key = "id"
 
         def __init__(self, cb, initial_data):
@@ -60,6 +76,9 @@ class Result(UnrefreshableModel):
             )
 
     class Fields(UnrefreshableModel):
+        """
+        Represents the fields of a result.
+        """
         def __init__(self, cb, initial_data):
             super(Result.Fields, self).__init__(
                 cb,
@@ -70,6 +89,9 @@ class Result(UnrefreshableModel):
             )
 
     class Metrics(UnrefreshableModel):
+        """
+        Represents the metrics for a result.
+        """
         def __init__(self, cb, initial_data):
             super(Result.Metrics, self).__init__(
                 cb,
@@ -97,12 +119,21 @@ class Result(UnrefreshableModel):
 
     @property
     def device_(self):
+        """
+        Returns the reified ``Result.Device`` for this result.
+        """
         return self._device
 
     @property
     def fields_(self):
+        """
+        Returns the reified ``Result.Fields`` for this result.
+        """
         return self._fields
 
     @property
     def metrics_(self):
+        """
+        Returns the reified ``Result.Metrics`` for this result.
+        """
         return self._metrics
