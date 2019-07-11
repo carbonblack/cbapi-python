@@ -26,11 +26,11 @@ def main():
         help="Device types to filter on",
     )
     parser.add_argument(
-        "--policy_ids",
+        "--statuses",
         nargs="+",
         type=str,
         required=False,
-        help="Policy IDs to filter on",
+        help="Statuses to filter on",
     )
     parser.add_argument(
         "-S", "--sort_by", type=str, help="sory by this field", required=False
@@ -50,11 +50,11 @@ def main():
         results = results.where(args.query)
 
     if args.device_ids:
-        results.criteria(device_ids=args.device_ids)
+        results.criteria(device_id=args.device_ids)
     if args.device_types:
-        results.criteria(device_types=args.device_types)
-    if args.policy_ids:
-        results.criteria(policy_ids=args.policy_ids)
+        results.criteria(device_type=args.device_types)
+    if args.statuses:
+        results.criteria(status=args.statuses)
 
     if args.sort_by:
         direction = "ASC"
