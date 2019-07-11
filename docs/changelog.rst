@@ -1,5 +1,53 @@
 CbAPI Changelog
 ===============
+
+CbAPI 1.4.5 - Released July 11, 2019
+----------------------------------------
+
+Updates
+
+* CB ThreatHunter
+    * Route updates for process search, feed management, watchlist management
+    * Enforce org_key presence
+    * Org-based process search
+    * Org-based event search
+    * Org-based tree queries
+* Minor updates for Python3 Compatibility 
+
+Examples
+
+* Updated CB TH Process Search Example
+* Added process_guid to process_tree example for ThreatHunter
+
+CbAPI 1.4.4 - Released July 3, 2019
+----------------------------------------
+
+Updates
+
+* Carbon Black UBS Support PR `#142 <https://github.com/carbonblack/cbapi-python/pull/142>`_
+* CB Response - Fixing bulk update for Alerts to use v1 route
+* Updates to use yaml safe_load `#157 <https://github.com/carbonblack/cbapi-python/pull/157>`_
+
+Examples
+
+* Refactored Carbon Black ThreatHunter examples
+* Added process_guid to process_tree example for ThreatHunter
+
+CbAPI 1.4.3 - Released May 7, 2019
+----------------------------------------
+
+Updates
+
+* CB ThreatHunter - Feed fixes `#156 <https://github.com/carbonblack/cbapi-python/pull/156>`_
+* CB Response - Change Alert model object to use v2 route `#155 <https://github.com/carbonblack/cbapi-python/pull/155>`_
+* CB Response - Only view active LR sessions `#154 <https://github.com/carbonblack/cbapi-python/pull/154>`_  
+* Removing refs to VT alliance feeds `#144 <https://github.com/carbonblack/cbapi-python/pull/144>`_
+
+Examples
+
+* CB Defense - Create list_events_with_cmdline_csv.py `#152 <https://github.com/carbonblack/cbapi-python/pull/152>`_
+* CB Defense - Updated import link to proper module `#148 <https://github.com/carbonblack/cbapi-python/pull/148>`_
+
 CbAPI 1.4.2 - Released March 27, 2019
 ----------------------------------------
 
