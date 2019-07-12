@@ -392,7 +392,7 @@ class ResultQuery(LiveQueryBase, IterableQueryMixin):
         if self._criteria:
             request["criteria"] = self._criteria
         if self._sort:
-            request["sort"] = self._sort
+            request["sort"] = [self._sort]
 
         return request
 
