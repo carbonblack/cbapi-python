@@ -25,7 +25,7 @@ CB Response or CB Protection servers inside the API credential file and select w
 at runtime.
 
 To create the initial credential file, a simple-to-use script is provided. Just run the ``cbapi-response``,
-``cbapi-protection``,``cbapi-psc`` or ``cbapi-defense`` script with the ``configure`` argument. On Mac OS X and Linux::
+``cbapi-protection``, or ``cbapi-psc`` script with the ``configure`` argument. On Mac OS X and Linux::
 
     $ cbapi-response configure
 
@@ -35,6 +35,8 @@ Alternatively, if you're using Windows (change ``c:\python27`` if Python is inst
 
 This configuration script will walk you through entering your API credentials and will save them to your current user's
 credential file location, which is located in the ``.carbonblack`` directory in your user's home directory.
+
+If using cbapi-psc, you will also be asked to provide an org key. An org key is required to access the PSC, and can be found in the console under Settings -> API Keys.
 
 Your First Query
 ----------------
