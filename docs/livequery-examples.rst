@@ -90,15 +90,12 @@ Finally, we print the results.
 Results can be narrowed down with the following criteria::
 
     device_ids
-    device_types
     status
 
 Examples of using these criteria are below::
 
     >>> device_id = '1234567'
     >>> results.criteria(device_id=device_id)
-    >>> device_types = 'LINUX'
-    >>> results.criteria(device_type=device_types)
     >>> status = 'matched'
     >>> results.criteria(status=status)
 
@@ -110,4 +107,4 @@ Finally, we print the results.
 
 You can also retrieve run results with the example script `run_search.py <https://www.example.com>`_::
 
-    python run_search.py --profile default --id a4oh4fqtmrr8uxrdj6mm0mbjsyhdhhvz --device_ids '1234567' --device_types 'LINUX' 'WINDOWS' --status 'matched'
+    python run_search.py --profile default --id a4oh4fqtmrr8uxrdj6mm0mbjsyhdhhvz --device_ids '1234567' --status 'matched'
