@@ -216,9 +216,9 @@ class BaseAPI(object):
         integration_name = kwargs.pop("integration_name", None)
         self.credential_store = CredentialStoreFactory.getCredentialStore(product_name,credential_file)
 
-        url, token = kwargs.pop("url", None), kwargs.pop("token", None)
-        if url and token:
-            credentials = {"url": url, "token": token}
+        url, token, org_key = kwargs.pop("url", None), kwargs.pop("token", None), kwargs.pop("org_key", None)
+        if url and token and org_key:
+            credentials = {"url": url, "token": token, "org_key": org_key}
 
             for k in ("ssl_verify",):
                 if k in kwargs:
