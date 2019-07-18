@@ -292,6 +292,9 @@ class RunQuery(LiveQueryBase):
 
 
 class ResultQuery(LiveQueryBase, IterableQueryMixin):
+    """
+    Represents a query that retrieves results from a LiveQuery run.
+    """
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
         self._query_builder = QueryBuilder()
@@ -363,6 +366,13 @@ class ResultQuery(LiveQueryBase, IterableQueryMixin):
         return self
 
     def criteria(self, **kwargs):
+        """Sets the filter criteria on a query's results.
+
+        Example::
+
+        >>> cb.select(Result).run_id(my_run).criteria(device_id=[123, 456])
+
+        """
         self._criteria.update(kwargs)
         return self
 
@@ -371,7 +381,7 @@ class ResultQuery(LiveQueryBase, IterableQueryMixin):
 
         Example::
 
-        >>> cb.select(Result).where(username="foobar").sort_by("uid")
+        >>> cb.select(Result).run_id(my_run).where(username="foobar").sort_by("uid")
 
         :param key: the key in the schema to sort by
         :param direction: the sort order, either "ASC" or "DESC"
@@ -381,6 +391,12 @@ class ResultQuery(LiveQueryBase, IterableQueryMixin):
         return self
 
     def run_id(self, run_id):
+        """Sets the run ID to query results for.
+
+        Example::
+
+        >>> cb.select(Result).run_id(my_run)
+        """
         self._run_id = run_id
         return self
 
