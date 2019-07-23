@@ -65,21 +65,10 @@ def configure(opts):
     else:
         ssl_verify = False
 
-    token = input("API token (if unknown, leave blank): ")
+    token = input("API token: ")
     if not token:
-        print("No API token provided: we will look it up using your username & password")
-        username = input("Username: ")
-        password = getpass.getpass("Password: ")
-
-        print("Retrieving API token for {0}...".format(username))
-
-        try:
-            token = get_api_token(url, username, password, verify=ssl_verify)
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print("Could not retrieve API token: {0}".format(str(e)))
-            return 1
+        print("Please obtain your API token from the profile page after logging into the CBR console.")
+        return 1
 
     config = RawConfigParser()
     config.readfp(StringIO('[default]'))

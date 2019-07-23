@@ -21,6 +21,9 @@ log = logging.getLogger(__name__)
 def get_api_token(base_url, username, password, **kwargs):
     """Retrieve the API token for a user given the URL of the server, username, and password.
 
+    Scripts should use API tokens wherever possible. Use of this function now requires EnableRetrieveToken=True to be
+    set in cb.conf.
+
     :param str base_url: The URL of the server (for example, ``https://carbonblack.server.com``)
     :param str username: The user's username
     :param str password: The user's password
@@ -31,8 +34,13 @@ def get_api_token(base_url, username, password, **kwargs):
     :raises ApiError: if there is an error parsing the reply
     :raises CredentialError: if the username/password is incorrect
     """
-    r = requests.get("{0:s}/api/auth".format(base_url), auth=requests.auth.HTTPDigestAuth(username, password), **kwargs)
-    if r.status_code != 200:
+    r = requests.post("{0:s}/api/auth/retrieve-token".format(base_url),
+                     json={"username": username, "password": password}, **kwargs)
+    if r.status_code == 406:
+        raise CredentialError(message="Please log in to the CBR console, then try again")
+    elif r.status_code == 404:
+        raise CredentialError(message="Please set EnableRetrieveToken=True in cb.conf and restart services")
+    elif r.status_code >= 300:
         raise CredentialError(message="Invalid credentials: {0:s}".format(r.text))
 
     try:
