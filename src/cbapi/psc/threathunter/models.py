@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from cbapi.errors import ApiError, InvalidObjectError
-from cbapi.models import NewBaseModel, CreatableModelMixin, MutableBaseModel
+from cbapi.models import CreatableModelMixin, MutableBaseModel, UnrefreshableModel
 import logging
 from cbapi.psc.threathunter.query import Query, AsyncProcessQuery, TreeQuery, FeedQuery, ReportQuery, WatchlistQuery
 import validators
@@ -9,28 +9,20 @@ import time
 log = logging.getLogger(__name__)
 
 
-class UnrefreshableModelMixin(NewBaseModel):
-    """Represents a model that can't be refreshed, i.e. for which ``reset()``
-    is not a valid operation.
-    """
-    def refresh(self):
-        raise ApiError("refresh() called on an unrefreshable model")
-
-
-class FeedModel(UnrefreshableModelMixin, CreatableModelMixin, MutableBaseModel):
+class FeedModel(UnrefreshableModel, CreatableModelMixin, MutableBaseModel):
     """A common base class for models used by the Feed and Watchlist APIs.
     """
     pass
 
 
-class Process(UnrefreshableModelMixin):
+class Process(UnrefreshableModel):
     """Represents a process retrieved by one of the CbTH endpoints.
     """
     default_sort = 'last_update desc'
     primary_key = "process_guid"
     validation_url = "/threathunter/search/v1/orgs/{}/processes/search_validation"
 
-    class Summary(UnrefreshableModelMixin):
+    class Summary(UnrefreshableModel):
         """Represents a summary of organization-specific information for
         a process.
         """
@@ -182,7 +174,7 @@ class Process(UnrefreshableModelMixin):
         return self.process_pid
 
 
-class Event(UnrefreshableModelMixin):
+class Event(UnrefreshableModel):
     """Events can be queried for via ``CbThreatHunterAPI.select``
     or though an already selected process with ``Process.events()``.
     """
@@ -200,7 +192,7 @@ class Event(UnrefreshableModelMixin):
                                     force_init=force_init, full_doc=full_doc)
 
 
-class Tree(UnrefreshableModelMixin):
+class Tree(UnrefreshableModel):
     """The preferred interface for interacting with Tree models
     is ``Process.tree()``.
     """
@@ -1025,14 +1017,14 @@ class ReportSeverity(FeedModel):
                                              full_doc=True)
 
 
-class Binary(UnrefreshableModelMixin):
+class Binary(UnrefreshableModel):
     """Represents a retrievable binary.
     """
     primary_key = "sha256"
     swagger_meta_file = "psc/threathunter/models/binary.yaml"
     urlobject_single = "/ubs/v1/orgs/{}/sha256/{}/metadata"
 
-    class Summary(UnrefreshableModelMixin):
+    class Summary(UnrefreshableModel):
         """Represents a summary of organization-specific information
         for a retrievable binary.
         """
@@ -1090,12 +1082,12 @@ class Binary(UnrefreshableModelMixin):
                         if self.sha256 == item.sha256), None)
 
 
-class Downloads(UnrefreshableModelMixin):
+class Downloads(UnrefreshableModel):
     """Represents download information for a list of process hashes.
     """
     urlobject = "/ubs/v1/orgs/{}/file/_download"
 
-    class FoundItem(UnrefreshableModelMixin):
+    class FoundItem(UnrefreshableModel):
         """Represents the download URL and process hash for a successfully
         located binary.
         """

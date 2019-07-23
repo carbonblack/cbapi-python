@@ -1,0 +1,41 @@
+type: object
+required: [] # TODO(ww): Find out which result fields are required
+properties:
+  id:
+    type: string
+    description: The result's unique ID
+  device:
+    type: object
+    description: The device associated with the result
+    properties:
+      id:
+        type: integer
+        format: int32 # NOTE(ww): This is a guess
+        description: The device's unique ID
+      name:
+        type: string
+        description: The device's name
+      policy_id:
+        type: integer
+        format: int32 # NOTE(ww): This is a guess
+        description: The device's policy ID
+      policy_name:
+        type: string
+        description: The device's policy name
+  status:
+    type: string
+    description: The result's status
+  time_received:
+    type: string
+    description: The time at which this result was received # NOTE(ww): This is a guess
+  device_message:
+    type: string
+    description: Placeholder # TODO(ww): Needs description
+  fields:
+    type: object
+    description: The fields returned by the backing osquery query
+  metrics: # TODO(ww): Document each field in metrics?
+    type: object
+    description: Metrics associated with the result's host
+
+

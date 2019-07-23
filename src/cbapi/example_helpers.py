@@ -16,6 +16,7 @@ import hashlib
 from cbapi.protection import CbEnterpriseProtectionAPI
 from cbapi.psc.defense import CbDefenseAPI
 from cbapi.psc.threathunter import CbThreatHunterAPI
+from cbapi.psc.livequery import CbLiveQueryAPI
 from cbapi.response import CbEnterpriseResponseAPI
 
 log = logging.getLogger(__name__)
@@ -103,6 +104,21 @@ def get_cb_threathunter_object(args):
         cb = CbThreatHunterAPI(url=args.cburl, token=args.apitoken, ssl_verify=(not args.no_ssl_verify))
     else:
         cb = CbThreatHunterAPI(profile=args.profile)
+
+    return cb
+
+
+def get_cb_livequery_object(args):
+    if args.verbose:
+        import logging
+        logging.basicConfig()
+        logging.getLogger("cbapi").setLevel(logging.DEBUG)
+        logging.getLogger("__main__").setLevel(logging.DEBUG)
+
+    if args.cburl and args.apitoken:
+        cb = CbLiveQueryAPI(url=args.cburl, token=args.apitoken, ssl_verify=(not args.no_ssl_verify))
+    else:
+        cb = CbLiveQueryAPI(profile=args.profile)
 
     return cb
 
