@@ -41,7 +41,7 @@ Finally, we submit the query and print the results.
 
 This query should return all logged in Windows endpoints with a ``device_id`` of ``1234567``.
 
-The same query can be executed with the example script `manage_run.py <https://www.example.com>`_. ::
+The same query can be executed with the example script `manage_run.py <https://github.com/carbonblack/cbapi-python/blob/master/examples/livequery/manage_run.py>`_. ::
 
     python manage_run.py --profile default create --sql 'select * from logged_in_users;' --name 'Selecting all logged in users' --device_ids '1234567' --device_types 'WINDOWS'
 
@@ -61,7 +61,7 @@ Next, we select the run with the unique run ID.
     >>> run = cb.select(Run, run_id)
     >>> print(run)
 
-This can also be accomplished with the example script `manage_run.py <https://www.example.com>`_::
+This can also be accomplished with the example script `manage_run.py <https://github.com/carbonblack/cbapi-python/blob/master/examples/livequery/manage_run.py>`_::
 
     python manage_run.py --profile default --id a4oh4fqtmrr8uxrdj6mm0mbjsyhdhhvz
 
@@ -105,6 +105,6 @@ Finally, we print the results.
     ...     print(result)
 
 
-You can also retrieve run results with the example script `run_search.py <https://www.example.com>`_::
+You can also retrieve run results with the example script `run_search.py <https://github.com/carbonblack/cbapi-python/blob/master/examples/livequery/run_search.py>`_::
 
     python run_search.py --profile default --id a4oh4fqtmrr8uxrdj6mm0mbjsyhdhhvz --device_ids '1234567' --status 'matched'
