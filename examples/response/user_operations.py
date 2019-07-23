@@ -105,17 +105,6 @@ def add_user(cb, parser, args):
         print("Added user {0}.".format(u.username))
 
 
-def get_api_key(cb, parser, args):
-    if not args.password:
-        password = getpass.getpass("Password for {0}: ".format(args.username))
-    else:
-        password = args.password
-
-    print("API token for user {0}: {1}".format(args.username, get_api_token(cb.credentials.url,
-                                                                            args.username, password,
-                                                                            verify=cb.credentials.ssl_verify)))
-
-
 def delete_user(cb, parser, args):
     user = cb.select(User, args.username)
     try:
@@ -167,8 +156,6 @@ def main():
         return list_users(cb, parser, args)
     elif args.command_name == "list-teams":
         return list_teams(cb, parser, args)
-    elif args.command_name == "get-api-key":
-        return get_api_key(cb, parser, args)
     elif args.command_name == "add":
         return add_user(cb, parser, args)
     elif args.command_name == "add-team":
