@@ -40,17 +40,20 @@ def configure(opts):
     if not os.path.exists(credential_path):
         os.makedirs(credential_path, 0o700)
 
-    url = input("URL to the Cb Defense API server (do not include '/integrationServices') [https://hostname]: ")
+    url = input("URL to the Cb PSC API server (do not include '/integrationServices') [https://hostname]: ")
 
     ssl_verify = True
 
     connector_id = input("Connector ID: ")
     token = input("API key: ")
 
+    org_key = input("Org Key: ")
+
     config = RawConfigParser()
     config.readfp(StringIO('[default]'))
     config.set("default", "url", url)
     config.set("default", "token", "{0}/{1}".format(token, connector_id))
+    config.set("default", "org_key", org_key)
     config.set("default", "ssl_verify", ssl_verify)
     with temp_umask(0):
         with os.fdopen(os.open(credential_file, os.O_WRONLY|os.O_CREAT|os.O_TRUNC, 0o600), 'w') as fp:
