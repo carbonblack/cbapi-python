@@ -1,6 +1,27 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.5.0 - Released July 23, 2019
+----------------------------------------
+
+Updates
+
+* CB LiveOps
+    * Start new LiveQuery (LQ) runs 
+    * Fetch LQ results
+    * View LQ run status
+    * Filter on LQ results 
+* PSC Org Key Management
+    * Added support for org key management within CBAPI
+    * Credentials utility for org keys
+    * PR #166, #169, #170
+
+Examples
+
+* LiveQuery - manage_run.py
+* LiveQuery - run_search.py
+
+
 CbAPI 1.4.5 - Released July 11, 2019
 ----------------------------------------
 
