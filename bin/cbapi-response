@@ -14,7 +14,6 @@ if six.PY3:
 else:
     from cStringIO import StringIO
 
-from cbapi.response.rest_api import get_api_token
 from cbapi.six.moves.configparser import RawConfigParser
 from cbapi.connection import check_python_tls_compatibility
 

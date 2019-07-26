@@ -7,7 +7,6 @@ from cbapi.example_helpers import build_cli_parser, get_cb_response_object, get_
 from cbapi.errors import ServerError
 import logging
 import getpass
-from cbapi.response.rest_api import get_api_token
 
 
 log = logging.getLogger(__name__)
