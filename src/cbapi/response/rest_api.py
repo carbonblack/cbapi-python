@@ -8,37 +8,12 @@ from distutils.version import LooseVersion
 from ..connection import BaseAPI
 from .models import Process, Binary, Watchlist, Investigation, Alert, ThreatReport, StoragePartition
 from ..errors import UnauthorizedError, ApiError
-from ..errors import CredentialError
 from .cblr import LiveResponseSessionManager
 from .query import Query
 
-import requests
 
 import logging
 log = logging.getLogger(__name__)
-
-
-def get_api_token(base_url, username, password, **kwargs):
-    """Retrieve the API token for a user given the URL of the server, username, and password.
-
-    :param str base_url: The URL of the server (for example, ``https://carbonblack.server.com``)
-    :param str username: The user's username
-    :param str password: The user's password
-    :param bool verify: (optional) When set to False, turn off SSL certificate verification
-
-    :return: The user's API token
-    :rtype: str
-    :raises ApiError: if there is an error parsing the reply
-    :raises CredentialError: if the username/password is incorrect
-    """
-    r = requests.get("{0:s}/api/auth".format(base_url), auth=requests.auth.HTTPDigestAuth(username, password), **kwargs)
-    if r.status_code != 200:
-        raise CredentialError(message="Invalid credentials: {0:s}".format(r.text))
-
-    try:
-        return r.json()["auth_token"]
-    except:
-        raise ApiError(message="Error retrieving auth_token: {0:s}".format(r.text))
 
 
 class CbResponseAPI(BaseAPI):

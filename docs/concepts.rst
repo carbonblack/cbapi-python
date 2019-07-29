@@ -264,7 +264,6 @@ is called. Let's call ``.save()`` and modify one of the Model Object's propertie
      Last refreshed at Mon Nov  7 16:54:00 2016
     -------------------------------------------------------------------------------
 
-                  auth_token: 8b2dcf9d59b7da1a0b2b4ec50a77d8ca3d7dcb9c
                        email: jgarman@carbonblack.com
     (*)           first_name: J
                 global_admin: False
