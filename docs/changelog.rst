@@ -1,6 +1,17 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.5.1 - Released July 23, 2019
+----------------------------------------
+
+Updates
+
+* CB Response
+    * Require CBAPI users to obtain their API token from the CB Response console.
+* CB LiveOps
+    * Fixing a build issue
+
+
 CbAPI 1.5.0 - Released July 23, 2019
 ----------------------------------------
 
