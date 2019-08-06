@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from cbapi.models import UnrefreshableModel, NewBaseModel
+from cbapi.errors import ApiError, ServerError
 from .query import RunQuery, ResultQuery
 import logging
 import time
@@ -22,6 +23,7 @@ class Run(NewBaseModel):
     swagger_meta_file = "psc/livequery/models/run.yaml"
     urlobject = "/livequery/v1/orgs/{}/runs"
     urlobject_single = "/livequery/v1/orgs/{}/runs/{}"
+    _is_deleted = False
 
     def __init__(self, cb, model_unique_id=None, initial_data=None):
         if initial_data is not None:
@@ -45,12 +47,37 @@ class Run(NewBaseModel):
         return RunQuery(cls, cb)
 
     def _refresh(self):
+        if self._is_deleted:
+            raise ApiError("cannot refresh a deleted query")
         url = self.urlobject.format(self._cb.credentials.org_key, self.id)
         resp = self._cb.get_object(url)
         self._info = resp
         self._last_refresh_time = time.time()
         return True
-
+    
+    def stop(self):
+        if self._is_deleted:
+            raise ApiError("cannot stop a deleted query")
+        url = self.urlobject_single.format(self._cb.credentials.org_key, self.id) + "/status"
+        result = self._cb.put_object(url, {'status': 'CANCELLED'})
+        if (result.status_code == 200):
+            try:
+                self._info = result.json()
+                self._last_refresh_time = time.time()
+                return True
+            except:
+                raise ServerError(result.status_code, "Cannot parse response as JSON: {0:s}".format(result.content))            
+        return False
+    
+    def delete(self):
+        if self._is_deleted:
+            return True # already deleted
+        url = self.urlobject_single.format(self._cb.credentials.org_key, self.id)
+        result = self._cb.delete_object(url)
+        if result.status_code == 200:
+            self._is_deleted = True
+            return True
+        return False
 
 class Result(UnrefreshableModel):
     """
