@@ -1,4 +1,4 @@
-from cbapi.psc.livequery.models import Run
+from cbapi.psc.livequery.models import Run, RunHistory
 from cbapi.connection import BaseAPI
 from cbapi.errors import CredentialError, ApiError
 import logging
@@ -32,3 +32,6 @@ class CbLiveQueryAPI(BaseAPI):
 
     def query(self, sql):
         return self.select(Run).where(sql=sql)
+
+    def query_runs(self, query=None):
+        return self.select(RunHistory).where(query)

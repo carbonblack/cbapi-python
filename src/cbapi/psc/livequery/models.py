@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from cbapi.models import UnrefreshableModel, NewBaseModel
 from cbapi.errors import ApiError, ServerError
-from .query import RunQuery, ResultQuery
+from .query import RunQuery, RunHistoryQuery,  ResultQuery, FacetQuery
 import logging
 import time
 
@@ -78,6 +78,29 @@ class Run(NewBaseModel):
             self._is_deleted = True
             return True
         return False
+    
+    def query_device_summaries(self):
+        return self._cb.select(DeviceSummary).run_id(self.id)
+    
+    def query_result_facets(self):
+        return self._cb.select(ResultFacet).run_id(self.id)
+    
+    def query_device_summary_facets(self):
+        return self._cb.select(DeviceSummaryFacet).run_id(self.id)
+
+    
+class RunHistory(Run):
+    """
+    Represents a historical LiveQuery ``Run``.
+    """
+    urlobject_history = "/livequery/v1/orgs/{}/runs"
+
+    def __init__(self, cb, model_unique_id=None, initial_data=None):
+        super(RunHistory, self).__init__(cb, model_unique_id, initial_data)
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return RunHistoryQuery(cls, cb)
 
 class Result(UnrefreshableModel):
     """
@@ -164,3 +187,98 @@ class Result(UnrefreshableModel):
         Returns the reified ``Result.Metrics`` for this result.
         """
         return self._metrics
+
+
+class DeviceSummary(UnrefreshableModel):
+    """
+    Represents the summary of results from a single device during a single LiveQuery ``Run``.
+    """
+    primary_key = "id"
+    swagger_meta_file = "psc/livequery/models/device_summary.yaml"
+    urlobject = "/livequery/v1/orgs/{}/runs/{}/results/device_summaries/_search"
+    
+    class Metrics(UnrefreshableModel):
+        """
+        Represents the metrics for a result.
+        """
+        def __init__(self, cb, initial_data):
+            super(DeviceSummary.Metrics, self).__init__(
+                cb,
+                model_unique_id=None,
+                initial_data=initial_data,
+                force_init=False,
+                full_doc=True,
+            )    
+            
+    @classmethod
+    def _query_implementation(cls, cb):
+        return ResultQuery(cls, cb)
+    
+    def __init__(self, cb, initial_data):
+        super(DeviceSummary, self).__init__(
+            cb,
+            model_unique_id=initial_data["id"],
+            initial_data=initial_data,
+            force_init=False,
+            full_doc=True,
+        )
+        self._metrics = DeviceSummary.Metrics(cb, initial_data=initial_data["metrics"])
+                
+    @property
+    def metrics_(self):
+        """
+        Returns the reified ``DeviceSummary.Metrics`` for this result.
+        """
+        return self._metrics
+
+class ResultFacet(UnrefreshableModel):
+    """
+    Represents the summary of results for a single field in a LiveQuery ``Run``.
+    """
+    primary_key = "field"
+    swagger_meta_file = "psc/livequery/models/facet.yaml"
+    urlobject = "/livequery/v1/orgs/{}/runs/{}/results/_facet"
+    
+    class Values(UnrefreshableModel):
+        """
+        Represents the values associated with a field.
+        """
+        def __init__(self, cb, initial_data):
+            super(ResultFacet.Values, self).__init__(
+                cb,
+                model_unique_id=None,
+                initial_data=initial_data,
+                force_init=False,
+                full_doc=True,
+            )
+            
+    @classmethod
+    def _query_implementation(cls, cb):
+        return FacetQuery(cls, cb)
+    
+    def __init__(self, cb, initial_data):
+        super(ResultFacet, self).__init__(
+            cb,
+            model_unique_id=None,
+            initial_data=initial_data,
+            force_init=False,
+            full_doc=True
+        )
+        self._values = ResultFacet.values(cb, initial_data=initial_data["values"])
+
+    @property
+    def values_(self):
+        """
+        Returns the reified ``ResultFacet.Values`` for this result.
+        """
+        return self._values
+
+class DeviceSummaryFacet(ResultFacet):
+    """
+    Represents the summary of results for a single device summary in a LiveQuery ``Run``.
+    """
+    urlobject = "/livequery/v1/orgs/{}/runs/{}/results/device_summaries/_facet"
+    
+    def __init__(self, cb, initial_data):
+        super(DeviceSummaryFacet, self).__init__(cb, initial_data)
+        
