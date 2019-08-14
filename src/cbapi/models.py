@@ -261,7 +261,7 @@ class NewBaseModel(object):
         pass
 
     def refresh(self):
-        self._refresh()
+        return self._refresh()
 
     def _refresh(self):
         if self._model_unique_id is not None and self.__class__.primary_key not in self._dirty_attributes.keys():

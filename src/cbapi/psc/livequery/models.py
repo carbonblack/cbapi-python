@@ -49,7 +49,7 @@ class Run(NewBaseModel):
     def _refresh(self):
         if self._is_deleted:
             raise ApiError("cannot refresh a deleted query")
-        url = self.urlobject.format(self._cb.credentials.org_key, self.id)
+        url = self.urlobject_single.format(self._cb.credentials.org_key, self.id)
         resp = self._cb.get_object(url)
         self._info = resp
         self._last_refresh_time = time.time()
@@ -80,12 +80,18 @@ class Run(NewBaseModel):
         return False
     
     def query_device_summaries(self):
+        if self._is_deleted:
+            raise ApiError("query has been deleted")
         return self._cb.select(DeviceSummary).run_id(self.id)
     
     def query_result_facets(self):
+        if self._is_deleted:
+            raise ApiError("query has been deleted")
         return self._cb.select(ResultFacet).run_id(self.id)
     
     def query_device_summary_facets(self):
+        if self._is_deleted:
+            raise ApiError("query has been deleted")
         return self._cb.select(DeviceSummaryFacet).run_id(self.id)
 
     
@@ -93,10 +99,14 @@ class RunHistory(Run):
     """
     Represents a historical LiveQuery ``Run``.
     """
-    urlobject_history = "/livequery/v1/orgs/{}/runs"
+    urlobject_history = "/livequery/v1/orgs/{}/runs/_search"
 
-    def __init__(self, cb, model_unique_id=None, initial_data=None):
-        super(RunHistory, self).__init__(cb, model_unique_id, initial_data)
+    def __init__(self, cb, initial_data=None):
+        item = initial_data
+        model_unique_id = item.get("id")
+        super(Run, self).__init__(cb,
+                model_unique_id, initial_data=item,
+                force_init=False, full_doc=True)
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -264,7 +274,7 @@ class ResultFacet(UnrefreshableModel):
             force_init=False,
             full_doc=True
         )
-        self._values = ResultFacet.values(cb, initial_data=initial_data["values"])
+        self._values = ResultFacet.Values(cb, initial_data=initial_data["values"])
 
     @property
     def values_(self):
