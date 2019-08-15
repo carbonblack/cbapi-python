@@ -24,6 +24,7 @@ install_requires=[
     'pika',
     'prompt_toolkit',
     'pygments',
+    'pytest',
     'python-dateutil',
     'protobuf',
     'solrq',
