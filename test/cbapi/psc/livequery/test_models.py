@@ -1,6 +1,6 @@
 import pytest
 from cbapi.psc.livequery.rest_api import CbLiveQueryAPI
-from cbapi.psc.livequery.models import Run
+from cbapi.psc.livequery.models import Run, Result
 from cbapi.psc.livequery.query import ResultQuery, FacetQuery
 from cbapi.errors import ApiError
 from test.mocks import MockResponse, ConnectionMocks
@@ -114,12 +114,6 @@ def test_run_delete(monkeypatch):
         run.refresh()
     with pytest.raises(ApiError):
         run.stop()
-    with pytest.raises(ApiError):
-        run.query_device_summaries()
-    with pytest.raises(ApiError):
-        run.query_result_facets()
-    with pytest.raises(ApiError):
-        run.query_device_summary_facets()
     # And make sure that deleting a deleted object returns True immediately
     rc = run.delete()
     assert rc == True
@@ -148,7 +142,7 @@ def test_run_delete_failed(monkeypatch):
     assert not run._is_deleted
     
 
-def test_run_query_device_summaries(monkeypatch):
+def test_result_device_summaries(monkeypatch):
     _was_called = False
 
     def mock_post_object(url, body, **kwargs):
@@ -168,13 +162,13 @@ def test_run_query_device_summaries(monkeypatch):
     
     api = CbLiveQueryAPI(url="https://example.com", token="ABCD/1234",
                          org_key="Z100", ssl_verify=True)
-    run = Run(api, "abcdefg", {"org_key":"Z100", "name":"FoobieBletch",
-                                "id":"abcdefg", "status":"ACTIVE"})
+    tmp_id = {"id":"abcdefg"}
+    result = Result(api, {"id": "abcdefg", "device":tmp_id, "fields":{}, "metrics":{}})
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    query = run.query_device_summaries().where("foo").criteria(device_name=["AxCx", "A7X"])
+    query = result.query_device_summaries().where("foo").criteria(device_name=["AxCx", "A7X"])
     query = query.sort_by("device_name")
     assert isinstance(query, ResultQuery)    
     count = 0
@@ -192,7 +186,7 @@ def test_run_query_device_summaries(monkeypatch):
     assert count == 2
     
     
-def test_run_query_result_facets(monkeypatch):
+def test_result_query_result_facets(monkeypatch):
     _was_called = False
 
     def mock_post_object(url, body, **kwargs):
@@ -217,13 +211,13 @@ def test_run_query_result_facets(monkeypatch):
                 
     api = CbLiveQueryAPI(url="https://example.com", token="ABCD/1234",
                          org_key="Z100", ssl_verify=True)
-    run = Run(api, "abcdefg", {"org_key":"Z100", "name":"FoobieBletch",
-                                "id":"abcdefg", "status":"ACTIVE"})
+    tmp_id = {"id":"abcdefg"}
+    result = Result(api, {"id": "abcdefg", "device":tmp_id, "fields":{}, "metrics":{}})
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    query = run.query_result_facets().where("xyzzy")
+    query = result.query_result_facets().where("xyzzy")
     query = query.facet_field("alpha").facet_field(["bravo", "charlie"])
     query = query.criteria(device_name=["AxCx", "A7X"])    
     assert isinstance(query, FacetQuery)
@@ -246,7 +240,7 @@ def test_run_query_result_facets(monkeypatch):
     assert count == 3
     
     
-def test_run_query_device_summary_facets(monkeypatch):
+def test_result_query_device_summary_facets(monkeypatch):
     _was_called = False
     
     def mock_post_object(url, body, **kwargs):
@@ -271,13 +265,13 @@ def test_run_query_device_summary_facets(monkeypatch):
     
     api = CbLiveQueryAPI(url="https://example.com", token="ABCD/1234",
                          org_key="Z100", ssl_verify=True)
-    run = Run(api, "abcdefg", {"org_key":"Z100", "name":"FoobieBletch",
-                                "id":"abcdefg", "status":"ACTIVE"})
+    tmp_id = {"id":"abcdefg"}
+    result = Result(api, {"id": "abcdefg", "device":tmp_id, "fields":{}, "metrics":{}})
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    query = run.query_device_summary_facets().where("xyzzy")
+    query = result.query_device_summary_facets().where("xyzzy")
     query = query.facet_field("alpha").facet_field(["bravo", "charlie"])
     query = query.criteria(device_name=["AxCx", "A7X"])    
     assert isinstance(query, FacetQuery)
