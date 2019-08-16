@@ -118,7 +118,7 @@ def test_query_policy_ids_broken():
         query = query.policy_ids(["Bogus"])
     
     
-def test_query_runs(monkeypatch):
+def test_query_history(monkeypatch):
     _was_called = False 
     
     def mock_post_object(url, body, **kwargs):
@@ -137,7 +137,7 @@ def test_query_runs(monkeypatch):
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    query = api.query_runs("xyzzy")
+    query = api.query_history("xyzzy")
     assert isinstance(query, RunHistoryQuery)
     count = 0
     for item in query.all():
@@ -155,7 +155,7 @@ def test_query_runs(monkeypatch):
     assert count == 3
     
     
-def test_query_runs_with_everything(monkeypatch):
+def test_query_history_with_everything(monkeypatch):
     _was_called = False 
 
     def mock_post_object(url, body, **kwargs):
@@ -177,7 +177,7 @@ def test_query_runs_with_everything(monkeypatch):
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    query = api.query_runs("xyzzy").sort_by("id")
+    query = api.query_history("xyzzy").sort_by("id")
     assert isinstance(query, RunHistoryQuery)
     count = 0
     for item in query.all():

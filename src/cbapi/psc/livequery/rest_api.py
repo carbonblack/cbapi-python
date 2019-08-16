@@ -33,5 +33,5 @@ class CbLiveQueryAPI(BaseAPI):
     def query(self, sql):
         return self.select(Run).where(sql=sql)
 
-    def query_runs(self, query=None):
+    def query_history(self, query=None):
         return self.select(RunHistory).where(query)
