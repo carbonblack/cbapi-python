@@ -79,22 +79,6 @@ class Run(NewBaseModel):
             return True
         return False
     
-    def query_device_summaries(self):
-        if self._is_deleted:
-            raise ApiError("query has been deleted")
-        return self._cb.select(DeviceSummary).run_id(self.id)
-    
-    def query_result_facets(self):
-        if self._is_deleted:
-            raise ApiError("query has been deleted")
-        return self._cb.select(ResultFacet).run_id(self.id)
-    
-    def query_device_summary_facets(self):
-        if self._is_deleted:
-            raise ApiError("query has been deleted")
-        return self._cb.select(DeviceSummaryFacet).run_id(self.id)
-
-    
 class RunHistory(Run):
     """
     Represents a historical LiveQuery ``Run``.
@@ -173,6 +157,7 @@ class Result(UnrefreshableModel):
             force_init=False,
             full_doc=True,
         )
+        self._run_id = initial_data["id"]
         self._device = Result.Device(cb, initial_data=initial_data["device"])
         self._fields = Result.Fields(cb, initial_data=initial_data["fields"])
         self._metrics = Result.Metrics(cb, initial_data=initial_data["metrics"])
@@ -197,6 +182,15 @@ class Result(UnrefreshableModel):
         Returns the reified ``Result.Metrics`` for this result.
         """
         return self._metrics
+    
+    def query_device_summaries(self):
+        return self._cb.select(DeviceSummary).run_id(self._run_id)
+    
+    def query_result_facets(self):
+        return self._cb.select(ResultFacet).run_id(self._run_id)
+    
+    def query_device_summary_facets(self):
+        return self._cb.select(DeviceSummaryFacet).run_id(self._run_id)
 
 
 class DeviceSummary(UnrefreshableModel):
