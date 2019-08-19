@@ -35,10 +35,18 @@ properties:
   policy_name:
     type: string
     description: The device's policy name
-  metrics: # TODO(ww): Document each field in metrics?
+  metrics:
     type: array
     description: Metrics associated with the device
     items:
       type: object
       description: Individual metrics entries
-      
+      properties:
+        key:
+          type: string
+          description: The name of the particular metric
+        value:
+          type: number
+          format: float
+          description: The value of the particular metric
+            
