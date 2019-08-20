@@ -1,0 +1,22 @@
+type: object
+required: [] # TODO(ww): Find out which result fields are required
+properties:
+  field:
+    type: string
+    description: The name of the field being summarized
+  values:
+    type: array
+    items:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int32 # NOTE(ww): This is a guess
+          description: The total number of times this value appears in the query output
+        id:
+          type: string
+          description: The ID of the value being enumerated
+        name:
+          type: string
+          description: The name of the value being enumerated
+          

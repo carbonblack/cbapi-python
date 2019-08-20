@@ -162,13 +162,15 @@ class IterableQueryMixin:
         return self._perform_query()
 
     def first(self):
-        res = self[:1]
+        allres = list(self)
+        res = allres[:1]
         if not len(res):
             return None
         return res[0]
 
     def one(self):
-        res = self[:2]
+        allres = list(self)
+        res = allres[:2]
         if len(res) == 0:
             raise MoreThanOneResultError(
                 message="0 results for query {0:s}".format(self._query)
@@ -289,6 +291,148 @@ class RunQuery(LiveQueryBase):
         resp = self._cb.post_object(url, body=self._query_body)
 
         return self._doc_class(self._cb, initial_data=resp.json())
+
+
+class RunHistoryQuery(LiveQueryBase, IterableQueryMixin):
+    """
+    Represents a query that retrieves historic LiveQuery runs.
+    """
+    def __init__(self, doc_class, cb):
+        super().__init__(doc_class, cb)
+        self._query_builder = QueryBuilder()
+        self._sort = {}
+    
+    def where(self, q=None, **kwargs):
+        """Add a filter to this query.
+
+        :param q: Query string, :py:class:`QueryBuilder`, or `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
+
+        if not q:
+            return self
+        if isinstance(q, QueryBuilder):
+            self._query_builder = q
+        else:
+            self._query_builder.where(q, **kwargs)
+        return self
+
+    def and_(self, q=None, **kwargs):
+        """Add a conjunctive filter to this query.
+
+        :param q: Query string or `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
+        if not q and not kwargs:
+            raise ApiError(".and_() expects a string, a solrq.Q, or kwargs")
+
+        self._query_builder.and_(q, **kwargs)
+        return self
+
+    def or_(self, q=None, **kwargs):
+        """Add a disjunctive filter to this query.
+
+        :param q: `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
+        if not q and not kwargs:
+            raise ApiError(".or_() expects a solrq.Q or kwargs")
+
+        self._query_builder.or_(q, **kwargs)
+        return self
+
+    def not_(self, q=None, **kwargs):
+        """Adds a negated filter to this query.
+
+        :param q: `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
+
+        if not q and not kwargs:
+            raise ApiError(".not_() expects a solrq.Q, or kwargs")
+
+        self._query_builder.not_(q, **kwargs)
+        return self
+
+    def sort_by(self, key, direction="ASC"):
+        """Sets the sorting behavior on a query's results.
+
+        Example::
+
+        >>> cb.select(Result).run_id(my_run).where(username="foobar").sort_by("uid")
+
+        :param key: the key in the schema to sort by
+        :param direction: the sort order, either "ASC" or "DESC"
+        :rtype: :py:class:`ResultQuery`
+        """
+        self._sort.update({"field": key, "order": direction})
+        return self
+
+    def _build_request(self, start, rows):
+        request = {"start": start }
+
+        if self._query_builder:
+            request["query"] = self._query_builder._collapse();
+        if rows != 0:
+            request["rows"] = rows
+        if self._sort:
+            request["sort"] = [self._sort]
+
+        return request
+
+    def _count(self):
+        if self._count_valid:
+            return self._total_results
+
+        url = self._doc_class.urlobject_history.format(
+            self._cb.credentials.org_key
+        )
+        request = self._build_request(start=0, rows=0)
+        resp = self._cb.post_object(url, body=request)
+        result = resp.json()
+
+        self._total_results = result["num_found"]
+        self._count_valid = True
+
+        return self._total_results
+
+    def _perform_query(self, start=0, rows=0):
+        url = self._doc_class.urlobject_history.format(
+            self._cb.credentials.org_key
+        )
+        current = start
+        numrows = 0
+        still_querying = True
+        while still_querying:
+            request = self._build_request(start, rows)
+            resp = self._cb.post_object(url, body=request)
+            result = resp.json()
+
+            self._total_results = result["num_found"]
+            self._count_valid = True
+
+            results = result.get("results", [])
+            for item in results:
+                yield self._doc_class(self._cb, item)
+                current += 1
+                numrows += 1
+
+                if rows and numrows == rows:
+                    still_querying = False
+                    break
+
+            start = current
+            if current >= self._total_results:
+                still_querying = False
+                break
 
 
 class ResultQuery(LiveQueryBase, IterableQueryMixin):
@@ -463,3 +607,140 @@ class ResultQuery(LiveQueryBase, IterableQueryMixin):
             if current >= self._total_results:
                 still_querying = False
                 break
+
+
+class FacetQuery(LiveQueryBase, IterableQueryMixin):
+    """
+    Represents a query that receives facet information from a LiveQuery run.
+    """
+    def __init__(self, doc_class, cb):
+        super().__init__(doc_class, cb)
+        self._query_builder = QueryBuilder()
+        self._facet_fields = []
+        self._criteria = {}
+        self._run_id = None
+    
+    def where(self, q=None, **kwargs):
+        """Add a filter to this query.
+
+        :param q: Query string, :py:class:`QueryBuilder`, or `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
+        if not q and not kwargs:
+            raise ApiError(
+                ".where() expects a string, a QueryBuilder, a solrq.Q, or kwargs"
+            )
+
+        if isinstance(q, QueryBuilder):
+            self._query_builder = q
+        else:
+            self._query_builder.where(q, **kwargs)
+        return self
+
+    def and_(self, q=None, **kwargs):
+        """Add a conjunctive filter to this query.
+
+        :param q: Query string or `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
+        if not q and not kwargs:
+            raise ApiError(".and_() expects a string, a solrq.Q, or kwargs")
+
+        self._query_builder.and_(q, **kwargs)
+        return self
+
+    def or_(self, q=None, **kwargs):
+        """Add a disjunctive filter to this query.
+
+        :param q: `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
+        if not q and not kwargs:
+            raise ApiError(".or_() expects a solrq.Q or kwargs")
+
+        self._query_builder.or_(q, **kwargs)
+        return self
+
+    def not_(self, q=None, **kwargs):
+        """Adds a negated filter to this query.
+
+        :param q: `solrq.Q` object
+        :param kwargs: Arguments to construct a `solrq.Q` with
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
+
+        if not q and not kwargs:
+            raise ApiError(".not_() expects a solrq.Q, or kwargs")
+
+        self._query_builder.not_(q, **kwargs)
+        return self
+    
+    def facet_field(self, field):
+        """Sets the facet fields to be received by this query.
+        
+        Example::
+        
+        >>> cb.select(ResultFacet).run_id(my_run).facet_field(["device.policy_name", "device.os"])
+        
+        :param field: Field(s) to be received, either single string or list of strings
+        :return: Query object
+        :rtype: :py:class:`Query`
+        """
+        if isinstance(field, string_types):
+            self._facet_fields.append(field)
+        else:
+            for name in field:
+                self._facet_fields.append(name)
+        return self
+
+    def criteria(self, **kwargs):
+        """Sets the filter criteria on a query's results.
+
+        Example::
+
+        >>> cb.select(ResultFacet).run_id(my_run).criteria(device_id=[123, 456])
+
+        """
+        self._criteria.update(kwargs)
+        return self
+
+    def run_id(self, run_id):
+        """Sets the run ID to query results for.
+
+        Example::
+
+        >>> cb.select(ResultFacet).run_id(my_run)
+        """
+        self._run_id = run_id
+        return self
+    
+    def _build_request(self, rows):
+        terms = { "fields": self._facet_fields }
+        if rows != 0:
+            terms["rows"] = rows
+        request = {"query": self._query_builder._collapse(), "terms": terms}
+        if self._criteria:
+            request["criteria"] = self._criteria
+        return request
+    
+    def _perform_query(self, rows=0):      
+        if self._run_id is None:
+            raise ApiError("Can't retrieve results without a run ID")
+
+        url = self._doc_class.urlobject.format(
+            self._cb.credentials.org_key, self._run_id
+        )
+        request = self._build_request(rows)
+        resp = self._cb.post_object(url, body=request)
+        result = resp.json()
+        results = result.get("terms", [])
+        for item in results:
+            yield self._doc_class(self._cb, item)
+        

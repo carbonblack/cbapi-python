@@ -1,0 +1,52 @@
+type: object
+required: [] # TODO(ww): Find out which result fields are required
+properties:
+  id:
+    type: string
+    description: The result's unique ID
+  total_results:
+    type: integer
+    format: int32 # NOTE(ww): This is a guess
+    description: Number of results returned for this particular device
+  device_id:
+    type: integer
+    format: int32 # NOTE(ww): This is a guess
+    description: The device's unique ID
+  device_name:
+    type: string
+    description: The device's name
+  time_received:
+    type: string
+    description: The time at which this result was received # NOTE(ww): This is a guess
+    format: date-time
+  status:
+    type: string
+    description: The result's status
+  device_message:
+    type: string
+    description: Placeholder # TODO(ww): Needs description
+  os:
+    type: string
+    description: The device's operating system
+  policy_id:
+    type: integer
+    format: int32 # NOTE(ww): This is a guess
+    description: The device's policy ID
+  policy_name:
+    type: string
+    description: The device's policy name
+  metrics:
+    type: array
+    description: Metrics associated with the device
+    items:
+      type: object
+      description: Individual metrics entries
+      properties:
+        key:
+          type: string
+          description: The name of the particular metric
+        value:
+          type: number
+          format: float
+          description: The value of the particular metric
+            

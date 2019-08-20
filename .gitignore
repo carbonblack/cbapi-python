@@ -65,5 +65,9 @@ target/
 *.ipynb
 .DS_Store
 
+# Eclipse/PyDev
+/.project
+/.pydevproject
+
 # Credential files
 .carbonblack/
