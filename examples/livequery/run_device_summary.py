@@ -5,12 +5,10 @@ from cbapi.psc.livequery.models import Result
 
 
 def main():
-    parser = build_cli_parser("Search the results of a LiveQuery run")
+    parser = build_cli_parser("Search the device summaries of a LiveQuery run")
     parser.add_argument("-i", "--id", type=str, required=True, help="Run ID")
     parser.add_argument("-q", "--query", type=str, required=False, help="Search query")
-    parser.add_argument(
-        "-F", "--fields_only", action="store_true", help="Show only fields"
-    )
+
     parser.add_argument(
         "--device_ids",
         nargs="+",
@@ -19,11 +17,25 @@ def main():
         help="Device IDs to filter on",
     )
     parser.add_argument(
-        "--device_types",
+        "--device_names",
         nargs="+",
-        type=str,
+        type=int,
         required=False,
-        help="Device types to filter on",
+        help="Device names to filter on",
+    )
+    parser.add_argument(
+        "--policy_ids",
+        nargs="+",
+        type=int,
+        required=False,
+        help="Policy IDs to filter on",
+    )
+    parser.add_argument(
+        "--policy_names",
+        nargs="+",
+        type=int,
+        required=False,
+        help="Policy names to filter on",
     )
     parser.add_argument(
         "--statuses",
@@ -44,29 +56,32 @@ def main():
 
     args = parser.parse_args()
     cb = get_cb_livequery_object(args)
-
+    
     results = cb.select(Result).run_id(args.id)
+    result = results.first()
+    if result is None:
+        print("ERROR: No results.")
+        return 1
+    
+    summaries = result.query_device_summaries()
     if args.query:
-        results = results.where(args.query)
-
+        summaries.where(args.query)
     if args.device_ids:
-        results.criteria(device_id=args.device_ids)
-    if args.device_types:
-        results.criteria(device_type=args.device_types)
+        summaries.criteria(device_id=args.device_ids)
+    if args.device_names:
+        summaries.criteria(device_name=args.device_names)
+    if args.policy_ids:
+        summaries.criteria(policy_id=args.policy_ids)
+    if args.policy_names:
+        summaries.criteria(policy_name=args.policy_names)
     if args.statuses:
-        results.criteria(status=args.statuses)
-
+        summaries.criteria(status=args.statuses)
     if args.sort_by:
-        direction = "ASC"
-        if args.descending_results:
-            direction = "DESC"
-        results.sort_by(args.sort_by, direction=direction)
-
-    for result in results:
-        if args.fields_only:
-            print(result.fields_)
-        else:
-            print(result)
+        dir = "DESC" if args.descending_results else "ASC"
+        summaries.sort_by(args.sort_by, direction=dir)
+        
+    for summary in summaries:
+        print(summary)
 
 
 if __name__ == "__main__":

@@ -25,6 +25,33 @@ def create_run(cb, args):
 def run_status(cb, args):
     run = cb.select(Run, args.id)
     print(run)
+    
+    
+def run_stop(cb, args):
+    run = cb.select(Run, args.id)
+    if run.stop():
+        print("Run {} has been stopped.".format(run.id))
+        print(run)
+    else:
+        print("Unable to stop run {}".format(run.id))
+        
+        
+def run_delete(cb, args):
+    run = cb.select(Run, args.id)
+    if run.delete():
+        print("Run {} has been deleted.".format(run.id))
+    else:
+        print("Unable to delete run {}".format(run.id))
+        
+        
+def run_history(cb, args):
+    results = cb.query_history(args.query)
+    if args.sort_by:
+        dir = "DESC" if args.descending_results else "ASC"
+        results.sort_by(args.sort_by, direction=dir)
+    for result in results:
+        print(result)
+    
 
 
 def main():
@@ -72,6 +99,37 @@ def main():
     status_command.add_argument(
         "-i", "--id", type=str, required=True, help="The run ID"
     )
+    
+    stop_command = commands.add_parser(
+        "stop", help="Stops/cancels a current run"
+    )
+    stop_command.add_argument(
+        "-i", "--id", type=str, required=True, help="The run ID"
+    )
+    
+    delete_command = commands.add_parser(
+        "delete", help="Permanently delete a run"
+    )
+    delete_command.add_argument(
+        "-i", "--id", type=str, required=True, help="The run ID"
+    )
+    
+    history_command = commands.add_parser(
+        "history", help="List history of all runs"
+    )
+    history_command.add_argument(
+        "-q", "--query", type=str, required=False, help="Query string to use"
+    )
+    history_command.add_argument(
+        "-S", "--sort_by", type=str, help="sort by this field", required=False
+    )
+    history_command.add_argument(
+        "-D",
+        "--descending_results",
+        help="return results in descending order",
+        action="store_true",
+        required=False
+    )
 
     args = parser.parse_args()
     cb = get_cb_livequery_object(args)
@@ -80,7 +138,12 @@ def main():
         return create_run(cb, args)
     elif args.command_name == "status":
         return run_status(cb, args)
-
+    elif args.command_name == "stop":
+        return run_stop(cb, args)
+    elif args.command_name == "delete":
+        return run_delete(cb, args)
+    elif args.command_name == "history":
+        return run_history(cb, args)
 
 if __name__ == "__main__":
     sys.exit(main())

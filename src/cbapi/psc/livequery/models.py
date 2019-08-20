@@ -160,7 +160,10 @@ class Result(UnrefreshableModel):
         self._run_id = initial_data["id"]
         self._device = Result.Device(cb, initial_data=initial_data["device"])
         self._fields = Result.Fields(cb, initial_data=initial_data["fields"])
-        self._metrics = Result.Metrics(cb, initial_data=initial_data["metrics"])
+        if "metrics" in initial_data:
+            self._metrics = Result.Metrics(cb, initial_data=initial_data["metrics"])
+        else:
+            self._metrics = Result.Metrics(cb, initial_data=None)
 
     @property
     def device_(self):

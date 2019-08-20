@@ -35,6 +35,7 @@ def build_cli_parser(description="Cb Example Script"):
 
     parser.add_argument("--cburl", help="CB server's URL.  e.g., http://127.0.0.1 ")
     parser.add_argument("--apitoken", help="API Token for Carbon Black server")
+    parser.add_argument("--orgkey", help="Organization key value for Carbon Black server")
     parser.add_argument("--no-ssl-verify", help="Do not verify server SSL certificate.", action="store_true",
                         default=False)
     parser.add_argument("--profile", help="profile to connect", default="default")
@@ -50,7 +51,6 @@ def disable_insecure_warnings():
 
 def get_cb_response_object(args):
     if args.verbose:
-        import logging
         logging.basicConfig()
         logging.getLogger("cbapi").setLevel(logging.DEBUG)
         logging.getLogger("__main__").setLevel(logging.DEBUG)
@@ -95,7 +95,6 @@ def get_cb_defense_object(args):
 
 def get_cb_threathunter_object(args):
     if args.verbose:
-        import logging
         logging.basicConfig()
         logging.getLogger("cbapi").setLevel(logging.DEBUG)
         logging.getLogger("__main__").setLevel(logging.DEBUG)
@@ -110,13 +109,13 @@ def get_cb_threathunter_object(args):
 
 def get_cb_livequery_object(args):
     if args.verbose:
-        import logging
         logging.basicConfig()
         logging.getLogger("cbapi").setLevel(logging.DEBUG)
         logging.getLogger("__main__").setLevel(logging.DEBUG)
 
-    if args.cburl and args.apitoken:
-        cb = CbLiveQueryAPI(url=args.cburl, token=args.apitoken, ssl_verify=(not args.no_ssl_verify))
+    if args.cburl and args.apitoken and args.orgkey:
+        cb = CbLiveQueryAPI(url=args.cburl, token=args.apitoken, org_key=args.orgkey,
+                             ssl_verify=(not args.no_ssl_verify))
     else:
         cb = CbLiveQueryAPI(profile=args.profile)
 

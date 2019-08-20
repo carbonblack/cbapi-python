@@ -162,13 +162,15 @@ class IterableQueryMixin:
         return self._perform_query()
 
     def first(self):
-        res = self[:1]
+        allres = list(self)
+        res = allres[:1]
         if not len(res):
             return None
         return res[0]
 
     def one(self):
-        res = self[:2]
+        allres = list(self)
+        res = allres[:2]
         if len(res) == 0:
             raise MoreThanOneResultError(
                 message="0 results for query {0:s}".format(self._query)
@@ -308,11 +310,9 @@ class RunHistoryQuery(LiveQueryBase, IterableQueryMixin):
         :return: Query object
         :rtype: :py:class:`Query`
         """
-        if not q and not kwargs:
-            raise ApiError(
-                ".where() expects a string, a QueryBuilder, a solrq.Q, or kwargs"
-            )
 
+        if not q:
+            return self
         if isinstance(q, QueryBuilder):
             self._query_builder = q
         else:
@@ -377,8 +377,10 @@ class RunHistoryQuery(LiveQueryBase, IterableQueryMixin):
         return self
 
     def _build_request(self, start, rows):
-        request = {"start": start, "query": self._query_builder._collapse()}
+        request = {"start": start }
 
+        if self._query_builder:
+            request["query"] = self._query_builder._collapse();
         if rows != 0:
             request["rows"] = rows
         if self._sort:
