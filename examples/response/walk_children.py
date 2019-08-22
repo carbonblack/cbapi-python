@@ -23,12 +23,13 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--process", "-p", help="process GUID to walk", default='')
     group.add_argument("--query", "-q", help="walk the children of all processes matching this query")
+    parser.add_argument("--children", "-c", default=15, help="number of children to fetch")
     args = parser.parse_args()
     c = get_cb_response_object(args)
 
     if args.process:
         try:
-            procs = [c.select(Process, args.process, force_init=True)]
+            procs = [c.select(Process, args.process, max_children=args.children, force_init=True)]
         except ObjectNotFoundError as e:
             print("Could not find process {0:s}".format(args.procss))
             return 1
@@ -39,7 +40,7 @@ def main():
             print("Encountered unknown error retrieving process: {0:s}".format(str(e)))
             return 1
     elif args.query:
-        procs = c.select(Process).where(args.query).group_by("id")
+        procs = c.select(Process).where(args.query).group_by("id").max_children(args.children)
     else:
         print("Requires either a --process or --query argument")
         parser.print_usage()

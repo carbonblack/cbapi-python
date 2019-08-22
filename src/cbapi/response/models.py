@@ -1407,6 +1407,30 @@ class ProcessQuery(WatchlistEnabledQuery):
             log.debug("group_by only supported in Cb Response 6.1+")
             return self
 
+    def max_children(self, num_children):
+        """Sets the number of children to fetch with the process
+
+        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
+        to a Cb Response 5.x server will simply result in a no-op.
+
+        :default: 15
+        :param int num_children: Number of children to fetch with process
+        :return: Query object
+        :rtype: :py:class:`ProcessQuery`
+        """
+        nq = self._clone()
+        try:
+            num_children = int(num_children)
+        except ValueError:
+            num_children = 15
+
+        nq.max_children = num_children
+        return nq
+
+    def _perform_query(self, start=0, numrows=0):
+        for item in self._search(start=start, rows=numrows):
+            yield self._doc_class.new_object(self._cb, item, self.max_children)
+
     def set_legacy_mode(self, new_value=True):
         self._default_args["cb.legacy_5x_mode"] = new_value
 
@@ -2108,9 +2132,9 @@ class Process(TaggedModel):
         return ProcessQuery(cls, cb)
 
     @classmethod
-    def new_object(cls, cb, item):
+    def new_object(cls, cb, item, max_children=15):
         # 'id' did not exist in some process documents from a 5.2 -> 6.1 upgrade
-        return cb.select(Process, item['id'] or item['unique_id'], long(item['segment_id']), initial_data=item)
+        return cb.select(Process, item['id'] or item['unique_id'], long(item['segment_id']), max_children, initial_data=item)
 
     def parse_guid(self, procguid):
         try:
@@ -2125,7 +2149,8 @@ class Process(TaggedModel):
             else:
                 return None, None
 
-    def __init__(self, cb, procguid, segment=None, initial_data=None, force_init=False, suppressed_process=False):
+    def __init__(self, cb, procguid, segment=None, max_children=15, initial_data=None, force_init=False, suppressed_process=False):
+        self.max_children = max_children
         self.current_segment = segment
         self.suppressed_process = suppressed_process
         if suppressed_process:
@@ -2238,7 +2263,7 @@ class Process(TaggedModel):
         return super(Process, self)._attribute(attrname, default=default)
 
     def _build_api_request_uri(self):
-        return "/api/v1/process/{0}/{1}".format(self.id, self._default_segment)
+        return "/api/v1/process/{0}/{1}?children={2}".format(self.id, self._default_segment, self.max_children)
 
     def _retrieve_cb_info(self, query_parameters=None):
         if self.suppressed_process or not self.valid_process:
