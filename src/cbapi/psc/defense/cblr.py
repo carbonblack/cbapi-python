@@ -112,7 +112,7 @@ class LiveResponseSessionManager(CbLRManagerBase):
 
     def _close_session(self, session_id):
         try:
-            self._cb.put_object("{cblr_base}/session".format(session_id, cblr_base=self.cblr_base),
+            self._cb.put_object("{cblr_base}/session/{0}".format(session_id, cblr_base=self.cblr_base),
                                 {"session_id": session_id, "status": "CLOSE"})
         except:
             pass
