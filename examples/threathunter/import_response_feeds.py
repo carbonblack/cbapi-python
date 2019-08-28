@@ -11,7 +11,9 @@ import logging
 
 log = logging.getLogger(__name__)
 
-
+"""
+Lists the feeds in CB Response
+"""
 def list_feeds(cb, parser, args):
     for f in cb.select(Feed):
         for fieldname in ["id", "category", "display_name", "enabled", "provider_url", "summary", "tech_data",
@@ -28,14 +30,26 @@ def list_feeds(cb, parser, args):
 
         print("\n")
 
+"""
+Lists the reports in a feed from CB Response
+:param: id - The ID of a feed
+"""
 def list_reports(cb, parser, args):
         feed = cb.select(Feed, args.id, force_init=True)
         for report in feed.reports:
             print (report)
             print("\n")
 
+"""
+Converts and copies a feed from CB Response to CB Threat Hunter
+:param: id - The ID of a feed from CB Response
+
+Requires a credentials profile for both CB Response and CB Threat Hunter
+    Ensure that your credentials for CB Threat Hunter have permissions to the Feed Manager APIs
+"""
 def convert_feed(cb, cb_th, parser, args):
         th_feed = { "feedinfo": {}, "reports": []}
+        # Fetches the CB Response feed
         feed = cb.select(Feed, args.id, force_init=True)
 
         th_feed["feedinfo"]["name"] = feed.name
@@ -48,6 +62,7 @@ def convert_feed(cb, cb_th, parser, args):
         th_feed["feedinfo"]["owner"] = "org_key"
         th_feed["feedinfo"]["id"] = "id"
 
+        # Iterates the reports in the CB Response feed
         for report in feed.reports:
             th_report = {}
             th_report["id"] = report.id
@@ -81,7 +96,7 @@ def convert_feed(cb, cb_th, parser, args):
                                 for p in params:
                                     if "q=" in p:
                                         search = unquote(p[2:])
-
+                            # Converts the CB Response query to CB Threat Hunter
                             th_query = cb_th.convert_query(search)
                             if th_query:
                                 query["search_query"] = th_query
@@ -91,6 +106,7 @@ def convert_feed(cb, cb_th, parser, args):
 
             th_feed["reports"].append(th_report)
 
+        # Pushes the new feed to CB Threat Hunter
         new_feed = cb_th.create(FeedTH, th_feed)
         new_feed.save()
         print ("{}\n".format(new_feed))
