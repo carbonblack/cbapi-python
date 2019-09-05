@@ -255,7 +255,8 @@ class Query(PaginatedQuery):
     def _get_query_parameters(self):
         args = self._default_args.copy()
         args['q'] = self._query_builder._collapse()
-        args["cb.process_guid"] = self._query_builder._process_guid
+        if self._query_builder._process_guid != None:
+            args["cb.process_guid"] = self._query_builder._process_guid
         args["fl"] = "*,parent_hash,parent_name,process_cmdline,backend_timestamp,device_external_ip,device_group,device_internal_ip,device_os,process_effective_reputation,process_reputation,ttp"
 
         return args
