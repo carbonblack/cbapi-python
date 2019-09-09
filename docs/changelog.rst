@@ -1,6 +1,20 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.5.2 - Released September 9, 2019
+----------------------------------------
+
+Updates
+
+* CB Response
+    * Add support for max_children on Process search
+* CB LiveOps
+    * Add LQ device summaries
+    * Add faceting for LQ results and LQ device summaries
+    * Add LQ run history
+* CB ThreatHunter
+    * Fix an invalid search job creation
+
 CbAPI 1.5.1 - Released July 23, 2019
 ----------------------------------------
 
@@ -18,10 +32,10 @@ CbAPI 1.5.0 - Released July 23, 2019
 Updates
 
 * CB LiveOps
-    * Start new LiveQuery (LQ) runs 
+    * Start new LiveQuery (LQ) runs
     * Fetch LQ results
     * View LQ run status
-    * Filter on LQ results 
+    * Filter on LQ results
 * PSC Org Key Management
     * Added support for org key management within CBAPI
     * Credentials utility for org keys
@@ -44,7 +58,7 @@ Updates
     * Org-based process search
     * Org-based event search
     * Org-based tree queries
-* Minor updates for Python3 Compatibility 
+* Minor updates for Python3 Compatibility
 
 Examples
 
@@ -72,7 +86,7 @@ Updates
 
 * CB ThreatHunter - Feed fixes `#156 <https://github.com/carbonblack/cbapi-python/pull/156>`_
 * CB Response - Change Alert model object to use v2 route `#155 <https://github.com/carbonblack/cbapi-python/pull/155>`_
-* CB Response - Only view active LR sessions `#154 <https://github.com/carbonblack/cbapi-python/pull/154>`_  
+* CB Response - Only view active LR sessions `#154 <https://github.com/carbonblack/cbapi-python/pull/154>`_
 * Removing refs to VT alliance feeds `#144 <https://github.com/carbonblack/cbapi-python/pull/144>`_
 
 Examples
