@@ -1,0 +1,25 @@
+type: object
+required:
+- description
+- name
+- policy
+- priorityLevel
+- version
+properties:
+  description:
+    type: string
+  id:
+    type: integer
+  latestRevision:
+    type: integer
+  name:
+    type: string
+  policy:
+    type: object
+  priorityLevel:
+    type: string
+  systemPolicy:
+    type: boolean
+  version:
+    type: integer
+
