@@ -995,8 +995,8 @@ class Watchlist(FeedModel):
         url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/{}"
         reports_ = []
         for rep_id in self.report_ids:
-            url = url.format(self._cb.credentials.org_key, rep_id)
-            resp = self._cb.get_object(url)
+            path = url.format(self._cb.credentials.org_key, rep_id)
+            resp = self._cb.get_object(path)
             reports_.append(Report(self._cb, initial_data=resp, from_watchlist=True))
 
         return reports_
