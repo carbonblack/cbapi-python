@@ -1,5 +1,5 @@
 from cbapi.psc.threathunter.query import Query
-from cbapi.psc import CbPSCBaseAPI
+from cbapi.psc.rest_api import CbPSCBaseAPI
 from cbapi.psc.threathunter.models import ReportSeverity
 from cbapi.errors import CredentialError
 import logging

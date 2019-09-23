@@ -1,7 +1,7 @@
 from cbapi.utils import convert_query_params
 from cbapi.query import PaginatedQuery
 
-from cbapi.psc import CbPSCBaseAPI
+from cbapi.psc.rest_api import CbPSCBaseAPI
 import logging
 import time
 
