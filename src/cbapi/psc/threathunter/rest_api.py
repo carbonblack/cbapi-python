@@ -6,7 +6,6 @@ import logging
 
 log = logging.getLogger(__name__)
 
-
 class CbThreatHunterAPI(CbPSCBaseAPI):
     """The main entry point into the Carbon Black Cloud ThreatHunter API.
 
