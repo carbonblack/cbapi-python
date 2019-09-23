@@ -1,5 +1,5 @@
 from cbapi.psc.threathunter.query import Query
-from cbapi.connection import BaseAPI
+from cbapi.psc import CbPSCBaseAPI
 from cbapi.psc.threathunter.models import ReportSeverity
 from cbapi.errors import CredentialError
 import logging
@@ -7,7 +7,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class CbThreatHunterAPI(BaseAPI):
+class CbThreatHunterAPI(CbPSCBaseAPI):
     """The main entry point into the Cb ThreatHunter PSC API.
 
     :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server.
@@ -19,8 +19,7 @@ class CbThreatHunterAPI(BaseAPI):
     >>> cb = CbThreatHunterAPI(profile="production")
     """
     def __init__(self, *args, **kwargs):
-        super(CbThreatHunterAPI, self).__init__(product_name="psc", *args, **kwargs)
-        self._lr_scheduler = None
+        super(CbThreatHunterAPI, self).__init__(*args, **kwargs)
 
         if not self.credentials.get("org_key", None):
             raise CredentialError("No organization key specified")

@@ -1,0 +1,221 @@
+type: object
+properties:
+  osVersion:
+    type: string
+  activationCode:
+    type: string
+  organizationId:
+    type: integer
+    format: int64
+  deviceId:
+    type: integer
+    format: int64
+  deviceSessionId:
+    type: integer
+    format: int64
+  deviceOwnerId:
+    type: integer
+    format: int64
+  deviceGuid:
+    type: string
+    format: uuid
+  email:
+    type: string
+    format: email
+  assignedToId:
+    type: integer
+    format: int64
+  assignedToName:
+    type: string
+  deviceType:
+    type: string
+    x-nullable: true
+    enum:
+      - "MAC"
+      - "WINDOWS"
+  firstName:
+    type: string
+  lastName:
+    type: string
+  middleName:
+    type: string
+  createTime:
+    type: integer
+    format: epoch-ms-date-time
+  policyId:
+    type: integer
+    format: int64
+  policyName:
+    type: string
+  quarantined:
+    type: boolean
+  targetPriorityType:
+    type: string
+    x-nullable: true
+    enum:
+    - "HIGH"
+    - "LOW"
+    - "MEDIUM"
+    - "MISSION_CRITICAL"
+  lastVirusActivityTime:
+    type: integer
+    format: epoch-ms-date-time
+  firstVirusActivityTime:
+    type: integer
+    format: epoch-ms-date-time
+  activationCodeExpiryTime:
+    type: integer
+    format: epoch-ms-date-time
+  organizationName:
+    type: string
+  sensorVersion:
+    type: string
+  registeredTime:
+    type: integer
+    format: epoch-ms-date-time
+  lastContact:
+    type: integer
+    format: epoch-ms-date-time
+  lastReportedTime:
+    type: integer
+    format: epoch-ms-date-time
+  windowsPlatform:
+    type: string
+    x-nullable: true
+    enum:
+      - "CLIENT_X64"
+      - "CLIENT_X86"
+      - "SERVER_X6"
+      - "SERVER_X86"
+  vdiBaseDevice:
+    type: integer
+    format: int64
+  avStatus:
+    type: array
+    items:
+      type: string
+      x-nullable: true
+      enum:
+        - "AV_ACTIVE"
+        - "AV_BYPASS"
+        - "AV_DEREGISTERED"
+        - "AV_NOT_REGISTERED"
+        - "AV_REGISTERED"
+        - "FULLY_DISABLED"
+        - "FULLY_ENABLED"
+        - "INSTALLED"
+        - "INSTALLED_SERVER"
+        - "NOT_INSTALLED"
+        - "ONACCESS_SCAN_DISABLED"
+        - "ONDEMAND_SCAN_DISABLED"
+        - "ONDEMOND_SCAN_DISABLED"
+        - "PRODUCT_UPDATE_DISABLED"
+        - "SIGNATURE_UPDATE_DISABLED"
+        - "UNINSTALLED"
+        - "UNINSTALLED_SERVER"
+  deregisteredTime:
+    type: integer
+    format: epoch-ms-date-time
+  sensorStates:
+    type: array
+    items:
+      type: string
+      x-nullable: true
+      enum:
+        - "ACTIVE"
+        - "CSR_ACTION"
+        - "DB_CORRUPTION_DETECTED"
+        - "DRIVER_INIT_ERROR"
+        - "LOOP_DETECTED"
+        - "PANICS_DETECTED"
+        - "REMGR_INIT_ERROR"
+        - "REPUX_ACTION"
+        - "SENSOR_MAINTENANCE"
+        - "SENSOR_RESET_IN_PROGRESS"
+        - "SENSOR_SHUTDOWN"
+        - "SENSOR_UNREGISTERED"
+        - "SENSOR_UPGRADE_IN_PROGRESS"
+        - "UNSUPPORTED_OS"
+        - "WATCHDOG"
+  messages:
+    type: array
+    items:
+      type: object
+      properties:
+        message:
+          type: string
+        time:
+          type: integer
+          format: epoch-ms-date-time
+  rootedBySensor:
+    type: boolean
+  rootedBySensorTime:
+    type: integer
+    format: epoch-ms-date-time
+  lastInternalIpAddress:
+    type: string
+  lastExternalIpAddress:
+    type: string
+  lastLocation:
+    type: string
+    x-nullable: true
+    enum:
+      - "OFFSITE"
+      - "ONSITE"
+      - "UNKNOWN"
+  avUpdateServers:
+    type: array
+    items:
+      type: string
+  passiveMode:
+    type: boolean
+  lastResetTime:
+    type: integer
+    format: epoch-ms-date-time
+  lastShutdownTime:
+    type: integer
+    format: epoch-ms-date-time
+  scanStatus:
+    type: string
+  scanLastActionTime:
+    type: integer
+    format: epoch-ms-date-time
+  scanLastCompleteTime:
+    type: integer
+    format: epoch-ms-date-time
+  linuxKernelVersion:
+    type: string
+  avEngine:
+    type: string
+  avLastScanTime:
+    type: integer
+    format: epoch-ms-date-time
+  rootedByAnalytics:
+    type: boolean
+  rootedByAnalyticsTime:
+    type: integer
+    format: epoch-ms-date-time
+  testId:
+    type: integer
+  avMaster:
+    type: boolean
+  uninstalledTime:
+    type: integer
+    format: epoch-ms-date-time
+  name:
+    type: string
+  status:
+    type: string
+    x-nullable: true
+    enum:
+      - "ACTIVE"
+      - "ALL"
+      - "BYPASS"
+      - "BYPASS_ON"
+      - "DEREGISTERED"
+      - "ERROR"
+      - "INACTIVE"
+      - "PENDING"
+      - "QUARANTINE"
+      - "REGISTERED"
+      - "UNINSTALLED"
