@@ -1,12 +1,12 @@
 from cbapi.psc.livequery.models import Run, RunHistory
-from cbapi.connection import BaseAPI
+from cbapi.psc import CbPSCBaseAPI
 from cbapi.errors import CredentialError, ApiError
 import logging
 
 log = logging.getLogger(__name__)
 
 
-class CbLiveQueryAPI(BaseAPI):
+class CbLiveQueryAPI(CbPSCBaseAPI):
     """The main entry point into the Carbon Black Cloud LiveQuery API.
 
     :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server.
@@ -18,8 +18,7 @@ class CbLiveQueryAPI(BaseAPI):
     >>> cb = CbLiveQueryAPI(profile="production")
     """
     def __init__(self, *args, **kwargs):
-        super(CbLiveQueryAPI, self).__init__(product_name="psc", *args, **kwargs)
-        self._lr_scheduler = None
+        super(CbLiveQueryAPI, self).__init__(*args, **kwargs)
 
         if not self.credentials.get("org_key", None):
             raise CredentialError("No organization key specified")
