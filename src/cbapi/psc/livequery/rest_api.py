@@ -1,5 +1,5 @@
 from cbapi.psc.livequery.models import Run, RunHistory
-from cbapi.psc import CbPSCBaseAPI
+from cbapi.psc.rest_api import CbPSCBaseAPI
 from cbapi.errors import CredentialError, ApiError
 import logging
 
