@@ -8,6 +8,7 @@ from cbapi.errors import TimeoutError
 from cbapi.live_response_api import CbLRManagerBase, CbLRSessionBase, poll_status
 from cbapi.psc.models import Device
 
+
 OS_LIVE_RESPONSE_ENUM = {
     "WINDOWS": 1,
     "LINUX": 2,
