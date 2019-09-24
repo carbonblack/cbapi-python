@@ -67,6 +67,7 @@ class EnvarCredentialStore(object):
         self.cbapi_url = environ.get('CBAPI_URL',None)
         self.cbapi_token = environ.get('CBAPI_TOKEN',None)
         self.cbapi_ssl_verify = environ.get('CBAPI_SSL_VERIFY',True)
+        self.org_key = environ.get('CBAPI_ORG_KEY', None)
         self.credentials = Credentials(url=self.cbapi_url,token=self.cbapi_token,ssl_verify=self.cbapi_ssl_verify)
 
     def get_credentials(self,profile=None):
