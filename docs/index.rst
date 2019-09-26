@@ -129,7 +129,7 @@ Once you acquire your API token, place it in one of the default credentials file
 
 * ``/etc/carbonblack/``
 * ``~/.carbonblack/``
-* ``current_working_directory/.carbonblack/``
+* ``/current_working_directory/.carbonblack/``
 
 For distinction between credentials of different Carbon Black products, use the following naming convention for your credentials files:
 
@@ -141,7 +141,7 @@ For example, if you use a PSC product, you should have created a credentials fil
 
 * ``/etc/carbonblack/credentials.psc``
 * ``~/.carbonblack/credentials.psc``
-* (current working directory) ``.carbonblack/credentials.psc``
+* ``/current_working_directory/.carbonblack/credentials.psc``
 
 Credentials found in a later path will overwrite earlier ones.
 
