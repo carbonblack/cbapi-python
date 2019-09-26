@@ -110,9 +110,9 @@ Once you acquire your API token, place it in one of the default credentials file
 
 For distinction between credentials of different Carbon Black products, use the following naming convention for your credentials files:
 
-*``credentials.psc`` for CB Defense, CB ThreatHunter, and CB LiveOps
-*``credentials.response`` for CB Response
-*``credentials.protection`` for CB Protection
+* ``credentials.psc`` for CB Defense, CB ThreatHunter, and CB LiveOps
+* ``credentials.response`` for CB Response
+* ``credentials.protection`` for CB Protection
 
 For example, if you use a PSC product, you should have created a credentials file in one of these locations:
 
