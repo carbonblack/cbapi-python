@@ -50,7 +50,7 @@ class CbPSCBaseAPI(BaseAPI):
         if options:
             request["options"] = options
         url = "/appservices/v6/orgs/{0}/device_actions".format(self.credentials.org_key)
-        resp = self._cb.post_object(url, body=request)
+        resp = self.post_object(url, body=request)
         if resp.status_code == 200:
             return resp.json()
         elif resp.status_code == 204:

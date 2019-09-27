@@ -2,5 +2,5 @@
 
 from __future__ import absolute_import
 
-from cbapi.psc.rest_api import CbPSCBaseAPI
-from cbapi.psc.models import Device
+from .rest_api import CbPSCBaseAPI
+from .models import Device
