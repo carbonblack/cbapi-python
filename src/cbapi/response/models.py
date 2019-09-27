@@ -2136,7 +2136,8 @@ class Process(TaggedModel):
         # 'id' did not exist in some process documents from a 5.2 -> 6.1 upgrade
         return cb.select(Process, item['id'] or item['unique_id'], long(item['segment_id']), max_children, initial_data=item)
 
-    def parse_guid(self, procguid):
+    @staticmethod
+    def parse_guid(procguid, cb_server_version):
         try:
             # old 4.x process IDs are integers.
             return int(procguid), None
@@ -2144,7 +2145,7 @@ class Process(TaggedModel):
             # new 5.x process IDs are hex strings with optional segment IDs.
             if len(procguid) == 45:
                 return procguid[:36], int(procguid[38:], 16)
-            elif len(procguid) == 49 and self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            elif len(procguid) == 49 and cb_server_version >= LooseVersion('6.0.0'):
                 return procguid[:36], int(procguid[38:], 16)
             else:
                 return None, None
@@ -2172,23 +2173,13 @@ class Process(TaggedModel):
         else:
             self._default_segment = 0
 
-        try:
-            # old 4.x process IDs are integers.
-            self.id = int(procguid)
-        except ValueError:
-            # new 5.x process IDs are hex strings with optional segment IDs.
-            if len(procguid) == 45:
-                self.id = procguid[:36]
-                self.current_segment = int(procguid[38:], 16)
-            elif len(procguid) == 49 and cb.cb_server_version >= LooseVersion('6.0.0'):
-                self.id = procguid[:36]
-                self.current_segment = int(procguid[38:], 16)
-            else:
-                self.id = procguid
-                if len(procguid) != 36:
-                    log.debug("Invalid process GUID: %s, declaring this process as invalid" % procguid)
-                    self.valid_process = False
-                    self._full_init = True
+        self.id, self.current_segment = Process.parse_guid(procguid, cb.cb_server_version)
+        if not (self.id and self.current_segment):
+            self.id = procguid
+            if len(procguid) != 36:
+                log.debug("Invalid process GUID: %s, declaring this process as invalid" % procguid)
+                self.valid_process = False
+                self._full_init = True
 
         if not self.current_segment:
             self.current_segment = self._default_segment
@@ -2607,7 +2598,7 @@ class Process(TaggedModel):
                 log.debug("using segment API route for cb response server >= 6.0")
                 res = self._cb.get_object("/api/v1/process/{0}/segment".format(self.id))\
                     .get("process", {}).get("segments", {})
-                proclist = [self.parse_guid(x["unique_id"])[1] for x in res]
+                proclist = [Process.parse_guid(x["unique_id"], self._cb.cb_server_version)[1] for x in res]
 
             self._segments = proclist
 
