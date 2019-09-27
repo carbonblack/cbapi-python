@@ -16,6 +16,7 @@ import cbapi.six as six
 import logging
 import time
 
+from itertools import chain
 from cbapi.utils import convert_query_params
 from ..errors import InvalidObjectError, ApiError, TimeoutError
 from ..oldmodels import BaseModel, immutable
@@ -2857,63 +2858,78 @@ class Process(TaggedModel):
                 i += 1
 
     @property
+    def childprocs(self):
+        """
+        Generator that returns :py:class:`CbChildProcEvent` objects associated with this process
+        """
+        self.require_events(segment=self.current_segment)
+
+        i = 0
+        for segment in self._events:
+            for raw_childproc in self._events[segment].get('childproc_complete', []):
+                yield self._event_parser.parse_childproc(i, raw_childproc)
+                i += 1
+
+    @property
     def parents(self):
         current_process = self
         while True:
-            try:
-                parent = current_process.parent
-                if not(parent) or parent.get('process_pid', -1) == -1:
-                    break
-                yield parent
-                current_process = parent
-            except ObjectNotFoundError:
-                return
+                try :
+                    parent = current_process.parent
+                    if not(parent) or parent.get('process_pid',-1) == -1:
+                        break
+                    yield parent
+                    current_process = parent
+                except ObjectNotFoundError:
+                    return
         return
 
     @property
     def children(self):
         """
-        Generator that returns :py:class:`CbChildProcEvent` objects associated with this process
+        Generator that returns :py:class:`Process` objects of the children of this process
         """
 
-        # Try and take a shortcut; generate the list of children from the process "summary" rather than the list
-        # of raw events first.
+        # Generate a list of children as the union of the children in the process summary and childprocs, as either
+        # one of the two might be incomplete.
 
-        # This is a little different from how the children() method worked before; the most noticeable differences are:
-        # - only one entry is present per child (before there were up to two; one for the spawn event, one for the
-        #   terminate event)
-        # - the timestamp is derived from the start time of the process, not the timestamp from the spawn event.
-        #   the two timestamps will be off by a few microseconds.
+        def parse_childinfo(childinfo):
+            procguid = childinfo['unique_id']
+            suppressed_process = childinfo.get('is_suppressed', False)
 
-        if self._children_info is not None:
-            for i, child in enumerate(self._children_info):
-                timestamp = convert_event_time(child.get("start") or "1970-01-01T00:00:00Z")
-                yield CbChildProcEvent(self, timestamp, i,
-                                       {
-                                           "procguid": child.get("unique_id", None),
-                                           "md5": child.get("process_md5", None),
-                                           "pid": child.get("process_pid", None),
-                                           "path": child.get("path", None),
-                                           "terminated": False
-                                       },
-                                       is_suppressed=child.get("is_suppressed", False),
-                                       proc_data=child)
-        else:
-            for cp in self.childprocs:
-                yield cp
+            childinfo['parent_id'] = self.id
+            childinfo['parent_unique_id'] = self._model_unique_id
+            childinfo['parent_md5'] = self.process_md5
+            childinfo['parent_pid'] = self.process_pid
+            childinfo['parent_name'] = self.process_name
+            childinfo['group'] = self._info['group']
+            childinfo['os_type'] = self._info['os_type']
+            childinfo['hostname'] = self._info['hostname']
+            childinfo['interface_ip'] = self._info['interface_ip']
 
-    @property
-    def childprocs(self):
-        """
-        Generator that returns :py:class:`CbChildProcEvent` objects associated with this process
-        """
+            if not childinfo.get('id'):
+                childinfo['id'] = '-'.join(procguid.split('-')[:5])
 
-        self.require_events()
+            if not childinfo.get('start'):
+                proc_createtime = parse_process_guid(procguid)[2]
+                childinfo['start'] = convert_to_solr(proc_createtime)
 
-        i = 0
-        for raw_childproc in self._events.get(self.current_segment, {}).get('childproc_complete', []):
-            yield self._event_parser.parse_childproc(i, raw_childproc)
-            i += 1
+            if not childinfo.get('last_update') and childinfo.get('lastUpdate'):
+                childinfo['last_update'] = childinfo['lastUpdate']
+                del childinfo['lastUpdate']
+
+            return self._cb.select(Process, procguid, initial_data=childinfo, suppressed_process=suppressed_process)
+
+        childprocs = (childproc.process for childproc in self.childprocs)
+        childinfos = (parse_childinfo(childinfo) for childinfo in self._children_info)
+
+        ids = set()
+        for child in chain(childprocs, childinfos):
+            if child.id in ids:
+                continue
+
+            ids.add(child.id)
+            yield child
 
     @property
     def all_events_segment(self):
