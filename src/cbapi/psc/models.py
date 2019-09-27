@@ -1,9 +1,11 @@
 from cbapi.models import MutableBaseModel
 from cbapi.errors import ServerError
+from cbapi.psc.query import DeviceSearchQuery
 
 from copy import deepcopy
 import logging
 import json
+import time
 
 log = logging.getLogger(__name__)
 
@@ -105,14 +107,26 @@ class PSCMutableModel(MutableBaseModel):
 
 
 class Device(PSCMutableModel):
-    urlobject = "/integrationServices/v3/device"
-    primary_key = "deviceId"
-    info_key = "deviceInfo"
+    urlobject = "/appservices/v6/orgs/{0}/devices"
+    urlobject_single = "/appservices/v6/orgs/{0}/devices/{1}"
+    primary_key = "device_id"
+    #info_key = "deviceInfo"
     swagger_meta_file = "psc/models/deviceInfo.yaml"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(Device, self).__init__(cb, model_unique_id, initial_data)
 
+    @classmethod
+    def _query_implementation(cls, cb):
+        return DeviceSearchQuery(cls, cb)
+    
+    def _refresh(self):
+        url = self.urlobject_single.format(self._cb.credentials.org_key, self._model_unique_id)
+        resp = self._cb.get_object(url)
+        self._info = resp
+        self._last_refresh_time = time.time()
+        return True
+        
     def lr_session(self):
         """
         Retrieve a Live Response session object for this Device.
@@ -124,4 +138,57 @@ class Device(PSCMutableModel):
         """
         return self._cb._request_lr_session(self._model_unique_id)
 
+    def background_scan(self, flag):
+        """
+        Set the background scan option for this device.
+        
+        :param boolean flag: True to turn background scan on, False to turn it off.
+        """
+        return self._cb.device_background_scan([ self._model_unique_id ], flag)
+    
+    def bypass(self, flag):
+        """
+        Set the bypass option for this device.
+        
+        :param boolean flag: True to enable bypass, False to disable it.
+        """
+        return self._cb.device_bypass([ self._model_unique_id ], flag)
+        
+    def delete_sensor(self):
+        """
+        Delete this sensor device.
+        """
+        return self._cb.device_delete_sensor([ self._model_unique_id ])
+        
+    def deregister_sensor(self):
+        """
+        Deregister this sensor device.
+        """
+        return self._cb.device_deregister_sensor([ self._model_unique_id ])
+        
+    def quarantine(self, flag):
+        """
+        Set the quarantine option for this device.
+        
+        :param boolean flag: True to enable quarantine, False to disable it.
+        """
+        return self._cb.device_quarantine([ self._model_unique_id ], flag)
+        
+    def update_policy(self, policy_id):
+        """
+        Set the current policy for this device.
+        
+        :param int policy_id: ID of the policy to set for the devices.
+        """
+        return self._cb.device_update_policy([ self._model_unique_id ], policy_id)
+        
+    def update_sensor_version(self, sensor_version):
+        """
+        Update the sensor version for this device.
+        
+        :param dict sensor_version: New version of the sensor;
+                                    specified as { "OS": "versionnumber" }
+        """
+        return self._cb.device_update_sensor_version([ self._model_unique_id ], sensor_version)
 
+        

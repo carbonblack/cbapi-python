@@ -268,6 +268,21 @@ class BaseAPI(object):
             return default
         else:
             raise ServerError(error_code=result.status_code, message="Unknown error: {0}".format(result.content))
+        
+    def get_raw_data(self, uri, query_parameters=None, default=None):
+        if query_parameters:
+            if isinstance(query_parameters, dict):
+                query_parameters = convert_query_params(query_parameters)
+            uri += '?%s' % (urllib.parse.urlencode(sorted(query_parameters)))
+            
+        result = self.api_json_request("GET", uri)
+        if result.status_code == 200:
+            return result
+        elif result.status_code == 204:
+            # empty response
+            return default
+        else:
+            raise ServerError(error_code=result.status_code, message="Unknown error: {0}".format(result.content))
 
     def api_json_request(self, method, uri, **kwargs):
         headers = kwargs.pop("headers", {})
