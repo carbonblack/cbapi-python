@@ -2125,6 +2125,15 @@ class Process(TaggedModel):
     urlobject = '/api/v1/process'
     default_sort = 'last_update desc'
 
+    invalid_id = 'ffff-ffff-0000-000000000000'
+    invalid_pid = -1
+    invalid_name = '(unknown)'
+    invalid_start = -1
+
+    defaults = {                \
+        'process_md5': '0' * 32 \
+    }
+
     @classmethod
     def _query_implementation(cls, cb):
         return ProcessQuery(cls, cb)
@@ -2158,14 +2167,13 @@ class Process(TaggedModel):
             log.debug("{0} is suppressed".format(procguid))
 
         self.valid_process = True
-        self._overrides = {}
 
         self._events_loaded = False
         self._events = {}
         self._segments = []
-        self.__parent_info = None
-        self.__children_info = None
-        self.__sibling_info = None
+        self.__parent_info = {}
+        self.__children_info = []
+        self.__sibling_info = []
 
         if cb.cb_server_version < LooseVersion('6.0.0'):
             self._default_segment = 1
@@ -2245,9 +2253,6 @@ class Process(TaggedModel):
         return self.__sibling_info
 
     def _attribute(self, attrname, default=None):
-        if attrname in self._overrides:
-            return self._overrides[attrname]
-
         # workaround for Cb Response where parent_unique_id is returned as null
         # string as part of a query result. in this case we need to do a
         # full_init.
@@ -2277,32 +2282,308 @@ class Process(TaggedModel):
             except KeyError:
                 pass
 
-    def _parse(self, obj):
-        if "process" in obj:
-            self._info = obj.get("process", {})
-            self.__parent_info = obj.get("parent", {})
-            self.__children_info = obj.get("children", [])
-            self.__sibling_info = obj.get("siblings", [])
-        else:
-            self._info = obj.copy()
+    def _parse_id_vars(self, proc_info, parent_info, sibling_info, children_info):
+        INVALID_ID = self.__class__.invalid_id
+        INVALID_PID = self.__class__.invalid_pid
+        INVALID_START = self.__class__.invalid_start
 
-        if self._info and (self._info.get("start", -1) == -1 or self._info.get("process_pid", -1) == -1):
-            log.debug("Process ID %s is invalid; start time or process PID are empty or -1." % self.id)
-            log.debug("Attempting to reverse-engineer start time and process PID from process GUID")
+        # Each information object is uniquely identified by the value of unique_id, which is
+        # the concatenation of the process id and the segment id. The process id encodes the
+        # value of start and process_pid, which we decode and use if possible and necessary.
 
-            try:
-                sensor_id, proc_pid, start_time = parse_process_guid(self.id)
-                if proc_pid > 0 and proc_pid != -1:
-                    self._overrides["sensor_id"] = sensor_id
-                    self._overrides["process_pid"] = proc_pid
-                    self._overrides["start"] = convert_to_solr(start_time)
-                    log.debug("Recovered start time and process PID from GUID for process %s" % self.id)
+        for info in chain([proc_info, parent_info], sibling_info, children_info):
+            # Verify id and unique_id
+            missing_or_invalid_id = INVALID_ID in info.get('id', INVALID_ID)
+            missing_or_invalid_uid = INVALID_ID in info.get('unique_id', INVALID_ID)
+
+            if missing_or_invalid_id and missing_or_invalid_uid:
+                continue
+
+            if missing_or_invalid_id:
+                #old_id = info.get('id')
+                info['id'] = info.get('unique_id')[:36]
+                #logging.debug('Replacing missing or invalid id {} with {} while parsing {}'.format(old_id, info.get('id'), self.id))
+
+            if missing_or_invalid_uid:
+                #old_uid = info.get('unique_id')
+                info['unique_id'] = '-'.join((info.get('id'), hex(self._default_segment)[2:].zfill(12)))
+                #logging.debug('Replacing missing or invalid uid {} with {} while parsing {}'.format(old_uid, info.get('unique_id'), self.id))
+
+            # Verify process_pid and start
+            missing_or_invalid_pid = info.get('process_pid', INVALID_PID) == INVALID_PID
+            missing_or_invalid_start = info.get('start', INVALID_START) == INVALID_START or info.get('start', INVALID_START) == None
+
+            if missing_or_invalid_pid or missing_or_invalid_start:
+                try:
+                    _, process_pid, start = parse_process_guid(info.get('id'))
+                except:
+                    pass
                 else:
-                    log.debug("Unable to recover start time and process PID for process %s, marking invalid" % self.id)
-                    self.valid_process = False
-            except Exception:
-                log.debug("Unable to parse process GUID %s, marking invalid" % self.id)
-                self.valid_process = False
+                    #old_pid = info.get('process_pid')
+                    #old_start = info.get('start')
+                    info['process_pid'] = process_pid
+                    info['start'] = convert_to_solr(start)
+                    #logging.debug('Replacing missing or invalid pid {} with {} while parsing {}'.format(old_pid, info.get('process_pid'), self.id))
+                    #logging.debug('Replacing missing or invalid start {} with {} while parsing {}'.format(old_start, info.get('start'), self.id))
+
+    def _parse_proc_vars(self, proc_info, parent_info, sibling_info, children_info):
+        INVALID_ID = self.__class__.invalid_id
+        INVALID_PID = self.__class__.invalid_pid
+        INVALID_NAME = self.__class__.invalid_name
+
+        # Certain values in the process information object are replicated in other information
+        # objects, e.g. the value of 'id' in the process information object equals the value of
+        # 'parent_id' in all of the children information objects. However, the data is not always
+        # consistent, resulting in incorrect results even though the correct data may be available
+        # somewhere else. This parsing function first retrieves and deduplicates all known values of
+        # different keys, deduplicates them, removes invalid ones and finally attempts to assert the
+        # correct value and write it back to all of the relevant information objects.
+
+        # Read subject process id, uid, pid and name from all possible objects
+        process_ids = set([self._info.get('id', INVALID_ID), proc_info.get('id', INVALID_ID)] + \
+                          [child.get('parent_id', INVALID_ID) for child in chain(self.__children_info, children_info)])
+        process_uids = set([self._info.get('unique_id', INVALID_ID), proc_info.get('unique_id', INVALID_ID)] + \
+                           [child.get('parent_unique_id', INVALID_ID) for child in chain(self.__children_info, children_info)])
+        process_pids = set([self._info.get('process_pid', INVALID_PID), proc_info.get('process_pid', INVALID_PID)] + \
+                           [child.get('parent_pid', INVALID_PID) for child in chain(self.__children_info, children_info)])
+        process_names = set([self._info.get('process_name', INVALID_NAME), proc_info.get('process_name', INVALID_NAME)] + \
+                            [child.get('parent_name', INVALID_NAME) for child in chain(self.__children_info, children_info)])
+
+        # Remove invalid values
+        process_ids = process_ids.difference(set([process_id for process_id in process_ids if INVALID_ID in process_id]))
+        process_uids = process_uids.difference(set([process_uid for process_uid in process_uids if INVALID_ID in process_uids]))
+        process_pids = process_pids.difference(set([INVALID_PID]))
+        process_names = process_names.difference(set([INVALID_NAME]))
+
+        # Set default values
+        process_id = proc_info.get('id', INVALID_ID)
+        process_uid = proc_info.get('unique_id', INVALID_ID)
+        process_pid = proc_info.get('process_pid', INVALID_PID)
+        process_name = proc_info.get('process_name', INVALID_NAME)
+
+        # We must have at least one ID, but no more than one valid
+        # process_id. Following is a table of acceptable combinations.
+        #
+        # OK | len(*_ids) | len(*_uids)
+        # N  |      0     |      0
+        # Y  |      0     |      1
+        # Y  |      0     |      2..
+        # Y  |      1     |      0
+        # Y  |      1     |      1
+        # Y  |      1     |      2..
+        # N  |      2..   |      0
+        # N  |      2..   |      1
+        # N  |      2..   |      2..
+
+        # Set valid values
+        if len(process_ids) == 1:
+            process_id = process_ids.pop()
+        elif not process_ids and process_uids:
+            process_id = process_uid.pop()[:36]
+        #else:
+        #    logging.debug('Missing, invalid or ambiguous process id(s) {} while parsing {}'.format(process_pids, self.id))
+
+        process_uid = '-'.join((process_id, hex(self._default_segment)[2:].zfill(12)))
+
+        if len(process_pids) == 1:
+            process_pid = process_pids.pop()
+        #else:
+        #    logging.debug('Missing, invalid or ambiguous process pid(s) {} while parsing {}'.format(process_pids, self.id))
+
+        if len(process_names) == 1:
+            process_name = process_names.pop()
+        #else:
+        #    logging.debug('Missing, invalid or ambiguous process name(s) {} while parsing {}'.format(process_names, self.id))
+
+        # Write values
+        for info in [self._info, proc_info]:
+            if not info:
+                continue
+
+            missing_or_invalid_id = INVALID_ID in info.get('id', INVALID_ID)
+            missing_or_invalid_uid = INVALID_ID in info.get('unique_id', INVALID_ID)
+            missing_or_invalid_pid = info.get('process_pid', INVALID_PID) == INVALID_PID
+            missing_or_invalid_name = info.get('process_name', INVALID_NAME) == INVALID_NAME
+
+            if missing_or_invalid_id:
+                #old_id = info.get('id')
+                info['id'] = process_id
+                #logging.debug('Replacing missing or invalid process id {} with {} while parsing {}'.format(old_id, process_id, self.id))
+
+            if missing_or_invalid_uid:
+                #old_uid = info.get('unique_id')
+                info['unique_id'] = process_uid
+                #logging.debug('Replacing missing or invalid process uid {} with {} while parsing {}'.format(old_uid, process_uid, self.id))
+
+            if missing_or_invalid_pid:
+                #old_pid = info.get('process_pid')
+                info['process_pid'] = process_pid
+                #logging.debug('Replacing missing or invalid process pid {} with {} while parsing {}'.format(old_pid, process_pid, self.id))
+
+            if missing_or_invalid_name:
+                #old_name = info.get('process_name')
+                info['process_name'] = process_name
+                #logging.debug('Replacing missing or invalid process name {} with {} while parsing {}'.format(old_name, process_name, self.id))
+
+        for info in chain(self.__children_info, children_info):
+            if not info:
+                continue
+
+            missing_or_invalid_id = INVALID_ID in info.get('parent_id', INVALID_ID)
+            missing_or_invalid_uid = INVALID_ID in info.get('parent_unique_id', INVALID_ID)
+            missing_or_invalid_pid = info.get('parent_pid', INVALID_PID) == INVALID_PID
+            missing_or_invalid_name = info.get('parent_name', INVALID_NAME) == INVALID_NAME
+
+            if missing_or_invalid_id:
+                #old_id = info.get('parent_id')
+                info['parent_id'] = process_id
+                #logging.debug('Replacing missing or invalid process id {} with {} while parsing {}'.format(old_id, process_id, self.id))
+
+            if missing_or_invalid_uid:
+                #old_uid = info.get('parent_unique_id')
+                info['parent_unique_id'] = process_uid
+                #logging.debug('Replacing missing or invalid process uid {} with {} while parsing {}'.format(old_uid, process_uid, self.id))
+
+            if missing_or_invalid_pid:
+                #old_pid = info.get('parent_pid')
+                info['parent_pid'] = process_pid
+                #logging.debug('Replacing missing or invalid process pid {} with {} while parsing {}'.format(old_pid, process_pid, self.id))
+
+            if missing_or_invalid_name:
+                #old_name = info.get('parent_name')
+                info['parent_name'] = process_name
+                #logging.debug('Replacing missing or invalid process name {} with {} while parsing {}'.format(old_name, process_name, self.id))
+
+    def _parse_parent_vars(self, proc_info, parent_info, sibling_info, children_info):
+        INVALID_ID = self.__class__.invalid_id
+        INVALID_PID = self.__class__.invalid_pid
+        INVALID_NAME = self.__class__.invalid_name
+
+        # See _parse_proc_vars for rationalization and overview. This parsing function does basically
+        # the same thing, except for parent_* values in the process information object.
+
+        parent_ids = set([info.get('parent_id', INVALID_ID) for info in \
+                          chain([self._info, proc_info], self.__sibling_info, sibling_info)])
+        parent_uids = set([info.get('parent_unique_id', INVALID_ID) for info in \
+                           chain([self._info, proc_info], self.__sibling_info, sibling_info)])
+        parent_pids = set([info.get('parent_pid', INVALID_PID) for info in \
+                           chain([self._info, proc_info], self.__sibling_info, sibling_info)])
+        parent_names = set([info.get('parent_name', INVALID_NAME) for info in \
+                            chain([self._info, proc_info], self.__sibling_info, sibling_info)])
+
+        parent_ids = parent_ids.difference(set([parent_id for parent_id in parent_ids if INVALID_ID in parent_id]))
+        parent_uids = parent_uids.difference(set([parent_uid for parent_uid in parent_uids if INVALID_ID in parent_uid]))
+        parent_pids = parent_pids.difference(set([INVALID_PID]))
+        parent_names = parent_names.difference(set([INVALID_NAME]))
+
+        parent_id = proc_info.get('parent_id', INVALID_ID)
+        parent_uid = proc_info.get('parent_unique_id', INVALID_ID)
+        parent_pid = proc_info.get('parent_pid', INVALID_PID)
+        parent_name = proc_info.get('parent_name', INVALID_NAME)
+
+        if len(parent_ids) == 1:
+            parent_id = parent_ids.pop()
+        elif not parent_ids and parent_uids:
+            parent_id = parent_uids.pop()[:36]
+        #else:
+        #    logging.debug('Missing, invalid or ambiguous parent id(s) {} while parsing {}'.format(parent_ids, self.id))
+
+        parent_uid = '-'.join((parent_id, hex(self._default_segment)[2:].zfill(12)))
+
+        if len(parent_pids) == 1:
+            parent_pid = parent_pids.pop()
+        #else:
+        #    logging.debug('Missing, invalid or ambiguous parent pid(s) {} while parsing {}'.format(parent_pids, self.id))
+
+        if len(parent_names) == 1:
+            parent_name = parent_names.pop()
+        #else:
+        #    logging.debug('Missing, invalid or ambiguous parent name(s) {} while parsing {}'.format(parent_names, self.id))
+
+        for info in chain([self._info, proc_info], self.__sibling_info, sibling_info):
+            if not info:
+                continue
+
+            missing_or_invalid_id = INVALID_ID in info.get('parent_id', INVALID_ID)
+            missing_or_invalid_uid = INVALID_ID in info.get('parent_unique_id', INVALID_ID)
+            missing_or_invalid_pid = info.get('parent_pid', INVALID_PID) == INVALID_PID
+            missing_or_invalid_name = info.get('parent_name', INVALID_NAME) == INVALID_NAME
+
+            if missing_or_invalid_id:
+                #old_id = info.get('parent_id')
+                info['parent_id'] = parent_id
+                #logging.debug('Replacing missing or invalid parent id {} with {} while parsing {}'.format(old_id, parent_id, self.id))
+
+            if missing_or_invalid_uid:
+                #old_uid = info.get('parent_unique_id')
+                info['parent_unique_id'] = parent_uid
+                #logging.debug('Replacing missing or invalid parent uid {} with {} while parsing {}'.format(old_uid, parent_uid, self.id))
+
+            if missing_or_invalid_pid:
+                #old_pid = info.get('parent_pid')
+                info['parent_pid'] = parent_pid
+                #logging.debug('Replacing missing or invalid parent pid {} with {} while parsing {}'.format(old_pid, parent_pid, self.id))
+
+            if missing_or_invalid_name:
+                #old_name = info.get('parent_name')
+                info['parent_name'] = parent_name
+                #logging.debug('Replacing missing or invalid parent name {} with {} while parsing {}'.format(old_name, parent_name, self.id))
+
+    def _parse(self, obj):
+        # Get information objects
+        proc_info = obj.get("process", obj)
+        parent_info = obj.get("parent", dict())
+        sibling_info = obj.get("siblings", list())
+        children_info = obj.get("children", list())
+
+        # Determine id, uid, pid, start for all information objects
+        self._parse_id_vars(proc_info, parent_info, sibling_info, children_info)
+
+        # Determine process_id, process_uid, process_pid and process_name for process, sibling and children information objects
+        self._parse_proc_vars(proc_info, parent_info, sibling_info, children_info)
+
+        # Determine parent_id, parent_unique_id, parent_pid, parent_name for process and sibling information objects
+        self._parse_parent_vars(proc_info, parent_info, sibling_info, children_info)
+
+        # Avoid updating keys that are already populated and have no defaults with invalid values
+        if self._info.get('cmdline') and not proc_info.get('cmdline'):
+            proc_info.pop('cmdline', None)
+
+        if self._info.get('username') and not proc_info.get('username'):
+            proc_info.pop('username', None)
+
+        if self._info.get('start') and proc_info.get('start', int()) == -1:
+            proc_info.pop('start', None)
+
+        # Avoid updating keys that have defaults with invalid values
+        if len(proc_info.get('process_md5', str())) != 32:
+            proc_info.pop('process_md5', None)
+
+        # Update and extend
+        def update(old, new):
+            info_dict = {info['id']:info for info in old}
+
+            for info in new:
+                key = info['id']
+
+                if key not in info_dict:
+                    info_dict[key] = info
+                else:
+                    info_dict[key].update(info)
+
+            return list(info_dict.values())
+
+        self._info.update(proc_info)
+        self.__parent_info.update(parent_info)
+        self.__sibling_info = update(self.__sibling_info, sibling_info)
+        self.__children_info = update(self.__children_info, children_info)
+
+        # Set missing defaults
+        defaults = self.__class__.defaults
+
+        for kw in defaults:
+            if kw not in self._info:
+                self._info[kw] = defaults[kw]
 
     def walk_parents(self, callback, max_depth=0, depth=0):
         """
