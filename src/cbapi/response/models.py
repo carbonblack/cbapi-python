@@ -3144,37 +3144,32 @@ class CbChildProcEvent(CbEvent):
 
     @property
     def process(self):
-        proc_data = self.proc_data
-        md5sum = self.__dict__.get("md5", None)
-        if md5sum:
-            proc_data["process_md5"] = md5sum
-        pid = self.__dict__.get("pid", None)
-        if pid:
-            proc_data["pid"] = pid
-        path = self.__dict__.get("path", None)
-        if path:
-            proc_data["path"] = path
+        self.proc_data["path"] = self.path
+        self.proc_data["process_md5"] = self.md5
+        self.proc_data["process_pid"] = self.pid
+        self.proc_data["id"] = "-".join(self.procguid.split("-")[:5])
+        self.proc_data["unique_id"] = self.procguid
+        self.proc_data["terminated"] = self.terminated
 
-        proc_data["parent_unique_id"] = self.parent._model_unique_id
-        proc_data["parent_id"] = self.parent.id
+        self.proc_data["parent_id"] = self.parent.id
+        self.proc_data["parent_unique_id"] = self.parent._model_unique_id
+        self.proc_data["parent_md5"] = self.parent.process_md5
+        self.proc_data["parent_pid"] = self.parent.process_pid
+        self.proc_data["parent_name"] = self.parent.process_name
+        self.proc_data["group"] = self.parent._info["group"]
+        self.proc_data["os_type"] = self.parent._info["os_type"]
+        self.proc_data["hostname"] = self.parent._info["hostname"]
+        self.proc_data["interface_ip"] = self.parent._info["interface_ip"]
 
-        try:
-            (sensor_id, proc_pid, proc_createtime) = parse_process_guid(self.parent.id)
-            if "sensor_id" not in proc_data:
-                proc_data["sensor_id"] = sensor_id
-            if "start" not in proc_data:
-                proc_data["start"] = convert_to_solr(proc_createtime)
-        except Exception:
-            # silently fail if the GUID is not able to be parsed
-            pass
+        sensor_id, _, proc_createtime = parse_process_guid(self.procguid)
+        self.proc_data["start"] = convert_to_solr(proc_createtime)
+        self.proc_data["sensor_id"] = sensor_id
 
-        if isinstance(self.procguid, six.string_types):
-            # strip off the segment number since we're just looking for the parent process, not a specific event
-            child_unique_id = "-".join(self.procguid.split("-")[:5])
-        else:
-            child_unique_id = self.procguid
+        self.proc_data["last_update"] = self.proc_data["start"]
+        if self.terminated:
+            self.proc_data["last_update"] = convert_to_solr(self.timestamp)
 
-        return self.parent._cb.select(Process, child_unique_id, initial_data=proc_data,
+        return self.parent._cb.select(Process, self.procguid, initial_data=self.proc_data,
                                       suppressed_process=self.is_suppressed)
 
 
