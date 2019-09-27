@@ -2415,38 +2415,81 @@ class Process(TaggedModel):
         if self.get("terminated", False) and self.get("last_update") is not None:
             return convert_from_solr(self._attribute('last_update', -1))
 
-    def require_events(self):
-        event_key_list = ['filemod_complete', 'regmod_complete', 'modload_complete', 'netconn_complete',
-                          'crossproc_complete', 'childproc_complete']
+    def require_events(self, segment=0, min_last_update=None, max_last_update=None):
+        event_types = {
+                'filemod_count': 'filemod_complete',
+                'regmod_count': 'regmod_complete',
+                'modload_count': 'modload_complete',
+                'netconn_count': 'netconn_complete',
+                'crossproc_count': 'crossproc_complete',
+                'childproc_count': 'childproc_complete'
+                }
 
-        if not self.valid_process or self.suppressed_process:
+        if self._events_loaded:
+            return
+        if not self.valid_process:
+            return
+        if self.suppressed_process:
             return
 
-        if self.current_segment not in self._events:
-            self._events[self.current_segment] = {}
-            res = self._cb.get_object("/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id,
-                                                                              self.current_segment)).get("process", {})
+        if segment not in self._events:
+            # Prepare
+            start = 0
+            count = 10000 # Backend default
+            base_url = '/api/{0}/process/{1}/{2}/event?'.format(self._process_event_api, self.id, segment)
 
-            # The key self.current_segment may have disappeared from self._events at this point. This likely indicates
-            # there are no events to get, but we won't take any chances; instead, we will simply reinitialize
-            # self._events[self.current_segment] and check for events anyway.
-            if self.current_segment not in self._events:
-                self._events[self.current_segment] = {}
+            if min_last_update:
+                base_url += 'cb.min_last_update={0:%Y-%m-%dT%H:%M:%SZ}&'.format(min_last_update)
+            if max_last_update:
+                base_url += 'cb.max_last_update={0:%Y-%m-%dT%H:%M:%SZ}&'.format(max_last_update)
 
-            for k in event_key_list:
-                self._events[self.current_segment][k] = res.get(k, [])
+            events = {event_complete:[] for event_complete in event_types.values()}
 
-            if not self._full_init:
-                for k in event_key_list:
-                    try:
-                        del res[k]
-                    except KeyError:
-                        pass
+            # Fetch and store events
+            while True:
+                url = base_url
+                url += 'cb.event_start={0}&'.format(start)
+                url += 'cb.event_count={0}&'.format(count)
 
-                self._parse(res)
-                self._full_init = True
+                res = self._cb.get_object(url)
+                proc = res.get('process', {})
 
-            self._events_loaded = True
+                num_events = 0
+                for event_complete in event_types.values():
+                    proc_event_complete = proc.get(event_complete, [])
+                    num_events += len(proc_event_complete)
+                    events[event_complete].extend(proc_event_complete)
+
+                # Note that there might be more events even though we got less than we
+                # asked for. Thus, break out of loop once we don't recieve any more events.
+                if not num_events:
+                    break
+
+                start += count
+
+            self._events[segment] = events
+
+            # Update process info
+            for event_count, event_complete in event_types.items():
+                if event_count in proc:
+                    del proc[event_count]
+
+                if event_complete in proc:
+                    del proc[event_complete]
+
+            self._parse(res)
+            #self._full_init = True
+
+            # Append events to process info
+            for event_count, event_complete in event_types.items():
+                self._info[event_complete] = self._info.get(event_complete, [])
+                self._info[event_count] = self._info.get(event_count, 0)
+
+                self._info[event_complete].extend(self._events[segment][event_complete])
+                self._info[event_count] += len(self._info[event_complete])
+
+        # All events loaded
+        self._events_loaded = segment == 0
 
     def refresh(self):
         # when refreshing a process, also zero out all the events
@@ -2465,12 +2508,13 @@ class Process(TaggedModel):
         """
         Generator that returns `:py:class:CbModLoadEvent` associated with this process
         """
-        self.require_events()
+        self.require_events(segment=self.current_segment)
 
         i = 0
-        for raw_modload in self._events.get(self.current_segment, {}).get('modload_complete', []):
-            yield self._event_parser.parse_modload(i, raw_modload)
-            i += 1
+        for segment in self._events:
+            for raw_modload in self._events[segment].get('modload_complete', []):
+                yield self._event_parser.parse_modload(i, raw_modload)
+                i += 1
 
     @property
     def unsigned_modloads(self):
@@ -2484,48 +2528,52 @@ class Process(TaggedModel):
         """
         Generator that returns :py:class:`CbFileModEvent` objects associated with this process
         """
-        self.require_events()
+        self.require_events(segment=self.current_segment)
 
         i = 0
-        for raw_filemod in self._events.get(self.current_segment, {}).get('filemod_complete', []):
-            yield self._event_parser.parse_filemod(i, raw_filemod)
-            i += 1
+        for segment in self._events:
+            for raw_filemod in self._events[segment].get('filemod_complete', []):
+                yield self._event_parser.parse_filemod(i, raw_filemod)
+                i += 1
 
     @property
     def netconns(self):
         """
         Generator that returns :py:class:`CbNetConnEvent` objects associated with this process
         """
-        self.require_events()
+        self.require_events(segment=self.current_segment)
 
         i = 0
-        for raw_netconn in self._events.get(self.current_segment, {}).get('netconn_complete', []):
-            yield self._event_parser.parse_netconn(i, raw_netconn)
-            i += 1
+        for segment in self._events:
+            for raw_netconn in self._events[segment].get('netconn_complete', []):
+                yield self._event_parser.parse_netconn(i, raw_netconn)
+                i += 1
 
     @property
     def regmods(self):
         """
         Generator that returns :py:class:`CbRegModEvent` objects associated with this process
         """
-        self.require_events()
+        self.require_events(segment=self.current_segment)
 
         i = 0
-        for raw_regmod in self._events.get(self.current_segment, {}).get('regmod_complete', []):
-            yield self._event_parser.parse_regmod(i, raw_regmod)
-            i += 1
+        for segment in self._events:
+            for raw_regmod in self._events[segment].get('regmod_complete', []):
+                yield self._event_parser.parse_regmod(i, raw_regmod)
+                i += 1
 
     @property
     def crossprocs(self):
         """
         Generator that returns :py:class:`CbCrossProcEvent` objects associated with this process
         """
-        self.require_events()
+        self.require_events(segment=self.current_segment)
 
         i = 0
-        for raw_crossproc in self._events.get(self.current_segment, {}).get('crossproc_complete', []):
-            yield self._event_parser.parse_crossproc(i, raw_crossproc)
-            i += 1
+        for segment in self._events:
+            for raw_crossproc in self._events[segment].get('crossproc_complete', []):
+                yield self._event_parser.parse_crossproc(i, raw_crossproc)
+                i += 1
 
     @property
     def parents(self):
