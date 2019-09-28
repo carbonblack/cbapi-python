@@ -1389,6 +1389,14 @@ class ProcessQuery(WatchlistEnabledQuery):
         if cb._has_legacy_partitions:
             self._default_args["cb.legacy_5x_mode"] = True
 
+    def _clone(self):
+        nq = self.__class__(self._doc_class, self._cb, self._query, self._raw_query)
+        nq._default_args = copy.deepcopy(self._default_args)
+        nq.num_children = self.num_children
+        nq._batch_size = self._batch_size
+        nq._sort_by = self._sort_by
+        return nq
+
     def group_by(self, field_name):
         """Set the group-by field name for this query. Typically, you will want to set this to 'id' if you only want
         one result per process.
