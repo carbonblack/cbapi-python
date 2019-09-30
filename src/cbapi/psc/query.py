@@ -348,7 +348,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
     def _build_request(self):
         request = self._query_body
         request["query_string"] = self._query_builder._collapse()
-        if not self._sortcriteria.is_empty():
+        if self._sortcriteria != {}:
             request["sort"] = self._sortcriteria
         return request
     
@@ -360,7 +360,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             query_params.append("from_row={0:i}".format(from_row))
         if max_rows >= 0:
             query_params.append("max_rows={0:i}".format(max_rows))
-        if not query_params.is_empty():
+        if query_params != []:
             url = url + "?" + "&".join(query_params)
         return url
     
@@ -418,22 +418,22 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         :return: The CSV raw data as returned from the server.
         """
         tmp = self._query_body.get("status",[])
-        if tmp.is_empty():
+        if tmp == []:
             raise ApiError("at least one status must be specified to download")
         query_params = { "device_status": ",".join(tmp) }
         tmp = self._query_body.get("ad_group_ids", [])
-        if not tmp.is_empty():
-            query_params["ad_group_id"] = ",".join(tmp)
+        if tmp != []:
+            query_params["ad_group_id"] = ",".join([str(t) for t in tmp])
         tmp = self._query_body.get("policy_ids", [])
-        if not tmp.is_empty():
-            query_params["policy_id"] = ",".join(tmp)
+        if tmp != []:
+            query_params["policy_id"] = ",".join([str(t) for t in tmp])
         tmp = self._query_body.get("target_priorities", [])
-        if not tmp.is_empty():
+        if tmp != []:
             query_params["target_priority"] = ",".join(tmp)
         tmp = self._query_builder._collapse()
-        if not tmp.is_empty():
+        if tmp != []:
             query_params["query_string"] = tmp
-        if not self._sortcriteria.is_empty():
+        if self._sortcriteria != {}:
             query_params["sort_field"] = self._sortcriteria["field_name"]
             query_params["sort_order"] = self._sortcriteria["sort_order"]
         url = self._build_url(0, -1, "/_search/download")
