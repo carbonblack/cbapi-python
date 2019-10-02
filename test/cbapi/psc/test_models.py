@@ -90,13 +90,13 @@ def test_Device_delete_sensor(monkeypatch):
     dev.delete_sensor()
     assert _was_called
 
-def test_Device_deregister_sensor(monkeypatch):
+def test_Device_uninstall_sensor(monkeypatch):
     _was_called = False
     
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
-        assert body["action_type"] == "DEREGISTER_SENSOR"
+        assert body["action_type"] == "UNINSTALL_SENSOR"
         assert body["device_id"] == [ 6023 ]
         _was_called = True
         return MockResponse(None, 204)
@@ -108,7 +108,7 @@ def test_Device_deregister_sensor(monkeypatch):
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    dev.deregister_sensor()
+    dev.uninstall_sensor()
     assert _was_called
         
 def test_Device_quarantine(monkeypatch):

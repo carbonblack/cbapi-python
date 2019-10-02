@@ -109,7 +109,7 @@ class PSCMutableModel(MutableBaseModel):
 class Device(PSCMutableModel):
     urlobject = "/appservices/v6/orgs/{0}/devices"
     urlobject_single = "/appservices/v6/orgs/{0}/devices/{1}"
-    primary_key = "device_id"
+    primary_key = "id"
     #info_key = "deviceInfo"
     swagger_meta_file = "psc/models/deviceInfo.yaml"
 
@@ -160,11 +160,11 @@ class Device(PSCMutableModel):
         """
         return self._cb.device_delete_sensor([ self._model_unique_id ])
         
-    def deregister_sensor(self):
+    def uninstall_sensor(self):
         """
-        Deregister this sensor device.
+        Uninstall this sensor device.
         """
-        return self._cb.device_deregister_sensor([ self._model_unique_id ])
+        return self._cb.device_uninstall_sensor([ self._model_unique_id ])
         
     def quarantine(self, flag):
         """
@@ -186,8 +186,7 @@ class Device(PSCMutableModel):
         """
         Update the sensor version for this device.
         
-        :param dict sensor_version: New version of the sensor;
-                                    specified as { "OS": "versionnumber" }
+        :param dict sensor_version: New version properties for the sensor.
         """
         return self._cb.device_update_sensor_version([ self._model_unique_id ], sensor_version)
 
