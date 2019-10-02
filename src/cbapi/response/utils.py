@@ -37,17 +37,11 @@ def convert_to_solr(dt):
     return dt.strftime(solr_datetime_format)
 
 
-# TODO: change these to use dateutil.parser (see http://labix.org/python-dateutil)
 def convert_from_solr(s):
     if s == -1:
-        # special case for invalid processes
-        return datetime.fromtimestamp(0)
+        return dateutil.parser.parse("1970-01-01T00:00:00Z")
 
-    try:
-        return datetime.strptime(s, solr_datetime_format)
-    except ValueError:
-        # try interpreting the timestamp without the milliseconds
-        return datetime.strptime(s, sign_datetime_format)
+    return dateutil.parser.parse(s)
 
 
 def convert_from_cb(s):
