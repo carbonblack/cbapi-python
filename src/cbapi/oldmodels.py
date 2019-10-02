@@ -145,7 +145,7 @@ class BaseModel(object):
 
     def get(self, attrname, default_val=None):
         try:
-            return self._attribute(attrname)
+            return self._attribute(attrname, default_val)
         except AttributeError:
             return default_val
 
