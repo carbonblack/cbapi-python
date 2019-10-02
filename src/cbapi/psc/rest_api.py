@@ -51,10 +51,7 @@ class CbPSCBaseAPI(BaseAPI):
         rc.refresh()
         return rc
     
-    def _device_action(self, device_ids, action_type, options=None):
-        request = { "action_type": action_type, "device_id": device_ids }
-        if options:
-            request["options"] = options
+    def _raw_device_action(self, request):
         url = "/appservices/v6/orgs/{0}/device_actions".format(self.credentials.org_key)
         resp = self.post_object(url, body=request)
         if resp.status_code == 200:
@@ -63,6 +60,12 @@ class CbPSCBaseAPI(BaseAPI):
             return None
         else:
             raise ServerError(error_code=resp.status_code, message="Device action error: {0}".format(resp.content))
+    
+    def _device_action(self, device_ids, action_type, options=None):
+        request = { "action_type": action_type, "device_id": device_ids }
+        if options:
+            request["options"] = options
+        return self._raw_device_action(request)
     
     def _action_toggle(self, flag):
         if flag:
@@ -96,13 +99,13 @@ class CbPSCBaseAPI(BaseAPI):
         """
         return self._device_action(device_ids, "DELETE_SENSOR")
     
-    def device_deregister_sensor(self, device_ids):
+    def device_uninstall_sensor(self, device_ids):
         """
-        Deregister the specified sensor devices.
+        Uninstall the specified sensor devices.
         
-        :param list device_ids: List of IDs of devices to be deregistered.
+        :param list device_ids: List of IDs of devices to be uninstalled.
         """
-        return self._device_action(device_ids, "DEREGISTER_SENSOR")
+        return self._device_action(device_ids, "UNINSTALL_SENSOR")
     
     def device_quarantine(self, device_ids, flag):
         """
@@ -127,8 +130,7 @@ class CbPSCBaseAPI(BaseAPI):
         Update the sensor version for the specified devices.
         
         :param list device_ids: List of IDs of devices to be changed.
-        :param dict sensor_version: New version of the sensor;
-                                    specified as { "OS": "versionnumber" }
+        :param dict sensor_version: New version properties for the sensor.
         """
         return self._device_action(device_ids, "UPDATE_SENSOR_VERSION",
                                     { "sensor_version": sensor_version })

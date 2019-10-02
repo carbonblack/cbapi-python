@@ -1,4 +1,4 @@
-from cbapi.errors import ApiError, MoreThanOneResultError
+from cbapi.errors import ApiError, MoreThanOneResultError, ServerError
 import logging
 import functools
 from six import string_types
@@ -260,20 +260,29 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
     """
     Represents a query that is used to locate Device objects.
     """
+    valid_os = [ "WINDOWS", "ANDROID", "MAC", "IOS", "LINUX", "OTHER" ]
     valid_statuses = ["PENDING", "REGISTERED", "UNINSTALLED", "DEREGISTERED",
                       "ACTIVE", "INACTIVE", "ERROR", "ALL", "BYPASS_ON",
                       "BYPASS", "QUARANTINE", "SENSOR_OUTOFDATE",
                       "DELETED", "LIVE"]
     valid_priorities = ["LOW", "MEDIUM", "HIGH", "MISSION_CRITICAL"]
-    valid_sort_keys = ["target_priority", "policy_name", "name",
-                       "last_contact_time", "av_pack_version"]
     valid_directions = ["ASC", "DESC"]
     
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
         self._query_builder = QueryBuilder()
-        self._query_body = {}
+        self._criteria = {}
+        self._time_filter = {}
+        self._exclusions = {}
         self._sortcriteria = {}
+        
+    def _update_criteria(self, key, newlist):
+        oldlist = self._criteria.get(key, [])
+        self._criteria[key] = oldlist + newlist
+        
+    def _update_exclusions(self, key, newlist):
+        oldlist = self._exclusions.get(key, [])
+        self._exclusions[key] = oldlist + newlist
         
     def ad_group_ids(self, ad_group_ids):
         """
@@ -285,7 +294,59 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         """
         if not all(isinstance(ad_group_id, int) for ad_group_id in ad_group_ids):
             raise ApiError("One or more invalid AD group IDs")
-        self._query_body["ad_group_ids"] = ad_group_ids
+        self._update_criteria("ad_group_id", ad_group_ids)
+        return self
+    
+    def device_ids(self, device_ids):
+        """
+        Restricts the devices that this query is performed on to the specified
+        device IDs.
+
+        :param ad_group_ids: list of ints
+        :return: This instance
+        """
+        if not all(isinstance(device_id, int) for device_id in device_ids):
+            raise ApiError("One or more invalid device IDs")
+        self._update_criteria("id", device_ids)
+        return self
+    
+    def last_contact_time(self, *args, **kwargs):
+        """
+        Restricts the devices that this query is performed on to the specified
+        last contact time (either specified as a start and end point or as a
+        range).
+        
+        :return: This instance
+        """
+        if kwargs.get("start", None) and kwargs.get("end", None):
+            if kwargs.get("range", None):
+                raise ApiError("cannot specify range= in addition to start= and end=")
+            stime = kwargs["start"]
+            if not isinstance(stime, str):
+                stime = stime.isoformat()
+            etime = kwargs["end"]
+            if not isinstance(etime, str):
+                etime = etime.isoformat()
+            self._time_filter = { "start": stime, "end": etime }
+        elif kwargs.get("range", None):
+            if kwargs.get("start", None) or kwargs.get("end", None):
+                raise ApiError("cannot specify start= or end= in addition to range=")
+            self._time_filter = { "range": kwargs["range"] }
+        else:
+            raise ApiError("must specify either start= and end= or range=")
+        return self
+    
+    def os(self, operating_systems):
+        """
+        Restricts the devices that this query is performed on to the specified
+        operating systems.
+
+        :param operating_systems: list of operating systems
+        :return: This instance
+        """
+        if not all((osval in DeviceSearchQuery.valid_os) for osval in operating_systems):
+            raise ApiError("One or more invalid operating systems")
+        self._update_criteria("os", operating_systems)
         return self
     
     def policy_ids(self, policy_ids):
@@ -297,8 +358,8 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         :return: This instance
         """
         if not all(isinstance(policy_id, int) for policy_id in policy_ids):
-            raise ApiError("One or more invalid AD group IDs")
-        self._query_body["policy_ids"] = policy_ids
+            raise ApiError("One or more invalid policy IDs")
+        self._update_criteria("policy_id", policy_ids)
         return self
         
     def status(self, statuses):
@@ -311,7 +372,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         """
         if not all((stat in DeviceSearchQuery.valid_statuses) for stat in statuses):
             raise ApiError("One or more invalid status values")
-        self._query_body["status"] = statuses
+        self._update_criteria("status", statuses)
         return self
     
     def target_priorities(self, target_priorities):
@@ -324,7 +385,20 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         """
         if not all((prio in DeviceSearchQuery.valid_priorities) for prio in target_priorities):
             raise ApiError("One or more invalid target priority values")
-        self._query_body["target_priorities"] = target_priorities
+        self._update_criteria("target_priority", target_priorities)
+        return self
+    
+    def exclude_sensor_versions(self, sensor_versions):
+        """
+        Restricts the devices that this query is performed on to exclude specified
+        sensor versions.
+
+        :param sensor_versions: List of sensor versions to exclude
+        :return: This instance
+        """
+        if not all(isinstance(v, str) for v in sensor_versions):
+            raise ApiError("One or more invalid sensor versions")
+        self._update_exclusions("sensor_version", sensor_versions)
         return self
     
     def sort_by(self, key, direction="ASC"):
@@ -338,38 +412,36 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         :param direction: the sort order, either "ASC" or "DESC"
         :rtype: :py:class:`DeviceSearchQuery`
         """
-        if key not in DeviceSearchQuery.valid_sort_keys:
-            raise ApiError("Invalid sort key specified")
         if direction not in DeviceSearchQuery.valid_directions:
             raise ApiError("invalid sort direction specified")
-        self._sortcriteria = {"field_name": key, "sort_order": direction}
+        self._sortcriteria = { "field": key, "order": direction }
         return self
     
-    def _build_request(self):
-        request = self._query_body
-        request["query_string"] = self._query_builder._collapse()
+    def _build_request(self, from_row, max_rows):
+        mycrit = self._criteria
+        if self._time_filter:
+            mycrit["last_contact_time"] = self._time_filter
+        request = { "criteria": mycrit, "exclusions": self._exclusions }
+        request["query"] = self._query_builder._collapse()
+        if from_row > 0:
+            request["start"] = from_row
+        if max_rows >= 0:
+            request["rows"] = max_rows
         if self._sortcriteria != {}:
-            request["sort"] = self._sortcriteria
+            request["sort"] = [ self._sortcriteria ]
         return request
     
-    def _build_url(self, from_row, max_rows, tail_end):
+    def _build_url(self, tail_end):
         url = self._doc_class.urlobject.format(
             self._cb.credentials.org_key) + tail_end
-        query_params = []
-        if from_row > 0:
-            query_params.append("from_row={0:i}".format(from_row))
-        if max_rows >= 0:
-            query_params.append("max_rows={0:i}".format(max_rows))
-        if query_params != []:
-            url = url + "?" + "&".join(query_params)
         return url
     
     def _count(self):
         if self._count_valid:
             return self._total_results
         
-        url = self._build_url(0, -1, "/_search")
-        request = self._build_request()
+        url = self._build_url("/_search")
+        request = self._build_request(0, -1)
         resp = self._cb.post_object(url, body=request)
         result = resp.json()
         
@@ -379,12 +451,12 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         return self._total_results
     
     def _perform_query(self, from_row=0, max_rows=-1):
-        request = self._build_request()
+        url = self._build_url("/_search")
         current = from_row
         numrows = 0
         still_querying = True
         while still_querying:
-            url = self._build_url(from_row, max_rows, "/_search")
+            request = self._build_request(current, max_rows)
             resp = self._cb.post_object(url, body=request)
             result = resp.json()
             
@@ -393,7 +465,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             
             results = result.get("results", [])
             for item in results:
-                yield self._doc_class(self._cb, item["device_id"], item)
+                yield self._doc_class(self._cb, item["id"], item)
                 current += 1
                 numrows += 1
 
@@ -417,24 +489,83 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         
         :return: The CSV raw data as returned from the server.
         """
-        tmp = self._query_body.get("status",[])
-        if tmp == []:
+        tmp = self._criteria.get("status", []) 
+        if not tmp:
             raise ApiError("at least one status must be specified to download")
-        query_params = { "device_status": ",".join(tmp) }
-        tmp = self._query_body.get("ad_group_ids", [])
-        if tmp != []:
+        query_params = { "status": ",".join(tmp) }
+        tmp = self._criteria.get("ad_group_id", [])
+        if tmp:
             query_params["ad_group_id"] = ",".join([str(t) for t in tmp])
-        tmp = self._query_body.get("policy_ids", [])
-        if tmp != []:
+        tmp = self._criteria.get("policy_id", [])
+        if tmp:
             query_params["policy_id"] = ",".join([str(t) for t in tmp])
-        tmp = self._query_body.get("target_priorities", [])
-        if tmp != []:
+        tmp = self._criteria.get("target_priority", [])
+        if tmp:
             query_params["target_priority"] = ",".join(tmp)
         tmp = self._query_builder._collapse()
-        if tmp != []:
+        if tmp:
             query_params["query_string"] = tmp
-        if self._sortcriteria != {}:
-            query_params["sort_field"] = self._sortcriteria["field_name"]
-            query_params["sort_order"] = self._sortcriteria["sort_order"]
-        url = self._build_url(0, -1, "/_search/download")
+        if self._sortcriteria:
+            query_params["sort_field"] = self._sortcriteria["field"]
+            query_params["sort_order"] = self._sortcriteria["order"]
+        url = self._build_url("/_search/download")
         return self._cb.get_raw_data(url, query_params)
+
+    def _bulk_device_action(self, action_type, options=None):
+        request = { "action_type": action_type, "search": self._build_request(0, -1) }
+        if options:
+            request["options"] = options
+        return self._cb._raw_device_action(request)
+        
+    def background_scan(self, flag):
+        """
+        Set the background scan option for the specified devices.
+        
+        :param boolean flag: True to turn background scan on, False to turn it off.
+        """
+        return self._bulk_device_action("BACKGROUND_SCAN", self._cb._action_toggle(flag))
+    
+    def bypass(self, flag):
+        """
+        Set the bypass option for the specified devices.
+        
+        :param boolean flag: True to enable bypass, False to disable it.
+        """
+        return self._bulk_device_action("BYPASS", self._cb._action_toggle(flag))
+    
+    def delete_sensor(self):
+        """
+        Delete the specified sensor devices.
+        """
+        return self._bulk_device_action("DELETE_SENSOR")
+    
+    def uninstall_sensor(self):
+        """
+        Uninstall the specified sensor devices.
+        """
+        return self._bulk_device_action("UNINSTALL_SENSOR")
+
+    def quarantine(self, flag):
+        """
+        Set the quarantine option for the specified devices.
+        
+        :param boolean flag: True to enable quarantine, False to disable it.
+        """
+        return self._bulk_device_action("QUARANTINE", self._cb._action_toggle(flag))
+        
+    def update_policy(self, policy_id):
+        """
+        Set the current policy for the specified devices.
+        
+        :param int policy_id: ID of the policy to set for the devices.
+        """
+        return self._bulk_device_action("UPDATE_POLICY", { "policy_id": policy_id })
+    
+    def update_sensor_version(self, sensor_version):
+        """
+        Update the sensor version for the specified devices.
+        
+        :param dict sensor_version: New version properties for the sensor.
+        """
+        return self._bulk_device_action("UPDATE_SENSOR_VERSION", \
+                                        { "sensor_version": sensor_version }) 
