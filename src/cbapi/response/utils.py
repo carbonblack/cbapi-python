@@ -49,7 +49,7 @@ def convert_from_cb(s):
     if s is None:
         return dateutil.parser.parse("1970-01-01T00:00:00Z")
     else:
-       return dateutil.parser.parse(s)
+        return dateutil.parser.parse(s)
 
 
 def convert_event_time(s):
