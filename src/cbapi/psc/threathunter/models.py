@@ -34,19 +34,18 @@ class Process(UnrefreshableModel):
             url = self.urlobject_single.format(cb.credentials.org_key)
             summary = cb.get_object(url, query_parameters={"process_guid": model_unique_id})
 
-            siblings = set(summary["siblings"])
-            children = set(summary["children"])
-
             while summary["incomplete_results"]:
                 log.debug("summary incomplete, requesting again")
                 more_summary = self._cb.get_object(
                     url, query_parameters={"process_guid": self.process_guid}
                 )
-                siblings.update(more_summary["siblings"])
-                children.update(more_summary["children"])
+                summary["siblings"] = more_summary["siblings"]
+                summary["children"] = more_summary["children"]
+                summary["incomplete_results"] = more_summary["incomplete_results"]
 
-            summary["siblings"] = list(siblings)
-            summary["children"] = list(children)
+
+            summary["siblings"] = list(summary["siblings"])
+            summary["children"] = list(summary["children"])
 
             super(Process.Summary, self).__init__(cb, model_unique_id=model_unique_id,
                                                   initial_data=summary, force_init=False,
