@@ -4,6 +4,9 @@ import sys
 from cbapi.example_helpers import build_cli_parser, get_cb_psc_object
 from cbapi.psc import Device
 
+import logging
+logging.basicConfig(level=logging.DEBUG)    
+
 def main():
     parser = build_cli_parser("Download device list in CSV format")
     parser.add_argument("-q", "--query", help="Query string for looking for devices")
