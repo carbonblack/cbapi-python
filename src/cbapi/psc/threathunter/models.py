@@ -36,16 +36,9 @@ class Process(UnrefreshableModel):
 
             while summary["incomplete_results"]:
                 log.debug("summary incomplete, requesting again")
-                more_summary = self._cb.get_object(
+                summary = self._cb.get_object(
                     url, query_parameters={"process_guid": self.process_guid}
                 )
-                summary["siblings"] = more_summary["siblings"]
-                summary["children"] = more_summary["children"]
-                summary["incomplete_results"] = more_summary["incomplete_results"]
-
-
-            summary["siblings"] = list(summary["siblings"])
-            summary["children"] = list(summary["children"])
 
             super(Process.Summary, self).__init__(cb, model_unique_id=model_unique_id,
                                                   initial_data=summary, force_init=False,
