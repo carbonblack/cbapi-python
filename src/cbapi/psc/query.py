@@ -509,7 +509,8 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             query_params["sort_field"] = self._sortcriteria["field"]
             query_params["sort_order"] = self._sortcriteria["order"]
         url = self._build_url("/_search/download")
-        return self._cb.get_raw_data(url, query_params)
+        # AGRB 10/3/2019 - Header is TEMPORARY until bug is fixed in API. Remove when fix deployed.
+        return self._cb.get_raw_data(url, query_params, headers={ "Content-Type": "application/json"})
 
     def _bulk_device_action(self, action_type, options=None):
         request = { "action_type": action_type, "search": self._build_request(0, -1) }
