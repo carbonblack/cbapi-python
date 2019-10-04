@@ -12,8 +12,46 @@ class ApiError(Exception):
 
 
 @python_2_unicode_compatible
+class ClientError(ApiError):
+    """A ClientError is raised when an HTTP 4xx error code is returned from the Carbon Black server."""
+
+    def __init__(self, error_code, message, result=None, original_exception=None):
+        super(ClientError, self).__init__(message=message, original_exception=original_exception)
+
+        self.error_code = error_code
+        self.result = result
+
+    def __str__(self):
+        msg = "Received error code {0:d} from API".format(self.error_code)
+        if self.message:
+            msg += ": {0:s}".format(self.message)
+        else:
+            msg += " (No further information provided)"
+
+        if self.result:
+            msg += ". {}".format(self.result)
+        return msg
+
+
+@python_2_unicode_compatible
+class QuerySyntaxError(ApiError):
+    """The request contains a query with malformed syntax."""
+
+    def __init__(self, uri, message=None, original_exception=None):
+        super(QuerySyntaxError, self).__init__(message=message, original_exception=original_exception)
+        self.uri = uri
+
+    def __str__(self):
+        msg = "Received query syntax error for {0:s}".format(self.uri)
+        if self.message:
+            msg += ": {0:s}".format(self.message)
+
+        return msg
+
+
+@python_2_unicode_compatible
 class ServerError(ApiError):
-    """A ServerError is raised when an HTTP error code is returned from the Carbon Black server."""
+    """A ServerError is raised when an HTTP 5xx error code is returned from the Carbon Black server."""
 
     def __init__(self, error_code, message, result=None, original_exception=None):
         super(ServerError, self).__init__(message=message, original_exception=original_exception)
