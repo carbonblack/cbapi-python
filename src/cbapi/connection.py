@@ -30,7 +30,8 @@ from cbapi.six import iteritems
 from cbapi.six.moves import urllib
 
 from .auth import CredentialStoreFactory, Credentials
-from .errors import ServerError, TimeoutError, ApiError, ObjectNotFoundError, UnauthorizedError, ConnectionError
+from .errors import ClientError, QuerySyntaxError, ServerError, TimeoutError, ApiError, ObjectNotFoundError, \
+    UnauthorizedError, CredentialError, ConnectionError
 from . import __version__
 
 from .cache.lru import lru_cache_function
@@ -38,6 +39,13 @@ from .models import CreatableModelMixin
 from .utils import calculate_elapsed_time, convert_query_params
 
 log = logging.getLogger(__name__)
+
+
+def try_json(resp):
+    try:
+        return resp.json()
+    except:
+        return dict()
 
 
 def check_python_tls_compatibility():
@@ -184,12 +192,16 @@ class Connection(object):
             raise ApiError("Unknown exception when connecting to server: {0:s}".format(str(e)),
                            original_exception=e)
         else:
-            if r.status_code == 404:
+            if r.status_code >= 500:
+                raise ServerError(error_code=r.status_code, message=r.text)
+            elif r.status_code == 404:
                 raise ObjectNotFoundError(uri=uri, message=r.text)
             elif r.status_code == 401:
                 raise UnauthorizedError(uri=uri, action=method, message=r.text)
+            elif r.status_code == 400 and try_json(r).get('reason') == 'query_malformed_syntax':
+                raise QuerySyntaxError(uri=uri, message=r.text)
             elif r.status_code >= 400:
-                raise ServerError(error_code=r.status_code, message=r.text)
+                raise ClientError(error_code=r.status_code, message=r.text)
             return r
 
     def get(self, url, **kwargs):
