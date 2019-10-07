@@ -235,6 +235,7 @@ documenting all of the methods available to you.
    protection-api
    defense-api
    threathunter-api
+   psc-api
    livequery-api
    exceptions
 
