@@ -127,9 +127,21 @@ on the Developer Network website on how to acquire the API token for
 
 Once you acquire your API token, place it in one of the default credentials file locations:
 
-* ``/etc/carbonblack/credentials.response`` (``credentials.protection`` for CB Protection, or ``credentials.defense`` for CB Defense)
-* ``~/.carbonblack/credentials.response``
-* (current working directory) ``.carbonblack/credentials.response``
+* ``/etc/carbonblack/``
+* ``~/.carbonblack/``
+* ``/current_working_directory/.carbonblack/``
+
+For distinction between credentials of different Carbon Black products, use the following naming convention for your credentials files:
+
+* ``credentials.psc`` for CB Defense, CB ThreatHunter, and CB LiveOps
+* ``credentials.response`` for CB Response
+* ``credentials.protection`` for CB Protection
+
+For example, if you use a PSC product, you should have created a credentials file in one of these locations:
+
+* ``/etc/carbonblack/credentials.psc``
+* ``~/.carbonblack/credentials.psc``
+* ``/current_working_directory/.carbonblack/credentials.psc``
 
 Credentials found in a later path will overwrite earlier ones.
 
