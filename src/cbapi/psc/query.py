@@ -3,7 +3,6 @@ import logging
 import functools
 from six import string_types
 from solrq import Q
-from builtins import isinstance
 
 log = logging.getLogger(__name__)
 
