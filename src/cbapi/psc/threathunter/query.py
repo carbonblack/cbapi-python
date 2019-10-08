@@ -267,7 +267,7 @@ class Query(PaginatedQuery):
         log.debug("args: {}".format(str(args)))
 
         self._total_results = int(self._cb.post_object(self._doc_class.urlobject, body=args)
-                                  .json().get("response_header", {}).get("num_found", 0))
+                                  .json().get("response_header", {}).get("num_available", 0))
         self._count_valid = True
         return self._total_results
 
@@ -302,7 +302,7 @@ class Query(PaginatedQuery):
             resp = self._cb.post_object(url, body=args)
             result = resp.json()
 
-            self._total_results = result.get("response_header", {}).get("num_found", 0)
+            self._total_results = result.get("response_header", {}).get("num_available", 0)
             self._count_valid = True
 
             results = result.get('docs', [])
@@ -338,7 +338,7 @@ class AsyncProcessQuery(Query):
         self._query_token = None
         self._timeout = 0
         self._timed_out = False
-        self._sort_by = None
+        self._sort_by = "backend_timestamp" # Requires default to prevent unstable fetching of results
         self._sort_direction = "ASC"
 
     def sort_by(self, key, direction="ASC"):
@@ -354,6 +354,9 @@ class AsyncProcessQuery(Query):
         """
         self._sort_by = key
         self._sort_direction = direction
+
+        # Append to search_job query
+        self._default_args['sort'] = '{} {}'.format(key, direction)
         return self
 
     def timeout(self, msecs):
@@ -423,7 +426,7 @@ class AsyncProcessQuery(Query):
         )
         result = self._cb.get_object(result_url)
 
-        self._total_results = result.get('response_header', {}).get('num_found', 0)
+        self._total_results = result.get('response_header', {}).get('num_available', 0)
         self._count_valid = True
 
         return self._total_results
@@ -443,18 +446,21 @@ class AsyncProcessQuery(Query):
         current = start
         rows_fetched = 0
         still_fetching = True
-        result_url = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}/results".format(
+        result_url_template = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}/results".format(
             self._cb.credentials.org_key,
-            self._query_token,
+            self._query_token
         )
-        query_parameters = {
-            "sort_by": self._sort_by,
-            "sort_direction": self._sort_direction,
-        }
+        query_parameters = {}
         while still_fetching:
+            result_url = '{}?start={}&rows={}'.format(
+                result_url_template,
+                current,
+                10 # Batch gets to reduce API calls
+            )
+
             result = self._cb.get_object(result_url, query_parameters=query_parameters)
 
-            self._total_results = result.get('response_header', {}).get('num_found', 0)
+            self._total_results = result.get('response_header', {}).get('num_available', 0)
             self._count_valid = True
 
             results = result.get('data', [])

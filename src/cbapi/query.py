@@ -30,10 +30,10 @@ class BaseQuery(object):
 
     def one(self):
         res = self[:2]
-        if len(res) == 0:
-            raise MoreThanOneResultError(message="0 results for query {0:s}".format(self._query))
-        if len(res) > 1:
-            raise MoreThanOneResultError(message="{0:d} results found for query {1:s}".format(len(self), self._query))
+
+        if len(res) == 0 or len(res) > 1:
+            raise MoreThanOneResultError(message="{0:d} results found for query {1:s}".format(len(self), str(self._query)))
+
         return res[0]
 
     def _perform_query(self):
