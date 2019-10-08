@@ -111,7 +111,7 @@ class Device(PSCMutableModel):
     urlobject_single = "/appservices/v6/orgs/{0}/devices/{1}"
     primary_key = "id"
     #info_key = "deviceInfo"
-    swagger_meta_file = "psc/models/deviceInfo.yaml"
+    swagger_meta_file = "psc/models/device.yaml"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(Device, self).__init__(cb, model_unique_id, initial_data)
