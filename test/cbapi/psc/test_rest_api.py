@@ -365,7 +365,7 @@ def test_query_device_invalid_sort_direction():
 def test_query_device_download(monkeypatch):
     _was_called = False
     
-    def mock_get_raw_data(url, query_params):
+    def mock_get_raw_data(url, query_params, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/devices/_search/download"
         assert query_params["status"] == "ALL"
