@@ -98,9 +98,9 @@ will be adding more samples over time. For a quick start, see the following code
 
 In order to perform any queries via the API, you will need to get the API token for your CB user. See the documentation
 on the Developer Network website on how to acquire the API token for
-`CB Response <http://developer.carbonblack.com/reference/enterprise-response/authentication/>`_,
-`CB Protection <http://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_, or
-`CB Defense <http://developer.carbonblack.com/reference/cb-defense/authentication/>`_.
+[CB Response](http://developer.carbonblack.com/reference/enterprise-response/authentication/),
+[CB Protection](http://developer.carbonblack.com/reference/enterprise-protection/authentication/), or
+[CB Defense](http://developer.carbonblack.com/reference/cb-defense/authentication/).
 
 Once you acquire your API token, place it in one of the default credentials file locations:
 
