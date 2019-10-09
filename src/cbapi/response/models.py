@@ -2224,12 +2224,6 @@ class Process(TaggedModel):
             # fill in data object for performance
             self._parse({"process": copy.deepcopy(initial_data)})
 
-        # 7/31/2018: remove parent_md5 from the _info array, as it's never set.
-        #  instead add an accessor to transparently request the process_md5 from the parent.
-        try:
-            del self._info["parent_md5"]
-        except KeyError:
-            pass
 
         if force_init:
             self.refresh()
@@ -2271,16 +2265,8 @@ class Process(TaggedModel):
         return "/api/v1/process/{0}/{1}?children={2}".format(self.id, self._default_segment, self.max_children)
 
     def _retrieve_cb_info(self, query_parameters=None):
-        if self.suppressed_process or not self.valid_process:
-            return
-        else:
+        if self.valid_process and not self.suppressed_process:
             super(Process, self)._retrieve_cb_info(query_parameters)
-            # 7/31/2018: remove parent_md5 from the _info array, as it's never set.
-            #  instead add an accessor to transparently request the process_md5 from the parent.
-            try:
-                del self._info["parent_md5"]
-            except KeyError:
-                pass
 
     def _parse_id_vars(self, proc_info, parent_info, sibling_info, children_info):
         INVALID_ID = self.__class__.invalid_id
@@ -2584,6 +2570,11 @@ class Process(TaggedModel):
         for kw in defaults:
             if kw not in self._info:
                 self._info[kw] = defaults[kw]
+
+        # 7/31/2018: remove parent_md5 from the _info array, as it's never set.
+        #  instead add an accessor to transparently request the process_md5 from the parent.
+        if self._info.get('parent_md5'):
+            del self._info['parent_md5']
 
     def walk_parents(self, callback, max_depth=0, depth=0):
         """
