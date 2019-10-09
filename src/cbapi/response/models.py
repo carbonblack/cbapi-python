@@ -2169,61 +2169,59 @@ class Process(TaggedModel):
                 return None, None
 
     def __init__(self, cb, procguid, segment=None, max_children=15, initial_data=None, force_init=False, suppressed_process=False):
-        self.max_children = max_children
-        self.current_segment = segment
-        self.suppressed_process = suppressed_process
-        if suppressed_process:
-            self._full_init = True
-            log.debug("{0} is suppressed".format(procguid))
-
-        self.valid_process = True
-
-        self._events_loaded = False
-        self._events = {}
-        self._segments = []
-        self.__parent_info = {}
-        self.__children_info = []
-        self.__sibling_info = []
-
-        if cb.cb_server_version < LooseVersion('6.0.0'):
-            self._default_segment = 1
-        else:
-            self._default_segment = 0
-
-        self.id, self.current_segment = Process.parse_guid(procguid, cb.cb_server_version)
-        if not (self.id and self.current_segment):
-            self.id = procguid
-            if len(procguid) != 36:
-                log.debug("Invalid process GUID: %s, declaring this process as invalid" % procguid)
-                self.valid_process = False
-                self._full_init = True
-
-        if not self.current_segment:
-            self.current_segment = self._default_segment
-
-        super(Process, self).__init__(cb, self.id)
-
+        # Set version specific members
+        self._default_segment = 1
+        self._process_event_api = 'v1'
         self._process_summary_api = 'v1'
+        self._event_parser = ProcessV1Parser(self)
 
         if cb.cb_server_version >= LooseVersion('6.0.0'):
-            self._process_summary_api = 'v2'
+            self._default_segment = 0
             self._process_event_api = 'v4'
+            self._process_summary_api = 'v2'
             self._event_parser = ProcessV4Parser(self)
         elif cb.cb_server_version >= LooseVersion('5.2.0'):
             self._process_event_api = 'v3'
             self._event_parser = ProcessV3Parser(self)
         elif cb.cb_server_version >= LooseVersion('5.1.0'):
-            # CbER 5.1.0 introduced an extended event API
             self._process_event_api = 'v2'
             self._event_parser = ProcessV2Parser(self)
-        else:
-            self._process_event_api = 'v1'
-            self._event_parser = ProcessV1Parser(self)
 
+        # Set id and segment
+        self.id, self.current_segment = Process.parse_guid(procguid, cb.cb_server_version)
+
+        if not self.id:
+            self.id = procguid
+
+        if not self.current_segment:
+            self.current_segment = segment or self._default_segment
+
+        # NOTE: Sets self._full_init = False
+        super(Process, self).__init__(cb, self.id)
+
+        # Set object members
+        self._events = {}
+        self._segments = []
+        self.__parent_info = {}
+        self.__sibling_info = []
+        self.__children_info = []
+        self.valid_process = True
+        self._events_loaded = False
+        self.max_children = max_children
+        self.suppressed_process = suppressed_process
+
+        if len(self.id) != 36:
+            self._full_init = True
+            self.valid_process = False
+            log.debug('Invalid process GUID: {}, declaring this process as invalid'.format(self.id))
+
+        if self.suppressed_process:
+            self._full_init = True
+            log.debug('{0} is suppressed'.format(self.id))
+
+        # Parse data
         if initial_data:
-            # fill in data object for performance
-            self._parse({"process": copy.deepcopy(initial_data)})
-
+            self._parse({'process': copy.deepcopy(initial_data)})
 
         if force_init:
             self.refresh()
