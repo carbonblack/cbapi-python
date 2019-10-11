@@ -1,5 +1,5 @@
 CB LiveQuery API Examples
-========================
+=========================
 
 Let's cover a few example functions that our LiveQuery Python bindings enable. To begin, we need to import the
 relevant libraries::
