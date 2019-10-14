@@ -115,7 +115,7 @@ class RunHistoryQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin
         super().__init__(doc_class, cb)
         self._query_builder = QueryBuilder()
         self._sort = {}
-    
+
     def sort_by(self, key, direction="ASC"):
         """Sets the sorting behavior on a query's results.
 
@@ -131,10 +131,10 @@ class RunHistoryQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin
         return self
 
     def _build_request(self, start, rows):
-        request = {"start": start }
+        request = {"start": start}
 
         if self._query_builder:
-            request["query"] = self._query_builder._collapse();
+            request["query"] = self._query_builder._collapse()
         if rows != 0:
             request["rows"] = rows
         if self._sort:
@@ -311,14 +311,14 @@ class FacetQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin):
         self._facet_fields = []
         self._criteria = {}
         self._run_id = None
-    
+
     def facet_field(self, field):
         """Sets the facet fields to be received by this query.
-        
+
         Example::
-        
+
         >>> cb.select(ResultFacet).run_id(my_run).facet_field(["device.policy_name", "device.os"])
-        
+
         :param field: Field(s) to be received, either single string or list of strings
         :return: Query object
         :rtype: :py:class:`Query`
@@ -350,17 +350,17 @@ class FacetQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin):
         """
         self._run_id = run_id
         return self
-    
+
     def _build_request(self, rows):
-        terms = { "fields": self._facet_fields }
+        terms = {"fields": self._facet_fields}
         if rows != 0:
             terms["rows"] = rows
         request = {"query": self._query_builder._collapse(), "terms": terms}
         if self._criteria:
             request["criteria"] = self._criteria
         return request
-    
-    def _perform_query(self, rows=0):      
+
+    def _perform_query(self, rows=0):
         if self._run_id is None:
             raise ApiError("Can't retrieve results without a run ID")
 
@@ -373,4 +373,3 @@ class FacetQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin):
         results = result.get("terms", [])
         for item in results:
             yield self._doc_class(self._cb, item)
-        

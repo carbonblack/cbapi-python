@@ -54,7 +54,7 @@ class Run(NewBaseModel):
         self._info = resp
         self._last_refresh_time = time.time()
         return True
-    
+
     def stop(self):
         if self._is_deleted:
             raise ApiError("cannot stop a deleted query")
@@ -65,20 +65,21 @@ class Run(NewBaseModel):
                 self._info = result.json()
                 self._last_refresh_time = time.time()
                 return True
-            except:
-                raise ServerError(result.status_code, "Cannot parse response as JSON: {0:s}".format(result.content))            
+            except Exception:
+                raise ServerError(result.status_code, "Cannot parse response as JSON: {0:s}".format(result.content))
         return False
-    
+
     def delete(self):
         if self._is_deleted:
-            return True # already deleted
+            return True  # already deleted
         url = self.urlobject_single.format(self._cb.credentials.org_key, self.id)
         result = self._cb.delete_object(url)
         if result.status_code == 200:
             self._is_deleted = True
             return True
         return False
-    
+
+
 class RunHistory(Run):
     """
     Represents a historical LiveQuery ``Run``.
@@ -89,12 +90,13 @@ class RunHistory(Run):
         item = initial_data
         model_unique_id = item.get("id")
         super(Run, self).__init__(cb,
-                model_unique_id, initial_data=item,
-                force_init=False, full_doc=True)
+                                  model_unique_id, initial_data=item,
+                                  force_init=False, full_doc=True)
 
     @classmethod
     def _query_implementation(cls, cb):
         return RunHistoryQuery(cls, cb)
+
 
 class Result(UnrefreshableModel):
     """
@@ -185,13 +187,13 @@ class Result(UnrefreshableModel):
         Returns the reified ``Result.Metrics`` for this result.
         """
         return self._metrics
-    
+
     def query_device_summaries(self):
         return self._cb.select(DeviceSummary).run_id(self._run_id)
-    
+
     def query_result_facets(self):
         return self._cb.select(ResultFacet).run_id(self._run_id)
-    
+
     def query_device_summary_facets(self):
         return self._cb.select(DeviceSummaryFacet).run_id(self._run_id)
 
@@ -203,7 +205,7 @@ class DeviceSummary(UnrefreshableModel):
     primary_key = "id"
     swagger_meta_file = "psc/livequery/models/device_summary.yaml"
     urlobject = "/livequery/v1/orgs/{}/runs/{}/results/device_summaries/_search"
-    
+
     class Metrics(UnrefreshableModel):
         """
         Represents the metrics for a result.
@@ -215,12 +217,12 @@ class DeviceSummary(UnrefreshableModel):
                 initial_data=initial_data,
                 force_init=False,
                 full_doc=True,
-            )    
-            
+            )
+
     @classmethod
     def _query_implementation(cls, cb):
         return ResultQuery(cls, cb)
-    
+
     def __init__(self, cb, initial_data):
         super(DeviceSummary, self).__init__(
             cb,
@@ -230,13 +232,14 @@ class DeviceSummary(UnrefreshableModel):
             full_doc=True,
         )
         self._metrics = DeviceSummary.Metrics(cb, initial_data=initial_data["metrics"])
-                
+
     @property
     def metrics_(self):
         """
         Returns the reified ``DeviceSummary.Metrics`` for this result.
         """
         return self._metrics
+
 
 class ResultFacet(UnrefreshableModel):
     """
@@ -245,7 +248,7 @@ class ResultFacet(UnrefreshableModel):
     primary_key = "field"
     swagger_meta_file = "psc/livequery/models/facet.yaml"
     urlobject = "/livequery/v1/orgs/{}/runs/{}/results/_facet"
-    
+
     class Values(UnrefreshableModel):
         """
         Represents the values associated with a field.
@@ -258,11 +261,11 @@ class ResultFacet(UnrefreshableModel):
                 force_init=False,
                 full_doc=True,
             )
-            
+
     @classmethod
     def _query_implementation(cls, cb):
         return FacetQuery(cls, cb)
-    
+
     def __init__(self, cb, initial_data):
         super(ResultFacet, self).__init__(
             cb,
@@ -280,12 +283,12 @@ class ResultFacet(UnrefreshableModel):
         """
         return self._values
 
+
 class DeviceSummaryFacet(ResultFacet):
     """
     Represents the summary of results for a single device summary in a LiveQuery ``Run``.
     """
     urlobject = "/livequery/v1/orgs/{}/runs/{}/results/device_summaries/_facet"
-    
+
     def __init__(self, cb, initial_data):
         super(DeviceSummaryFacet, self).__init__(cb, initial_data)
-        

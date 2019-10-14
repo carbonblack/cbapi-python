@@ -95,10 +95,11 @@ class Computer(MutableBaseModel):
                    for n in ["debugLevel", "kernelDebugLevel", "debugFlags", "debugDuration", "ccLevel", "ccFlags"]):
                 args.append("changeDiagnostics=true")
             if any(n in self._dirty_attributes
-                   for n in ["template", "templateCloneCleanupMode", "templateCloneCleanupTime", "templateCloneCleanupTimeScale", "templateTrackModsOnly"]):
+                   for n in ["template", "templateCloneCleanupMode", "templateCloneCleanupTime",
+                             "templateCloneCleanupTimeScale", "templateTrackModsOnly"]):
                 args.append("changeTemplate=true")
             if "tamperProtectionActive" in self._dirty_attributes:
-                if self.get("tamperProtectionActive", True) == True:
+                if self.get("tamperProtectionActive", True):
                     args.append("newTamperProtectionActive=true")
                 else:
                     args.append("newTamperProtectionActive=false")
@@ -440,4 +441,3 @@ class UserGroup(MutableBaseModel, CreatableModelMixin):
     @classmethod
     def _minimum_server_version(cls):
         return LooseVersion("8.0")
-

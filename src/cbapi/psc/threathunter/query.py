@@ -1,5 +1,5 @@
 from cbapi.query import PaginatedQuery, BaseQuery, SimpleQuery
-from cbapi.errors import ServerError, ApiError, TimeoutError
+from cbapi.errors import ApiError, TimeoutError
 import time
 from solrq import Q
 from six import string_types
@@ -257,7 +257,8 @@ class Query(PaginatedQuery):
         args['q'] = self._query_builder._collapse()
         if self._query_builder._process_guid is not None:
             args["cb.process_guid"] = self._query_builder._process_guid
-        args["fl"] = "*,parent_hash,parent_name,process_cmdline,backend_timestamp,device_external_ip,device_group,device_internal_ip,device_os,process_effective_reputation,process_reputation,ttp"
+        args["fl"] = "*,parent_hash,parent_name,process_cmdline,backend_timestamp,device_external_ip,device_group," \
+            + "device_internal_ip,device_os,process_effective_reputation,process_reputation,ttp"
 
         return args
 
@@ -338,7 +339,7 @@ class AsyncProcessQuery(Query):
         self._query_token = None
         self._timeout = 0
         self._timed_out = False
-        self._sort_by = "backend_timestamp" # Requires default to prevent unstable fetching of results
+        self._sort_by = "backend_timestamp"  # Requires default to prevent unstable fetching of results
         self._sort_direction = "ASC"
 
     def sort_by(self, key, direction="ASC"):
@@ -455,7 +456,7 @@ class AsyncProcessQuery(Query):
             result_url = '{}?start={}&rows={}'.format(
                 result_url_template,
                 current,
-                10 # Batch gets to reduce API calls
+                10  # Batch gets to reduce API calls
             )
 
             result = self._cb.get_object(result_url, query_parameters=query_parameters)
