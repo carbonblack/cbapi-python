@@ -47,31 +47,34 @@ class Credentials(attrdict.AttrDict):
             if isinstance(x, six.string_types) and x.lower() in _boolean_states:
                 self[k] = _boolean_states[x.lower()]
 
+
 class CredentialStoreFactory(object):
 
-    #CredentialStore(product_name, credential_file=credential_file)
+    # CredentialStore(product_name, credential_file=credential_file)
     @staticmethod
-    def getCredentialStore(product_name,credential_file):
-        if credential_file is None and os.environ.get('CBAPI_TOKEN',False) and os.environ.get('CBAPI_URL',False):
+    def getCredentialStore(product_name, credential_file):
+        if credential_file is None and os.environ.get('CBAPI_TOKEN', False) and os.environ.get('CBAPI_URL', False):
             log.debug("Using Envar credential store")
             return EnvarCredentialStore()
         else:
             log.debug("Using file credential store")
-            return FileCredentialStore(**{"product_name":product_name,"credential_file":credential_file})
+            return FileCredentialStore(**{"product_name": product_name, "credential_file": credential_file})
 
-#A CredentialStore backed by os.environ rather than by a file on disk
+
+# A CredentialStore backed by os.environ rather than by a file on disk
 class EnvarCredentialStore(object):
     def __init__(self):
-        #`CBAPI_URL`, `CBAPI_TOKEN`, `CBAPI_SSL_VERIFY`
+        # `CBAPI_URL`, `CBAPI_TOKEN`, `CBAPI_SSL_VERIFY`
         environ = os.environ
-        self.cbapi_url = environ.get('CBAPI_URL',None)
-        self.cbapi_token = environ.get('CBAPI_TOKEN',None)
-        self.cbapi_ssl_verify = environ.get('CBAPI_SSL_VERIFY',True)
+        self.cbapi_url = environ.get('CBAPI_URL', None)
+        self.cbapi_token = environ.get('CBAPI_TOKEN', None)
+        self.cbapi_ssl_verify = environ.get('CBAPI_SSL_VERIFY', True)
         self.org_key = environ.get('CBAPI_ORG_KEY', None)
-        self.credentials = Credentials(url=self.cbapi_url,token=self.cbapi_token,ssl_verify=self.cbapi_ssl_verify)
+        self.credentials = Credentials(url=self.cbapi_url, token=self.cbapi_token, ssl_verify=self.cbapi_ssl_verify)
 
-    def get_credentials(self,profile=None):
+    def get_credentials(self, profile=None):
         return self.credentials
+
 
 class FileCredentialStore(object):
     def __init__(self, product_name, **kwargs):

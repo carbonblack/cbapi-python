@@ -32,7 +32,8 @@ class BaseQuery(object):
         res = self[:2]
 
         if len(res) == 0 or len(res) > 1:
-            raise MoreThanOneResultError(message="{0:d} results found for query {1:s}".format(len(self), str(self._query)))
+            raise MoreThanOneResultError(message="{0:d} results found for query {1:s}"
+                                         .format(len(self), str(self._query)))
 
         return res[0]
 
