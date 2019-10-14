@@ -30,7 +30,8 @@ class CbProtectionAPI(BaseAPI):
         except UnauthorizedError:
             raise UnauthorizedError(uri=self.url, message="Invalid API token for server {0:s}.".format(self.url))
 
-        log.debug('Connected to Cb server version %s at %s' % (self._server_info['ParityServerVersion'], self.session.server))
+        log.debug('Connected to Cb server version %s at %s'
+                  % (self._server_info['ParityServerVersion'], self.session.server))
         self.cb_server_version = LooseVersion(self._server_info['ParityServerVersion'])
 
     def _perform_query(self, cls, **kwargs):
@@ -40,7 +41,8 @@ class CbProtectionAPI(BaseAPI):
             return Query(cls, self, **kwargs)
 
     def _populate_server_info(self):
-        self._server_info = dict((sc['name'], sc['value']) for sc in self.get_object("/api/bit9platform/v1/serverConfig"))
+        self._server_info = dict((sc['name'], sc['value'])
+                                 for sc in self.get_object("/api/bit9platform/v1/serverConfig"))
 
     @property
     def info(self):
@@ -179,7 +181,8 @@ class Query(PaginatedQuery):
             args['q'] = self._query
 
         query_args = convert_query_params(args)
-        self._total_results = int(self._cb.get_object(self._doc_class.urlobject, query_parameters=query_args).get("count", 0))
+        self._total_results = int(self._cb.get_object(self._doc_class.urlobject,
+                                                      query_parameters=query_args).get("count", 0))
         self._count_valid = True
         return self._total_results
 

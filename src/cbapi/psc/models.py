@@ -16,7 +16,7 @@ class PSCMutableModel(MutableBaseModel):
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=False):
         super(PSCMutableModel, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
-                                                  force_init=force_init, full_doc=full_doc)
+                                              force_init=force_init, full_doc=full_doc)
         if not self._change_object_key_name:
             self._change_object_key_name = self.primary_key
 
@@ -69,7 +69,7 @@ class PSCMutableModel(MutableBaseModel):
         if request_ret.status_code not in range(200, 300):
             try:
                 message = json.loads(request_ret.text)[0]
-            except:
+            except Exception:
                 message = request_ret.text
 
             raise ServerError(request_ret.status_code, message,
@@ -97,7 +97,7 @@ class PSCMutableModel(MutableBaseModel):
                         # "success" is False
                         raise ServerError(request_ret.status_code, message.get("message", ""),
                                           result="Did not update {0:s} record.".format(self.__class__.__name__))
-            except:
+            except Exception:
                 pass
 
         self._dirty_attributes = {}
@@ -110,7 +110,6 @@ class Device(PSCMutableModel):
     urlobject = "/appservices/v6/orgs/{0}/devices"
     urlobject_single = "/appservices/v6/orgs/{0}/devices/{1}"
     primary_key = "id"
-    #info_key = "deviceInfo"
     swagger_meta_file = "psc/models/device.yaml"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
@@ -119,14 +118,14 @@ class Device(PSCMutableModel):
     @classmethod
     def _query_implementation(cls, cb):
         return DeviceSearchQuery(cls, cb)
-    
+
     def _refresh(self):
         url = self.urlobject_single.format(self._cb.credentials.org_key, self._model_unique_id)
         resp = self._cb.get_object(url)
         self._info = resp
         self._last_refresh_time = time.time()
         return True
-        
+
     def lr_session(self):
         """
         Retrieve a Live Response session object for this Device.
@@ -141,53 +140,51 @@ class Device(PSCMutableModel):
     def background_scan(self, flag):
         """
         Set the background scan option for this device.
-        
+
         :param boolean flag: True to turn background scan on, False to turn it off.
         """
-        return self._cb.device_background_scan([ self._model_unique_id ], flag)
-    
+        return self._cb.device_background_scan([self._model_unique_id], flag)
+
     def bypass(self, flag):
         """
         Set the bypass option for this device.
-        
+
         :param boolean flag: True to enable bypass, False to disable it.
         """
-        return self._cb.device_bypass([ self._model_unique_id ], flag)
-        
+        return self._cb.device_bypass([self._model_unique_id], flag)
+
     def delete_sensor(self):
         """
         Delete this sensor device.
         """
-        return self._cb.device_delete_sensor([ self._model_unique_id ])
-        
+        return self._cb.device_delete_sensor([self._model_unique_id])
+
     def uninstall_sensor(self):
         """
         Uninstall this sensor device.
         """
-        return self._cb.device_uninstall_sensor([ self._model_unique_id ])
-        
+        return self._cb.device_uninstall_sensor([self._model_unique_id])
+
     def quarantine(self, flag):
         """
         Set the quarantine option for this device.
-        
+
         :param boolean flag: True to enable quarantine, False to disable it.
         """
-        return self._cb.device_quarantine([ self._model_unique_id ], flag)
-        
+        return self._cb.device_quarantine([self._model_unique_id], flag)
+
     def update_policy(self, policy_id):
         """
         Set the current policy for this device.
-        
+
         :param int policy_id: ID of the policy to set for the devices.
         """
-        return self._cb.device_update_policy([ self._model_unique_id ], policy_id)
-        
+        return self._cb.device_update_policy([self._model_unique_id], policy_id)
+
     def update_sensor_version(self, sensor_version):
         """
         Update the sensor version for this device.
-        
+
         :param dict sensor_version: New version properties for the sensor.
         """
-        return self._cb.device_update_sensor_version([ self._model_unique_id ], sensor_version)
-
-        
+        return self._cb.device_update_sensor_version([self._model_unique_id], sensor_version)

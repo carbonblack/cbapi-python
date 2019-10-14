@@ -1,10 +1,11 @@
-from cbapi.errors import ApiError, MoreThanOneResultError, ServerError
+from cbapi.errors import ApiError, MoreThanOneResultError
 import logging
 import functools
 from six import string_types
 from solrq import Q
 
 log = logging.getLogger(__name__)
+
 
 class QueryBuilder(object):
     """
@@ -141,6 +142,7 @@ class QueryBuilder(object):
         else:
             return None  # return everything
 
+
 class PSCQueryBase:
     """
     Represents the base of all LiveQuery query classes.
@@ -214,7 +216,7 @@ class QueryBuilderSupportMixin:
 
         self._query_builder.not_(q, **kwargs)
         return self
-   
+
 
 class IterableQueryMixin:
     """
@@ -259,14 +261,14 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
     """
     Represents a query that is used to locate Device objects.
     """
-    valid_os = [ "WINDOWS", "ANDROID", "MAC", "IOS", "LINUX", "OTHER" ]
+    valid_os = ["WINDOWS", "ANDROID", "MAC", "IOS", "LINUX", "OTHER"]
     valid_statuses = ["PENDING", "REGISTERED", "UNINSTALLED", "DEREGISTERED",
                       "ACTIVE", "INACTIVE", "ERROR", "ALL", "BYPASS_ON",
                       "BYPASS", "QUARANTINE", "SENSOR_OUTOFDATE",
                       "DELETED", "LIVE"]
     valid_priorities = ["LOW", "MEDIUM", "HIGH", "MISSION_CRITICAL"]
     valid_directions = ["ASC", "DESC"]
-    
+
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
         self._query_builder = QueryBuilder()
@@ -274,15 +276,15 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         self._time_filter = {}
         self._exclusions = {}
         self._sortcriteria = {}
-        
+
     def _update_criteria(self, key, newlist):
         oldlist = self._criteria.get(key, [])
         self._criteria[key] = oldlist + newlist
-        
+
     def _update_exclusions(self, key, newlist):
         oldlist = self._exclusions.get(key, [])
         self._exclusions[key] = oldlist + newlist
-        
+
     def ad_group_ids(self, ad_group_ids):
         """
         Restricts the devices that this query is performed on to the specified
@@ -295,7 +297,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             raise ApiError("One or more invalid AD group IDs")
         self._update_criteria("ad_group_id", ad_group_ids)
         return self
-    
+
     def device_ids(self, device_ids):
         """
         Restricts the devices that this query is performed on to the specified
@@ -308,13 +310,13 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             raise ApiError("One or more invalid device IDs")
         self._update_criteria("id", device_ids)
         return self
-    
+
     def last_contact_time(self, *args, **kwargs):
         """
         Restricts the devices that this query is performed on to the specified
         last contact time (either specified as a start and end point or as a
         range).
-        
+
         :return: This instance
         """
         if kwargs.get("start", None) and kwargs.get("end", None):
@@ -326,15 +328,15 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             etime = kwargs["end"]
             if not isinstance(etime, str):
                 etime = etime.isoformat()
-            self._time_filter = { "start": stime, "end": etime }
+            self._time_filter = {"start": stime, "end": etime}
         elif kwargs.get("range", None):
             if kwargs.get("start", None) or kwargs.get("end", None):
                 raise ApiError("cannot specify start= or end= in addition to range=")
-            self._time_filter = { "range": kwargs["range"] }
+            self._time_filter = {"range": kwargs["range"]}
         else:
             raise ApiError("must specify either start= and end= or range=")
         return self
-    
+
     def os(self, operating_systems):
         """
         Restricts the devices that this query is performed on to the specified
@@ -347,7 +349,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             raise ApiError("One or more invalid operating systems")
         self._update_criteria("os", operating_systems)
         return self
-    
+
     def policy_ids(self, policy_ids):
         """
         Restricts the devices that this query is performed on to the specified
@@ -360,7 +362,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             raise ApiError("One or more invalid policy IDs")
         self._update_criteria("policy_id", policy_ids)
         return self
-        
+
     def status(self, statuses):
         """
         Restricts the devices that this query is performed on to the specified
@@ -373,7 +375,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             raise ApiError("One or more invalid status values")
         self._update_criteria("status", statuses)
         return self
-    
+
     def target_priorities(self, target_priorities):
         """
         Restricts the devices that this query is performed on to the specified
@@ -386,7 +388,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             raise ApiError("One or more invalid target priority values")
         self._update_criteria("target_priority", target_priorities)
         return self
-    
+
     def exclude_sensor_versions(self, sensor_versions):
         """
         Restricts the devices that this query is performed on to exclude specified
@@ -399,7 +401,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             raise ApiError("One or more invalid sensor versions")
         self._update_exclusions("sensor_version", sensor_versions)
         return self
-    
+
     def sort_by(self, key, direction="ASC"):
         """Sets the sorting behavior on a query's results.
 
@@ -413,42 +415,42 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         """
         if direction not in DeviceSearchQuery.valid_directions:
             raise ApiError("invalid sort direction specified")
-        self._sortcriteria = { "field": key, "order": direction }
+        self._sortcriteria = {"field": key, "order": direction}
         return self
-    
+
     def _build_request(self, from_row, max_rows):
         mycrit = self._criteria
         if self._time_filter:
             mycrit["last_contact_time"] = self._time_filter
-        request = { "criteria": mycrit, "exclusions": self._exclusions }
+        request = {"criteria": mycrit, "exclusions": self._exclusions}
         request["query"] = self._query_builder._collapse()
         if from_row > 0:
             request["start"] = from_row
         if max_rows >= 0:
             request["rows"] = max_rows
         if self._sortcriteria != {}:
-            request["sort"] = [ self._sortcriteria ]
+            request["sort"] = [self._sortcriteria]
         return request
-    
+
     def _build_url(self, tail_end):
         url = self._doc_class.urlobject.format(
             self._cb.credentials.org_key) + tail_end
         return url
-    
+
     def _count(self):
         if self._count_valid:
             return self._total_results
-        
+
         url = self._build_url("/_search")
         request = self._build_request(0, -1)
         resp = self._cb.post_object(url, body=request)
         result = resp.json()
-        
+
         self._total_results = result["num_found"]
         self._count_valid = True
 
         return self._total_results
-    
+
     def _perform_query(self, from_row=0, max_rows=-1):
         url = self._build_url("/_search")
         current = from_row
@@ -458,10 +460,10 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             request = self._build_request(current, max_rows)
             resp = self._cb.post_object(url, body=request)
             result = resp.json()
-            
+
             self._total_results = result["num_found"]
             self._count_valid = True
-            
+
             results = result.get("results", [])
             for item in results:
                 yield self._doc_class(self._cb, item["id"], item)
@@ -476,22 +478,22 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             if current >= self._total_results:
                 still_querying = False
                 break
-            
+
     def download(self):
         """
         Uses the query parameters that have been set to download all
         device listings in CSV format.
-        
+
         Example::
-        
+
         >>> cb.select(Device).status(["ALL"]).download()
-        
+
         :return: The CSV raw data as returned from the server.
         """
-        tmp = self._criteria.get("status", []) 
+        tmp = self._criteria.get("status", [])
         if not tmp:
             raise ApiError("at least one status must be specified to download")
-        query_params = { "status": ",".join(tmp) }
+        query_params = {"status": ",".join(tmp)}
         tmp = self._criteria.get("ad_group_id", [])
         if tmp:
             query_params["ad_group_id"] = ",".join([str(t) for t in tmp])
@@ -509,36 +511,36 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             query_params["sort_order"] = self._sortcriteria["order"]
         url = self._build_url("/_search/download")
         # AGRB 10/3/2019 - Header is TEMPORARY until bug is fixed in API. Remove when fix deployed.
-        return self._cb.get_raw_data(url, query_params, headers={ "Content-Type": "application/json"})
+        return self._cb.get_raw_data(url, query_params, headers={"Content-Type": "application/json"})
 
     def _bulk_device_action(self, action_type, options=None):
-        request = { "action_type": action_type, "search": self._build_request(0, -1) }
+        request = {"action_type": action_type, "search": self._build_request(0, -1)}
         if options:
             request["options"] = options
         return self._cb._raw_device_action(request)
-        
+
     def background_scan(self, flag):
         """
         Set the background scan option for the specified devices.
-        
+
         :param boolean flag: True to turn background scan on, False to turn it off.
         """
         return self._bulk_device_action("BACKGROUND_SCAN", self._cb._action_toggle(flag))
-    
+
     def bypass(self, flag):
         """
         Set the bypass option for the specified devices.
-        
+
         :param boolean flag: True to enable bypass, False to disable it.
         """
         return self._bulk_device_action("BYPASS", self._cb._action_toggle(flag))
-    
+
     def delete_sensor(self):
         """
         Delete the specified sensor devices.
         """
         return self._bulk_device_action("DELETE_SENSOR")
-    
+
     def uninstall_sensor(self):
         """
         Uninstall the specified sensor devices.
@@ -548,24 +550,24 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
     def quarantine(self, flag):
         """
         Set the quarantine option for the specified devices.
-        
+
         :param boolean flag: True to enable quarantine, False to disable it.
         """
         return self._bulk_device_action("QUARANTINE", self._cb._action_toggle(flag))
-        
+
     def update_policy(self, policy_id):
         """
         Set the current policy for the specified devices.
-        
+
         :param int policy_id: ID of the policy to set for the devices.
         """
-        return self._bulk_device_action("UPDATE_POLICY", { "policy_id": policy_id })
-    
+        return self._bulk_device_action("UPDATE_POLICY", {"policy_id": policy_id})
+
     def update_sensor_version(self, sensor_version):
         """
         Update the sensor version for the specified devices.
-        
+
         :param dict sensor_version: New version properties for the sensor.
         """
-        return self._bulk_device_action("UPDATE_SENSOR_VERSION", \
-                                        { "sensor_version": sensor_version }) 
+        return self._bulk_device_action("UPDATE_SENSOR_VERSION",
+                                        {"sensor_version": sensor_version})

@@ -31,6 +31,7 @@ def lru_cache_function(max_size=1024, expiration=15*60):
         return LRUCachedFunction(func, LRUCacheDict(max_size, expiration))
     return wrapper
 
+
 def _lock_decorator(func):
     """
     If the LRUCacheDict is concurrent, then we should lock in order to avoid
@@ -44,6 +45,7 @@ def _lock_decorator(func):
             return func(self, *args, **kwargs)
     withlock.__name__ == func.__name__
     return withlock
+
 
 class LRUCacheDict(object):
     """ A dictionary-like object, supporting LRU caching semantics.
@@ -95,8 +97,10 @@ class LRUCacheDict(object):
 
         def __init__(self, cache, peek_duration=60):
             me = self
+
             def kill_self(o):
                 me
+
             self.ref = weakref.ref(cache)
             self.peek_duration = peek_duration
             super(LRUCacheDict.EmptyCacheThread, self).__init__()
@@ -136,7 +140,7 @@ class LRUCacheDict(object):
         self.__access_times.clear()
 
     def __contains__(self, key):
-        return self.has_key(key)
+        return key in self
 
     @_lock_decorator
     def has_key(self, key):
@@ -218,6 +222,7 @@ class LRUCacheDict(object):
         else:
             return None
 
+
 class LRUCachedFunction(object):
     """
     A memoized function, backed by an LRU cache.
@@ -247,7 +252,8 @@ class LRUCachedFunction(object):
     >>> f(6)
     Calling f(6)
     6
-    >>> f(4) #No longer in cache - 4 is the least recently used, and there are at least 3 others items in cache [3,4,5,6].
+    >>> f(4) #No longer in cache - 4 is the least recently used, and there are at least 3 others
+    items in cache [3,4,5,6].
     Calling f(4)
     4
 
@@ -261,13 +267,15 @@ class LRUCachedFunction(object):
         self.__name__ = self.function.__name__
 
     def __call__(self, *args, **kwargs):
-        key = repr( (args, kwargs) ) + "#" + self.__name__ #In principle a python repr(...) should not return any # characters.
+        key = repr((args, kwargs)) + "#" + self.__name__
+        # In principle a python repr(...) should not return any # characters.
         try:
             return self.cache[key]
         except KeyError:
             value = self.function(*args, **kwargs)
             self.cache[key] = value
             return value
+
 
 if __name__ == "__main__":
     import doctest
