@@ -23,8 +23,6 @@ try:
 except ImportError:
     MAX_RETRIES = 5
 
-from requests.packages.urllib3.poolmanager import PoolManager
-
 import logging
 import json
 
@@ -32,8 +30,7 @@ from cbapi.six import iteritems
 from cbapi.six.moves import urllib
 
 from .auth import CredentialStoreFactory, Credentials
-from .errors import ServerError, TimeoutError, ApiError, ObjectNotFoundError, UnauthorizedError, CredentialError, \
-    ConnectionError
+from .errors import ServerError, TimeoutError, ApiError, ObjectNotFoundError, UnauthorizedError, ConnectionError
 from . import __version__
 
 from .cache.lru import lru_cache_function
@@ -45,8 +42,8 @@ log = logging.getLogger(__name__)
 
 def check_python_tls_compatibility():
     try:
-        tls_adapter = CbAPISessionAdapter(force_tls_1_2=True)
-    except Exception as e:
+        CbAPISessionAdapter(force_tls_1_2=True)
+    except Exception:
         ret = "TLSv1.1"
 
         if "OP_NO_TLSv1_1" not in ssl.__dict__:
@@ -113,8 +110,8 @@ class Connection(object):
             if credentials.ssl_cert_file:
                 self.ssl_verify = credentials.ssl_cert_file
 
-        user_agent = "cbapi/{0:s} Python/{1:d}.{2:d}.{3:d}".format(__version__,
-                             sys.version_info[0], sys.version_info[1], sys.version_info[2])
+        user_agent = "cbapi/{0:s} Python/{1:d}.{2:d}.{3:d}" \
+            .format(__version__, sys.version_info[0], sys.version_info[1], sys.version_info[2])
         if integration_name:
             user_agent += " {}".format(integration_name)
 
@@ -214,7 +211,7 @@ class BaseAPI(object):
         product_name = kwargs.pop("product_name", None)
         credential_file = kwargs.pop("credential_file", None)
         integration_name = kwargs.pop("integration_name", None)
-        self.credential_store = CredentialStoreFactory.getCredentialStore(product_name,credential_file)
+        self.credential_store = CredentialStoreFactory.getCredentialStore(product_name, credential_file)
 
         url, token, org_key = kwargs.pop("url", None), kwargs.pop("token", None), kwargs.pop("org_key", None)
         if url and token:
@@ -261,20 +258,20 @@ class BaseAPI(object):
         if result.status_code == 200:
             try:
                 return result.json()
-            except:
+            except Exception:
                 raise ServerError(result.status_code, "Cannot parse response as JSON: {0:s}".format(result.content))
         elif result.status_code == 204:
             # empty response
             return default
         else:
             raise ServerError(error_code=result.status_code, message="Unknown error: {0}".format(result.content))
-        
+
     def get_raw_data(self, uri, query_parameters=None, default=None, **kwargs):
         if query_parameters:
             if isinstance(query_parameters, dict):
                 query_parameters = convert_query_params(query_parameters)
             uri += '?%s' % (urllib.parse.urlencode(sorted(query_parameters)))
-            
+
         hdrs = kwargs.pop("headers", {})
         result = self.api_json_request("GET", uri, headers=hdrs)
         if result.status_code == 200:
@@ -299,7 +296,7 @@ class BaseAPI(object):
 
         try:
             resp = result.json()
-        except:
+        except Exception:
             return result
 
         if "errorMessage" in resp:

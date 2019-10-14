@@ -8,7 +8,7 @@ from cbapi.six import python_2_unicode_compatible
 
 import base64
 import os.path
-from cbapi.six import iteritems, add_metaclass
+from cbapi.six import iteritems, add_metaclass, integer_types
 from cbapi.six.moves import range
 from .response.utils import convert_from_cb, convert_to_cb
 import yaml
@@ -144,7 +144,7 @@ class EpochDateTimeFieldDescriptor(FieldDescriptor):
 
     def __get__(self, instance, instance_type=None):
         d = super(EpochDateTimeFieldDescriptor, self).__get__(instance, instance_type)
-        if type(d) is float or type(d) is int or type(d) is long:
+        if type(d) is float or isinstance(type(d), integer_types):
             epoch_seconds = d / self.multiplier
             return datetime.utcfromtimestamp(epoch_seconds)
         else:
@@ -229,7 +229,7 @@ class NewBaseModel(object):
 
     def __getattr__(self, item):
         try:
-            val = super(NewBaseModel, self).__getattribute__(item)
+            super(NewBaseModel, self).__getattribute__(item)
         except AttributeError:
             pass         # fall through to the rest of the logic...
 
@@ -412,7 +412,7 @@ class MutableBaseModel(NewBaseModel):
         else:
             log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
             http_method = self.__class__._change_object_http_method
-            ret = self._cb.api_json_request(http_method,self._build_api_request_uri(http_method=http_method),
+            ret = self._cb.api_json_request(http_method, self._build_api_request_uri(http_method=http_method),
                                             data=self._info)
 
         return self._refresh_if_needed(ret)
@@ -423,7 +423,7 @@ class MutableBaseModel(NewBaseModel):
         if request_ret.status_code not in range(200, 300):
             try:
                 message = json.loads(request_ret.text)[0]
-            except:
+            except Exception:
                 message = request_ret.text
 
             raise ServerError(request_ret.status_code, message,
@@ -448,7 +448,7 @@ class MutableBaseModel(NewBaseModel):
                         refresh_required = True
                     else:
                         self._full_init = True
-            except:
+            except Exception:
                 refresh_required = True
 
         self._dirty_attributes = {}
@@ -486,7 +486,7 @@ class MutableBaseModel(NewBaseModel):
         if ret.status_code not in (200, 204):
             try:
                 message = json.loads(ret.text)[0]
-            except:
+            except Exception:
                 message = ret.text
             raise ServerError(ret.status_code, message, result="Did not delete {0:s}.".format(str(self)))
 
@@ -505,4 +505,3 @@ class MutableBaseModel(NewBaseModel):
         if self.is_dirty():
             r += " (*)"
         return r
-

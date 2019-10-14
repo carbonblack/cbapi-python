@@ -10,9 +10,9 @@ from collections import defaultdict
 
 import shutil
 
-from cbapi.errors import TimeoutError, ObjectNotFoundError, ApiError, ServerError
+from cbapi.errors import TimeoutError, ObjectNotFoundError, ApiError
 from cbapi.six import itervalues
-from concurrent.futures import ThreadPoolExecutor, as_completed, _base, wait
+from concurrent.futures import _base, wait
 from cbapi import winerror
 
 from cbapi.six.moves.queue import Queue
@@ -32,9 +32,9 @@ class LiveResponseError(Exception):
         self.decoded_win32_error = ""
 
         # Details object:
-        # {u'status': u'error', u'username': u'admin', u'sensor_id': 9, u'name': u'kill', u'completion': 1464319733.190924,
-        # u'object': 1660, u'session_id': 7, u'result_type': u'WinHresult', u'create_time': 1464319733.171967,
-        # u'result_desc': u'', u'id': 22, u'result_code': 2147942487}
+        # {u'status': u'error', u'username': u'admin', u'sensor_id': 9, u'name': u'kill',
+        # u'completion': 1464319733.190924, u'object': 1660, u'session_id': 7, u'result_type': u'WinHresult',
+        # u'create_time': 1464319733.171967, u'result_desc': u'', u'id': 22, u'result_code': 2147942487}
 
         if self.details.get("status") == "error" and self.details.get("result_type") == "WinHresult":
             # attempt to decode the win32 error
@@ -45,11 +45,11 @@ class LiveResponseError(Exception):
                 self.decoded_win32_error = winerror.decode_hresult(self.win32_error)
                 if self.decoded_win32_error:
                     win32_error_text += " ({0})".format(self.decoded_win32_error)
-            except:
+            except Exception:
                 pass
             finally:
                 message_list.append(win32_error_text)
-        
+
         self.message = ": ".join(message_list)
 
     def __str__(self):
@@ -260,10 +260,10 @@ class CbLRSessionBase(object):
         if not topdown:
             yield top, [fn["filename"] for fn in dirnames], [fn["filename"] for fn in filenames]
 
-
     #
     # Process operations
     #
+
     def kill_process(self, pid):
         """
         Terminate a process on the remote endpoint
@@ -384,7 +384,7 @@ class CbLRSessionBase(object):
         :Example:
 
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
-        >>>    pprint.pprint(lr_session.list_registry_keys_and_values('HKLM\\SYSTEM\\CurrentControlSet\\services\\ACPI'))
+        >>>   pprint.pprint(lr_session.list_registry_keys_and_values('HKLM\\SYSTEM\\CurrentControlSet\\services\\ACPI'))
         {'sub_keys': [u'Parameters', u'Enum'],
          'values': [{u'value_data': 0,
                      u'value_name': u'Start',
@@ -588,10 +588,11 @@ class CbLRSessionBase(object):
                     try:
                         error_message = json.loads(e.message)
                         if error_message["status"] == "NOT_FOUND":
-                            self.session_id, self.session_data = self._cblr_manager._get_or_create_session(self.sensor_id)
+                            self.session_id, self.session_data = \
+                                self._cblr_manager._get_or_create_session(self.sensor_id)
                             retries -= 1
                             continue
-                    except:
+                    except Exception:
                         pass
                     raise ApiError("Received 404 error from server: {0}".format(e.message))
             else:
@@ -850,9 +851,9 @@ class CbLRManagerBase(object):
                             log.debug("Session {0} for sensor {1} not valid any longer, removing from cache"
                                       .format(session.session_id, session.sensor_id))
                             delete_list.append(session.sensor_id)
-                        except:
-                            log.debug("Keepalive on session {0} (sensor {1}) failed with unknown error, removing from cache"
-                                      .format(session.session_id, session.sensor_id))
+                        except Exception:
+                            log.debug(("Keepalive on session {0} (sensor {1}) failed with unknown error, " +
+                                      "removing from cache").format(session.session_id, session.sensor_id))
                             delete_list.append(session.sensor_id)
 
                 for sensor_id in delete_list:
