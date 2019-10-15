@@ -1,6 +1,21 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.5.3 - Released October 15, 2019
+----------------------------------------
+
+Updates
+
+* General
+    * Fix MoreThanOneResultError
+    * Add environmental org key
+
+* CB ThreatHunter
+    * Fix iterating process search results
+    * Fix watchlist reports fetch
+    * Fix process.summary
+
+
 CbAPI 1.5.2 - Released September 9, 2019
 ----------------------------------------
 
