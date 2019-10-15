@@ -3,7 +3,6 @@ from ..query import PaginatedQuery
 from cbapi.six.moves import urllib
 from distutils.version import LooseVersion
 from ..errors import ApiError
-from ..utils import convert_query_params
 import copy
 
 import logging
@@ -75,7 +74,8 @@ class Query(PaginatedQuery):
     def sort(self, new_sort):
         """Set the sort order for this query.
 
-        :param str new_sort: New sort order - see the `Query Reference <http://developer.carbonblack.com/resources/query_overview.pdf>`_.
+        :param str new_sort: New sort order - see the
+            `Query Reference <http://developer.carbonblack.com/resources/query_overview.pdf>`_.
         :return: Query object
         :rtype: :py:class:`Query`
         """
@@ -96,7 +96,8 @@ class Query(PaginatedQuery):
     def and_(self, new_query):
         """Add a filter to this query. Equivalent to calling :py:meth:`where` on this object.
 
-        :param str new_query: Query string - see the `Query Reference <http://developer.carbonblack.com/resources/query_overview.pdf>`_.
+        :param str new_query: Query string - see the
+            `Query Reference <http://developer.carbonblack.com/resources/query_overview.pdf>`_.
         :return: Query object
         :rtype: :py:class:`Query`
         """
@@ -105,7 +106,8 @@ class Query(PaginatedQuery):
     def where(self, new_query):
         """Add a filter to this query.
 
-        :param str new_query: Query string - see the `Query Reference <http://developer.carbonblack.com/resources/query_overview.pdf>`_.
+        :param str new_query: Query string - see the
+            `Query Reference <http://developer.carbonblack.com/resources/query_overview.pdf>`_.
         :return: Query object
         :rtype: :py:class:`Query`
         """
@@ -162,7 +164,8 @@ class Query(PaginatedQuery):
 
         qargs = convert_query_params(args)
 
-        self._total_results = self._cb.get_object(self._doc_class.urlobject, query_parameters=qargs).get('total_results', 0)
+        self._total_results = self._cb.get_object(self._doc_class.urlobject,
+                                                  query_parameters=qargs).get('total_results', 0)
 
         self._count_valid = True
         return self._total_results

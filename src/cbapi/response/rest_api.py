@@ -21,9 +21,10 @@ class CbResponseAPI(BaseAPI):
     Note that calling this will automatically connect to the Carbon Black server in order to verify
     connectivity and get the server version.
 
-    :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server. Uses the
-        profile named 'default' when not specified.
-    :param str url: (optional, discouraged) Instead of using a credential profile, pass URL and API token to the constructor.
+    :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black
+        server. Uses the profile named 'default' when not specified.
+    :param str url: (optional, discouraged) Instead of using a credential profile, pass URL and API token to
+        the constructor.
     :param str token: (optional, discouraged) API token
     :param bool ssl_verify: (optional, discouraged) Enable or disable SSL certificate verification
 
@@ -119,9 +120,9 @@ class CbResponseAPI(BaseAPI):
         :raises ApiError: if the URL does not correspond to a recognized model object
         """
         o = urllib.parse.urlparse(uri)
-        if self._parsed_url.scheme != o.scheme or \
-                        self._parsed_url.hostname != o.hostname or \
-                        self._parsed_url.port != o.port:
+        if self._parsed_url.scheme != o.scheme \
+            or self._parsed_url.hostname != o.hostname \
+                or self._parsed_url.port != o.port:
             raise ApiError("Invalid URL provided")
 
         frag = o.fragment.lstrip('/')
@@ -181,5 +182,3 @@ class CbEnterpriseResponseAPI(CbResponseAPI):
     Backwards compatibility for previous scripts
     """
     pass
-
-
