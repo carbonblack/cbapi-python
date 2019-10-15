@@ -30,7 +30,7 @@ def parse_42_guid(guid):
 
 def parse_process_guid(guid):
     sensor_id, proc_pid, proc_createtime = parse_42_guid(guid)
-    return sensor_id, proc_pid, datetime(1601,1,1) + timedelta(microseconds=proc_createtime / 10)
+    return sensor_id, proc_pid, datetime(1601, 1, 1) + timedelta(microseconds=proc_createtime / 10)
 
 
 def convert_to_solr(dt):
@@ -55,7 +55,7 @@ def convert_from_cb(s):
     if s is None:
         return dateutil.parser.parse("1970-01-01T00:00:00Z")
     else:
-       return dateutil.parser.parse(s)
+        return dateutil.parser.parse(s)
 
 
 def convert_event_time(s):
@@ -63,6 +63,7 @@ def convert_event_time(s):
     #  always relative to the local system clock on which it was created, and apparently sometimes the TZ data
     #  is included, and sometimes it isn't... so we normalize it by stripping off the TZ data (unfortunately)
     return convert_from_cb(s).replace(tzinfo=None)
+
 
 def convert_to_cb(dt):
     return dt.strftime(cb_datetime_format)
@@ -73,7 +74,7 @@ def get_constants(prefix):
     return dict((getattr(socket, n), n)
                 for n in dir(socket)
                 if n.startswith(prefix)
-    )
+                )
 
 
 protocols = get_constants("IPPROTO_")
