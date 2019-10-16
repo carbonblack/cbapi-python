@@ -2260,7 +2260,7 @@ class Process(TaggedModel):
         return super(Process, self)._attribute(attrname, default=default)
 
     def _build_api_request_uri(self):
-        return "/api/v1/process/{0}/{1}?children={2}".format(self.id, self._default_segment, self.max_children)
+        return "/api/{0}/process/{1}/{2}?children={3}".format(self._process_summary_api, self.id, self._default_segment, self.max_children)
 
     def _retrieve_cb_info(self, query_parameters=None):
         if self.valid_process and not self.suppressed_process:
