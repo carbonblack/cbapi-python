@@ -1,0 +1,56 @@
+type: object
+description: Dismiss status response for async calls
+properties:
+  errors:
+    type: array
+    description: Errors for dismiss alerts or threats, if no errors it won't be
+      included in response
+    items:
+      type: string
+  failed_ids:
+    type: array
+    description: Failed ids
+    items:
+      type: string
+  id:
+    type: string
+    description: Time based id for async job, it's not unique across the orgs
+  num_hits:
+    type: integer
+    format: int64
+    description: Total number of alerts to be operated on
+  num_success:
+    type: integer
+    format: int64
+    description: Successfully operated number of alerts
+  status:
+    type: string
+    description: Status for the async progress
+    enum:
+    - QUEUED
+    - IN_PROGRESS
+    - FINISHED
+  workflow:
+    description: Requested workflow change
+    type: object
+    properties:
+      changed_by:
+        type: string
+        description: Username of the user who changed the workflow
+      comment:
+        type: string
+        description: Comment when updating the workflow
+      last_update_time:
+        type: string
+        format: date-time
+        description: When the workflow was last updated
+      remediation:
+        type: string
+        description: Alert remediation code. Indicates the result of the investigation
+          into the alert
+      state:
+        type: string
+        description: State of the workflow
+        enum:
+        - OPEN
+        - DISMISSED

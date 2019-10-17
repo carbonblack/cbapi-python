@@ -1,0 +1,15 @@
+type: object
+properties:
+  id:
+    type: string
+    description: 'Key value of the item in filter, for example : device_id, sha256_hash,
+      policy_id... '
+  name:
+    type: string
+    description: 'Description of the item in filter, for example : device_name,
+      application_name, policy_name... This is an optional field, when the value
+      is null, it won''t be serialized'
+  total:
+    type: integer
+    format: int64
+    description: Total number of results within this aggregation

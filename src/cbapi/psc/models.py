@@ -1,4 +1,4 @@
-from cbapi.models import MutableBaseModel
+from cbapi.models import MutableBaseModel, UnrefreshableModel
 from cbapi.errors import ServerError
 from cbapi.psc.query import DeviceSearchQuery
 
@@ -188,3 +188,66 @@ class Device(PSCMutableModel):
         :param dict sensor_version: New version properties for the sensor.
         """
         return self._cb.device_update_sensor_version([self._model_unique_id], sensor_version)
+
+
+class Workflow(UnrefreshableModel):
+    swagger_meta_file = "psc/models/workflow.yaml"
+
+    def __init__(self, cb, initial_data=None):
+        super(Workflow, self).__init__(cb, model_unique_id=None, initial_data=initial_data)
+
+
+class BaseAlert(PSCMutableModel):
+    urlobject = "/appservices/v6/orgs/{0}/alerts"
+    urlobject_single = "/appservices/v6/orgs/{0}/alerts/{1}"
+    primary_key = "id"
+    swagger_meta_file = "psc/models/base_alert.yaml"
+
+    def __init__(self, cb, model_unique_id, initial_data=None):
+        super(BaseAlert, self).__init__(cb, model_unique_id, initial_data)
+        self._workflow = Workflow(cb, initial_data.get("workflow", None))
+ 
+    @classmethod
+    def _query_implementation(cls, cb):
+        pass
+    
+    def _refresh(self):
+        url = self.urlobject_single.format(self._cb.credentials.org_key, self._model_unique_id)
+        resp = self._cb.get_object(url)
+        self._info = resp
+        self._workflow = Workflow(self._cb, resp.get("workflow", None))
+        self._last_refresh_time = time.time()
+        return True
+
+    @property
+    def workflow(self):
+        return self._workflow
+    
+    
+class DismissStatusResponse(UnrefreshableModel):
+    primary_key = "id"
+    swagger_meta_file = "psc/models/dismiss_status_response.yaml"
+
+    def __init__(self, cb, model_unique_id, initial_data=None):
+        super(DismissStatusResponse, self).__init__(cb, model_unique_id, initial_data)
+        self._workflow = Workflow(cb, initial_data.get("workflow", None))
+    
+    @property
+    def workflow(self):
+        return self._workflow
+
+
+class FacetDTO(UnrefreshableModel):
+    primary_key = "id"
+    swagger_meta_file = "psc/models/facet_dto.yaml"
+
+    def __init__(self, cb, model_unique_id, initial_data=None):
+        super(FacetDTO, self).__init__(cb, model_unique_id, initial_data)
+        
+        
+class DismissAlertByWatchlistSearchRequest(UnrefreshableModel):
+    swagger_meta_file = "psc/models/dismiss_alert_by_watchlist_search_request.yaml"
+
+    def __init__(self, cb, initial_data=None):
+        super(DismissAlertByWatchlistSearchRequest, self).__init__(cb, model_unique_id=None, initial_data=initial_data)
+        
