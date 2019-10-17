@@ -1,0 +1,139 @@
+type: object
+properties:
+  category:
+    type: string
+    description: Alert category - Monitored vs Threat
+    enum:
+    - THREAT
+    - MONITORED
+    - INFO
+    - MINOR
+    - SERIOUS
+    - CRITICAL
+  create_time:
+    type: string
+    format: date-time
+    description: Time the alert was created
+  device_id:
+    type: integer
+    format: int64
+    description: ID of the device
+  device_name:
+    type: string
+    description: Device name
+  device_os:
+    type: string
+    description: Device OS
+    enum:
+    - WINDOWS
+    - ANDROID
+    - MAC
+    - IOS
+    - LINUX
+    - OTHER
+  device_os_version:
+    type: string
+    example: Windows 10 x64
+    description: Device OS Version
+  device_username:
+    type: string
+    description: Logged on user during the alert. This is filled on a best-effort
+      approach. If the user is not available it may be populated with the device
+      owner
+  first_event_time:
+    type: string
+    format: date-time
+    description: Time of the first event in an alert
+  group_details:
+    description: Group details for when alert grouping is on
+    type: object
+    properties:
+      count:
+        type: integer
+        format: int64
+        description: Number of times the event has occurred
+      total_devices:
+        type: integer
+        format: int64
+        description: The number of devices that have seen this alert
+  id:
+    type: string
+    description: Unique ID for this alert
+  last_event_time:
+    type: string
+    format: date-time
+    description: Time of the last event in an alert
+  last_update_time:
+    type: string
+    format: date-time
+    description: Time the alert was last updated
+  legacy_alert_id:
+    type: string
+    description: Unique short ID for this alert. This is deprecated and only available
+      on alerts stored in the old schema.
+  notes_present:
+    type: boolean
+    description: Are notes present for this threatId
+  org_key:
+    type: string
+    example: ABCD1234
+    description: Unique identifier for the organization to which the alert belongs
+  policy_id:
+    type: integer
+    format: int64
+    description: ID of the policy the device was in at the time of the alert
+  policy_name:
+    type: string
+    description: Name of the policy the device was in at the time of the alert
+  severity:
+    type: integer
+    format: int32
+    description: Threat ranking
+  tags:
+    type: array
+    description: Tags for the alert
+    items:
+      type: string
+  target_value:
+    type: string
+    description: Device priority as assigned via the policy
+    enum:
+    - LOW
+    - MEDIUM
+    - HIGH
+    - MISSION_CRITICAL
+  threat_id:
+    type: string
+    description: ID of the threat to which this alert belongs. Threats are comprised
+      of a combination of factors that can be repeated across devices.
+  type:
+    type: string
+    description: Type of the alert
+    enum:
+    - CB_ANALYTICS
+    - VMWARE
+    - WATCHLIST
+  workflow:
+    description: User-updatable status of the alert
+    type: object
+    properties:
+      changed_by:
+        type: string
+        description: Username of the user who changed the workflow
+      comment:
+        type: string
+        description: Comment when updating the workflow
+      last_update_time:
+        type: string
+        format: date-time
+        description: When the workflow was last updated
+      remediation:
+        type: string
+        description: Alert remediation code. Indicates the result of the investigation
+          into the alert
+      state:
+        type: string
+        description: State of the workflow
+        enum:
+        - OPEN
+        - DISMISSED

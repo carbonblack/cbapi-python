@@ -1,0 +1,228 @@
+type: object
+description: Combined alert dismiss by Watchlist search request
+required:
+- state
+properties:
+  comment:
+    type: string
+    description: Comment for dismissal
+  criteria:
+    description: Watchlist Alert search criteria
+    type: object
+    properties:
+      category:
+        type: array
+        description: Alert categories
+        items:
+          type: string
+          enum:
+          - THREAT
+          - MONITORED
+          - INFO
+          - MINOR
+          - SERIOUS
+          - CRITICAL
+      create_time:
+        description: Star time and end time
+        type: object
+        properties:
+          all_time:
+            type: boolean
+          end:
+            type: string
+            format: date-time
+            description: End of the time range for a time filter (newer timestamp)
+          range:
+            type: string
+            description: "Relative time window for the time filter. Specified as `all`
+              to retrieve results from all time, or `-[quantity][units]`, where quantity
+              is any integer and units is one of the allowed time units:\n* `y` years
+              \n* `w` weeks\n* `d` days\n* `h` hours\n* `m` minutes\n* `s` seconds"
+          start:
+            type: string
+            format: date-time
+            description: Beginning of the time range for a time filter (older timestamp)
+      device_id:
+        type: array
+        example:
+        - 324552
+        - 12344
+        - 997745
+        description: IDs of devices
+        items:
+          type: integer
+          format: int64
+      device_name:
+        type: array
+        example:
+        - hostmachine
+        - device.local
+        - DOMAIN\DEVICE
+        description: Device names
+        items:
+          type: string
+      device_os:
+        type: array
+        description: Device Operating Systems
+        items:
+          type: string
+          enum:
+          - WINDOWS
+          - ANDROID
+          - MAC
+          - IOS
+          - LINUX
+          - OTHER
+      device_os_version:
+        type: array
+        description: Device Operating System Versions
+        items:
+          type: string
+      device_username:
+        type: array
+        description: Users or device owners of alerts
+        items:
+          type: string
+      group_results:
+        type: boolean
+        description: Used to turn alert grouping on
+      id:
+        type: array
+        description: Unique IDs of alerts
+        items:
+          type: string
+      legacy_alert_id:
+        type: array
+        example:
+        - CTAS5XKG
+        - TJFY5ZBW
+        description: Unique short IDs of alerts. This field is deprecated and only
+          available on alerts stored in the old schema.
+        items:
+          type: string
+      minimum_severity:
+        type: integer
+        format: int32
+        example: 5
+        description: Minimum threat ranking of returned alerts
+      policy_id:
+        type: array
+        example:
+        - 1
+        - 525
+        - 644
+        description: IDs of policies the device was in at the time of the alert
+        items:
+          type: integer
+          format: int64
+      policy_name:
+        type: array
+        example:
+        - Default
+        - Advanced
+        - Monitored
+        description: Names of the policies the device was in at the time of the alert
+        items:
+          type: string
+      process_name:
+        type: array
+        example:
+        - explorer.exe
+        - chrome.app
+        - setup.py
+        description: Process names of an alert
+        items:
+          type: string
+      process_sha256:
+        type: array
+        example:
+        - 131f95c51cc819465fa1797f6ccacf9d494aaaff46fa3eac73ae63ffbdfd8267
+        description: SHA256 values of alerts
+        items:
+          type: string
+      report_id:
+        type: array
+        description: Report IDs that contained the IOC that caused a hit
+        items:
+          type: string
+      report_name:
+        type: array
+        description: Names of reports that contained the IOC that caused a hit
+        items:
+          type: string
+      reputation:
+        type: array
+        description: reputation of the actor hash
+        items:
+          type: string
+          enum:
+          - KNOWN_MALWARE
+          - SUSPECT_MALWARE
+          - PUP
+          - NOT_LISTED
+          - ADAPTIVE_WHITE_LIST
+          - COMMON_WHITE_LIST
+          - TRUSTED_WHITE_LIST
+          - COMPANY_BLACK_LIST
+      tag:
+        type: array
+        description: Tags for an alert
+        items:
+          type: string
+      target_value:
+        type: array
+        description: Device priorities as assigned via the alert policy
+        items:
+          type: string
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - MISSION_CRITICAL
+      threat_id:
+        type: array
+        example:
+        - 03ea43268c536a0bde8b765bca1696e9
+        - 41edc35062138af3f1fea4b3bf7046a5
+        description: IDs of threats
+        items:
+          type: string
+      type:
+        type: array
+        description: Types of alerts
+        items:
+          type: string
+          enum:
+          - CB_ANALYTICS
+          - VMWARE
+          - WATCHLIST
+      watchlist_id:
+        type: array
+        description: Watchlist ID
+        items:
+          type: string
+      watchlist_name:
+        type: array
+        description: Watchlist name
+        items:
+          type: string
+      workflow:
+        type: array
+        description: User-updatable statuses of an alert
+        items:
+          type: string
+          enum:
+          - OPEN
+          - DISMISSED
+  query:
+    type: string
+    description: Full-text search query string
+  remediation_state:
+    type: string
+    description: Remediation state
+  state:
+    type: string
+    description: Dismiss or undismiss
+    enum:
+    - OPEN
+    - DISMISSED

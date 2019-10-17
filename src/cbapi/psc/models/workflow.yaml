@@ -1,0 +1,23 @@
+type: object
+description: Tracking system for alerts as they are triaged and resolved
+properties:
+  changed_by:
+    type: string
+    description: Username of the user who changed the workflow
+  comment:
+    type: string
+    description: Comment when updating the workflow
+  last_update_time:
+    type: string
+    format: date-time
+    description: When the workflow was last updated
+  remediation:
+    type: string
+    description: Alert remediation code. Indicates the result of the investigation
+      into the alert
+  state:
+    type: string
+    description: State of the workflow
+    enum:
+    - OPEN
+    - DISMISSED
