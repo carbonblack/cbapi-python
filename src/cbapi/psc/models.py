@@ -1,6 +1,6 @@
 from cbapi.models import MutableBaseModel, UnrefreshableModel
 from cbapi.errors import ServerError
-from cbapi.psc.query import DeviceSearchQuery
+from cbapi.psc.query import DeviceSearchQuery, BaseAlertSearchQuery, WatchlistAlertSearchQuery
 
 from copy import deepcopy
 import logging
@@ -114,6 +114,8 @@ class Device(PSCMutableModel):
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(Device, self).__init__(cb, model_unique_id, initial_data)
+        if model_unique_id is not None and initial_data is None:
+            self._refresh()
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -125,7 +127,7 @@ class Device(PSCMutableModel):
         self._info = resp
         self._last_refresh_time = time.time()
         return True
-
+    
     def lr_session(self):
         """
         Retrieve a Live Response session object for this Device.
@@ -206,10 +208,12 @@ class BaseAlert(PSCMutableModel):
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(BaseAlert, self).__init__(cb, model_unique_id, initial_data)
         self._workflow = Workflow(cb, initial_data.get("workflow", None))
+        if model_unique_id is not None and initial_data is None:
+            self._refresh()
  
     @classmethod
     def _query_implementation(cls, cb):
-        pass
+        return BaseAlertSearchQuery(cls, cb)
     
     def _refresh(self):
         url = self.urlobject_single.format(self._cb.credentials.org_key, self._model_unique_id)
@@ -223,18 +227,87 @@ class BaseAlert(PSCMutableModel):
     def workflow(self):
         return self._workflow
     
+    def _update_workflow_status(self, state, remediation, comment):
+        request = {"state" : state}
+        if remediation:
+            request["remediation_state"] = remediation
+        if comment:
+            request["comment"] = comment
+        url = self.urlobject_single.format(self._cb.credentials.org_key,
+                                           self._model_unique_id) + "/workflow"
+        resp = self._cb.post_object(url, request)
+        self._workflow = Workflow(self._cb, resp)
+        self._last_refresh_time = time.time()
+        
+    def dismiss(self, remediation=None, comment=None):
+        self._update_workflow_status("DISMISSED", remediation, comment)
+
+    def undismiss(self, remediation=None, comment=None):
+        self._update_workflow_status("OPEN", remediation, comment)
+        
+    def _update_threat_workflow_status(self, state, remediation, comment):
+        request = {"state" : state}
+        if remediation:
+            request["remediation_state"] = remediation
+        if comment:
+            request["comment"] = comment
+        url = "/appservices/v6/orgs/{0}/threat/{1}/workflow".format(self._cb.credentials.org_key,
+                                                                    self.threat_id)
+        resp = self._cb.post_object(url, request)
+        return Workflow(self._cb, resp)
+    
+    def dismiss_threat(self, remediation=None, comment=None):
+        return self._update_threat_workflow_status("DISMISSED", remediation, comment)
+
+    def undismiss_threat(self, remediation=None, comment=None):
+        return self._update_threat_workflow_status("OPEN", remediation, comment)
+    
+
+class WatchlistAlert(BaseAlert):
+    urlobject = "/appservices/v6/orgs/{0}/alerts/watchlist"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return WatchlistAlertSearchQuery(cls, cb)
+    
     
 class DismissStatusResponse(UnrefreshableModel):
+    urlobject_single = "/appservices/v6/orgs/{0}/workflow/status/{1}"
     primary_key = "id"
     swagger_meta_file = "psc/models/dismiss_status_response.yaml"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(DismissStatusResponse, self).__init__(cb, model_unique_id, initial_data)
         self._workflow = Workflow(cb, initial_data.get("workflow", None))
+        if model_unique_id is not None and initial_data is None:
+            self._refresh()
+        
+    def _refresh(self):
+        url = self.urlobject_single.format(self._cb.credentials.org_key, self._model_unique_id)
+        resp = self._cb.get_object(url)
+        self._info = resp
+        self._workflow = Workflow(self._cb, resp.get("workflow", None))
+        self._last_refresh_time = time.time()
+        return True
     
     @property
     def workflow(self):
         return self._workflow
+
+    @property
+    def queued(self):
+        self._refresh()
+        return self._info.get("status", "") == "QUEUED"
+    
+    @property
+    def in_progress(self):
+        self._refresh()
+        return self._info.get("status", "") == "IN_PROGRESS"
+    
+    @property
+    def finished(self):
+        self._refresh()
+        return self._info.get("status", "") == "FINISHED"
 
 
 class FacetDTO(UnrefreshableModel):
@@ -243,11 +316,3 @@ class FacetDTO(UnrefreshableModel):
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(FacetDTO, self).__init__(cb, model_unique_id, initial_data)
-        
-        
-class DismissAlertByWatchlistSearchRequest(UnrefreshableModel):
-    swagger_meta_file = "psc/models/dismiss_alert_by_watchlist_search_request.yaml"
-
-    def __init__(self, cb, initial_data=None):
-        super(DismissAlertByWatchlistSearchRequest, self).__init__(cb, model_unique_id=None, initial_data=initial_data)
-        
