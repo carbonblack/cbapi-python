@@ -2,6 +2,7 @@ from cbapi.connection import BaseAPI
 from cbapi.errors import ApiError, ServerError
 from .cblr import LiveResponseSessionManager
 from .models import Device
+from .query import BulkUpdateAlerts, BulkUpdateWatchlistAlerts, BulkUpdateThreatAlerts
 import logging
 
 log = logging.getLogger(__name__)
@@ -18,6 +19,9 @@ class CbPSCBaseAPI(BaseAPI):
     >>> from cbapi import CbPSCBaseAPI
     >>> cb = CbPSCBaseAPI(profile="production")
     """
+    alert_update_queries = {"ALERT": BulkUpdateAlerts, "WATCHLIST": BulkUpdateWatchlistAlerts,
+                            "THREAT": BulkUpdateThreatAlerts}
+    
     def __init__(self, *args, **kwargs):
         super(CbPSCBaseAPI, self).__init__(product_name="psc", *args, **kwargs)
         self._lr_scheduler = None
@@ -48,9 +52,7 @@ class CbPSCBaseAPI(BaseAPI):
         :param int device_id: The ID of the device to look up.
         :return: The new device object.
         """
-        rc = Device(self, device_id)
-        rc.refresh()
-        return rc
+        return Device(self, device_id)
 
     def _raw_device_action(self, request):
         url = "/appservices/v6/orgs/{0}/device_actions".format(self.credentials.org_key)
@@ -134,3 +136,18 @@ class CbPSCBaseAPI(BaseAPI):
         :param dict sensor_version: New version properties for the sensor.
         """
         return self._device_action(device_ids, "UPDATE_SENSOR_VERSION", {"sensor_version": sensor_version})
+    
+    # ---- Alerts API
+    
+    def _bulk_alert_update_query(self, state, querytype):
+        cls = CbPSCBaseAPI.alert_update_queries.get(querytype, None)
+        if cls is None:
+            raise ApiError("unknown query type for bulk alert update")
+        return cls(self, state)
+    
+    def bulk_alert_dismiss(self, querytype):
+        return self._bulk_alert_update_query("DISMISSED", querytype)
+    
+    def bulk_alert_undismiss(self, querytype):
+        return self._bulk_alert_update_query("OPEN", querytype)
+    

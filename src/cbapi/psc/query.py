@@ -1,4 +1,5 @@
 from cbapi.errors import ApiError, MoreThanOneResultError
+from cbapi.psc.models import DismissStatusResponse
 import logging
 import functools
 from six import string_types
@@ -571,3 +572,476 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         """
         return self._bulk_device_action("UPDATE_SENSOR_VERSION",
                                         {"sensor_version": sensor_version})
+        
+
+class AlertRequestCriteriaBuilder:
+    valid_categories = ["THREAT", "MONITORED", "INFO", "MINOR", "SERIOUS", "CRITICAL"]
+    valid_reputations = ["KNOWN_MALWARE", "SUSPECT_MALWARE", "PUP", "NOT_LISTED", "ADAPTIVE_WHITE_LIST",
+                         "COMMON_WHITE_LIST", "TRUSTED_WHITE_LIST", "COMPANY_BLACK_LIST"]
+    valid_alerttypes = ["CB_ANALYTICS", "VMWARE", "WATCHLIST"]
+    valid_workflow_vals = ["OPEN", "DISMISSED"]
+     
+    def __init__(self):
+        self._criteria = {}
+        self._time_filter = {}
+        
+    def _update_criteria(self, key, newlist):
+        oldlist = self._criteria.get(key, [])
+        self._criteria[key] = oldlist + newlist
+        
+    def categories(self, cats):
+        if not all((c in AlertRequestCriteriaBuilder.valid_categories) for c in cats):
+            raise ApiError("One or more invalid category values")
+        self._update_criteria("category", cats)
+        return self
+        
+    def create_time(self, *args, **kwargs):
+        """
+        Restricts the devices that this query is performed on to the specified
+        last contact time (either specified as a start and end point or as a
+        range).
+
+        :return: This instance
+        """
+        if kwargs.get("start", None) and kwargs.get("end", None):
+            if kwargs.get("range", None):
+                raise ApiError("cannot specify range= in addition to start= and end=")
+            stime = kwargs["start"]
+            if not isinstance(stime, str):
+                stime = stime.isoformat()
+            etime = kwargs["end"]
+            if not isinstance(etime, str):
+                etime = etime.isoformat()
+            self._time_filter = {"start": stime, "end": etime}
+        elif kwargs.get("range", None):
+            if kwargs.get("start", None) or kwargs.get("end", None):
+                raise ApiError("cannot specify start= or end= in addition to range=")
+            self._time_filter = {"range": kwargs["range"]}
+        else:
+            raise ApiError("must specify either start= and end= or range=")
+        return self
+
+    def device_ids(self, device_ids):
+        """
+        Restricts the devices that this query is performed on to the specified
+        device IDs.
+
+        :param device_ids: list of ints
+        :return: This instance
+        """
+        if not all(isinstance(device_id, int) for device_id in device_ids):
+            raise ApiError("One or more invalid device IDs")
+        self._update_criteria("device_id", device_ids)
+        return self
+
+    def device_names(self, device_names):
+        if not all(isinstance(n, str) for n in device_names):
+            raise ApiError("One or more invalid device names")
+        self._update_criteria("device_name", device_names)
+        return self
+        
+    def device_os(self, device_os): 
+        if not all((osval in DeviceSearchQuery.valid_os) for osval in device_os):
+            raise ApiError("One or more invalid operating systems")
+        self._update_criteria("device_os", device_os)
+        return self
+    
+    def device_os_version(self, device_os_versions):
+        if not all(isinstance(n, str) for n in device_os_versions):
+            raise ApiError("One or more invalid device OS versions")
+        self._update_criteria("device_os_version", device_os_versions)
+        return self
+    
+    def device_username(self, users):
+        if not all(isinstance(u, str) for u in users):
+            raise ApiError("One or more invalid user names")
+        self._update_criteria("device_username", users)
+        return self
+    
+    def group_results(self, flag):
+        self._criteria["group_results"] = True if flag else False
+        return self
+    
+    def alert_ids(self, alert_ids):
+        if not all(isinstance(v, str) for v in alert_ids):
+            raise ApiError("One or more invalid alert ID values")
+        self._update_criteria("id", alert_ids)
+        return self
+    
+    def legacy_alert_ids(self, alert_ids):
+        if not all(isinstance(v, str) for v in alert_ids):
+            raise ApiError("One or more invalid alert ID values")
+        self._update_criteria("legacy_alert_id", alert_ids)
+        return self
+    
+    def minimum_severity(self, severity):
+        self._criteria["minimum_severity"] = severity
+        return self
+    
+    def policy_ids(self, policy_ids):
+        """
+        Restricts the devices that this query is performed on to the specified
+        policy IDs.
+
+        :param policy_ids: list of ints
+        :return: This instance
+        """
+        if not all(isinstance(policy_id, int) for policy_id in policy_ids):
+            raise ApiError("One or more invalid policy IDs")
+        self._update_criteria("policy_id", policy_ids)
+        return self
+
+    def policy_names(self, policy_names):
+        if not all(isinstance(n, str) for n in policy_names):
+            raise ApiError("One or more invalid policy names")
+        self._update_criteria("policy_name", policy_names)
+        return self
+    
+    def process_names(self, process_names):
+        if not all(isinstance(n, str) for n in process_names):
+            raise ApiError("One or more invalid process names")
+        self._update_criteria("process_name", process_names)
+        return self
+    
+    def process_sha256(self, shas):
+        if not all(isinstance(n, str) for n in shas):
+            raise ApiError("One or more invalid SHA256 values")
+        self._update_criteria("process_sha256", shas)
+        return self
+        
+    def reputations(self, reps):
+        if not all((r in AlertRequestCriteriaBuilder.valid_reputations) for r in reps):
+            raise ApiError("One or more invalid reputation values")
+        self._update_criteria("reputation", reps)
+        return self
+    
+    def tags(self, tags):
+        if not all(isinstance(tag, str) for tag in tags):
+            raise ApiError("One or more invalid tags")
+        self._update_criteria("tag", tags)
+        return self
+        
+    def target_priorities(self, priorities):
+        if not all((prio in DeviceSearchQuery.valid_priorities) for prio in priorities):
+            raise ApiError("One or more invalid priority values")
+        self._update_criteria("target_value", priorities)
+        return self
+        
+    def threat_ids(self, threats):
+        if not all(isinstance(t, str) for t in threats):
+            raise ApiError("One or more invalid threat ID values")
+        self._update_criteria("threat_id", threats)
+        return self
+    
+    def types(self, alerttypes):
+        if not all((t in AlertRequestCriteriaBuilder.valid_alerttypes) for t in alerttypes):
+            raise ApiError("One or more invalid alert type values")
+        self._update_criteria("type", alerttypes)
+        return self
+    
+    def workflows(self, workflow_vals):
+        if not all((t in AlertRequestCriteriaBuilder.valid_workflow_vals) for t in workflow_vals):
+            raise ApiError("One or more invalid workflow status values")
+        self._update_criteria("workflow", workflow_vals)
+        return self
+    
+    def build(self):
+        mycrit = self._criteria
+        if self._time_filter:
+            mycrit["create_time"] = self._time_filter
+        return mycrit
+    
+    
+class WatchlistAlertRequestCriteriaBuilder(AlertRequestCriteriaBuilder):
+    def __init__(self):
+        super().__init__()
+        
+    def watchlist_ids(self, ids):
+        if not all(isinstance(t, str) for t in ids):
+            raise ApiError("One or more invalid watchlist IDs")
+        self._update_criteria("watchlist_id", ids)
+        return self
+        
+    def watchlist_names(self, names):
+        if not all(isinstance(name, str) for name in names):
+            raise ApiError("One or more invalid watchlist names")
+        self._update_criteria("watchlist_name", names)
+        return self
+
+
+class AlertCriteriaBuilderMixin:
+    def categories(self, cats):
+        self._criteria_builder.categories(cats)
+        return self
+        
+    def create_time(self, *args, **kwargs):
+        """
+        Restricts the devices that this query is performed on to the specified
+        last contact time (either specified as a start and end point or as a
+        range).
+
+        :return: This instance
+        """
+        self._criteria_builder.create_time(*args, **kwargs)
+        return self
+
+    def device_ids(self, device_ids):
+        """
+        Restricts the devices that this query is performed on to the specified
+        device IDs.
+
+        :param device_ids: list of ints
+        :return: This instance
+        """
+        self._criteria_builder.device_ids(device_ids)
+        return self
+
+    def device_names(self, device_names):
+        self._criteria_builder.device_names(device_names)
+        return self
+        
+    def device_os(self, device_os): 
+        self._criteria_builder.device_os(device_os)
+        return self
+    
+    def device_os_version(self, device_os_versions):
+        self._criteria_builder.device_os_versions(device_os_versions)
+        return self
+    
+    def device_username(self, users):
+        self._criteria_builder.device_username(users)
+        return self
+    
+    def group_results(self, flag):
+        self._criteria_builder.group_results(flag)
+        return self
+    
+    def alert_ids(self, alert_ids):
+        self._criteria_builder.alert_ids(alert_ids)
+        return self
+    
+    def legacy_alert_ids(self, alert_ids):
+        self._criteria_builder.legacy_alert_ids(alert_ids)
+        return self
+    
+    def minimum_severity(self, severity):
+        self._criteria_builder.minimum_severity(severity)
+        return self
+    
+    def policy_ids(self, policy_ids):
+        """
+        Restricts the devices that this query is performed on to the specified
+        policy IDs.
+
+        :param policy_ids: list of ints
+        :return: This instance
+        """
+        self._criteria_builder.policy_ids(policy_ids)
+        return self
+
+    def policy_names(self, policy_names):
+        self._criteria_builder.policy_names(policy_names)
+        return self
+    
+    def process_names(self, process_names):
+        self._criteria_builder.process_names(process_names)
+        return self
+    
+    def process_sha256(self, shas):
+        self._criteria_builder.process_sha256(shas)
+        return self
+        
+    def reputations(self, reps):
+        self._criteria_builder.reputations(reps)
+        return self
+    
+    def tags(self, tags):
+        self._criteria_builder.tags(tags)
+        return self
+        
+    def target_priorities(self, priorities):
+        self._criteria_builder.target_priorities(priorities)
+        return self
+        
+    def threat_ids(self, threats):
+        self._criteria_builder.threat_ids(threats)
+        return self
+    
+    def types(self, alerttypes):
+        self._criteria_builder.types(alerttypes)
+        return self
+    
+    def workflows(self, workflow_vals):
+        self._criteria_builder.workflows(workflow_vals)
+        return self
+    
+
+class WatchlistAlertCriteriaBuilderMixin(AlertCriteriaBuilderMixin):
+    def watchlist_ids(self, ids):
+        self._criteria_builder.watchlist_ids(ids)
+        return self
+        
+    def watchlist_names(self, names):
+        self._criteria_builder.watchlist_names(names)
+        return self
+    
+    
+class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, AlertCriteriaBuilderMixin,
+                           IterableQueryMixin):
+    """
+    Represents a query that is used to locate BaseAlert objects.
+    """
+    def __init__(self, doc_class, cb):
+        super().__init__(doc_class, cb)
+        self._query_builder = QueryBuilder()
+        self._criteria_builder = AlertRequestCriteriaBuilder()
+        self._sortcriteria = {}
+        
+    def sort_by(self, key, direction="ASC"):
+        """Sets the sorting behavior on a query's results.
+
+        Example::
+
+        >>> cb.select(BaseAlert).sort_by("name")
+
+        :param key: the key in the schema to sort by
+        :param direction: the sort order, either "ASC" or "DESC"
+        :rtype: :py:class:`BaseAlertSearchQuery`
+        """
+        if direction not in DeviceSearchQuery.valid_directions:
+            raise ApiError("invalid sort direction specified")
+        self._sortcriteria = {"field": key, "order": direction}
+        return self
+
+    def _build_request(self, from_row, max_rows):
+        request = {"criteria": self._criteria_builder.build()}   
+        request["query"] = self._query_builder._collapse()
+        if from_row > 0:
+            request["start"] = from_row
+        if max_rows >= 0:
+            request["rows"] = max_rows
+        if self._sortcriteria != {}:
+            request["sort"] = [self._sortcriteria]
+        return request
+        
+    def _build_url(self, tail_end):
+        url = self._doc_class.urlobject.format(self._cb.credentials.org_key) + tail_end
+        return url
+
+    def _count(self):
+        if self._count_valid:
+            return self._total_results
+
+        url = self._build_url("/_search")
+        request = self._build_request(0, -1)
+        resp = self._cb.post_object(url, body=request)
+        result = resp.json()
+
+        self._total_results = result["num_found"]
+        self._count_valid = True
+
+        return self._total_results
+
+    def _perform_query(self, from_row=0, max_rows=-1):
+        url = self._build_url("/_search")
+        current = from_row
+        numrows = 0
+        still_querying = True
+        while still_querying:
+            request = self._build_request(current, max_rows)
+            resp = self._cb.post_object(url, body=request)
+            result = resp.json()
+
+            self._total_results = result["num_found"]
+            self._count_valid = True
+
+            results = result.get("results", [])
+            for item in results:
+                yield self._doc_class(self._cb, item["id"], item)
+                current += 1
+                numrows += 1
+
+                if max_rows > 0 and numrows == max_rows:
+                    still_querying = False
+                    break
+
+            from_row = current
+            if current >= self._total_results:
+                still_querying = False
+                break
+            
+            
+class WatchlistAlertSearchQuery(BaseAlertSearchQuery, WatchlistAlertCriteriaBuilderMixin):
+    def __init__(self, doc_class, cb):
+        super().__init__(doc_class, cb)
+        self._criteria_builder = WatchlistAlertRequestCriteriaBuilder()
+            
+            
+class BulkUpdateAlertsBase:
+    def __init__(self, cb, state):
+        self._cb = cb
+        self._state = state
+        self._additional_fields = {}
+        
+    def remediation(self, remediation):
+        self._additional_fields["remediation_state"] = remediation
+        return self
+    
+    def comment(self, comment):
+        self._additional_fields["comment"] = comment
+        return self
+    
+    def _url(self):
+        raise ApiError("invalid abstract URL for the operation")
+        
+    def _build_request(self):
+        request = self._additional_fields
+        request["state"] = self._state
+        return request
+    
+    def run(self):
+        resp = self._cb.post_object(self._url(), body=self._build_request())
+        return DismissStatusResponse(self._cb, resp["request_id"])
+        
+        
+class BulkUpdateAlerts(BulkUpdateAlertsBase, AlertCriteriaBuilderMixin, QueryBuilderSupportMixin):
+    def __init__(self, cb, state):
+        super().__init__(cb, state)           
+        self._criteria_builder = AlertRequestCriteriaBuilder()
+        self._query_builder = QueryBuilder()
+        
+    def _url(self):
+        return "/v6/orgs/{0}/alerts/workflow/_criteria".format(self._cb.credentials.org_key)
+
+    def _build_request(self):
+        request = super().build_request()
+        request["criteria"] = self._criteria_builder.build()
+        request["query"] = self._query_builder._collapse()
+        return request
+    
+    
+class BulkUpdateWatchlistAlerts(BulkUpdateAlerts):
+    def __init__(self, cb, state):
+        super().__init__(cb, state)           
+        
+    def _url(self):
+        return "/v6/orgs/{0}/alerts/watchlist/workflow/_criteria".format(self._cb.credentials.org_key)
+    
+    
+class BulkUpdateThreatAlerts(BulkUpdateAlertsBase):
+    def __init__(self, cb, state):
+        super().__init__(cb, state)           
+        self._threat_ids = []
+        
+    def threat_ids(self, ids):
+        self._threat_ids = self._threat_ids + ids
+        return self
+
+    def _url(self):
+        return "/v6/orgs/{0}/threat/workflow/_criteria".format(self._cb.credentials.org_key)
+    
+    def _build_request(self):
+        request = super()._build_request()
+        request["threat_id"] = self._threat_ids
+        return request
+    
