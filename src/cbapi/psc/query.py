@@ -1,5 +1,5 @@
 from cbapi.errors import ApiError, MoreThanOneResultError
-from cbapi.psc.models import DismissStatusResponse
+from cbapi.psc.models import DismissStatusResponse, FacetFieldDTO
 import logging
 import functools
 from six import string_types
@@ -575,6 +575,9 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         
 
 class AlertRequestCriteriaBuilder:
+    """
+    Auxiliary object that builds the criteria for alert request searches.
+    """
     valid_categories = ["THREAT", "MONITORED", "INFO", "MINOR", "SERIOUS", "CRITICAL"]
     valid_reputations = ["KNOWN_MALWARE", "SUSPECT_MALWARE", "PUP", "NOT_LISTED", "ADAPTIVE_WHITE_LIST",
                          "COMMON_WHITE_LIST", "TRUSTED_WHITE_LIST", "COMPANY_BLACK_LIST"]
@@ -590,6 +593,13 @@ class AlertRequestCriteriaBuilder:
         self._criteria[key] = oldlist + newlist
         
     def categories(self, cats):
+        """
+        Restricts the alerts that this query is performed on to the specified categories.
+        
+        :param cats list: List of categories to be restricted to. Valid categories are
+                          "THREAT", "MONITORED", "INFO", "MINOR", "SERIOUS", and "CRITICAL."
+        :return: This instance
+        """
         if not all((c in AlertRequestCriteriaBuilder.valid_categories) for c in cats):
             raise ApiError("One or more invalid category values")
         self._update_criteria("category", cats)
@@ -597,8 +607,8 @@ class AlertRequestCriteriaBuilder:
         
     def create_time(self, *args, **kwargs):
         """
-        Restricts the devices that this query is performed on to the specified
-        last contact time (either specified as a start and end point or as a
+        Restricts the alerts that this query is performed on to the specified
+        creation time (either specified as a start and end point or as a
         range).
 
         :return: This instance
@@ -623,10 +633,10 @@ class AlertRequestCriteriaBuilder:
 
     def device_ids(self, device_ids):
         """
-        Restricts the devices that this query is performed on to the specified
+        Restricts the alerts that this query is performed on to the specified
         device IDs.
 
-        :param device_ids: list of ints
+        :param device_ids list: list of integer device IDs
         :return: This instance
         """
         if not all(isinstance(device_id, int) for device_id in device_ids):
@@ -635,55 +645,111 @@ class AlertRequestCriteriaBuilder:
         return self
 
     def device_names(self, device_names):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        device names.
+
+        :param device_names list: list of string device names
+        :return: This instance
+        """
         if not all(isinstance(n, str) for n in device_names):
             raise ApiError("One or more invalid device names")
         self._update_criteria("device_name", device_names)
         return self
         
     def device_os(self, device_os): 
+        """
+        Restricts the alerts that this query is performed on to the specified
+        device operating systems.
+
+        :param device_os list: List of string operating systems.  Valid values are
+                               "WINDOWS", "ANDROID", "MAC", "IOS", "LINUX", and "OTHER."
+        :return: This instance
+        """
         if not all((osval in DeviceSearchQuery.valid_os) for osval in device_os):
             raise ApiError("One or more invalid operating systems")
         self._update_criteria("device_os", device_os)
         return self
     
     def device_os_version(self, device_os_versions):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        device operating system versions.
+
+        :param device_os_versions list: List of string operating system versions.
+        :return: This instance
+        """
         if not all(isinstance(n, str) for n in device_os_versions):
             raise ApiError("One or more invalid device OS versions")
         self._update_criteria("device_os_version", device_os_versions)
         return self
     
     def device_username(self, users):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        user names.
+
+        :param users list: List of string user names.
+        :return: This instance
+        """
         if not all(isinstance(u, str) for u in users):
             raise ApiError("One or more invalid user names")
         self._update_criteria("device_username", users)
         return self
     
     def group_results(self, flag):
+        """
+        Specifies whether or not to group the results of the query.
+        
+        :param flag boolean: True to group the results, False to not do so.
+        :return: This instance
+        """
         self._criteria["group_results"] = True if flag else False
         return self
     
     def alert_ids(self, alert_ids):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        alert IDs.
+
+        :param alert_ids list: List of string alert IDs.
+        :return: This instance
+        """
         if not all(isinstance(v, str) for v in alert_ids):
             raise ApiError("One or more invalid alert ID values")
         self._update_criteria("id", alert_ids)
         return self
     
     def legacy_alert_ids(self, alert_ids):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        legacy alert IDs.
+
+        :param alert_ids list: List of string legacy alert IDs.
+        :return: This instance
+        """
         if not all(isinstance(v, str) for v in alert_ids):
             raise ApiError("One or more invalid alert ID values")
         self._update_criteria("legacy_alert_id", alert_ids)
         return self
     
     def minimum_severity(self, severity):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        minimum severity level.
+        
+        :param severity int: The minimum severity level for alerts.
+        :return: This instance
+        """
         self._criteria["minimum_severity"] = severity
         return self
     
     def policy_ids(self, policy_ids):
         """
-        Restricts the devices that this query is performed on to the specified
+        Restricts the alerts that this query is performed on to the specified
         policy IDs.
 
-        :param policy_ids: list of ints
+        :param policy_ids list: list of integer policy IDs
         :return: This instance
         """
         if not all(isinstance(policy_id, int) for policy_id in policy_ids):
@@ -692,30 +758,68 @@ class AlertRequestCriteriaBuilder:
         return self
 
     def policy_names(self, policy_names):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        policy names.
+
+        :param policy_names list: list of string policy names
+        :return: This instance
+        """
         if not all(isinstance(n, str) for n in policy_names):
             raise ApiError("One or more invalid policy names")
         self._update_criteria("policy_name", policy_names)
         return self
     
     def process_names(self, process_names):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        process names.
+
+        :param process_names list: list of string process names
+        :return: This instance
+        """
         if not all(isinstance(n, str) for n in process_names):
             raise ApiError("One or more invalid process names")
         self._update_criteria("process_name", process_names)
         return self
     
     def process_sha256(self, shas):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        process SHA-256 hash values.
+
+        :param shas list: list of string process SHA-256 hash values
+        :return: This instance
+        """
         if not all(isinstance(n, str) for n in shas):
             raise ApiError("One or more invalid SHA256 values")
         self._update_criteria("process_sha256", shas)
         return self
         
     def reputations(self, reps):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        reputation values.
+
+        :param reps list: List of string reputation values.  Valid values are
+                          "KNOWN_MALWARE", "SUSPECT_MALWARE", "PUP", "NOT_LISTED",
+                          "ADAPTIVE_WHITE_LIST", "COMMON_WHITE_LIST",
+                          "TRUSTED_WHITE_LIST", and "COMPANY_BLACK_LIST".
+        :return: This instance
+        """
         if not all((r in AlertRequestCriteriaBuilder.valid_reputations) for r in reps):
             raise ApiError("One or more invalid reputation values")
         self._update_criteria("reputation", reps)
         return self
     
     def tags(self, tags):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        tag values.
+
+        :param tags list: list of string tag values
+        :return: This instance
+        """
         if not all(isinstance(tag, str) for tag in tags):
             raise ApiError("One or more invalid tags")
         self._update_criteria("tag", tags)
@@ -771,13 +875,20 @@ class WatchlistAlertRequestCriteriaBuilder(AlertRequestCriteriaBuilder):
 
 class AlertCriteriaBuilderMixin:
     def categories(self, cats):
+        """
+        Restricts the alerts that this query is performed on to the specified categories.
+        
+        :param cats list: List of categories to be restricted to. Valid categories are
+                          "THREAT", "MONITORED", "INFO", "MINOR", "SERIOUS", and "CRITICAL."
+        :return: This instance
+        """
         self._criteria_builder.categories(cats)
         return self
         
     def create_time(self, *args, **kwargs):
         """
-        Restricts the devices that this query is performed on to the specified
-        last contact time (either specified as a start and end point or as a
+        Restricts the alerts that this query is performed on to the specified
+        creation time (either specified as a start and end point or as a
         range).
 
         :return: This instance
@@ -787,75 +898,169 @@ class AlertCriteriaBuilderMixin:
 
     def device_ids(self, device_ids):
         """
-        Restricts the devices that this query is performed on to the specified
+        Restricts the alerts that this query is performed on to the specified
         device IDs.
 
-        :param device_ids: list of ints
+        :param device_ids list: list of integer device IDs
         :return: This instance
         """
         self._criteria_builder.device_ids(device_ids)
         return self
 
     def device_names(self, device_names):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        device names.
+
+        :param device_names list: list of string device names
+        :return: This instance
+        """
         self._criteria_builder.device_names(device_names)
         return self
         
     def device_os(self, device_os): 
+        """
+        Restricts the alerts that this query is performed on to the specified
+        device operating systems.
+
+        :param device_os list: List of string operating systems.  Valid values are
+                               "WINDOWS", "ANDROID", "MAC", "IOS", "LINUX", and "OTHER."
+        :return: This instance
+        """
         self._criteria_builder.device_os(device_os)
         return self
     
     def device_os_version(self, device_os_versions):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        device operating system versions.
+
+        :param device_os_versions list: List of string operating system versions.
+        :return: This instance
+        """
         self._criteria_builder.device_os_versions(device_os_versions)
         return self
     
     def device_username(self, users):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        user names.
+
+        :param users list: List of string user names.
+        :return: This instance
+        """
         self._criteria_builder.device_username(users)
         return self
     
     def group_results(self, flag):
+        """
+        Specifies whether or not to group the results of the query.
+        
+        :param flag boolean: True to group the results, False to not do so.
+        :return: This instance
+        """
         self._criteria_builder.group_results(flag)
         return self
     
     def alert_ids(self, alert_ids):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        alert IDs.
+
+        :param alert_ids list: List of string alert IDs.
+        :return: This instance
+        """
         self._criteria_builder.alert_ids(alert_ids)
         return self
     
     def legacy_alert_ids(self, alert_ids):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        legacy alert IDs.
+
+        :param alert_ids list: List of string legacy alert IDs.
+        :return: This instance
+        """
         self._criteria_builder.legacy_alert_ids(alert_ids)
         return self
     
     def minimum_severity(self, severity):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        minimum severity level.
+        
+        :param severity int: The minimum severity level for alerts.
+        :return: This instance
+        """
         self._criteria_builder.minimum_severity(severity)
         return self
     
     def policy_ids(self, policy_ids):
         """
-        Restricts the devices that this query is performed on to the specified
+        Restricts the alerts that this query is performed on to the specified
         policy IDs.
 
-        :param policy_ids: list of ints
+        :param policy_ids list: list of integer policy IDs
         :return: This instance
         """
         self._criteria_builder.policy_ids(policy_ids)
         return self
 
     def policy_names(self, policy_names):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        policy names.
+
+        :param policy_names list: list of string policy names
+        :return: This instance
+        """
         self._criteria_builder.policy_names(policy_names)
         return self
     
     def process_names(self, process_names):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        process names.
+
+        :param process_names list: list of string process names
+        :return: This instance
+        """
         self._criteria_builder.process_names(process_names)
         return self
     
     def process_sha256(self, shas):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        process SHA-256 hash values.
+
+        :param shas list: list of string process SHA-256 hash values
+        :return: This instance
+        """
         self._criteria_builder.process_sha256(shas)
         return self
         
     def reputations(self, reps):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        reputation values.
+
+        :param reps list: List of string reputation values.  Valid values are
+                          "KNOWN_MALWARE", "SUSPECT_MALWARE", "PUP", "NOT_LISTED",
+                          "ADAPTIVE_WHITE_LIST", "COMMON_WHITE_LIST",
+                          "TRUSTED_WHITE_LIST", and "COMPANY_BLACK_LIST".
+        :return: This instance
+        """
         self._criteria_builder.reputations(reps)
         return self
     
     def tags(self, tags):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        tag values.
+
+        :param tags list: list of string tag values
+        :return: This instance
+        """
         self._criteria_builder.tags(tags)
         return self
         
@@ -975,7 +1180,56 @@ class WatchlistAlertSearchQuery(BaseAlertSearchQuery, WatchlistAlertCriteriaBuil
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
         self._criteria_builder = WatchlistAlertRequestCriteriaBuilder()
+        
+        
+class WatchlistFacetQuery(PSCQueryBase, QueryBuilderSupportMixin, WatchlistAlertCriteriaBuilderMixin,
+                          IterableQueryMixin):
+    valid_facet_fields = ["ALERT_TYPE", "CATEGORY", "REPUTATION", "WORKFLOW", "TAG", "POLICY_ID",
+                          "POLICY_NAME", "DEVICE_ID", "DEVICE_NAME", "APPLICATION_HASH",
+                          "APPLICATION_NAME", "STATUS", "RUN_STATE", "POLICY_APPLIED_STATE",
+                          "POLICY_APPLIED", "SENSOR_ACTION"]
+    
+    def __init__(self, doc_class, cb):
+        super().__init__(doc_class, cb)
+        self._query_builder = QueryBuilder()
+        self._criteria_builder = WatchlistAlertRequestCriteriaBuilder()
+        self._fields = []
+        
+    def terms(self, fieldlist):
+        if not all((field in WatchlistFacetQuery.valid_facet_fields) for field in fieldlist):
+            raise ApiError("One or more invalid term field names")
+        self._fields = self._fields + fieldlist
+        return self    
             
+    def _build_request(self, max_rows):
+        request = {"criteria": self._criteria_builder.build()}   
+        request["query"] = self._query_builder._collapse()
+        request["terms"] = {"fields": self._fields, "rows": max_rows}
+        return request
+
+    def _count(self):
+        if self._count_valid:
+            return self._total_results
+        url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
+        request = self._build_request(0)
+        resp = self._cb.post_object(url, body=request)
+        rawresult = resp.json()
+        result_list = rawresult.get("results", [])
+        self._total_results = len(result_list)
+        self._count_valid = True
+        return self._total_results
+
+    def _perform_query(self, max_rows=0):
+        url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
+        request = self._build_request(max_rows)
+        resp = self._cb.post_object(url, body=request)
+        rawresult = resp.json()
+        result_list = rawresult.get("results", [])
+        self._total_results = len(result_list)
+        self._count_valid = True
+        for result in result_list:
+            yield FacetFieldDTO(self._cb, result.get("field", {}), result)
+
             
 class BulkUpdateAlertsBase:
     def __init__(self, cb, state):

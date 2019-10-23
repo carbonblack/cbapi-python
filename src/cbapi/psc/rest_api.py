@@ -146,8 +146,20 @@ class CbPSCBaseAPI(BaseAPI):
         return cls(self, state)
     
     def bulk_alert_dismiss(self, querytype):
+        """
+        Start a query to dismiss multiple alerts.
+        
+        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", or "THREAT"
+        :return: The new query.
+        """
         return self._bulk_alert_update_query("DISMISSED", querytype)
     
     def bulk_alert_undismiss(self, querytype):
+        """
+        Start a query to un-dismiss multiple alerts.
+        
+        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", or "THREAT"
+        :return: The new query.
+        """
         return self._bulk_alert_update_query("OPEN", querytype)
     
