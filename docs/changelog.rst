@@ -1,6 +1,17 @@
 CbAPI Changelog
 ===============
 
+CbAPI 1.5.4 - Released October 24, 2019
+----------------------------------------
+
+Updates
+
+* General
+    * Prevent pytest from blocking python2 install
+
+* CB Response
+    * Fix python2 function overwrite for max_children
+
 CbAPI 1.5.3 - Released October 15, 2019
 ----------------------------------------
 
