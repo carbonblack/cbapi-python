@@ -24,11 +24,11 @@ install_requires=[
     'pika',
     'prompt_toolkit',
     'pygments',
-    'pytest',
+    'pytest<=5.0',
     'python-dateutil',
     'protobuf',
     'solrq',
-    'validators',
+    'validators'
 ]
 
 if sys.version_info < (2, 7):
