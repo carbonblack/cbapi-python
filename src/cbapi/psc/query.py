@@ -826,30 +826,66 @@ class AlertRequestCriteriaBuilder:
         return self
         
     def target_priorities(self, priorities):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        target priority values.
+
+        :param priorities list: List of string target priority values.  Valid values are
+                                "LOW", "MEDIUM", "HIGH", and "MISSION_CRITICAL".
+        :return: This instance
+        """
         if not all((prio in DeviceSearchQuery.valid_priorities) for prio in priorities):
             raise ApiError("One or more invalid priority values")
         self._update_criteria("target_value", priorities)
         return self
         
     def threat_ids(self, threats):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        threat ID values.
+
+        :param threats list: list of string threat ID values
+        :return: This instance
+        """
         if not all(isinstance(t, str) for t in threats):
             raise ApiError("One or more invalid threat ID values")
         self._update_criteria("threat_id", threats)
         return self
     
     def types(self, alerttypes):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        alert type values.
+
+        :param alerttypes list: List of string alert type values.  Valid values are
+                                "CB_ANALYTICS", "VMWARE", and "WATCHLIST".
+        :return: This instance
+        """
         if not all((t in AlertRequestCriteriaBuilder.valid_alerttypes) for t in alerttypes):
             raise ApiError("One or more invalid alert type values")
         self._update_criteria("type", alerttypes)
         return self
     
     def workflows(self, workflow_vals):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        workflow status values.
+
+        :param workflow_vals list: List of string alert type values.  Valid values are
+                                   "OPEN" and "DISMISSED".
+        :return: This instance
+        """
         if not all((t in AlertRequestCriteriaBuilder.valid_workflow_vals) for t in workflow_vals):
             raise ApiError("One or more invalid workflow status values")
         self._update_criteria("workflow", workflow_vals)
         return self
     
     def build(self):
+        """
+        Builds the criteria object for use in a query.
+        
+        :return: The criteria object.
+        """
         mycrit = self._criteria
         if self._time_filter:
             mycrit["create_time"] = self._time_filter
@@ -857,16 +893,33 @@ class AlertRequestCriteriaBuilder:
     
     
 class WatchlistAlertRequestCriteriaBuilder(AlertRequestCriteriaBuilder):
+    """
+    Auxiliary object that builds the criteria for watchlist alert request searches.
+    """
     def __init__(self):
         super().__init__()
         
     def watchlist_ids(self, ids):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        watchlist ID values.
+
+        :param ids list: list of string watchlist ID values
+        :return: This instance
+        """
         if not all(isinstance(t, str) for t in ids):
             raise ApiError("One or more invalid watchlist IDs")
         self._update_criteria("watchlist_id", ids)
         return self
         
     def watchlist_names(self, names):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        watchlist name values.
+
+        :param names list: list of string watchlist name values
+        :return: This instance
+        """
         if not all(isinstance(name, str) for name in names):
             raise ApiError("One or more invalid watchlist names")
         self._update_criteria("watchlist_name", names)
@@ -874,6 +927,9 @@ class WatchlistAlertRequestCriteriaBuilder(AlertRequestCriteriaBuilder):
 
 
 class AlertCriteriaBuilderMixin:
+    """
+    Added to query classes to allow them to manipulate alert criteria for queries.
+    """
     def categories(self, cats):
         """
         Restricts the alerts that this query is performed on to the specified categories.
@@ -1065,28 +1121,76 @@ class AlertCriteriaBuilderMixin:
         return self
         
     def target_priorities(self, priorities):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        target priority values.
+
+        :param reps list: List of string target priority values.  Valid values are
+                          "LOW", "MEDIUM", "HIGH", and "MISSION_CRITICAL".
+        :return: This instance
+        """
         self._criteria_builder.target_priorities(priorities)
         return self
         
     def threat_ids(self, threats):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        threat ID values.
+
+        :param threats list: list of string threat ID values
+        :return: This instance
+        """
         self._criteria_builder.threat_ids(threats)
         return self
     
     def types(self, alerttypes):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        alert type values.
+
+        :param alerttypes list: List of string alert type values.  Valid values are
+                                "CB_ANALYTICS", "VMWARE", and "WATCHLIST".
+        :return: This instance
+        """
         self._criteria_builder.types(alerttypes)
         return self
     
     def workflows(self, workflow_vals):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        workflow status values.
+
+        :param workflow_vals list: List of string alert type values.  Valid values are
+                                   "OPEN" and "DISMISSED".
+        :return: This instance
+        """
         self._criteria_builder.workflows(workflow_vals)
         return self
     
 
 class WatchlistAlertCriteriaBuilderMixin(AlertCriteriaBuilderMixin):
+    """
+    Added to query classes to allow them to manipulate watchlist alert criteria for queries.
+    """
     def watchlist_ids(self, ids):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        watchlist ID values.
+
+        :param ids list: list of string watchlist ID values
+        :return: This instance
+        """
         self._criteria_builder.watchlist_ids(ids)
         return self
         
     def watchlist_names(self, names):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        watchlist name values.
+
+        :param names list: list of string watchlist name values
+        :return: This instance
+        """
         self._criteria_builder.watchlist_names(names)
         return self
     
@@ -1177,6 +1281,9 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, AlertCriteria
             
             
 class WatchlistAlertSearchQuery(BaseAlertSearchQuery, WatchlistAlertCriteriaBuilderMixin):
+    """
+    Represents a query that is used to locate WatchlistAlert objects.
+    """
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
         self._criteria_builder = WatchlistAlertRequestCriteriaBuilder()
@@ -1184,6 +1291,9 @@ class WatchlistAlertSearchQuery(BaseAlertSearchQuery, WatchlistAlertCriteriaBuil
         
 class WatchlistFacetQuery(PSCQueryBase, QueryBuilderSupportMixin, WatchlistAlertCriteriaBuilderMixin,
                           IterableQueryMixin):
+    """
+    Represents a query that is used to locate FacetFieldDTO and FacetDTO objects.
+    """
     valid_facet_fields = ["ALERT_TYPE", "CATEGORY", "REPUTATION", "WORKFLOW", "TAG", "POLICY_ID",
                           "POLICY_NAME", "DEVICE_ID", "DEVICE_NAME", "APPLICATION_HASH",
                           "APPLICATION_NAME", "STATUS", "RUN_STATE", "POLICY_APPLIED_STATE",
@@ -1196,6 +1306,16 @@ class WatchlistFacetQuery(PSCQueryBase, QueryBuilderSupportMixin, WatchlistAlert
         self._fields = []
         
     def terms(self, fieldlist):
+        """
+        Specifies the facet field names that are to be retrieved.
+        
+        :param fieldlist list: List of facet field names. Valid names are
+                               "ALERT_TYPE", "CATEGORY", "REPUTATION", "WORKFLOW", "TAG", "POLICY_ID",
+                               "POLICY_NAME", "DEVICE_ID", "DEVICE_NAME", "APPLICATION_HASH",
+                               "APPLICATION_NAME", "STATUS", "RUN_STATE", "POLICY_APPLIED_STATE",
+                               "POLICY_APPLIED", and "SENSOR_ACTION".
+        :return: This instance.
+        """
         if not all((field in WatchlistFacetQuery.valid_facet_fields) for field in fieldlist):
             raise ApiError("One or more invalid term field names")
         self._fields = self._fields + fieldlist
@@ -1232,16 +1352,30 @@ class WatchlistFacetQuery(PSCQueryBase, QueryBuilderSupportMixin, WatchlistAlert
 
             
 class BulkUpdateAlertsBase:
+    """
+    Base query for doing bulk updates on alerts, where the result of a search is used to set
+    the states of multiple alerts.
+    """
     def __init__(self, cb, state):
         self._cb = cb
         self._state = state
         self._additional_fields = {}
         
     def remediation(self, remediation):
+        """
+        Sets the remediation state message to be applied to all selected alerts.
+        
+        :param remediation str: The remediation state message.
+        """
         self._additional_fields["remediation_state"] = remediation
         return self
     
     def comment(self, comment):
+        """
+        Sets the comment to be applied to all selected alerts.
+        
+        :param comment str: The comment to be used.
+        """
         self._additional_fields["comment"] = comment
         return self
     
@@ -1254,11 +1388,20 @@ class BulkUpdateAlertsBase:
         return request
     
     def run(self):
+        """
+        Executes the search query and alert state change operation.
+        
+        :return: A DismissStatusResponse object that can be used for monitoring the progress
+                 of the operation.
+        """
         resp = self._cb.post_object(self._url(), body=self._build_request())
         return DismissStatusResponse(self._cb, resp["request_id"])
         
         
 class BulkUpdateAlerts(BulkUpdateAlertsBase, AlertCriteriaBuilderMixin, QueryBuilderSupportMixin):
+    """
+    Query for bulk update of base-level alerts.
+    """
     def __init__(self, cb, state):
         super().__init__(cb, state)           
         self._criteria_builder = AlertRequestCriteriaBuilder()
@@ -1275,6 +1418,9 @@ class BulkUpdateAlerts(BulkUpdateAlertsBase, AlertCriteriaBuilderMixin, QueryBui
     
     
 class BulkUpdateWatchlistAlerts(BulkUpdateAlerts):
+    """
+    Query for bulk update of watchlist alerts.
+    """
     def __init__(self, cb, state):
         super().__init__(cb, state)           
         
@@ -1283,12 +1429,23 @@ class BulkUpdateWatchlistAlerts(BulkUpdateAlerts):
     
     
 class BulkUpdateThreatAlerts(BulkUpdateAlertsBase):
+    """
+    Query for bulk update of threat alerts.
+    """
     def __init__(self, cb, state):
         super().__init__(cb, state)           
         self._threat_ids = []
         
-    def threat_ids(self, ids):
-        self._threat_ids = self._threat_ids + ids
+    def threat_ids(self, threats):
+        """
+        Specifies the threat IDs to set the status of alerts for.
+        
+        :param threats list: The list of string threat identifiers.
+        :return: This instance.
+        """
+        if not all(isinstance(t, str) for t in threats):
+            raise ApiError("One or more invalid threat ID values")
+        self._threat_ids = self._threat_ids + threats
         return self
 
     def _url(self):

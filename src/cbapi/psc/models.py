@@ -241,9 +241,21 @@ class BaseAlert(PSCMutableModel):
         self._last_refresh_time = time.time()
         
     def dismiss(self, remediation=None, comment=None):
+        """
+        Dismiss this alert.
+        
+        :param remediation str: The remediation status to set for the alert.
+        :param comment str: The comment to set for the alert.
+        """
         self._update_workflow_status("DISMISSED", remediation, comment)
 
     def undismiss(self, remediation=None, comment=None):
+        """
+        Un-dismiss this alert.
+        
+        :param remediation str: The remediation status to set for the alert.
+        :param comment str: The comment to set for the alert.
+        """
         self._update_workflow_status("OPEN", remediation, comment)
         
     def _update_threat_workflow_status(self, state, remediation, comment):
@@ -258,9 +270,21 @@ class BaseAlert(PSCMutableModel):
         return Workflow(self._cb, resp)
     
     def dismiss_threat(self, remediation=None, comment=None):
+        """
+        Dismiss alerts for this threat.
+        
+        :param remediation str: The remediation status to set for the alert.
+        :param comment str: The comment to set for the alert.
+        """
         return self._update_threat_workflow_status("DISMISSED", remediation, comment)
 
     def undismiss_threat(self, remediation=None, comment=None):
+        """
+        Un-dismiss alerts for this threat.
+        
+        :param remediation str: The remediation status to set for the alert.
+        :param comment str: The comment to set for the alert.
+        """
         return self._update_threat_workflow_status("OPEN", remediation, comment)
     
 
