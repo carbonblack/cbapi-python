@@ -2,7 +2,8 @@ from cbapi.connection import BaseAPI
 from cbapi.errors import ApiError, ServerError
 from .cblr import LiveResponseSessionManager
 from .models import Device
-from .query import BulkUpdateAlerts, BulkUpdateWatchlistAlerts, BulkUpdateThreatAlerts
+from .query import BulkUpdateAlerts, BulkUpdateWatchlistAlerts, BulkUpdateThreatAlerts, \
+                   BulkUpdateCBAnalyticsAlerts, BulkUpdateVMwareAlerts
 import logging
 
 log = logging.getLogger(__name__)
@@ -20,7 +21,8 @@ class CbPSCBaseAPI(BaseAPI):
     >>> cb = CbPSCBaseAPI(profile="production")
     """
     alert_update_queries = {"ALERT": BulkUpdateAlerts, "WATCHLIST": BulkUpdateWatchlistAlerts,
-                            "THREAT": BulkUpdateThreatAlerts}
+                            "THREAT": BulkUpdateThreatAlerts, "CBANALYTICS": BulkUpdateCBAnalyticsAlerts,
+                            "VMWARE": BulkUpdateVMwareAlerts}
     
     def __init__(self, *args, **kwargs):
         super(CbPSCBaseAPI, self).__init__(product_name="psc", *args, **kwargs)
@@ -139,6 +141,17 @@ class CbPSCBaseAPI(BaseAPI):
     
     # ---- Alerts API
     
+    def alert_search_suggestions(self, query):
+        """
+        Returns suggestions for keys and field values that can be used in a search.
+        
+        :param query str: A search query to use.
+        :return: A list of search suggestions expressed as dict objects.
+        """
+        query_params = {"suggest.q": query}
+        url = "/appservices/v6/orgs/{0}/alerts/search_suggestions".format(self.credentials.org_key)
+        return self.get_object(url, query_params)
+    
     def _bulk_alert_update_query(self, state, querytype):
         cls = CbPSCBaseAPI.alert_update_queries.get(querytype, None)
         if cls is None:
@@ -149,7 +162,8 @@ class CbPSCBaseAPI(BaseAPI):
         """
         Start a query to dismiss multiple alerts.
         
-        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", or "THREAT"
+        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", "THREAT", 
+                              "CBANALYTICS", or "VMWARE".
         :return: The new query.
         """
         return self._bulk_alert_update_query("DISMISSED", querytype)
@@ -158,7 +172,8 @@ class CbPSCBaseAPI(BaseAPI):
         """
         Start a query to un-dismiss multiple alerts.
         
-        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", or "THREAT"
+        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", "THREAT", 
+                              "CBANALYTICS", or "VMWARE".
         :return: The new query.
         """
         return self._bulk_alert_update_query("OPEN", querytype)

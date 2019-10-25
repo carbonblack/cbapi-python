@@ -1,7 +1,7 @@
 from cbapi.models import MutableBaseModel, UnrefreshableModel
 from cbapi.errors import ServerError
 from cbapi.psc.query import DeviceSearchQuery, BaseAlertSearchQuery, WatchlistAlertSearchQuery, \
-                            WatchlistFacetQuery
+                            CBAnalyticsAlertSearchQuery, VMwareAlertSearchQuery
 
 from copy import deepcopy
 import logging
@@ -294,6 +294,22 @@ class WatchlistAlert(BaseAlert):
     @classmethod
     def _query_implementation(cls, cb):
         return WatchlistAlertSearchQuery(cls, cb)
+
+
+class CBAnalyticsAlert(BaseAlert):
+    urlobject = "/appservices/v6/orgs/{0}/alerts/cbanalytics"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return CBAnalyticsAlertSearchQuery(cls, cb)
+    
+    
+class VMwareAlert(BaseAlert):
+    urlobject = "/appservices/v6/orgs/{0}/alerts/vmware"
+
+    @classmethod
+    def _query_implementation(cls, cb):
+        return VMwareAlertSearchQuery(cls, cb)
     
     
 class DismissStatusResponse(UnrefreshableModel):
@@ -333,38 +349,3 @@ class DismissStatusResponse(UnrefreshableModel):
     def finished(self):
         self._refresh()
         return self._info.get("status", "") == "FINISHED"
-
-
-class FacetDTO(UnrefreshableModel):
-    primary_key = "id"
-    swagger_meta_file = "psc/models/facet_dto.yaml"
-    urlobject = "/appservices/v6/orgs/{0}/alerts/watchlist/_facet"
-
-    def __init__(self, cb, model_unique_id, initial_data=None):
-        super(FacetDTO, self).__init__(cb, model_unique_id, initial_data)
-        
-    @classmethod
-    def _query_implementation(cls, cb):
-        return WatchlistFacetQuery(cls, cb)        
-
-
-class FacetFieldDTO(UnrefreshableModel):
-    swagger_meta_file = "psc/models/facet_field_dto.yaml"
-    urlobject = "/appservices/v6/orgs/{0}/alerts/watchlist/_facet"
-
-    def __init__(self, cb, model_unique_id, initial_data=None):
-        super(FacetFieldDTO, self).__init__(cb, model_unique_id, initial_data)
-        self._items = []
-        if initial_data is not None:
-            raw_items = initial_data.get("values", [])
-            for raw_item in raw_items:
-                self._items.append(FacetDTO(cb, raw_item.get("id", ""), raw_item))
-
-    @classmethod
-    def _query_implementation(cls, cb):
-        return WatchlistFacetQuery(cls, cb)
-                
-    @property            
-    def values(self):
-        return self._items
-    
