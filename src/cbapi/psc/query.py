@@ -892,6 +892,174 @@ class AlertRequestCriteriaBuilder:
         return mycrit
     
     
+class CBAnalyticsAlertRequestCriteriaBuilder(AlertRequestCriteriaBuilder):     
+    """
+    Auxiliary object that builds the criteria for CB Analytics alert request searches.
+    """
+    valid_threat_categories = ["UNKNOWN", "NON_MALWARE", "NEW_MALWARE", "KNOWN_MALWARE", "RISKY_PROGRAM"]
+    valid_locations = ["ONSITE", "OFFSITE", "UNKNOWN"]
+    valid_kill_chain_statuses = ["RECONNAISSANCE", "WEAPONIZE", "DELIVER_EXPLOIT", "INSTALL_RUN",
+                                 "COMMAND_AND_CONTROL", "EXECUTE_GOAL", "BREACH"]
+    valid_policy_applied = ["APPLIED", "NOT_APPLIED"]
+    valid_run_states = ["DID_NOT_RUN", "RAN", "UNKNOWN"]
+    valid_sensor_actions = ["POLICY_NOT_APPLIED", "ALLOW", "ALLOW_AND_LOG", "TERMINATE", "DENY"]
+    valid_threat_cause_vectors = ["EMAIL", "WEB", "GENERIC_SERVER", "GENERIC_CLIENT", "REMOTE_DRIVE",
+                                  "REMOVABLE_MEDIA", "UNKNOWN", "APP_STORE", "THIRD_PARTY"]
+    def __init__(self):
+        super().__init__()
+        
+    def blocked_threat_categories(self, categories):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        threat categories that were blocked.
+        
+        :param categories list: List of threat categories to look for.  Valid values are "UNKNOWN",
+                                "NON_MALWARE", "NEW_MALWARE", "KNOWN_MALWARE", and "RISKY_PROGRAM".
+        :return: This instance.
+        """
+        if not all((category in CBAnalyticsAlertRequestCriteriaBuilder.valid_threat_categories) \
+                   for category in categories):
+            raise ApiError("One or more invalid threat categories")
+        self._update_criteria("blocked_threat_category", categories)
+        return self
+    
+    def device_locations(self, locations):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        device locations.
+        
+        :param locations list: List of device locations to look for. Valid values are "ONSITE", "OFFSITE",
+                               and "UNKNOWN". 
+        :return: This instance.
+        """
+        if not all((location in CBAnalyticsAlertRequestCriteriaBuilder.valid_locations) \
+                   for location in locations):
+            raise ApiError("One or more invalid device locations")
+        self._update_criteria("device_location", locations)
+        return self
+        
+    def kill_chain_statuses(self, statuses):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        kill chain statuses.
+        
+        :param statuses list: List of kill chain statuses to look for. Valid values are "RECONNAISSANCE",
+                              "WEAPONIZE", "DELIVER_EXPLOIT", "INSTALL_RUN","COMMAND_AND_CONTROL",
+                              "EXECUTE_GOAL", and "BREACH". 
+        :return: This instance.
+        """
+        if not all((status in CBAnalyticsAlertRequestCriteriaBuilder.valid_threat_categories) \
+                   for status in statuses):
+            raise ApiError("One or more invalid kill chain status values")
+        self._update_criteria("kill_chain_status", statuses)
+        return self
+    
+    def not_blocked_threat_categories(self, categories):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        threat categories that were NOT blocked.
+        
+        :param categories list: List of threat categories to look for.  Valid values are "UNKNOWN",
+                                "NON_MALWARE", "NEW_MALWARE", "KNOWN_MALWARE", and "RISKY_PROGRAM".
+        :return: This instance.
+        """
+        if not all((category in CBAnalyticsAlertRequestCriteriaBuilder.valid_threat_categories) \
+                   for category in categories):
+            raise ApiError("One or more invalid threat categories")
+        self._update_criteria("not_blocked_threat_category", categories)
+        return self
+    
+    def policy_applied(self, applied_statuses):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        status values showing whether policies were applied.
+        
+        :param applied_statuses list: List of status values to look for. Valid values are
+                                      "APPLIED" and "NOT_APPLIED". 
+        :return: This instance.
+        """
+        if not all((s in CBAnalyticsAlertRequestCriteriaBuilder.valid_policy_applied) \
+                   for s in applied_statuses):
+            raise ApiError("One or more invalid policy-applied values")
+        self._update_criteria("policy_applied", applied_statuses)
+        return self
+    
+    def reason_code(self, reason):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        reason code (enum value).
+        
+        :param reason str: The reason code to look for.
+        :return: This instance.
+        """
+        self._criteria["reason_code"] = reason
+        return self
+    
+    def run_states(self, states):
+        """
+        Restricts the alerts that this query is performed on to the specified run states.
+        
+        :param states list: List of run states to look for. Valid values are "DID_NOT_RUN", "RAN",
+                            and "UNKNOWN". 
+        :return: This instance.
+        """
+        if not all((s in CBAnalyticsAlertRequestCriteriaBuilder.valid_run_states) \
+                   for s in states):
+            raise ApiError("One or more invalid run states")
+        self._update_criteria("run_state", states)
+        return self
+    
+    def sensor_actions(self, actions):
+        """
+        Restricts the alerts that this query is performed on to the specified sensor actions.
+        
+        :param actions list: List of sensor actions to look for. Valid values are "POLICY_NOT_APPLIED",
+                             "ALLOW", "ALLOW_AND_LOG", "TERMINATE", and "DENY".
+        :return: This instance.
+        """
+        if not all((action in CBAnalyticsAlertRequestCriteriaBuilder.valid_sensor_actions) \
+                   for action in actions):
+            raise ApiError("One or more invalid sensor actions")
+        self._update_criteria("sensor_action", actions)
+        return self
+    
+    def threat_cause_vectors(self, vectors):
+        """
+        Restricts the alerts that this query is performed on to the specified threat cause vectors.
+        
+        :param vectors list: List of threat cause vectors to look for.  Valid values are "EMAIL", "WEB",
+                             "GENERIC_SERVER", "GENERIC_CLIENT", "REMOTE_DRIVE", "REMOVABLE_MEDIA",
+                             "UNKNOWN", "APP_STORE", and "THIRD_PARTY".
+        :return: This instance.
+        """
+        if not all((vector in CBAnalyticsAlertRequestCriteriaBuilder.valid_threat_cause_vectors) \
+                   for vector in vectors):
+            raise ApiError("One or more invalid threat cause vectors")
+        self._update_criteria("threat_cause_vector", vectors)
+        return self
+    
+    
+class VMwareAlertRequestCriteriaBuilder(AlertRequestCriteriaBuilder):    
+    """
+    Auxiliary object that builds the criteria for VMware alert request searches.
+    """
+    def __init__(self):
+        super().__init__()
+        
+    def group_ids(self, groupids):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        AppDefense-assigned alarm group IDs.
+        
+        :param groupids list: List of (integer) AppDefense-assigned alarm group IDs.
+        :return: This instance.
+        """
+        if not all(isinstance(groupid, int) for groupid in groupids):
+            raise ApiError("One or more invalid alarm group IDs")
+        self._update_criteria("group_id", groupids)
+        return self
+    
+    
 class WatchlistAlertRequestCriteriaBuilder(AlertRequestCriteriaBuilder):
     """
     Auxiliary object that builds the criteria for watchlist alert request searches.
@@ -1166,7 +1334,134 @@ class AlertCriteriaBuilderMixin:
         """
         self._criteria_builder.workflows(workflow_vals)
         return self
+
+
+class CBAnalyticsAlertCriteriaBuilderMixin(AlertCriteriaBuilderMixin):
+    """
+    Added to query classes to allow them to manipulate CB Analytics alert criteria for queries.
+    """
+    def blocked_threat_categories(self, categories):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        threat categories that were blocked.
+        
+        :param categories list: List of threat categories to look for.  Valid values are "UNKNOWN",
+                                "NON_MALWARE", "NEW_MALWARE", "KNOWN_MALWARE", and "RISKY_PROGRAM".
+        :return: This instance.
+        """
+        self._criteria_builder.blocked_threat_categories(categories)
+        return self
     
+    def device_locations(self, locations):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        device locations.
+        
+        :param locations list: List of device locations to look for. Valid values are "ONSITE", "OFFSITE",
+                               and "UNKNOWN". 
+        :return: This instance.
+        """
+        self._criteria_builder.device_locations(locations)
+        return self
+        
+    def kill_chain_statuses(self, statuses):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        kill chain statuses.
+        
+        :param statuses list: List of kill chain statuses to look for. Valid values are "RECONNAISSANCE",
+                              "WEAPONIZE", "DELIVER_EXPLOIT", "INSTALL_RUN","COMMAND_AND_CONTROL",
+                              "EXECUTE_GOAL", and "BREACH". 
+        :return: This instance.
+        """
+        self._criteria_builder.kill_chain_statuses(statuses)
+        return self
+    
+    def not_blocked_threat_categories(self, categories):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        threat categories that were NOT blocked.
+        
+        :param categories list: List of threat categories to look for.  Valid values are "UNKNOWN",
+                                "NON_MALWARE", "NEW_MALWARE", "KNOWN_MALWARE", and "RISKY_PROGRAM".
+        :return: This instance.
+        """
+        self._criteria_builder.not_blocked_threat_categories(categories)
+        return self
+    
+    def policy_applied(self, applied_statuses):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        status values showing whether policies were applied.
+        
+        :param applied_statuses list: List of status values to look for. Valid values are
+                                      "APPLIED" and "NOT_APPLIED". 
+        :return: This instance.
+        """
+        self._criteria_builder.policy_applied(applied_statuses)
+        return self
+    
+    def reason_code(self, reason):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        reason code (enum value).
+        
+        :param reason str: The reason code to look for.
+        :return: This instance.
+        """
+        self._criteria_builder.reason_code(reason)
+        return self
+    
+    def run_states(self, states):
+        """
+        Restricts the alerts that this query is performed on to the specified run states.
+        
+        :param states list: List of run states to look for. Valid values are "DID_NOT_RUN", "RAN",
+                            and "UNKNOWN". 
+        :return: This instance.
+        """
+        self._criteria_builder.run_states(states)
+        return self
+    
+    def sensor_actions(self, actions):
+        """
+        Restricts the alerts that this query is performed on to the specified sensor actions.
+        
+        :param actions list: List of sensor actions to look for. Valid values are "POLICY_NOT_APPLIED",
+                             "ALLOW", "ALLOW_AND_LOG", "TERMINATE", and "DENY".
+        :return: This instance.
+        """
+        self._criteria_builder.sensor_actions(actions)
+        return self
+    
+    def threat_cause_vectors(self, vectors):
+        """
+        Restricts the alerts that this query is performed on to the specified threat cause vectors.
+        
+        :param vectors list: List of threat cause vectors to look for.  Valid values are "EMAIL", "WEB",
+                             "GENERIC_SERVER", "GENERIC_CLIENT", "REMOTE_DRIVE", "REMOVABLE_MEDIA",
+                             "UNKNOWN", "APP_STORE", and "THIRD_PARTY".
+        :return: This instance.
+        """
+        self._criteria_builder.threat_cause_vectors(vectors)
+        return self
+    
+
+class VMwareAlertCriteriaBuilderMixin(AlertCriteriaBuilderMixin):
+    """
+    Added to query classes to allow them to manipulate VMware alert criteria for queries.
+    """
+    def group_ids(self, groupids):
+        """
+        Restricts the alerts that this query is performed on to the specified
+        AppDefense-assigned alarm group IDs.
+        
+        :param groupids list: List of (integer) AppDefense-assigned alarm group IDs.
+        :return: This instance.
+        """
+        self._criteria_builder.group_ids(groupids)
+        return self
+
 
 class WatchlistAlertCriteriaBuilderMixin(AlertCriteriaBuilderMixin):
     """
@@ -1200,6 +1495,11 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, AlertCriteria
     """
     Represents a query that is used to locate BaseAlert objects.
     """
+    valid_facet_fields = ["ALERT_TYPE", "CATEGORY", "REPUTATION", "WORKFLOW", "TAG", "POLICY_ID",
+                          "POLICY_NAME", "DEVICE_ID", "DEVICE_NAME", "APPLICATION_HASH",
+                          "APPLICATION_NAME", "STATUS", "RUN_STATE", "POLICY_APPLIED_STATE",
+                          "POLICY_APPLIED", "SENSOR_ACTION"]
+    
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
         self._query_builder = QueryBuilder()
@@ -1222,14 +1522,14 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, AlertCriteria
         self._sortcriteria = {"field": key, "order": direction}
         return self
 
-    def _build_request(self, from_row, max_rows):
+    def _build_request(self, from_row, max_rows, add_sort=True):
         request = {"criteria": self._criteria_builder.build()}   
         request["query"] = self._query_builder._collapse()
         if from_row > 0:
             request["start"] = from_row
         if max_rows >= 0:
             request["rows"] = max_rows
-        if self._sortcriteria != {}:
+        if add_sort and self._sortcriteria != {}:
             request["sort"] = [self._sortcriteria]
         return request
         
@@ -1278,6 +1578,27 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, AlertCriteria
             if current >= self._total_results:
                 still_querying = False
                 break
+
+    def facets(self, fieldlist, max_rows=0):
+        """
+        Return information about the facets for this alert by search, using the defined criteria.
+        
+        :param fieldlist list: List of facet field names. Valid names are
+                               "ALERT_TYPE", "CATEGORY", "REPUTATION", "WORKFLOW", "TAG", "POLICY_ID",
+                               "POLICY_NAME", "DEVICE_ID", "DEVICE_NAME", "APPLICATION_HASH",
+                               "APPLICATION_NAME", "STATUS", "RUN_STATE", "POLICY_APPLIED_STATE",
+                               "POLICY_APPLIED", and "SENSOR_ACTION".
+        :param max_rows int: The maximum number of rows to return. 0 means return all rows.
+        :return: A list of facet information specified as dicts.
+        """
+        if not all((field in BaseAlertSearchQuery.valid_facet_fields) for field in fieldlist):
+            raise ApiError("One or more invalid term field names")
+        request = self._build_request(0, -1, False)
+        request["terms"] = {"fields": fieldlist, "rows": max_rows}
+        url = self._build_url("/_facet")
+        resp = self._cb.post_object(url, body=request)
+        result = resp.json()
+        return result.get("results", [])
             
             
 class WatchlistAlertSearchQuery(BaseAlertSearchQuery, WatchlistAlertCriteriaBuilderMixin):
@@ -1289,68 +1610,24 @@ class WatchlistAlertSearchQuery(BaseAlertSearchQuery, WatchlistAlertCriteriaBuil
         self._criteria_builder = WatchlistAlertRequestCriteriaBuilder()
         
         
-class WatchlistFacetQuery(PSCQueryBase, QueryBuilderSupportMixin, WatchlistAlertCriteriaBuilderMixin,
-                          IterableQueryMixin):
+class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery, CBAnalyticsAlertCriteriaBuilderMixin):
     """
-    Represents a query that is used to locate FacetFieldDTO and FacetDTO objects.
+    Represents a query that is used to locate CBAnalyticsAlert objects.
     """
-    valid_facet_fields = ["ALERT_TYPE", "CATEGORY", "REPUTATION", "WORKFLOW", "TAG", "POLICY_ID",
-                          "POLICY_NAME", "DEVICE_ID", "DEVICE_NAME", "APPLICATION_HASH",
-                          "APPLICATION_NAME", "STATUS", "RUN_STATE", "POLICY_APPLIED_STATE",
-                          "POLICY_APPLIED", "SENSOR_ACTION"]
-    
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
-        self._query_builder = QueryBuilder()
-        self._criteria_builder = WatchlistAlertRequestCriteriaBuilder()
-        self._fields = []
-        
-    def terms(self, fieldlist):
-        """
-        Specifies the facet field names that are to be retrieved.
-        
-        :param fieldlist list: List of facet field names. Valid names are
-                               "ALERT_TYPE", "CATEGORY", "REPUTATION", "WORKFLOW", "TAG", "POLICY_ID",
-                               "POLICY_NAME", "DEVICE_ID", "DEVICE_NAME", "APPLICATION_HASH",
-                               "APPLICATION_NAME", "STATUS", "RUN_STATE", "POLICY_APPLIED_STATE",
-                               "POLICY_APPLIED", and "SENSOR_ACTION".
-        :return: This instance.
-        """
-        if not all((field in WatchlistFacetQuery.valid_facet_fields) for field in fieldlist):
-            raise ApiError("One or more invalid term field names")
-        self._fields = self._fields + fieldlist
-        return self    
-            
-    def _build_request(self, max_rows):
-        request = {"criteria": self._criteria_builder.build()}   
-        request["query"] = self._query_builder._collapse()
-        request["terms"] = {"fields": self._fields, "rows": max_rows}
-        return request
-
-    def _count(self):
-        if self._count_valid:
-            return self._total_results
-        url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
-        request = self._build_request(0)
-        resp = self._cb.post_object(url, body=request)
-        rawresult = resp.json()
-        result_list = rawresult.get("results", [])
-        self._total_results = len(result_list)
-        self._count_valid = True
-        return self._total_results
-
-    def _perform_query(self, max_rows=0):
-        url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
-        request = self._build_request(max_rows)
-        resp = self._cb.post_object(url, body=request)
-        rawresult = resp.json()
-        result_list = rawresult.get("results", [])
-        self._total_results = len(result_list)
-        self._count_valid = True
-        for result in result_list:
-            yield FacetFieldDTO(self._cb, result.get("field", {}), result)
-
-            
+        self._criteria_builder = CBAnalyticsAlertRequestCriteriaBuilder()
+    
+                        
+class VMwareAlertSearchQuery(BaseAlertSearchQuery, CBAnalyticsAlertCriteriaBuilderMixin):
+    """
+    Represents a query that is used to locate VMwareAlert objects.
+    """
+    def __init__(self, doc_class, cb):
+        super().__init__(doc_class, cb)
+        self._criteria_builder = VMwareAlertRequestCriteriaBuilder()
+    
+                        
 class BulkUpdateAlertsBase:
     """
     Base query for doing bulk updates on alerts, where the result of a search is used to set
@@ -1417,12 +1694,37 @@ class BulkUpdateAlerts(BulkUpdateAlertsBase, AlertCriteriaBuilderMixin, QueryBui
         return request
     
     
-class BulkUpdateWatchlistAlerts(BulkUpdateAlerts):
+class BulkUpdateCBAnalyticsAlerts(BulkUpdateAlerts, CBAnalyticsAlertCriteriaBuilderMixin):    
+    """
+    Query for bulk update of CB Analytics alerts.
+    """
+    def __init__(self, cb, state):
+        super().__init__(cb, state)           
+        self._criteria_builder = CBAnalyticsAlertRequestCriteriaBuilder()
+
+    def _url(self):
+        return "/v6/orgs/{0}/alerts/cbanalytics/workflow/_criteria".format(self._cb.credentials.org_key)
+    
+    
+class BulkUpdateVMwareAlerts(BulkUpdateAlerts, VMwareAlertCriteriaBuilderMixin):
+    """
+    Query for bulk update of VMware alerts.
+    """
+    def __init__(self, cb, state):
+        super().__init__(cb, state)           
+        self._criteria_builder = VMwareAlertRequestCriteriaBuilder()
+
+    def _url(self):
+        return "/v6/orgs/{0}/alerts/vmware/workflow/_criteria".format(self._cb.credentials.org_key)
+    
+    
+class BulkUpdateWatchlistAlerts(BulkUpdateAlerts, WatchlistAlertCriteriaBuilderMixin):
     """
     Query for bulk update of watchlist alerts.
     """
     def __init__(self, cb, state):
         super().__init__(cb, state)           
+        self._criteria_builder = WatchlistAlertRequestCriteriaBuilder()
         
     def _url(self):
         return "/v6/orgs/{0}/alerts/watchlist/workflow/_criteria".format(self._cb.credentials.org_key)
