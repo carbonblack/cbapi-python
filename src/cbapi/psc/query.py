@@ -1,5 +1,5 @@
 from cbapi.errors import ApiError, MoreThanOneResultError
-from cbapi.psc.models import DismissStatusResponse, FacetFieldDTO
+from cbapi.psc.models import DismissStatusResponse
 import logging
 import functools
 from six import string_types
