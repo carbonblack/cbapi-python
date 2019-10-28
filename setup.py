@@ -24,11 +24,11 @@ install_requires=[
     'pika',
     'prompt_toolkit',
     'pygments',
-    'pytest',
+    'pytest<=5.0',
     'python-dateutil',
     'protobuf',
     'solrq',
-    'validators',
+    'validators'
 ]
 
 if sys.version_info < (2, 7):
@@ -38,7 +38,7 @@ if sys.version_info < (3, 0):
 
 setup(
     name='cbapi',
-    version='1.5.2',
+    version='1.5.4',
     url='https://github.com/carbonblack/cbapi-python',
     license='MIT',
     author='Carbon Black',
