@@ -1,7 +1,7 @@
 from cbapi.connection import BaseAPI
 from cbapi.errors import ApiError, ServerError
 from .cblr import LiveResponseSessionManager
-from .models import Device
+from .models import Device, WorkflowStatus
 from .query import BulkUpdateAlerts, BulkUpdateWatchlistAlerts, BulkUpdateThreatAlerts, \
                    BulkUpdateCBAnalyticsAlerts, BulkUpdateVMwareAlerts
 import logging
@@ -151,6 +151,9 @@ class CbPSCBaseAPI(BaseAPI):
         query_params = {"suggest.q": query}
         url = "/appservices/v6/orgs/{0}/alerts/search_suggestions".format(self.credentials.org_key)
         return self.get_object(url, query_params)
+    
+    def _new_workflow_status(self, requestid):
+        return WorkflowStatus(self, requestid)
     
     def _bulk_alert_update_query(self, state, querytype):
         cls = CbPSCBaseAPI.alert_update_queries.get(querytype, None)
