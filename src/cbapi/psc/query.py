@@ -1,5 +1,5 @@
 from cbapi.errors import ApiError, MoreThanOneResultError
-from cbapi.psc.models import DismissStatusResponse
+from cbapi.psc.models import WorkflowStatus
 import logging
 import functools
 from six import string_types
@@ -1668,11 +1668,11 @@ class BulkUpdateAlertsBase:
         """
         Executes the search query and alert state change operation.
         
-        :return: A DismissStatusResponse object that can be used for monitoring the progress
+        :return: A WorkflowStatus object that can be used for monitoring the progress
                  of the operation.
         """
         resp = self._cb.post_object(self._url(), body=self._build_request())
-        return DismissStatusResponse(self._cb, resp["request_id"])
+        return WorkflowStatus(self._cb, resp["request_id"])
         
         
 class BulkUpdateAlerts(BulkUpdateAlertsBase, AlertCriteriaBuilderMixin, QueryBuilderSupportMixin):
