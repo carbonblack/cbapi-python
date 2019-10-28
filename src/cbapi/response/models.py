@@ -1383,7 +1383,7 @@ class WatchlistEnabledQuery(Query):
 class ProcessQuery(WatchlistEnabledQuery):
     def __init__(self, doc_class, cb, query=None, raw_query=None):
         super(ProcessQuery, self).__init__(doc_class, cb, query, raw_query)
-
+        self.num_children = 15
         if cb._has_legacy_partitions:
             self._default_args["cb.legacy_5x_mode"] = True
 
@@ -1423,12 +1423,12 @@ class ProcessQuery(WatchlistEnabledQuery):
         except ValueError:
             num_children = 15
 
-        nq.max_children = num_children
+        nq.num_children = num_children
         return nq
 
     def _perform_query(self, start=0, numrows=0):
         for item in self._search(start=start, rows=numrows):
-            yield self._doc_class.new_object(self._cb, item, self.max_children)
+            yield self._doc_class.new_object(self._cb, item, self.num_children)
 
     def set_legacy_mode(self, new_value=True):
         self._default_args["cb.legacy_5x_mode"] = new_value
