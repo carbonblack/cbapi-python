@@ -312,13 +312,13 @@ class VMwareAlert(BaseAlert):
         return VMwareAlertSearchQuery(cls, cb)
     
     
-class DismissStatusResponse(UnrefreshableModel):
+class WorkflowStatus(UnrefreshableModel):
     urlobject_single = "/appservices/v6/orgs/{0}/workflow/status/{1}"
     primary_key = "id"
-    swagger_meta_file = "psc/models/dismiss_status_response.yaml"
+    swagger_meta_file = "psc/models/workflow_status.yaml"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
-        super(DismissStatusResponse, self).__init__(cb, model_unique_id, initial_data)
+        super(WorkflowStatus, self).__init__(cb, model_unique_id, initial_data)
         self._workflow = Workflow(cb, initial_data.get("workflow", None))
         if model_unique_id is not None and initial_data is None:
             self._refresh()
