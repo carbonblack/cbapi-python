@@ -1,5 +1,4 @@
 from cbapi.errors import ApiError, MoreThanOneResultError
-from cbapi.psc.models import WorkflowStatus
 import logging
 import functools
 from six import string_types
@@ -1672,7 +1671,7 @@ class BulkUpdateAlertsBase:
                  of the operation.
         """
         resp = self._cb.post_object(self._url(), body=self._build_request())
-        return WorkflowStatus(self._cb, resp["request_id"])
+        return self._cb._new_workflow_status(resp["request_id"])
         
         
 class BulkUpdateAlerts(BulkUpdateAlertsBase, AlertCriteriaBuilderMixin, QueryBuilderSupportMixin):
