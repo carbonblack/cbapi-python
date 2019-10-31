@@ -128,7 +128,7 @@ class Device(PSCMutableModel):
         self._info = resp
         self._last_refresh_time = time.time()
         return True
-    
+
     def lr_session(self):
         """
         Retrieve a Live Response session object for this Device.
@@ -211,11 +211,11 @@ class BaseAlert(PSCMutableModel):
         self._workflow = Workflow(cb, initial_data.get("workflow", None))
         if model_unique_id is not None and initial_data is None:
             self._refresh()
- 
+
     @classmethod
     def _query_implementation(cls, cb):
         return BaseAlertSearchQuery(cls, cb)
-    
+
     def _refresh(self):
         url = self.urlobject_single.format(self._cb.credentials.org_key, self._model_unique_id)
         resp = self._cb.get_object(url)
@@ -227,9 +227,9 @@ class BaseAlert(PSCMutableModel):
     @property
     def workflow_(self):
         return self._workflow
-    
+
     def _update_workflow_status(self, state, remediation, comment):
-        request = {"state" : state}
+        request = {"state": state}
         if remediation:
             request["remediation_state"] = remediation
         if comment:
@@ -239,11 +239,11 @@ class BaseAlert(PSCMutableModel):
         resp = self._cb.post_object(url, request)
         self._workflow = Workflow(self._cb, resp.json())
         self._last_refresh_time = time.time()
-        
+
     def dismiss(self, remediation=None, comment=None):
         """
         Dismiss this alert.
-        
+
         :param remediation str: The remediation status to set for the alert.
         :param comment str: The comment to set for the alert.
         """
@@ -252,14 +252,14 @@ class BaseAlert(PSCMutableModel):
     def undismiss(self, remediation=None, comment=None):
         """
         Un-dismiss this alert.
-        
+
         :param remediation str: The remediation status to set for the alert.
         :param comment str: The comment to set for the alert.
         """
         self._update_workflow_status("OPEN", remediation, comment)
-        
+
     def _update_threat_workflow_status(self, state, remediation, comment):
-        request = {"state" : state}
+        request = {"state": state}
         if remediation:
             request["remediation_state"] = remediation
         if comment:
@@ -268,11 +268,11 @@ class BaseAlert(PSCMutableModel):
                                                                     self.threat_id)
         resp = self._cb.post_object(url, request)
         return Workflow(self._cb, resp.json())
-    
+
     def dismiss_threat(self, remediation=None, comment=None):
         """
         Dismiss alerts for this threat.
-        
+
         :param remediation str: The remediation status to set for the alert.
         :param comment str: The comment to set for the alert.
         """
@@ -281,12 +281,12 @@ class BaseAlert(PSCMutableModel):
     def undismiss_threat(self, remediation=None, comment=None):
         """
         Un-dismiss alerts for this threat.
-        
+
         :param remediation str: The remediation status to set for the alert.
         :param comment str: The comment to set for the alert.
         """
         return self._update_threat_workflow_status("OPEN", remediation, comment)
-    
+
 
 class WatchlistAlert(BaseAlert):
     urlobject = "/appservices/v6/orgs/{0}/alerts/watchlist"
@@ -302,16 +302,16 @@ class CBAnalyticsAlert(BaseAlert):
     @classmethod
     def _query_implementation(cls, cb):
         return CBAnalyticsAlertSearchQuery(cls, cb)
-    
-    
+
+
 class VMwareAlert(BaseAlert):
     urlobject = "/appservices/v6/orgs/{0}/alerts/vmware"
 
     @classmethod
     def _query_implementation(cls, cb):
         return VMwareAlertSearchQuery(cls, cb)
-    
-    
+
+
 class WorkflowStatus(PSCMutableModel):
     urlobject_single = "/appservices/v6/orgs/{0}/workflow/status/{1}"
     primary_key = "id"
@@ -322,7 +322,7 @@ class WorkflowStatus(PSCMutableModel):
         self._workflow = None
         if model_unique_id is not None:
             self._refresh()
-        
+
     def _refresh(self):
         url = self.urlobject_single.format(self._cb.credentials.org_key, self._model_unique_id)
         resp = self._cb.get_object(url)
@@ -330,11 +330,11 @@ class WorkflowStatus(PSCMutableModel):
         self._workflow = Workflow(self._cb, resp.get("workflow", None))
         self._last_refresh_time = time.time()
         return True
-    
+
     @property
     def id_(self):
         return self._model_unique_id
-    
+
     @property
     def workflow_(self):
         return self._workflow
@@ -343,12 +343,12 @@ class WorkflowStatus(PSCMutableModel):
     def queued(self):
         self._refresh()
         return self._info.get("status", "") == "QUEUED"
-    
+
     @property
     def in_progress(self):
         self._refresh()
         return self._info.get("status", "") == "IN_PROGRESS"
-    
+
     @property
     def finished(self):
         self._refresh()

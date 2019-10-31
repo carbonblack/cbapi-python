@@ -23,7 +23,7 @@ class CbPSCBaseAPI(BaseAPI):
     alert_update_queries = {"ALERT": BulkUpdateAlerts, "WATCHLIST": BulkUpdateWatchlistAlerts,
                             "THREAT": BulkUpdateThreatAlerts, "CBANALYTICS": BulkUpdateCBAnalyticsAlerts,
                             "VMWARE": BulkUpdateVMwareAlerts}
-    
+
     def __init__(self, *args, **kwargs):
         super(CbPSCBaseAPI, self).__init__(product_name="psc", *args, **kwargs)
         self._lr_scheduler = None
@@ -129,46 +129,45 @@ class CbPSCBaseAPI(BaseAPI):
         :param dict sensor_version: New version properties for the sensor.
         """
         return self._device_action(device_ids, "UPDATE_SENSOR_VERSION", {"sensor_version": sensor_version})
-    
+
     # ---- Alerts API
-    
+
     def alert_search_suggestions(self, query):
         """
         Returns suggestions for keys and field values that can be used in a search.
-        
+
         :param query str: A search query to use.
         :return: A list of search suggestions expressed as dict objects.
         """
         query_params = {"suggest.q": query}
         url = "/appservices/v6/orgs/{0}/alerts/search_suggestions".format(self.credentials.org_key)
         return self.get_object(url, query_params)
-    
+
     def _new_workflow_status(self, requestid):
         return WorkflowStatus(self, requestid)
-    
+
     def _bulk_alert_update_query(self, state, querytype):
         cls = CbPSCBaseAPI.alert_update_queries.get(querytype, None)
         if cls is None:
             raise ApiError("unknown query type for bulk alert update")
         return cls(self, state)
-    
+
     def bulk_alert_dismiss(self, querytype):
         """
         Start a query to dismiss multiple alerts.
-        
-        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", "THREAT", 
+
+        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", "THREAT",
                               "CBANALYTICS", or "VMWARE".
         :return: The new query.
         """
         return self._bulk_alert_update_query("DISMISSED", querytype)
-    
+
     def bulk_alert_undismiss(self, querytype):
         """
         Start a query to un-dismiss multiple alerts.
-        
-        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", "THREAT", 
+
+        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", "THREAT",
                               "CBANALYTICS", or "VMWARE".
         :return: The new query.
         """
         return self._bulk_alert_update_query("OPEN", querytype)
-    
