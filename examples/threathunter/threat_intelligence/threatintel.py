@@ -1,12 +1,11 @@
 import logging
-
+from feed_helper import FeedHelper
 from cabby import create_client
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-
-
+handled_exceptions = (NoURIProvidedError, ClientException)
 
 @dataclass(eq=True, frozen=True) # what's EQ?
 class TaxiiSiteConfig:
