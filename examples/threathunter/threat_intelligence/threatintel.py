@@ -1,10 +1,14 @@
+import logging
+
+from cabby import create_client
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 
 
-
-
-
+@dataclass(eq=True, frozen=True) # what's EQ?
 class TaxiiSiteConfig:
     site: str = ''
     discovery_path: str = ''
