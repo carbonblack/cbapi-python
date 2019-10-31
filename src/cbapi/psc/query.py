@@ -987,9 +987,9 @@ class CBAnalyticsAlertRequestCriteriaBuilder(AlertRequestCriteriaBuilder):
     def reason_code(self, reason):
         """
         Restricts the alerts that this query is performed on to the specified
-        reason code (enum value).
+        reason codes (enum values).
 
-        :param reason str: The reason code to look for.
+        :param reason list: List of string reason codes to look for.
         :return: This instance.
         """
         if not all(isinstance(t, str) for t in reason):
@@ -1406,9 +1406,9 @@ class CBAnalyticsAlertCriteriaBuilderMixin(AlertCriteriaBuilderMixin):
     def reason_code(self, reason):
         """
         Restricts the alerts that this query is performed on to the specified
-        reason code (enum value).
+        reason codes (enum values).
 
-        :param reason str: The reason code to look for.
+        :param reason list: List of string reason codes to look for.
         :return: This instance.
         """
         self._criteria_builder.reason_code(reason)
