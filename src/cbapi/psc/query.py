@@ -670,7 +670,7 @@ class AlertRequestCriteriaBuilder:
         self._update_criteria("device_os", device_os)
         return self
     
-    def device_os_version(self, device_os_versions):
+    def device_os_versions(self, device_os_versions):
         """
         Restricts the alerts that this query is performed on to the specified
         device operating system versions.
@@ -947,7 +947,7 @@ class CBAnalyticsAlertRequestCriteriaBuilder(AlertRequestCriteriaBuilder):
                               "EXECUTE_GOAL", and "BREACH". 
         :return: This instance.
         """
-        if not all((status in CBAnalyticsAlertRequestCriteriaBuilder.valid_threat_categories) \
+        if not all((status in CBAnalyticsAlertRequestCriteriaBuilder.valid_kill_chain_statuses) \
                    for status in statuses):
             raise ApiError("One or more invalid kill chain status values")
         self._update_criteria("kill_chain_status", statuses)
@@ -991,7 +991,9 @@ class CBAnalyticsAlertRequestCriteriaBuilder(AlertRequestCriteriaBuilder):
         :param reason str: The reason code to look for.
         :return: This instance.
         """
-        self._criteria["reason_code"] = reason
+        if not all(isinstance(t, str) for t in reason):
+            raise ApiError("One or more invalid reason code values")
+        self._update_criteria("reason_code", reason)
         return self
     
     def run_states(self, states):
@@ -1153,7 +1155,7 @@ class AlertCriteriaBuilderMixin:
         self._criteria_builder.device_os(device_os)
         return self
     
-    def device_os_version(self, device_os_versions):
+    def device_os_versions(self, device_os_versions):
         """
         Restricts the alerts that this query is performed on to the specified
         device operating system versions.
@@ -1618,7 +1620,7 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery, CBAnalyticsAlertCriteria
         self._criteria_builder = CBAnalyticsAlertRequestCriteriaBuilder()
     
                         
-class VMwareAlertSearchQuery(BaseAlertSearchQuery, CBAnalyticsAlertCriteriaBuilderMixin):
+class VMwareAlertSearchQuery(BaseAlertSearchQuery, VMwareAlertCriteriaBuilderMixin):
     """
     Represents a query that is used to locate VMwareAlert objects.
     """
@@ -1671,7 +1673,8 @@ class BulkUpdateAlertsBase:
                  of the operation.
         """
         resp = self._cb.post_object(self._url(), body=self._build_request())
-        return self._cb._new_workflow_status(resp["request_id"])
+        output = resp.json()
+        return self._cb._new_workflow_status(output["request_id"])
         
         
 class BulkUpdateAlerts(BulkUpdateAlertsBase, AlertCriteriaBuilderMixin, QueryBuilderSupportMixin):
@@ -1684,10 +1687,10 @@ class BulkUpdateAlerts(BulkUpdateAlertsBase, AlertCriteriaBuilderMixin, QueryBui
         self._query_builder = QueryBuilder()
         
     def _url(self):
-        return "/v6/orgs/{0}/alerts/workflow/_criteria".format(self._cb.credentials.org_key)
+        return "/appservices/v6/orgs/{0}/alerts/workflow/_criteria".format(self._cb.credentials.org_key)
 
     def _build_request(self):
-        request = super().build_request()
+        request = super()._build_request()
         request["criteria"] = self._criteria_builder.build()
         request["query"] = self._query_builder._collapse()
         return request
@@ -1702,7 +1705,7 @@ class BulkUpdateCBAnalyticsAlerts(BulkUpdateAlerts, CBAnalyticsAlertCriteriaBuil
         self._criteria_builder = CBAnalyticsAlertRequestCriteriaBuilder()
 
     def _url(self):
-        return "/v6/orgs/{0}/alerts/cbanalytics/workflow/_criteria".format(self._cb.credentials.org_key)
+        return "/appservices/v6/orgs/{0}/alerts/cbanalytics/workflow/_criteria".format(self._cb.credentials.org_key)
     
     
 class BulkUpdateVMwareAlerts(BulkUpdateAlerts, VMwareAlertCriteriaBuilderMixin):
@@ -1714,7 +1717,7 @@ class BulkUpdateVMwareAlerts(BulkUpdateAlerts, VMwareAlertCriteriaBuilderMixin):
         self._criteria_builder = VMwareAlertRequestCriteriaBuilder()
 
     def _url(self):
-        return "/v6/orgs/{0}/alerts/vmware/workflow/_criteria".format(self._cb.credentials.org_key)
+        return "/appservices/v6/orgs/{0}/alerts/vmware/workflow/_criteria".format(self._cb.credentials.org_key)
     
     
 class BulkUpdateWatchlistAlerts(BulkUpdateAlerts, WatchlistAlertCriteriaBuilderMixin):
@@ -1726,7 +1729,7 @@ class BulkUpdateWatchlistAlerts(BulkUpdateAlerts, WatchlistAlertCriteriaBuilderM
         self._criteria_builder = WatchlistAlertRequestCriteriaBuilder()
         
     def _url(self):
-        return "/v6/orgs/{0}/alerts/watchlist/workflow/_criteria".format(self._cb.credentials.org_key)
+        return "/appservices/v6/orgs/{0}/alerts/watchlist/workflow/_criteria".format(self._cb.credentials.org_key)
     
     
 class BulkUpdateThreatAlerts(BulkUpdateAlertsBase):
@@ -1750,7 +1753,7 @@ class BulkUpdateThreatAlerts(BulkUpdateAlertsBase):
         return self
 
     def _url(self):
-        return "/v6/orgs/{0}/threat/workflow/_criteria".format(self._cb.credentials.org_key)
+        return "/appservices/v6/orgs/{0}/threat/workflow/_criteria".format(self._cb.credentials.org_key)
     
     def _build_request(self):
         request = super()._build_request()

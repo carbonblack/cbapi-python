@@ -1,7 +1,7 @@
 from cbapi.connection import BaseAPI
 from cbapi.errors import ApiError, ServerError
 from .cblr import LiveResponseSessionManager
-from .models import Device, WorkflowStatus
+from .models import WorkflowStatus
 from .query import BulkUpdateAlerts, BulkUpdateWatchlistAlerts, BulkUpdateThreatAlerts, \
                    BulkUpdateCBAnalyticsAlerts, BulkUpdateVMwareAlerts
 import logging
@@ -46,15 +46,6 @@ class CbPSCBaseAPI(BaseAPI):
         return self.live_response.request_session(sensor_id)
 
     # ---- Device API
-
-    def get_device(self, device_id):
-        """
-        Locate a device with the specified device ID.
-
-        :param int device_id: The ID of the device to look up.
-        :return: The new device object.
-        """
-        return Device(self, device_id)
 
     def _raw_device_action(self, request):
         url = "/appservices/v6/orgs/{0}/device_actions".format(self.credentials.org_key)

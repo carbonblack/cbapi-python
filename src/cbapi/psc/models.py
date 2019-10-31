@@ -225,7 +225,7 @@ class BaseAlert(PSCMutableModel):
         return True
 
     @property
-    def workflow(self):
+    def workflow_(self):
         return self._workflow
     
     def _update_workflow_status(self, state, remediation, comment):
@@ -237,7 +237,7 @@ class BaseAlert(PSCMutableModel):
         url = self.urlobject_single.format(self._cb.credentials.org_key,
                                            self._model_unique_id) + "/workflow"
         resp = self._cb.post_object(url, request)
-        self._workflow = Workflow(self._cb, resp)
+        self._workflow = Workflow(self._cb, resp.json())
         self._last_refresh_time = time.time()
         
     def dismiss(self, remediation=None, comment=None):
@@ -267,7 +267,7 @@ class BaseAlert(PSCMutableModel):
         url = "/appservices/v6/orgs/{0}/threat/{1}/workflow".format(self._cb.credentials.org_key,
                                                                     self.threat_id)
         resp = self._cb.post_object(url, request)
-        return Workflow(self._cb, resp)
+        return Workflow(self._cb, resp.json())
     
     def dismiss_threat(self, remediation=None, comment=None):
         """
@@ -312,15 +312,15 @@ class VMwareAlert(BaseAlert):
         return VMwareAlertSearchQuery(cls, cb)
     
     
-class WorkflowStatus(UnrefreshableModel):
+class WorkflowStatus(PSCMutableModel):
     urlobject_single = "/appservices/v6/orgs/{0}/workflow/status/{1}"
     primary_key = "id"
     swagger_meta_file = "psc/models/workflow_status.yaml"
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(WorkflowStatus, self).__init__(cb, model_unique_id, initial_data)
-        self._workflow = Workflow(cb, initial_data.get("workflow", None))
-        if model_unique_id is not None and initial_data is None:
+        self._workflow = None
+        if model_unique_id is not None:
             self._refresh()
         
     def _refresh(self):
@@ -332,7 +332,11 @@ class WorkflowStatus(UnrefreshableModel):
         return True
     
     @property
-    def workflow(self):
+    def id_(self):
+        return self._model_unique_id
+    
+    @property
+    def workflow_(self):
         return self._workflow
 
     @property
