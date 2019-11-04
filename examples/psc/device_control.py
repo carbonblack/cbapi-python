@@ -43,7 +43,7 @@ def main():
     
     args = parser.parse_args()
     cb = get_cb_psc_object(args)
-    dev = cb.get_device(args.device_id)
+    dev = cb.select(Device, args.device_id)
     
     if args.command:
         if args.command == "background_scan":
