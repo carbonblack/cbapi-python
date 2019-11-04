@@ -319,12 +319,13 @@ class WorkflowStatus(PSCMutableModel):
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(WorkflowStatus, self).__init__(cb, model_unique_id, initial_data)
+        self._request_id = model_unique_id
         self._workflow = None
         if model_unique_id is not None:
             self._refresh()
 
     def _refresh(self):
-        url = self.urlobject_single.format(self._cb.credentials.org_key, self._model_unique_id)
+        url = self.urlobject_single.format(self._cb.credentials.org_key, self._request_id)
         resp = self._cb.get_object(url)
         self._info = resp
         self._workflow = Workflow(self._cb, resp.get("workflow", None))
@@ -333,7 +334,7 @@ class WorkflowStatus(PSCMutableModel):
 
     @property
     def id_(self):
-        return self._model_unique_id
+        return self._request_id
 
     @property
     def workflow_(self):

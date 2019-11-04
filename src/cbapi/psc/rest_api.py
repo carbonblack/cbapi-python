@@ -141,7 +141,8 @@ class CbPSCBaseAPI(BaseAPI):
         """
         query_params = {"suggest.q": query}
         url = "/appservices/v6/orgs/{0}/alerts/search_suggestions".format(self.credentials.org_key)
-        return self.get_object(url, query_params)
+        output = self.get_object(url, query_params)
+        return output["suggestions"]
 
     def _new_workflow_status(self, requestid):
         return WorkflowStatus(self, requestid)
