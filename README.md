@@ -114,7 +114,7 @@ For distinction between credentials of different Carbon Black products, use the 
 * ``credentials.response`` for CB Response
 * ``credentials.protection`` for CB Protection
 
-For example, if you use a PSC product, you should have created a credentials file in one of these locations:
+For example, if you use a Carbon Black Cloud product, you should have created a credentials file in one of these locations:
 
 * ``/etc/carbonblack/credentials.psc``
 * ``~/.carbonblack/credentials.psc``
@@ -147,7 +147,7 @@ The possible options for each credential profile are:
   different tokens for each.
 * **ssl_verify**: True or False; controls whether the SSL/TLS certificate presented by the server is validated against
   the local trusted CA store.
-* **org_key**: The organization key. This is required to access the PSC, and can be found in the console. The format is ``123ABC45``.
+* **org_key**: The organization key. This is required to access the Carbon Black Cloud, and can be found in the console. The format is ``123ABC45``.
 * **proxy**: A proxy specification that will be used when connecting to the CB server. The format is:
   ``http://myusername:mypassword@proxy.company.com:8001/`` where the hostname of the proxy is ``proxy.company.com``, port
   8001, and using username/password ``myusername`` and ``mypassword`` respectively.
