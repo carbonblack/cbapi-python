@@ -42,3 +42,95 @@ Selects all devices running Linux from the current organization.
 	:members:
 	:undoc-members:
 	
+Alerts API
+----------
+
+Using the API, you can search for alerts within your organization, and dismiss or
+undismiss them, either individually or in bulk.
+
+You can use the select() method on the CbPSCBaseAPI to create a query object for
+BaseAlert objects, which can be used to locate a list of alerts.  You can also
+search for more specialized alert types:
+
+* CBAnalyticsAlert - Alerts from CB Analytics
+* VMwareAlert - Alerts from VMware
+* WatchlistAlert - Alerts from watch lists
+
+*Example:*
+
+	>>> cbapi = CbPSCBaseAPI(...)
+	>>> alerts = cbapi.select(BaseAlert).device_os(["WINDOWS"]).process_name(["IEXPLORE.EXE"])
+	
+Selects all alerts on a Windows device running the Internet Explorer process.
+
+Individual alerts may have their status changed using the dismiss() or undismiss()
+methods on the BaseAlert object.  To dismiss multiple alerts at once, you can use
+the bulk_alert_dismiss() or bulk_alert_undismiss() methods on the CbPSCBaseAPI
+object to set up a query, which you can add criteria to just as with a search
+query.  When you call the run() method on the query, a WorkflowStatus object is
+returned; querying this object's "finished" property will let you know when the
+operation is finished.
+
+*Example:*
+
+	>>> cbapi = CbPSCBaseAPI(...)
+	>>> query = cbapi.bulk_alert_dismiss("ALERT").process_name(["IEXPLORE.EXE"])
+	>>> stat = query.remediation("Using Chrome").run()
+	
+Dismisses all alerts which reference the Internet Explorer process.
+
+**Query Objects:**
+
+.. autoclass:: cbapi.psc.query.BaseAlertSearchQuery
+	:members:
+	
+.. autoclass:: cbapi.psc.query.CBAnalyticsAlertSearchQuery
+	:members:
+
+.. autoclass:: cbapi.psc.query.VMwareAlertSearchQuery
+	:members:
+
+.. autoclass:: cbapi.psc.query.WatchlistAlertSearchQuery
+	:members:
+
+.. autoclass:: cbapi.psc.query.BulkUpdateAlerts
+	:members:
+
+.. autoclass:: cbapi.psc.query.BulkUpdateCBAnalyticsAlerts
+	:members:
+
+.. autoclass:: cbapi.psc.query.BulkUpdateVMwareAlerts
+	:members:
+
+.. autoclass:: cbapi.psc.query.BulkUpdateWatchlistAlerts
+	:members:
+
+.. autoclass:: cbapi.psc.query.BulkUpdateThreatAlerts
+	:members:
+
+**Model Objects:**
+
+.. autoclass:: cbapi.psc.models.Workflow
+	:members:
+	:undoc-members:
+	
+.. autoclass:: cbapi.psc.models.BaseAlert
+	:members:
+	:undoc-members:
+	
+.. autoclass:: cbapi.psc.models.CBAnalyticsAlert
+	:members:
+	:undoc-members:
+	
+.. autoclass:: cbapi.psc.models.VMwareAlert
+	:members:
+	:undoc-members:
+	
+.. autoclass:: cbapi.psc.models.WatchlistAlert
+	:members:
+	:undoc-members:
+	
+.. autoclass:: cbapi.psc.models.WorkflowStatus
+	:members:
+	:undoc-members:
+	
