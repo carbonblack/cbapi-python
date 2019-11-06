@@ -1,6 +1,8 @@
 CbAPI Changelog
 ===============
 
+.. top-of-changelog (DO NOT REMOVE THIS COMMENT)
+
 CbAPI 1.5.4 - Released October 24, 2019
 ----------------------------------------
 
