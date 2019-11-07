@@ -59,15 +59,6 @@ class TaxiiSiteConnector():
         self.config = TaxiiSiteConfig(**site_conf)
         self.client = None
 
-
-class StixTaxii():
-    # def __init__(self, site_conf):
-    #     self.config = TaxiiSiteConfig(**site_conf)
-    #     self.client = None
-    Config = TaxiiConfig
-    name = 'taxii'
-
-
     def create_taxii_client(self):
         conf = self.config
         try:
@@ -209,10 +200,19 @@ class StixTaxii():
 
         return reports
 
+
+class StixTaxii():
+    def __init__(self, site_conf):
+        self.config = site_conf
+        self.client = None
+
+
+
+
     def configure_sites(self):
         self.sites = {}
         try:
-            for site_name, site_conf in self.config.sites.items():
+            for site_name, site_conf in self.config['sites']:
                 self.sites[site_name] = TaxiiSiteConnector(site_conf)
         except handled_exceptions as e:
             log.error(f"Error in parsing config file: {e}")
@@ -239,7 +239,7 @@ class StixTaxii():
                 binary, analysis_name="exception_format_report", error=True)
         return result
 
-    def analyze(self, data):   # NOTE:ignoring binary for now
+    def analyze(self):   # NOTE:ignoring binary for now
         self.configure_sites()
         for site_name, site_conn in self.sites.items():
             log.info(f"Talking to {site_name} server")
@@ -257,5 +257,7 @@ class StixTaxii():
 if __name__ == '__main__':
     # Need to fill in correct def call
     config = load_config_from_file()
-    stix_taxii = StixTaxii()
+    for site_conf in config['sites']:
+        print(site_conf)
+    stix_taxii = StixTaxii(config)
     reports = stix_taxii.analyze()
