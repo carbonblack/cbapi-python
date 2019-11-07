@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# CbAPI Project Version Number Setting Script
+# AGRB 11/7/2019
+
 import sys
 import os
 import re
@@ -87,13 +90,15 @@ def rewrite_file(infilename, rewritefunc, ctxt):
     finally:
         infile.close()
         outfile.close()
-    if not ctxt.get("nodelete", False):
+    if not ctxt["nodelete"]:
         os.remove(infilename)
         os.rename(outfilename, infilename)
     
     
 def main():
-    parser = argparse.ArgumentParser(description="Set the version number in CbAPI source and documentation")
+    parser = argparse.ArgumentParser(description="Set the version number in CbAPI source and documentation.\n"
+                                                 "Execute this on a release or hotfix branch to update the version numbers in the source.",
+                                     epilog="After running, edit docs/changelog.rst and add the new changelog information under the new heading.")
     parser.add_argument("version", help="New version number to add")
     parser.add_argument("-n", "--nodelete", action="store_true", help="Do not delete existing files, leave new files with .new extension")
     
