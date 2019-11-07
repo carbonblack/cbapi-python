@@ -1,12 +1,30 @@
+import logging
 from threatintel import ThreatIntel
 from cabby.exceptions import NoURIProvidedError, ClientException
 from cabby import create_client
 from dataclasses import dataclass, field
+import yaml
+import os
+from frozendict import frozendict
+
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 handled_exceptions = (NoURIProvidedError, ClientException)
+
+
+#create a function that returns **site_conf from YAML
+def load_config_from_file():
+    log.debug("loading config from file")
+    # NOTE(ww): __file__ here refers to the base config file, so we need
+    # to grab the module and resolve the file from there.
+    #conn_mod = importlib.import_module(cls.__module__) #is this needed still?
+    config_filename = os.path.join(os.path.dirname((os.path.abspath(__file__))), "config.yml")
+    with open(config_filename, "r") as config_file:
+        config_data = yaml.load(config_file, Loader=yaml.SafeLoader)
+        log.info(f"loaded config data: {config_data}")
+        return config_data
 
 
 @dataclass(eq=True, frozen=True)
@@ -31,13 +49,24 @@ class TaxiiSiteConfig:
     reports_limit: int = 10000
     fail_limit: int = 10   # num attempts per collection for polling & parsing
 
-class TaxiiConfig(ConnectorConfig):
+
+# is this necessary?
+class TaxiiConfig():
     sites: dict = field(default_factory=frozendict)
 
-class StixTaxii():
+class TaxiiSiteConnector():
     def __init__(self, site_conf):
         self.config = TaxiiSiteConfig(**site_conf)
         self.client = None
+
+
+class StixTaxii():
+    # def __init__(self, site_conf):
+    #     self.config = TaxiiSiteConfig(**site_conf)
+    #     self.client = None
+    Config = TaxiiConfig
+    name = 'taxii'
+
 
     def create_taxii_client(self):
         conf = self.config
@@ -184,7 +213,7 @@ class StixTaxii():
         self.sites = {}
         try:
             for site_name, site_conf in self.config.sites.items():
-                self.sites[site_name] = StixTaxii(site_conf)
+                self.sites[site_name] = TaxiiSiteConnector(site_conf)
         except handled_exceptions as e:
             log.error(f"Error in parsing config file: {e}")
 
@@ -223,3 +252,10 @@ class StixTaxii():
             else:
                 for report in reports:
                     yield self.format_report(binary, report)
+
+
+if __name__ == '__main__':
+    # Need to fill in correct def call
+    config = load_config_from_file()
+    stix_taxii = StixTaxii()
+    reports = stix_taxii.analyze()

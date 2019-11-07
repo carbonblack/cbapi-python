@@ -6,15 +6,6 @@ from get_feed_ids import get_feed_ids
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
-handled_exceptions = (NoURIProvidedError, ClientException)
-
-
-
-
-get feed ids
-push data
-input validation ( make sure it's in PSC Report format)
-
 
 
 
