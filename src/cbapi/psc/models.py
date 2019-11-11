@@ -249,9 +249,9 @@ class BaseAlert(PSCMutableModel):
         """
         self._update_workflow_status("DISMISSED", remediation, comment)
 
-    def undismiss(self, remediation=None, comment=None):
+    def update(self, remediation=None, comment=None):
         """
-        Un-dismiss this alert.
+        Update this alert.
 
         :param remediation str: The remediation status to set for the alert.
         :param comment str: The comment to set for the alert.
@@ -278,9 +278,9 @@ class BaseAlert(PSCMutableModel):
         """
         return self._update_threat_workflow_status("DISMISSED", remediation, comment)
 
-    def undismiss_threat(self, remediation=None, comment=None):
+    def update_threat(self, remediation=None, comment=None):
         """
-        Un-dismiss alerts for this threat.
+        Update alerts for this threat.
 
         :param remediation str: The remediation status to set for the alert.
         :param comment str: The comment to set for the alert.
