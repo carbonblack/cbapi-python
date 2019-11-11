@@ -1,9 +1,6 @@
 from cbapi.connection import BaseAPI
 from cbapi.errors import ApiError, ServerError
 from .cblr import LiveResponseSessionManager
-from .models import WorkflowStatus
-from .query import BulkUpdateAlerts, BulkUpdateWatchlistAlerts, BulkUpdateThreatAlerts, \
-                   BulkUpdateCBAnalyticsAlerts, BulkUpdateVMwareAlerts
 import logging
 
 log = logging.getLogger(__name__)
@@ -20,10 +17,6 @@ class CbPSCBaseAPI(BaseAPI):
     >>> from cbapi import CbPSCBaseAPI
     >>> cb = CbPSCBaseAPI(profile="production")
     """
-    alert_update_queries = {"ALERT": BulkUpdateAlerts, "WATCHLIST": BulkUpdateWatchlistAlerts,
-                            "THREAT": BulkUpdateThreatAlerts, "CBANALYTICS": BulkUpdateCBAnalyticsAlerts,
-                            "VMWARE": BulkUpdateVMwareAlerts}
-
     def __init__(self, *args, **kwargs):
         super(CbPSCBaseAPI, self).__init__(product_name="psc", *args, **kwargs)
         self._lr_scheduler = None
@@ -143,32 +136,41 @@ class CbPSCBaseAPI(BaseAPI):
         url = "/appservices/v6/orgs/{0}/alerts/search_suggestions".format(self.credentials.org_key)
         output = self.get_object(url, query_params)
         return output["suggestions"]
-
-    def _new_workflow_status(self, requestid):
-        return WorkflowStatus(self, requestid)
-
-    def _bulk_alert_update_query(self, state, querytype):
-        cls = CbPSCBaseAPI.alert_update_queries.get(querytype, None)
-        if cls is None:
-            raise ApiError("unknown query type for bulk alert update")
-        return cls(self, state)
-
-    def bulk_alert_dismiss(self, querytype):
+    
+    def _bulk_threat_update_status(self, threat_ids, status, remediation, comment):
+        if not all(isinstance(t, str) for t in threat_ids):
+            raise ApiError("One or more invalid threat ID values")
+        request = { "state": status, "threat_id": threat_ids}
+        if remediation is not None:
+            request["remediation_state"] = remediation
+        if comment is not None:
+            request["comment"] = comment
+        url = "/appservices/v6/orgs/{0}/threat/workflow/_criteria".format(self._cb.credentials.org_key)
+        resp = self._cb.post_object(url, body=request)
+        output = resp.json()
+        return output["request_id"]
+    
+    def bulk_threat_update(self, threat_ids, remediation=None, comment=None):
         """
-        Start a query to dismiss multiple alerts.
-
-        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", "THREAT",
-                              "CBANALYTICS", or "VMWARE".
-        :return: The new query.
+        Update the alert status of alerts associated with multiple threat IDs.
+        The alerts will be left in an OPEN state after this request.
+        
+        :param threat_ids list: List of string threat IDs.
+        :param remediation str: The remediation state to set for all alerts.
+        :param comment str: The comment to set for all alerts.
+        :return: The request ID, which may be used to select a WorkflowStatus object.
         """
-        return self._bulk_alert_update_query("DISMISSED", querytype)
-
-    def bulk_alert_undismiss(self, querytype):
+        return self._bulk_threat_update_status(threat_ids, "OPEN", remediation, comment)
+        
+    def bulk_threat_dismiss(self, threat_ids, remediation=None, comment=None):
         """
-        Start a query to un-dismiss multiple alerts.
-
-        :param querytype str: The type of query to create, either "ALERT", "WATCHLIST", "THREAT",
-                              "CBANALYTICS", or "VMWARE".
-        :return: The new query.
+        Dismiss the alerts associated with multiple threat IDs.
+        The alerts will be left in a DISMISSED state after this request.
+        
+        :param threat_ids list: List of string threat IDs.
+        :param remediation str: The remediation state to set for all alerts.
+        :param comment str: The comment to set for all alerts.
+        :return: The request ID, which may be used to select a WorkflowStatus object.
         """
-        return self._bulk_alert_update_query("OPEN", querytype)
+        return self._bulk_threat_update_status(threat_ids, "DISMISSED", remediation, comment)
+        
