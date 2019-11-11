@@ -145,8 +145,8 @@ class CbPSCBaseAPI(BaseAPI):
             request["remediation_state"] = remediation
         if comment is not None:
             request["comment"] = comment
-        url = "/appservices/v6/orgs/{0}/threat/workflow/_criteria".format(self._cb.credentials.org_key)
-        resp = self._cb.post_object(url, body=request)
+        url = "/appservices/v6/orgs/{0}/threat/workflow/_criteria".format(self.credentials.org_key)
+        resp = self.post_object(url, body=request)
         output = resp.json()
         return output["request_id"]
     

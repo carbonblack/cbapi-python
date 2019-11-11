@@ -1,11 +1,12 @@
 import pytest
 from cbapi.errors import ApiError
-from cbapi.psc.models import Device, BaseAlert, CBAnalyticsAlert, VMwareAlert, WatchlistAlert
-from cbapi.psc.query import BulkUpdateAlerts, BulkUpdateWatchlistAlerts, BulkUpdateThreatAlerts, \
-                            BulkUpdateCBAnalyticsAlerts, BulkUpdateVMwareAlerts
+from cbapi.psc.models import Device, BaseAlert, CBAnalyticsAlert, VMwareAlert, WatchlistAlert, WorkflowStatus
 from cbapi.psc.rest_api import CbPSCBaseAPI
 from test.mocks import ConnectionMocks, MockResponse
 
+#
+# --- Device v6 Tests
+#
 
 def test_get_device(monkeypatch):
     _was_called = False
@@ -557,25 +558,11 @@ def test_query_device_do_update_sensor_version(monkeypatch):
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
     api.select(Device).where("foobar").update_sensor_version({ "RHEL": "2.3.4.5"})
     assert _was_called
+    
+#
+# --- Alerts v6 Tests
+#
 
-
-def test_bulk_query_types_return_ok():
-    api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
-                       org_key="Z100", ssl_verify=True)
-    bquery = api.bulk_alert_dismiss("ALERT")
-    assert isinstance(bquery, BulkUpdateAlerts)
-    bquery = api.bulk_alert_dismiss("WATCHLIST")
-    assert isinstance(bquery, BulkUpdateWatchlistAlerts)
-    bquery = api.bulk_alert_dismiss("THREAT")
-    assert isinstance(bquery, BulkUpdateThreatAlerts)
-    bquery = api.bulk_alert_dismiss("CBANALYTICS")
-    assert isinstance(bquery, BulkUpdateCBAnalyticsAlerts)
-    bquery = api.bulk_alert_dismiss("VMWARE")
-    assert isinstance(bquery, BulkUpdateVMwareAlerts)
-    with pytest.raises(ApiError):
-        api.bulk_alert_dismiss("CRIMSON")
-        
-        
 def test_query_basealert_with_all_bells_and_whistles(monkeypatch):
     _was_called = False
     
@@ -1268,23 +1255,16 @@ def test_alerts_bulk_dismiss(monkeypatch):
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
     
-    def mock_get_object(url, parms=None, default=None):
-        assert url == "/appservices/v6/orgs/Z100/workflow/status/497ABX"
-        resp = {"errors": [], "failed_ids": [], "id": "497ABX", "num_hits": 0, "num_success": 0, "status": "QUEUED"}
-        resp["workflow"] = {"state": "DISMISSED", "remediation": "Fixed", "comment": "Yessir",
-                            "changed_by": "Robocop", "last_update_time": "2019-10-31T16:03:13.951Z"}
-        return resp
-      
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
-    monkeypatch.setattr(api, "get_object", mock_get_object)
+    monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    q = api.bulk_alert_dismiss("ALERT").remediation("Fixed").comment("Yessir")
-    wstat = q.where("Blort").device_names(["HAL9000"]).run()
+    q = api.select(BaseAlert).where("Blort").device_names(["HAL9000"])
+    reqid = q.dismiss("Fixed", "Yessir")
     assert _was_called
-    assert wstat.id_ == "497ABX"
+    assert reqid == "497ABX"
 
 
 def test_alerts_bulk_undismiss(monkeypatch):
@@ -1302,23 +1282,16 @@ def test_alerts_bulk_undismiss(monkeypatch):
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
     
-    def mock_get_object(url, parms=None, default=None):
-        assert url == "/appservices/v6/orgs/Z100/workflow/status/497ABX"
-        resp = {"errors": [], "failed_ids": [], "id": "497ABX", "num_hits": 0, "num_success": 0, "status": "QUEUED"}
-        resp["workflow"] = {"state": "OPEN", "remediation": "Fixed", "comment": "NoSir",
-                            "changed_by": "Robocop", "last_update_time": "2019-10-31T16:03:13.951Z"}
-        return resp
-      
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
-    monkeypatch.setattr(api, "get_object", mock_get_object)
+    monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    q = api.bulk_alert_undismiss("ALERT").remediation("Fixed").comment("NoSir")
-    wstat = q.where("Blort").device_names(["HAL9000"]).run()
+    q = api.select(BaseAlert).where("Blort").device_names(["HAL9000"])
+    reqid = q.update("Fixed", "NoSir")
     assert _was_called
-    assert wstat.id_ == "497ABX"
+    assert reqid == "497ABX"
         
         
 def test_alerts_bulk_dismiss_watchlist(monkeypatch):
@@ -1336,23 +1309,16 @@ def test_alerts_bulk_dismiss_watchlist(monkeypatch):
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
     
-    def mock_get_object(url, parms=None, default=None):
-        assert url == "/appservices/v6/orgs/Z100/workflow/status/497ABX"
-        resp = {"errors": [], "failed_ids": [], "id": "497ABX", "num_hits": 0, "num_success": 0, "status": "QUEUED"}
-        resp["workflow"] = {"state": "DISMISSED", "remediation": "Fixed", "comment": "Yessir",
-                            "changed_by": "Robocop", "last_update_time": "2019-10-31T16:03:13.951Z"}
-        return resp
-      
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
-    monkeypatch.setattr(api, "get_object", mock_get_object)
+    monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    q = api.bulk_alert_dismiss("WATCHLIST").remediation("Fixed").comment("Yessir")
-    wstat = q.where("Blort").device_names(["HAL9000"]).run()
+    q = api.select(WatchlistAlert).where("Blort").device_names(["HAL9000"])
+    reqid = q.dismiss("Fixed", "Yessir")
     assert _was_called
-    assert wstat.id_ == "497ABX"
+    assert reqid == "497ABX"
 
 
 def test_alerts_bulk_dismiss_cbanalytics(monkeypatch):
@@ -1370,23 +1336,16 @@ def test_alerts_bulk_dismiss_cbanalytics(monkeypatch):
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
     
-    def mock_get_object(url, parms=None, default=None):
-        assert url == "/appservices/v6/orgs/Z100/workflow/status/497ABX"
-        resp = {"errors": [], "failed_ids": [], "id": "497ABX", "num_hits": 0, "num_success": 0, "status": "QUEUED"}
-        resp["workflow"] = {"state": "DISMISSED", "remediation": "Fixed", "comment": "Yessir",
-                            "changed_by": "Robocop", "last_update_time": "2019-10-31T16:03:13.951Z"}
-        return resp
-      
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
-    monkeypatch.setattr(api, "get_object", mock_get_object)
+    monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    q = api.bulk_alert_dismiss("CBANALYTICS").remediation("Fixed").comment("Yessir")
-    wstat = q.where("Blort").device_names(["HAL9000"]).run()
+    q = api.select(CBAnalyticsAlert).where("Blort").device_names(["HAL9000"])
+    reqid = q.dismiss("Fixed", "Yessir")
     assert _was_called
-    assert wstat.id_ == "497ABX"
+    assert reqid == "497ABX"
 
 
 def test_alerts_bulk_dismiss_vmware(monkeypatch):
@@ -1404,23 +1363,16 @@ def test_alerts_bulk_dismiss_vmware(monkeypatch):
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
     
-    def mock_get_object(url, parms=None, default=None):
-        assert url == "/appservices/v6/orgs/Z100/workflow/status/497ABX"
-        resp = {"errors": [], "failed_ids": [], "id": "497ABX", "num_hits": 0, "num_success": 0, "status": "QUEUED"}
-        resp["workflow"] = {"state": "DISMISSED", "remediation": "Fixed", "comment": "Yessir",
-                            "changed_by": "Robocop", "last_update_time": "2019-10-31T16:03:13.951Z"}
-        return resp
-      
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
-    monkeypatch.setattr(api, "get_object", mock_get_object)
+    monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    q = api.bulk_alert_dismiss("VMWARE").remediation("Fixed").comment("Yessir")
-    wstat = q.where("Blort").device_names(["HAL9000"]).run()
+    q = api.select(VMwareAlert).where("Blort").device_names(["HAL9000"])
+    reqid = q.dismiss("Fixed", "Yessir")
     assert _was_called
-    assert wstat.id_ == "497ABX"
+    assert reqid == "497ABX"
 
 
 def test_alerts_bulk_dismiss_threat(monkeypatch):
@@ -1436,20 +1388,60 @@ def test_alerts_bulk_dismiss_threat(monkeypatch):
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
         
+    api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
+                       org_key="Z100", ssl_verify=True)
+    monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
+    monkeypatch.setattr(api, "post_object", mock_post_object)
+    monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
+    monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
+    reqid = api.bulk_threat_dismiss(["B0RG", "F3R3NG1"], "Fixed", "Yessir")
+    assert _was_called
+    assert reqid == "497ABX"
+
+
+def test_alerts_bulk_undismiss_threat(monkeypatch):
+    _was_called = False
+    
+    def mock_post_object(url, body, **kwargs):
+        nonlocal _was_called
+        assert url == "/appservices/v6/orgs/Z100/threat/workflow/_criteria"
+        assert body["threat_id"] == ["B0RG", "F3R3NG1"]
+        assert body["state"] == "OPEN"
+        assert body["remediation_state"] == "Fixed"
+        assert body["comment"] == "NoSir"
+        _was_called = True
+        return MockResponse({"request_id": "497ABX"})
+        
+    api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
+                       org_key="Z100", ssl_verify=True)
+    monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
+    monkeypatch.setattr(api, "post_object", mock_post_object)
+    monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
+    monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
+    reqid = api.bulk_threat_update(["B0RG", "F3R3NG1"], "Fixed", "NoSir")
+    assert _was_called
+    assert reqid == "497ABX"
+    
+    
+def test_load_workflow(monkeypatch):
+    _was_called = False
+    
     def mock_get_object(url, parms=None, default=None):
+        nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/workflow/status/497ABX"
+        _was_called = True
         resp = {"errors": [], "failed_ids": [], "id": "497ABX", "num_hits": 0, "num_success": 0, "status": "QUEUED"}
         resp["workflow"] = {"state": "DISMISSED", "remediation": "Fixed", "comment": "Yessir",
                             "changed_by": "Robocop", "last_update_time": "2019-10-31T16:03:13.951Z"}
         return resp
-      
+    
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", mock_get_object)
-    monkeypatch.setattr(api, "post_object", mock_post_object)
+    monkeypatch.setattr(api, "post_object", ConnectionMocks.get("POST"))
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    q = api.bulk_alert_dismiss("THREAT").remediation("Fixed").comment("Yessir")
-    wstat = q.threat_ids(["B0RG", "F3R3NG1"]).run()
+    workflow = api.select(WorkflowStatus, "497ABX")
     assert _was_called
-    assert wstat.id_ == "497ABX"
+    assert workflow.id_ == "497ABX"
+    
