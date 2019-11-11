@@ -3,7 +3,7 @@
 import sys
 from time import sleep
 from cbapi.example_helpers import build_cli_parser, get_cb_psc_object
-from cbapi.psc.models import BaseAlert
+from cbapi.psc.models import BaseAlert, WorkflowStatus
 
 def main():
     parser = build_cli_parser("Bulk update the status of alerts by threat ID")
@@ -19,19 +19,14 @@ def main():
     cb = get_cb_psc_object(args)
     
     if args.dismiss:
-        query = cb.bulk_alert_dismiss("THREAT")
+        reqid = cb.bulk_threat_dismiss(args.threatid, args.remediation, args.comment)
     elif args.undismiss:
-        query = cb.bulk_alert_undismiss("THREAT")
+        reqid = cb.bulk_threat_update(args.threatid, args.remediation, args.comment)
     else:
         raise NotImplemented("one of --dismiss or --undismiss must be specified")
     
-    query.threat_ids(args.threatid)
-    if args.remediation:
-        query = query.remediation(args.remediation)
-    if args.comment:
-        query = query.comment(args.comment)
-    statobj = query.run()
-    print("Submitted query with ID {0}".format(statobj.id_))
+    print("Submitted query with ID {0}".format(reqid))
+    statobj = cb.select(WorkflowStatus, reqid)
     while not statobj.finished:
         print("Waiting...")
         sleep(1)

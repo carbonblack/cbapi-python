@@ -3,7 +3,7 @@
 import sys
 from time import sleep
 from cbapi.example_helpers import build_cli_parser, get_cb_psc_object
-from cbapi.psc.models import CBAnalyticsAlert
+from cbapi.psc.models import CBAnalyticsAlert, WorkflowStatus
 from alertsv6common import setup_parser_with_cbanalytics_criteria, load_cbanalytics_criteria
 
 def main():
@@ -17,22 +17,19 @@ def main():
     
     args = parser.parse_args()
     cb = get_cb_psc_object(args)
+    
+    query = cb.select(CBAnalyticsAlert)
+    load_cbanalytics_criteria(query, args)
 
     if args.dismiss:
-        query = cb.bulk_alert_dismiss("CBANALYTICS")
+        reqid = query.dismiss(args.remediation, args.comment)
     elif args.undismiss:
-        query = cb.bulk_alert_undismiss("CBANALYTICS")
+        reqid = query.update(args.remediation, args.comment)
     else:
         raise NotImplemented("one of --dismiss or --undismiss must be specified")
     
-    load_cbanalytics_criteria(query, args)
-
-    if args.remediation:
-        query = query.remediation(args.remediation)
-    if args.comment:
-        query = query.comment(args.comment)
-    statobj = query.run()
-    print("Submitted query with ID {0}".format(statobj.id_))
+    print("Submitted query with ID {0}".format(reqid))
+    statobj = cb.select(WorkflowStatus, reqid)
     while not statobj.finished:
         print("Waiting...")
         sleep(1)
