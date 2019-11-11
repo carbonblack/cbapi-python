@@ -95,21 +95,6 @@ This dismisses all alerts which reference the Internet Explorer process.
 .. autoclass:: cbapi.psc.query.WatchlistAlertSearchQuery
 	:members:
 
-.. autoclass:: cbapi.psc.query.BulkUpdateAlerts
-	:members:
-
-.. autoclass:: cbapi.psc.query.BulkUpdateCBAnalyticsAlerts
-	:members:
-
-.. autoclass:: cbapi.psc.query.BulkUpdateVMwareAlerts
-	:members:
-
-.. autoclass:: cbapi.psc.query.BulkUpdateWatchlistAlerts
-	:members:
-
-.. autoclass:: cbapi.psc.query.BulkUpdateThreatAlerts
-	:members:
-
 **Model Objects:**
 
 .. autoclass:: cbapi.psc.models.Workflow
