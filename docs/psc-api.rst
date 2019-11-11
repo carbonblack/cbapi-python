@@ -63,21 +63,23 @@ search for more specialized alert types:
 	
 Selects all alerts on a Windows device running the Internet Explorer process.
 
-Individual alerts may have their status changed using the dismiss() or undismiss()
+Individual alerts may have their status changed using the dismiss() or update()
 methods on the BaseAlert object.  To dismiss multiple alerts at once, you can use
-the bulk_alert_dismiss() or bulk_alert_undismiss() methods on the CbPSCBaseAPI
-object to set up a query, which you can add criteria to just as with a search
-query.  When you call the run() method on the query, a WorkflowStatus object is
-returned; querying this object's "finished" property will let you know when the
-operation is finished.
+the dismiss() or update() methods on the standard query, after adding criteria to it.
+This method returns a request ID, which can be used to create a WorkflowStatus object;
+querying this object's "finished" property will let you know when the operation is
+finished.
 
 *Example:*
 
 	>>> cbapi = CbPSCBaseAPI(...)
-	>>> query = cbapi.bulk_alert_dismiss("ALERT").process_name(["IEXPLORE.EXE"])
-	>>> stat = query.remediation("Using Chrome").run()
+	>>> query = cbapi.select(BaseAlert).process_name(["IEXPLORE.EXE"])
+	>>> reqid = query.dismiss("Using Chrome")
+	>>> stat = cbapi.select(WorkflowStatus, reqid)
+	>>> while not stat.finished:
+	>>>     # wait for it to finish
 	
-Dismisses all alerts which reference the Internet Explorer process.
+This dismisses all alerts which reference the Internet Explorer process.
 
 **Query Objects:**
 

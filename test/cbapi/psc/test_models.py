@@ -282,7 +282,7 @@ def test_BaseAlert_undismiss(monkeypatch):
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
     alert = BaseAlert(api, "ESD14U2C", {"id": "ESD14U2C", "workflow":{"state": "DISMISS"}})
-    alert.undismiss("Fixed", "NoSir")
+    alert.update("Fixed", "NoSir")
     assert _was_called
     assert alert.workflow_.changed_by == "Robocop"
     assert alert.workflow_.state == "OPEN"
@@ -338,7 +338,7 @@ def test_BaseAlert_undismiss_threat(monkeypatch):
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
     alert = BaseAlert(api, "ESD14U2C", {"id": "ESD14U2C", "threat_id": "B0RG", "workflow":{"state": "OPEN"}})
-    wf = alert.undismiss_threat("Fixed", "NoSir")
+    wf = alert.update_threat("Fixed", "NoSir")
     assert _was_called
     assert wf.changed_by == "Robocop"
     assert wf.state == "OPEN"
