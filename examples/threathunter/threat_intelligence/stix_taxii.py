@@ -6,24 +6,24 @@ from dataclasses import dataclass, field
 import yaml
 import os
 from frozendict import frozendict
+from stix_parse import parse_stix, BINDING_CHOICES
+from feed_helper import FeedHelper
 
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 handled_exceptions = (NoURIProvidedError, ClientException)
 
 
 #create a function that returns **site_conf from YAML
 def load_config_from_file():
-    log.debug("loading config from file")
+    logging.debug("loading config from file")
     # NOTE(ww): __file__ here refers to the base config file, so we need
     # to grab the module and resolve the file from there.
     #conn_mod = importlib.import_module(cls.__module__) #is this needed still?
     config_filename = os.path.join(os.path.dirname((os.path.abspath(__file__))), "config.yml")
     with open(config_filename, "r") as config_file:
         config_data = yaml.load(config_file, Loader=yaml.SafeLoader)
-        log.info(f"loaded config data: {config_data}")
+        logging.info(f"loaded config data: {config_data}")
         return config_data
 
 
@@ -49,10 +49,6 @@ class TaxiiSiteConfig:
     reports_limit: int = 10000
     fail_limit: int = 10   # num attempts per collection for polling & parsing
 
-
-# is this necessary?
-class TaxiiConfig():
-    sites: dict = field(default_factory=frozendict)
 
 class TaxiiSiteConnector():
     def __init__(self, site_conf):
@@ -83,7 +79,7 @@ class TaxiiSiteConnector():
             self.client = client
 
         except handled_exceptions as e:
-            log.error(f"Error creating client: {e}")
+            logging.error(f"Error creating client: {e}")
 
 
 
@@ -106,16 +102,16 @@ class TaxiiSiteConnector():
             collections = self.client.get_collections(
                 uri=uri)  # autodetect if uri=None
             for collection in collections:
-                log.debug(f"Collection: {collection.name}, {collection.type}")
+                logging.debug(f"Collection: {collection.name}, {collection.type}")
         except handled_exceptions as e:
-            log.warning(f"Problem fetching collections from taxii server: {e}")
+            logging.warning(f"Problem fetching collections from taxii server: {e}")
         return collections
 
     def poll_server(self, collection, feed_helper):
         content_blocks = []
         uri = self.create_uri(self.config.poll_path)
         try:
-            log.info(f"Polling Collection: {collection.name}")
+            logging.info(f"Polling Collection: {collection.name}")
             content_blocks = self.client.poll(
                 uri=uri,
                 collection_name=collection.name,
@@ -123,7 +119,7 @@ class TaxiiSiteConnector():
                 end_date=feed_helper.end_date,
                 content_bindings=BINDING_CHOICES)
         except handled_exceptions as e:
-            log.warning(f"problem polling taxii server: {e}")
+            logging.warning(f"problem polling taxii server: {e}")
         return content_blocks
 
     def parse_collection_content(self, content_blocks):
@@ -145,19 +141,19 @@ class TaxiiSiteConnector():
                 yield report
                 num_reports += 1
                 if num_reports > reports_limit:
-                    log.info("Reports limit of {reports_limit} reached")
+                    logging.info("Reports limit of {reports_limit} reached")
                     advance = False
                     break
 
             if not advance:
                 break
             if collection.type == 'DATA_SET':  # data is unordered, not a feed
-                log.info(f"collection:{collection}; type data_set; breaking")
+                logging.info(f"collection:{collection}; type data_set; breaking")
                 break
             if num_reports == 0:
                 num_times_empty_content_blocks += 1
             if num_times_empty_content_blocks > self.config.fail_limit:
-                log.error('Max fail limit reached; Exiting.')
+                logging.error('Max fail limit reached; Exiting.')
                 break
             reports_limit -= num_reports
 
@@ -172,50 +168,50 @@ class TaxiiSiteConnector():
 
         for collection in available_collections:
             if collection.type != 'DATA_FEED' and collection.type != 'DATA_SET':
-                log.debug(f"collection:{collection}; type not feed or data")
+                logging.debug(f"collection:{collection}; type not feed or data")
                 continue
             if not collection.available:
-                log.debug(f"collection:{collection} not available")
+                logging.debug(f"collection:{collection} not available")
                 continue
             if want_all or collection.name.lower() in desired_collections:
                 yield from self.import_collection(collection)
 
-    def generate_reports(self, binary, data):   # NOTE:ignoring binary for now
+    def generate_reports(self):   # NOTE:ignoring binary for now
         reports = []
 
         self.create_taxii_client()
         if not self.client:
-            log.error('Unable to create taxii client.  Exiting...')
+            logging.error('Unable to create taxii client.  Exiting...')
             return reports
 
         available_collections = self.query_collections()
         if not available_collections:
-            log.warning('Unable to find any collections.  Exiting...')
+            logging.warning('Unable to find any collections.  Exiting...')
             return reports
 
         reports = self.import_collections(available_collections)
         if not reports:
-            log.warning('Unable to import collections.  Exiting...')
+            logging.warning('Unable to import collections.  Exiting...')
             return reports
 
         return reports
 
 
 class StixTaxii():
-    def __init__(self, site_conf):
-        self.config = site_conf
+    def __init__(self, site_confs):
+        self.config = site_confs
         self.client = None
-
-
-
 
     def configure_sites(self):
         self.sites = {}
         try:
-            for site_name, site_conf in self.config['sites']:
+            logging.debug("In configure_sites()")
+
+            for site_name, site_conf in self.config['sites'].items():
                 self.sites[site_name] = TaxiiSiteConnector(site_conf)
         except handled_exceptions as e:
-            log.error(f"Error in parsing config file: {e}")
+
+            logging.error(f"Error in parsing config file: {e}")
 
     def format_report(self, binary, report):
         try:
@@ -234,16 +230,16 @@ class StixTaxii():
             for ioc_key, ioc_val in ioc_dict.items():
                 result.ioc(values=ioc_val, field=ioc_key, link=link)
         except handled_exceptions as e:
-            log.warning(f"Problem in report formatting: {e}")
+            logging.warning(f"Problem in report formatting: {e}")
             result = self.result(
                 binary, analysis_name="exception_format_report", error=True)
         return result
 
-    def analyze(self):   # NOTE:ignoring binary for now
+    def analyze(self):
         self.configure_sites()
         for site_name, site_conn in self.sites.items():
-            log.info(f"Talking to {site_name} server")
-            reports = site_conn.generate_reports(binary, data)
+            logging.info(f"Talking to {site_name} server")
+            reports = site_conn.generate_reports()
             if not reports:
                 yield self.result(
                     binary,
@@ -251,13 +247,16 @@ class StixTaxii():
                     error=True)
             else:
                 for report in reports:
-                    yield self.format_report(binary, report)
+                    yield self.format_report(report)
 
 
 if __name__ == '__main__':
     # Need to fill in correct def call
     config = load_config_from_file()
-    for site_conf in config['sites']:
-        print(site_conf)
+    # for site_name, site_conf in config['sites'].items():
+    #     print(site_conf)
     stix_taxii = StixTaxii(config)
+    logging.debug("Analyze?")
     reports = stix_taxii.analyze()
+    for item in reports:
+        logging.info(item)
