@@ -1,5 +1,12 @@
 CbAPI Changelog
 ===============
+CbAPI 1.5.5 - Released November 12, 2019
+----------------------------------------
+
+Updates
+
+* CB ThreatHunter
+    * Fix List object that was not callable.
 
 CbAPI 1.5.4 - Released October 24, 2019
 ----------------------------------------
