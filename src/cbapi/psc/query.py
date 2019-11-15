@@ -991,9 +991,9 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         resp = self._cb.post_object(url, body=request)
         result = resp.json()
         return result.get("results", [])
-    
+
     def _update_status(self, status, remediation, comment):
-        request = { "state": status, "criteria": self._build_criteria(), "query": self._query_builder._collapse()}
+        request = {"state": status, "criteria": self._build_criteria(), "query": self._query_builder._collapse()}
         if remediation is not None:
             request["remediation_state"] = remediation
         if comment is not None:
@@ -1001,21 +1001,21 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         resp = self._cb.post_object(self._bulkupdate_url.format(self._cb.credentials.org_key), body=request)
         output = resp.json()
         return output["request_id"]
-         
+
     def update(self, remediation=None, comment=None):
         """
         Update all alerts matching the given query. The alerts will be left in an OPEN state after this request.
-        
+
         :param remediation str: The remediation state to set for all alerts.
         :param comment str: The comment to set for all alerts.
         :return: The request ID, which may be used to select a WorkflowStatus object.
         """
         return self._update_status("OPEN", remediation, comment)
-    
+
     def dismiss(self, remediation=None, comment=None):
         """
         Dismiss all alerts matching the given query. The alerts will be left in a DISMISSED state after this request.
-        
+
         :param remediation str: The remediation state to set for all alerts.
         :param comment str: The comment to set for all alerts.
         :return: The request ID, which may be used to select a WorkflowStatus object.
@@ -1071,7 +1071,7 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
     valid_sensor_actions = ["POLICY_NOT_APPLIED", "ALLOW", "ALLOW_AND_LOG", "TERMINATE", "DENY"]
     valid_threat_cause_vectors = ["EMAIL", "WEB", "GENERIC_SERVER", "GENERIC_CLIENT", "REMOTE_DRIVE",
                                   "REMOVABLE_MEDIA", "UNKNOWN", "APP_STORE", "THIRD_PARTY"]
-    
+
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
         self._bulkupdate_url = "/appservices/v6/orgs/{0}/alerts/cbanalytics/workflow/_criteria"

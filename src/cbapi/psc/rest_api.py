@@ -136,11 +136,11 @@ class CbPSCBaseAPI(BaseAPI):
         url = "/appservices/v6/orgs/{0}/alerts/search_suggestions".format(self.credentials.org_key)
         output = self.get_object(url, query_params)
         return output["suggestions"]
-    
+
     def _bulk_threat_update_status(self, threat_ids, status, remediation, comment):
         if not all(isinstance(t, str) for t in threat_ids):
             raise ApiError("One or more invalid threat ID values")
-        request = { "state": status, "threat_id": threat_ids}
+        request = {"state": status, "threat_id": threat_ids}
         if remediation is not None:
             request["remediation_state"] = remediation
         if comment is not None:
@@ -149,28 +149,27 @@ class CbPSCBaseAPI(BaseAPI):
         resp = self.post_object(url, body=request)
         output = resp.json()
         return output["request_id"]
-    
+
     def bulk_threat_update(self, threat_ids, remediation=None, comment=None):
         """
         Update the alert status of alerts associated with multiple threat IDs.
         The alerts will be left in an OPEN state after this request.
-        
+
         :param threat_ids list: List of string threat IDs.
         :param remediation str: The remediation state to set for all alerts.
         :param comment str: The comment to set for all alerts.
         :return: The request ID, which may be used to select a WorkflowStatus object.
         """
         return self._bulk_threat_update_status(threat_ids, "OPEN", remediation, comment)
-        
+
     def bulk_threat_dismiss(self, threat_ids, remediation=None, comment=None):
         """
         Dismiss the alerts associated with multiple threat IDs.
         The alerts will be left in a DISMISSED state after this request.
-        
+
         :param threat_ids list: List of string threat IDs.
         :param remediation str: The remediation state to set for all alerts.
         :param comment str: The comment to set for all alerts.
         :return: The request ID, which may be used to select a WorkflowStatus object.
         """
         return self._bulk_threat_update_status(threat_ids, "DISMISSED", remediation, comment)
-        
