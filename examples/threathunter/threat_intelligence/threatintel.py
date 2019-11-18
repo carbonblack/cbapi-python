@@ -32,8 +32,8 @@ class ThreatIntel:
             rep_dict = {
                 "id": str(result.analysis_name),
                 "timestamp": int(result.scan_time.timestamp()),
-                "title": result.connector_name,
-                "description": str(result.analysis_name),
+                "title": result.title,
+                "description": str(result.description),
                 "severity": result.score,
                 "iocs_v2": [ioc.as_dict() for ioc in result.iocs]
             }

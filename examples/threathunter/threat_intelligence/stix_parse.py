@@ -126,8 +126,14 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
     # NOTE: This was added for RecordedFuture
     #
 
-    if not description and indicator and indicator.description:
+    if not description and indicator and indicator.description and indicator.description.value:
         description = str(indicator.description.value)
+
+    #
+    # if description is still empty, use the indicator's title
+    #
+    if not description and indicator and indicator.title:
+        description = str(indicator.title)
 
     #
     # use the first reference as a link

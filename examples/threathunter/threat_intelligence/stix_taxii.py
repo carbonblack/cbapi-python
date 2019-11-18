@@ -5,14 +5,13 @@ from cabby import create_client
 from dataclasses import dataclass, field
 import yaml
 import os
-from frozendict import frozendict
 from stix_parse import parse_stix, BINDING_CHOICES
 from feed_helper import FeedHelper
 from datetime import datetime
 from results import IOC, AnalysisResult
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 handled_exceptions = (NoURIProvidedError, ClientException)
 
@@ -270,6 +269,8 @@ class StixTaxii():
             # report['description'] & report['title'] lost with this interface
             # analysis_name = f"{report['title']};{report['id']}"  > 64 len
             analysis_name = report['id']
+            title = report['title']
+            description = report['description']
             scan_time = datetime.fromtimestamp(report['timestamp'])
             score = report['score']
             link = report['link']
@@ -277,7 +278,9 @@ class StixTaxii():
             result = self.result(
                                  analysis_name=analysis_name,
                                  scan_time=scan_time,
-                                 score=score)
+                                 score=score,
+                                 title=title,
+                                 description=description)
             for ioc_key, ioc_val in ioc_dict.items():
                 result.attach_ioc(values=ioc_val, field=ioc_key, link=link)
         except handled_exceptions as e:
@@ -310,7 +313,6 @@ if __name__ == '__main__':
     stix_taxii = StixTaxii(config)
     reports = stix_taxii.analyze()
     #stix_taxii.dispatch_results(reports)
-    # for report in reports:
-    #     logging.info(f"Report: {report}")
+
     ti = ThreatIntel()
-    ti.push_to_psc(feed_id='ZDFYDzrdReqRvKYImjTEWg',results=reports)
+    ti.push_to_psc(feed_id='4Bv1FkS96ajomnxeWx8w',results=reports)
