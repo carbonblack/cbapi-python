@@ -248,9 +248,13 @@ def get_stix_indicator_score(indicator, default_score):
 def get_stix_indicator_timestamp(indicator):
     timestamp = 0
     if indicator.timestamp:
-        timestamp = int((indicator.timestamp -
-                         datetime.datetime(1970, 1, 1).replace(
-                             tzinfo=dateutil.tz.tzutc())).total_seconds())
+        if indicator.timestamp.tzinfo:
+            timestamp = int((indicator.timestamp -
+                            datetime.datetime(1970, 1, 1).replace(
+                                tzinfo=dateutil.tz.tzutc())).total_seconds())
+        else:
+            timestamp = int((indicator.timestamp -
+                            datetime.datetime(1970, 1, 1)).total_seconds())
     return timestamp
 
 
@@ -320,7 +324,6 @@ def parse_stix(stix_xml, default_score):
     try:
         stix_xml = sanitize_stix(stix_xml)
         bio = BytesIO(stix_xml)
-        logger.debug("created bio")
         stix_package = STIXPackage.from_xml(bio)
         if not stix_package:
             logger.warning("Could not parse STIX xml")

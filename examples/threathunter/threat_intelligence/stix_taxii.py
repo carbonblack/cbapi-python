@@ -8,18 +8,17 @@ import os
 from frozendict import frozendict
 from stix_parse import parse_stix, BINDING_CHOICES
 from feed_helper import FeedHelper
+from datetime import datetime
+from results import IOC, AnalysisResult
 
-logging.basicConfig(level=logging.DEBUG)
+
+logging.basicConfig(level=logging.INFO)
 
 handled_exceptions = (NoURIProvidedError, ClientException)
 
 
-#create a function that returns **site_conf from YAML
 def load_config_from_file():
     logging.debug("loading config from file")
-    # NOTE(ww): __file__ here refers to the base config file, so we need
-    # to grab the module and resolve the file from there.
-    #conn_mod = importlib.import_module(cls.__module__) #is this needed still?
     config_filename = os.path.join(os.path.dirname((os.path.abspath(__file__))), "config.yml")
     with open(config_filename, "r") as config_file:
         config_data = yaml.load(config_file, Loader=yaml.SafeLoader)
@@ -29,6 +28,7 @@ def load_config_from_file():
 
 @dataclass(eq=True, frozen=True)
 class TaxiiSiteConfig:
+    feed_id: str = ''
     site: str = ''
     discovery_path: str = ''
     collection_management_path: str = ''
@@ -130,6 +130,7 @@ class TaxiiSiteConnector():
         num_times_empty_content_blocks = 0
         advance = True
         reports_limit = self.config.reports_limit
+        logging.info(f"reports limit: {reports_limit}")
         feed_helper = FeedHelper(self.config.start_date,
                                  self.config.minutes_to_advance)
 
@@ -141,7 +142,7 @@ class TaxiiSiteConnector():
                 yield report
                 num_reports += 1
                 if num_reports > reports_limit:
-                    logging.info("Reports limit of {reports_limit} reached")
+                    logging.info(f"Reports limit of {reports_limit} reached")
                     advance = False
                     break
 
@@ -196,24 +197,74 @@ class TaxiiSiteConnector():
 
         return reports
 
+    # def dispatch_results_to_feed(self, results):
+    #     ThreatIntel.push_to_psc(feed_id=self.config.feed_id, results=results)
+
+
 
 class StixTaxii():
     def __init__(self, site_confs):
         self.config = site_confs
         self.client = None
 
+    def result(self, **kwargs):
+        """
+        Returns a new AnalysisResult with the given fields populated, updating
+        the database in the background.
+
+        This should be used within the :meth:`analyze` method to create
+        analysis results.
+
+        :rtype: :class:`AnalysisResult`
+
+        Example::
+
+        >>> self.result(analysis_name="foo", score=10)
+        """
+
+        result = AnalysisResult(**kwargs).normalize()
+        return result
+
+    def ioc(self, *, match_type=IOC.MatchType.Equality, values, field=None, link=None):
+        """
+        Attaches a new IOC to this result.
+
+        :param match_type: The matching strategy for this IOC
+        :type match_type: :py:class:`database.IOC.MatchType`
+        :param values: The list of values for this IOC
+        :type values: list
+        :param field: The corresponding process field
+        :type field: str or None
+        :param link: A link to a description of the IOC
+        :type link: str or None
+        :rtype: :py:class:`database.IOC`
+
+        """
+        return IOC(
+            analysis=self, match_type=match_type, values=values, field=field, link=link
+        )
+
+    def normalize(self):
+        """
+        Normalizes this result to make it palatable for the CbTH backend.
+        """
+        if self.score <= 0 or self.score > 10:
+            log.warning(f"normalizing OOB score: {self.score}")
+            self.update(score=max(1, min(self.score, 10)))
+            # NOTE: min 1 and not 0
+            # else err 400 from cbapi: Report severity must be between 1 & 10
+        return self
+
     def configure_sites(self):
         self.sites = {}
         try:
-            logging.debug("In configure_sites()")
-
             for site_name, site_conf in self.config['sites'].items():
                 self.sites[site_name] = TaxiiSiteConnector(site_conf)
         except handled_exceptions as e:
 
             logging.error(f"Error in parsing config file: {e}")
 
-    def format_report(self, binary, report):
+    def format_report(self, report):
         try:
             # NOTE:
             # report['description'] & report['title'] lost with this interface
@@ -223,16 +274,16 @@ class StixTaxii():
             score = report['score']
             link = report['link']
             ioc_dict = report['iocs']
-            result = self.result(binary,
+            result = self.result(
                                  analysis_name=analysis_name,
                                  scan_time=scan_time,
                                  score=score)
             for ioc_key, ioc_val in ioc_dict.items():
-                result.ioc(values=ioc_val, field=ioc_key, link=link)
+                result.attach_ioc(values=ioc_val, field=ioc_key, link=link)
         except handled_exceptions as e:
             logging.warning(f"Problem in report formatting: {e}")
             result = self.result(
-                binary, analysis_name="exception_format_report", error=True)
+                analysis_name="exception_format_report", error=True)
         return result
 
     def analyze(self):
@@ -242,12 +293,13 @@ class StixTaxii():
             reports = site_conn.generate_reports()
             if not reports:
                 yield self.result(
-                    binary,
                     analysis_name=f"exception_analyze_{site_name}",
                     error=True)
             else:
                 for report in reports:
                     yield self.format_report(report)
+
+
 
 
 if __name__ == '__main__':
@@ -256,7 +308,9 @@ if __name__ == '__main__':
     # for site_name, site_conf in config['sites'].items():
     #     print(site_conf)
     stix_taxii = StixTaxii(config)
-    logging.debug("Analyze?")
     reports = stix_taxii.analyze()
-    for item in reports:
-        logging.info(item)
+    #stix_taxii.dispatch_results(reports)
+    # for report in reports:
+    #     logging.info(f"Report: {report}")
+    ti = ThreatIntel()
+    ti.push_to_psc(feed_id='ZDFYDzrdReqRvKYImjTEWg',results=reports)
