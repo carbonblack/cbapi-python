@@ -24,7 +24,7 @@ class ThreatIntel:
         try:
             feed = self.cb.select(Feed, feed_id)
         except ApiError as e:
-            log.error(f"couldn't find CbTH feed {feed_id}: {e}")
+            log.error("couldn't find CbTH feed {0}: {1}".format(feed_id, e))
             return
 
         reports = []
@@ -32,13 +32,14 @@ class ThreatIntel:
             rep_dict = {
                 "id": str(result.analysis_name),
                 "timestamp": int(result.scan_time.timestamp()),
-                "title": result.title,
+                "title": str(result.title),
                 "description": str(result.description),
-                "severity": result.score,
+                "severity": int(result.score),
                 "iocs_v2": [ioc.as_dict() for ioc in result.iocs]
             }
 
-            report = self.cb.create(Report, rep_dict)
+            # report = self.cb.create(Report, rep_dict)
+            report = Report(self.cb, initial_data=rep_dict, feed_id=feed_id)
             reports.append(report)
 
         feed.append_reports(reports)

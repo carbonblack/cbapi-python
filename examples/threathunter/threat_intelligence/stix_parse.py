@@ -109,9 +109,9 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
 
     if observable.object_ and observable.object_.properties:
         props = observable.object_.properties
-        logger.debug(f"{indicator} has props type: {type(props)}")
+        logger.debug("{0} has props type: {1}".format(indicator, type(props)))
     else:
-        logger.debug(f"{indicator} has no props; skipping")
+        logger.debug("{} has no props; skipping".format(indicator))
         return reports
 
     #
@@ -272,7 +272,7 @@ def get_stix_package_timestamp(stix_package):
         timestamp = stix_package.timestamp
         timestamp = int(time.mktime(timestamp.timetuple()))
     except (TypeError, OverflowError, ValueError) as e:
-        logger.warning(f"Problem parsing stix timestamp: {e}")
+        logger.warning("Problem parsing stix timestamp: {}".format(e))
     return timestamp
 
 
@@ -320,7 +320,7 @@ def sanitize_stix(stix_xml):
                 content.append(new_stix_package)
         ret_xml = etree.tostring(xml_root)
     except etree.ParseError as e:
-        logger.warning(f"Problem parsing stix: {e}")
+        logger.warning("Problem parsing stix: {}".format(e))
     return ret_xml
 
 
@@ -340,5 +340,5 @@ def parse_stix(stix_xml, default_score):
         yield from parse_stix_indicators(stix_package, default_score)
         yield from parse_stix_observables(stix_package, default_score)
     except etree.XMLSyntaxError as e:
-        logger.warning(f"Problem parsing stix: {e}")
+        logger.warning("Problem parsing stix: {}".format(e))
         return reports

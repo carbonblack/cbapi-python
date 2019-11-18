@@ -11,7 +11,7 @@ from datetime import datetime
 from results import IOC, AnalysisResult
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 handled_exceptions = (NoURIProvidedError, ClientException)
 
@@ -259,38 +259,38 @@ class StixTaxii():
         try:
             for site_name, site_conf in self.config['sites'].items():
                 self.sites[site_name] = TaxiiSiteConnector(site_conf)
+                logging.info(f"loaded site {site_name}")
         except handled_exceptions as e:
 
             logging.error(f"Error in parsing config file: {e}")
 
-    def format_report(self, report):
-        try:
-            # NOTE:
-            # report['description'] & report['title'] lost with this interface
-            # analysis_name = f"{report['title']};{report['id']}"  > 64 len
-            analysis_name = report['id']
-            title = report['title']
-            description = report['description']
-            scan_time = datetime.fromtimestamp(report['timestamp'])
-            score = report['score']
-            link = report['link']
-            ioc_dict = report['iocs']
-            result = self.result(
-                                 analysis_name=analysis_name,
-                                 scan_time=scan_time,
-                                 score=score,
-                                 title=title,
-                                 description=description)
-            for ioc_key, ioc_val in ioc_dict.items():
-                result.attach_ioc(values=ioc_val, field=ioc_key, link=link)
-        except handled_exceptions as e:
-            logging.warning(f"Problem in report formatting: {e}")
-            result = self.result(
-                analysis_name="exception_format_report", error=True)
-        return result
+    def format_report(self, reports):
+        for report in reports:
+            try:
+                analysis_name = report['id']
+                title = report['title']
+                description = report['description']
+                scan_time = datetime.fromtimestamp(report['timestamp'])
+                score = report['score']
+                link = report['link']
+                ioc_dict = report['iocs']
+                result = self.result(
+                                     analysis_name=analysis_name,
+                                     scan_time=scan_time,
+                                     score=score,
+                                     title=title,
+                                     description=description)
+                for ioc_key, ioc_val in ioc_dict.items():
+                    result.attach_ioc(values=ioc_val, field=ioc_key, link=link)
+            except handled_exceptions as e:
+                logging.warning(f"Problem in report formatting: {e}")
+                result = self.result(
+                    analysis_name="exception_format_report", error=True)
+            yield result
 
     def analyze(self):
         self.configure_sites()
+        ti = ThreatIntel()
         for site_name, site_conn in self.sites.items():
             logging.info(f"Talking to {site_name} server")
             reports = site_conn.generate_reports()
@@ -299,8 +299,12 @@ class StixTaxii():
                     analysis_name=f"exception_analyze_{site_name}",
                     error=True)
             else:
-                for report in reports:
-                    yield self.format_report(report)
+                # for report in reports:
+                #     yield self.format_report(report)
+                logging.info(f"feed id: {site_conn.config.feed_id}")
+                ti.push_to_psc(feed_id=site_conn.config.feed_id, results=self.format_report(reports))
+
+
 
 
 
@@ -308,11 +312,18 @@ class StixTaxii():
 if __name__ == '__main__':
     # Need to fill in correct def call
     config = load_config_from_file()
+
+
+
+
     # for site_name, site_conf in config['sites'].items():
     #     print(site_conf)
     stix_taxii = StixTaxii(config)
-    reports = stix_taxii.analyze()
-    #stix_taxii.dispatch_results(reports)
+    results = stix_taxii.analyze()
 
-    ti = ThreatIntel()
-    ti.push_to_psc(feed_id='4Bv1FkS96ajomnxeWx8w',results=reports)
+    for result in results:
+        pass
+    #stix_taxii.dispatch_results(reports)
+    # ti = ThreatIntel()
+    # for site_name, site_conf in config['sites'].items():
+    #     ti.push_to_psc(feed_id=site_conf['feed_id'], results=reports)
