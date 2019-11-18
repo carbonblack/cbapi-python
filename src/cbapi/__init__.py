@@ -6,7 +6,7 @@ __title__ = 'cbapi'
 __author__ = 'Carbon Black Developer Network'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2019 Carbon Black'
-__version__ = '1.5.4'
+__version__ = '1.5.5'
 
 # New API as of cbapi 0.9.0
 from cbapi.response.rest_api import CbEnterpriseResponseAPI, CbResponseAPI

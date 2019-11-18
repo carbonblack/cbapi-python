@@ -1070,7 +1070,7 @@ class Binary(UnrefreshableModel):
             raise InvalidObjectError("{} should be retried".format(self.sha256))
         else:
             return next((item.url
-                        for item in downloads.found()
+                        for item in downloads.found
                         if self.sha256 == item.sha256), None)
 
 
