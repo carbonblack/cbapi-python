@@ -8,15 +8,16 @@ from test.mocks import ConnectionMocks, MockResponse
 # --- Device v6 Tests
 #
 
+
 def test_get_device(monkeypatch):
     _was_called = False
-    
+
     def mock_get_object(url):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/devices/6023"
         _was_called = True
-        return { "device_id": 6023, "organization_name": "thistestworks" }
-    
+        return {"device_id": 6023, "organization_name": "thistestworks"}
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", mock_get_object)
@@ -28,39 +29,39 @@ def test_get_device(monkeypatch):
     assert isinstance(rc, Device)
     assert rc.device_id == 6023
     assert rc.organization_name == "thistestworks"
-    
-    
+
+
 def test_device_background_scan(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
         assert body["action_type"] == "BACKGROUND_SCAN"
-        assert body["device_id"] == [ 6023 ]
+        assert body["device_id"] == [6023]
         t = body["options"]
         assert t["toggle"] == "ON"
         _was_called = True
         return MockResponse(None, 204)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    api.device_background_scan([ 6023 ], True) 
+    api.device_background_scan([6023], True)
     assert _was_called
-    
-    
+
+
 def test_device_bypass(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
         assert body["action_type"] == "BYPASS"
-        assert body["device_id"] == [ 6023 ]
+        assert body["device_id"] == [6023]
         t = body["options"]
         assert t["toggle"] == "OFF"
         _was_called = True
@@ -72,18 +73,18 @@ def test_device_bypass(monkeypatch):
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    api.device_bypass([ 6023 ], False)
+    api.device_bypass([6023], False)
     assert _was_called
-    
-    
+
+
 def test_device_delete_sensor(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
         assert body["action_type"] == "DELETE_SENSOR"
-        assert body["device_id"] == [ 6023 ]
+        assert body["device_id"] == [6023]
         _was_called = True
         return MockResponse(None, 204)
 
@@ -93,18 +94,18 @@ def test_device_delete_sensor(monkeypatch):
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    api.device_delete_sensor([ 6023 ])
+    api.device_delete_sensor([6023])
     assert _was_called
 
 
 def test_device_uninstall_sensor(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
         assert body["action_type"] == "UNINSTALL_SENSOR"
-        assert body["device_id"] == [ 6023 ]
+        assert body["device_id"] == [6023]
         _was_called = True
         return MockResponse(None, 204)
 
@@ -114,123 +115,123 @@ def test_device_uninstall_sensor(monkeypatch):
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    api.device_uninstall_sensor([ 6023 ])
+    api.device_uninstall_sensor([6023])
     assert _was_called
-    
-    
+
+
 def test_device_quarantine(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
         assert body["action_type"] == "QUARANTINE"
-        assert body["device_id"] == [ 6023 ]
+        assert body["device_id"] == [6023]
         t = body["options"]
         assert t["toggle"] == "ON"
         _was_called = True
         return MockResponse(None, 204)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    api.device_quarantine([ 6023 ], True)
+    api.device_quarantine([6023], True)
     assert _was_called
-    
-    
+
+
 def test_device_update_policy(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
         assert body["action_type"] == "UPDATE_POLICY"
-        assert body["device_id"] == [ 6023 ]
+        assert body["device_id"] == [6023]
         t = body["options"]
         assert t["policy_id"] == 8675309
         _was_called = True
         return MockResponse(None, 204)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    api.device_update_policy([ 6023 ], 8675309)
+    api.device_update_policy([6023], 8675309)
     assert _was_called
-    
-    
+
+
 def test_device_update_sensor_version(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
         assert body["action_type"] == "UPDATE_SENSOR_VERSION"
-        assert body["device_id"] == [ 6023 ]
+        assert body["device_id"] == [6023]
         t = body["options"]
         t2 = t["sensor_version"]
         assert t2["RHEL"] == "2.3.4.5"
         _was_called = True
         return MockResponse(None, 204)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    api.device_update_sensor_version([ 6023 ], { "RHEL": "2.3.4.5"})
+    api.device_update_sensor_version([6023], {"RHEL": "2.3.4.5"})
     assert _was_called
-    
-    
+
+
 def test_query_device_with_all_bells_and_whistles(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/devices/_search"
         assert body["query"] == "foobar"
         t = body.get("criteria", {})
-        assert t["ad_group_id"] == [ 14, 25 ]
-        assert t["os"] == [ "LINUX" ]
-        assert t["policy_id"] == [ 8675309 ]
-        assert t["status"] == [ "ALL" ]
-        assert t["target_priority"] == [ "HIGH" ]
+        assert t["ad_group_id"] == [14, 25]
+        assert t["os"] == ["LINUX"]
+        assert t["policy_id"] == [8675309]
+        assert t["status"] == ["ALL"]
+        assert t["target_priority"] == ["HIGH"]
         t = body.get("exclusions", {})
-        assert t["sensor_version"] == [ "0.1" ]
+        assert t["sensor_version"] == ["0.1"]
         t = body.get("sort", [])
         t2 = t[0]
         assert t2["field"] == "name"
         assert t2["order"] == "DESC"
         _was_called = True
-        body = { "id": 6023, "organization_name": "thistestworks" }
-        envelope = { "results": [ body ], "num_found": 1 }
+        body = {"id": 6023, "organization_name": "thistestworks"}
+        envelope = {"results": [body], "num_found": 1}
         return MockResponse(envelope)
-    
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    query = api.select(Device).where("foobar").ad_group_ids([ 14, 25 ]) \
-        .os([ "LINUX" ]).policy_ids([ 8675309 ]).status([ "ALL" ]) \
+    query = api.select(Device).where("foobar").ad_group_ids([14, 25]) \
+        .os(["LINUX"]).policy_ids([8675309]).status(["ALL"]) \
         .target_priorities(["HIGH"]).exclude_sensor_versions(["0.1"]) \
         .sort_by("name", "DESC")
     d = query.one()
     assert _was_called
     assert d.id == 6023
     assert d.organization_name == "thistestworks"
-    
-    
+
+
 def test_query_device_with_last_contact_time_as_start_end(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/devices/_search"
@@ -240,10 +241,10 @@ def test_query_device_with_last_contact_time_as_start_end(monkeypatch):
         assert t2["start"] == "2019-09-30T12:34:56"
         assert t2["end"] == "2019-10-01T12:00:12"
         _was_called = True
-        body = { "id": 6023, "organization_name": "thistestworks" }
-        envelope = { "results": [ body ], "num_found": 1 }
+        body = {"id": 6023, "organization_name": "thistestworks"}
+        envelope = {"results": [body], "num_found": 1}
         return MockResponse(envelope)
-    
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -260,7 +261,7 @@ def test_query_device_with_last_contact_time_as_start_end(monkeypatch):
 
 def test_query_device_with_last_contact_time_as_range(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/devices/_search"
@@ -269,10 +270,10 @@ def test_query_device_with_last_contact_time_as_range(monkeypatch):
         t2 = t.get("last_contact_time", {})
         assert t2["range"] == "-3w"
         _was_called = True
-        body = { "id": 6023, "organization_name": "thistestworks" }
-        envelope = { "results": [ body ], "num_found": 1 }
+        body = {"id": 6023, "organization_name": "thistestworks"}
+        envelope = {"results": [body], "num_found": 1}
         return MockResponse(envelope)
-    
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -285,33 +286,33 @@ def test_query_device_with_last_contact_time_as_range(monkeypatch):
     assert d.id == 6023
     assert d.organization_name == "thistestworks"
 
-    
+
 def test_query_device_invalid_ad_group_ids():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
-        api.select(Device).ad_group_ids([ "Bogus" ])
-        
-        
+        api.select(Device).ad_group_ids(["Bogus"])
+
+
 def test_query_device_invalid_policy_ids():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
-        api.select(Device).policy_ids([ "Bogus" ])
-        
-        
+        api.select(Device).policy_ids(["Bogus"])
+
+
 def test_query_device_last_contact_time_no_params_ok():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(Device).last_contact_time()
-            
+
 
 def test_query_device_last_contact_time_range_specified_bad():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
-        api.select(Device).last_contact_time(start="2019-09-30T12:34:56", \
+        api.select(Device).last_contact_time(start="2019-09-30T12:34:56",
                                              end="2019-10-01T12:00:12", range="-3w")
 
 
@@ -319,7 +320,7 @@ def test_query_device_last_contact_time_start_specified_bad():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
-        api.select(Device).last_contact_time(start="2019-09-30T12:34:56", \
+        api.select(Device).last_contact_time(start="2019-09-30T12:34:56",
                                              range="-3w")
 
 
@@ -334,40 +335,40 @@ def test_query_device_invalid_os():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
-        api.select(Device).os([ "COMMODORE_64" ])
-    
-    
+        api.select(Device).os(["COMMODORE_64"])
+
+
 def test_query_device_invalid_status():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
-        api.select(Device).status([ "Bogus" ])
-    
-    
+        api.select(Device).status(["Bogus"])
+
+
 def test_query_device_invalid_priority():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
-        api.select(Device).target_priorities([ "Bogus" ])
-        
-        
+        api.select(Device).target_priorities(["Bogus"])
+
+
 def test_query_device_invalid_exclude_sensor_version():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
-        api.select(Device).exclude_sensor_versions([ 12703 ])
-        
-        
+        api.select(Device).exclude_sensor_versions([12703])
+
+
 def test_query_device_invalid_sort_direction():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(Device).sort_by("policy_name", "BOGUS")
-    
-    
+
+
 def test_query_device_download(monkeypatch):
     _was_called = False
-    
+
     def mock_get_raw_data(url, query_params, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/devices/_search/download"
@@ -380,7 +381,7 @@ def test_query_device_download(monkeypatch):
         assert query_params["sort_order"] == "DESC"
         _was_called = True
         return "123456789,123456789,123456789"
-    
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_raw_data", mock_get_raw_data)
@@ -388,16 +389,16 @@ def test_query_device_download(monkeypatch):
     monkeypatch.setattr(api, "post_object", ConnectionMocks.get("POST"))
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    rc = api.select(Device).where("foobar").ad_group_ids([ 14, 25 ]) \
-        .policy_ids([ 8675309 ]).status([ "ALL" ]).target_priorities(["HIGH"]) \
+    rc = api.select(Device).where("foobar").ad_group_ids([14, 25]) \
+        .policy_ids([8675309]).status(["ALL"]).target_priorities(["HIGH"]) \
         .sort_by("name", "DESC").download()
     assert _was_called
     assert rc == "123456789,123456789,123456789"
-    
-    
+
+
 def test_query_device_do_background_scan(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
@@ -408,7 +409,7 @@ def test_query_device_do_background_scan(monkeypatch):
         assert t["toggle"] == "ON"
         _was_called = True
         return MockResponse(None, 204)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -417,11 +418,11 @@ def test_query_device_do_background_scan(monkeypatch):
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
     api.select(Device).where("foobar").background_scan(True)
     assert _was_called
-    
-    
+
+
 def test_query_device_do_bypass(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
@@ -445,7 +446,7 @@ def test_query_device_do_bypass(monkeypatch):
 
 def test_query_device_do_delete_sensor(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
@@ -467,7 +468,7 @@ def test_query_device_do_delete_sensor(monkeypatch):
 
 def test_query_device_do_uninstall_sensor(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
@@ -485,11 +486,11 @@ def test_query_device_do_uninstall_sensor(monkeypatch):
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
     api.select(Device).where("foobar").uninstall_sensor()
     assert _was_called
-    
-    
+
+
 def test_query_device_do_quarantine(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
@@ -500,7 +501,7 @@ def test_query_device_do_quarantine(monkeypatch):
         assert t["toggle"] == "ON"
         _was_called = True
         return MockResponse(None, 204)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -510,10 +511,10 @@ def test_query_device_do_quarantine(monkeypatch):
     api.select(Device).where("foobar").quarantine(True)
     assert _was_called
 
-    
+
 def test_query_device_do_update_policy(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
@@ -524,7 +525,7 @@ def test_query_device_do_update_policy(monkeypatch):
         assert t["policy_id"] == 8675309
         _was_called = True
         return MockResponse(None, 204)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -533,11 +534,11 @@ def test_query_device_do_update_policy(monkeypatch):
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
     api.select(Device).where("foobar").update_policy(8675309)
     assert _was_called
-    
-            
+
+
 def test_query_device_do_update_sensor_version(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/device_actions"
@@ -549,23 +550,24 @@ def test_query_device_do_update_sensor_version(monkeypatch):
         assert t2["RHEL"] == "2.3.4.5"
         _was_called = True
         return MockResponse(None, 204)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
     monkeypatch.setattr(api, "post_object", mock_post_object)
     monkeypatch.setattr(api, "put_object", ConnectionMocks.get("PUT"))
     monkeypatch.setattr(api, "delete_object", ConnectionMocks.get("DELETE"))
-    api.select(Device).where("foobar").update_sensor_version({ "RHEL": "2.3.4.5"})
+    api.select(Device).where("foobar").update_sensor_version({"RHEL": "2.3.4.5"})
     assert _was_called
-    
+
 #
 # --- Alerts v6 Tests
 #
 
+
 def test_query_basealert_with_all_bells_and_whistles(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/_search"
@@ -597,9 +599,9 @@ def test_query_basealert_with_all_bells_and_whistles(monkeypatch):
         assert t2["order"] == "DESC"
         _was_called = True
         body = {"id": "S0L0", "org_key": "Z100", "threat_id": "B0RG", "workflow": {"state": "OPEN"}}
-        envelope = { "results": [ body ], "num_found": 1 }
+        envelope = {"results": [body], "num_found": 1}
         return MockResponse(envelope)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -623,7 +625,7 @@ def test_query_basealert_with_all_bells_and_whistles(monkeypatch):
 
 def test_query_basealert_with_create_time_as_start_end(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/_search"
@@ -634,7 +636,7 @@ def test_query_basealert_with_create_time_as_start_end(monkeypatch):
         assert t2["end"] == "2019-10-01T12:00:12"
         _was_called = True
         body = {"id": "S0L0", "org_key": "Z100", "threat_id": "B0RG", "workflow": {"state": "OPEN"}}
-        envelope = { "results": [ body ], "num_found": 1 }
+        envelope = {"results": [body], "num_found": 1}
         return MockResponse(envelope)
 
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
@@ -655,7 +657,7 @@ def test_query_basealert_with_create_time_as_start_end(monkeypatch):
 
 def test_query_basealert_with_create_time_as_range(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/_search"
@@ -665,9 +667,9 @@ def test_query_basealert_with_create_time_as_range(monkeypatch):
         assert t2["range"] == "-3w"
         _was_called = True
         body = {"id": "S0L0", "org_key": "Z100", "threat_id": "B0RG", "workflow": {"state": "OPEN"}}
-        envelope = { "results": [ body ], "num_found": 1 }
+        envelope = {"results": [body], "num_found": 1}
         return MockResponse(envelope)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -681,11 +683,11 @@ def test_query_basealert_with_create_time_as_range(monkeypatch):
     assert a.org_key == "Z100"
     assert a.threat_id == "B0RG"
     assert a.workflow_.state == "OPEN"
-    
-    
-def test_query_basealert_facets(monkeypatch):    
+
+
+def test_query_basealert_facets(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/_facet"
@@ -713,16 +715,16 @@ def test_query_basealert_facets(monkeypatch):
     assert t["values"] == [{"id": "reputation", "name": "reputationX", "total": 4}]
     t = f[1]
     assert t["values"] == [{"id": "status", "name": "statusX", "total": 9}]
-    
+
 
 def test_query_basealert_invalid_category():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).categories(["DOUBLE_DARE"])
-        
-        
-def test_query_basealert_create_time_no_params_ok():        
+
+
+def test_query_basealert_create_time_no_params_ok():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
@@ -733,18 +735,18 @@ def test_query_basealert_create_time_range_specified_bad():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
-        api.select(BaseAlert).create_time(start="2019-09-30T12:34:56", \
+        api.select(BaseAlert).create_time(start="2019-09-30T12:34:56",
                                           end="2019-10-01T12:00:12", range="-3w")
-        
-        
-def test_query_basealert_create_time_start_specified_bad():        
+
+
+def test_query_basealert_create_time_start_specified_bad():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).create_time(start="2019-09-30T12:34:56", range="-3w")
-        
-        
-def test_query_basealert_create_time_end_specified_bad():        
+
+
+def test_query_basealert_create_time_end_specified_bad():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
@@ -756,123 +758,123 @@ def test_query_basealert_invalid_device_ids():
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).device_ids(["Bogus"])
-        
-        
+
+
 def test_query_basealert_invalid_device_names():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).device_names([42])
-        
-        
-def test_query_basealert_invalid_device_os():        
+
+
+def test_query_basealert_invalid_device_os():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).device_os(["TI994A"])
-        
-        
+
+
 def test_query_basealert_invalid_device_os_versions():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).device_os_versions([8808])
-        
-        
-def test_query_basealert_invalid_device_username():        
+
+
+def test_query_basealert_invalid_device_username():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).device_username([-1])
-        
-        
-def test_query_basealert_invalid_alert_ids():        
+
+
+def test_query_basealert_invalid_alert_ids():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).alert_ids([9001])
-    
-    
-def test_query_basealert_invalid_legacy_alert_ids():        
+
+
+def test_query_basealert_invalid_legacy_alert_ids():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).legacy_alert_ids([9001])
-    
+
 
 def test_query_basealert_invalid_policy_ids():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).policy_ids(["Bogus"])
-        
-        
+
+
 def test_query_basealert_invalid_policy_names():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).policy_names([323])
-        
-        
+
+
 def test_query_basealert_invalid_process_names():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).process_names([7071])
-        
-        
-def test_query_basealert_invalid_process_sha256():        
+
+
+def test_query_basealert_invalid_process_sha256():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).process_sha256([123456789])
-        
-        
+
+
 def test_query_basealert_invalid_reputations():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).reputations(["MICROSOFT_FUDWARE"])
-        
-        
+
+
 def test_query_basealert_invalid_tags():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).tags([990909])
-        
-        
+
+
 def test_query_basealert_invalid_target_priorities():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).target_priorities(["DOGWASH"])
-        
-        
+
+
 def test_query_basealert_invalid_threat_ids():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).threat_ids([4096])
-        
-        
+
+
 def test_query_basealert_invalid_types():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).types(["ERBOSOFT"])
-        
-        
+
+
 def test_query_basealert_invalid_workflows():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(BaseAlert).workflows(["IN_LIMBO"])
-        
+
 
 def test_query_cbanalyticsalert_with_all_bells_and_whistles(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/cbanalytics/_search"
@@ -907,16 +909,16 @@ def test_query_cbanalyticsalert_with_all_bells_and_whistles(monkeypatch):
         assert t["run_state"] == ["RAN"]
         assert t["sensor_action"] == ["DENY"]
         assert t["threat_cause_vector"] == ["WEB"]
-        
+
         t = body["sort"]
         t2 = t[0]
         assert t2["field"] == "name"
         assert t2["order"] == "DESC"
         _was_called = True
         body = {"id": "S0L0", "org_key": "Z100", "threat_id": "B0RG", "workflow": {"state": "OPEN"}}
-        envelope = { "results": [ body ], "num_found": 1 }
+        envelope = {"results": [body], "num_found": 1}
         return MockResponse(envelope)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -940,10 +942,10 @@ def test_query_cbanalyticsalert_with_all_bells_and_whistles(monkeypatch):
     assert a.threat_id == "B0RG"
     assert a.workflow_.state == "OPEN"
 
-        
-def test_query_cbanalyticsalert_facets(monkeypatch):    
+
+def test_query_cbanalyticsalert_facets(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/cbanalytics/_facet"
@@ -971,22 +973,22 @@ def test_query_cbanalyticsalert_facets(monkeypatch):
     assert t["values"] == [{"id": "reputation", "name": "reputationX", "total": 4}]
     t = f[1]
     assert t["values"] == [{"id": "status", "name": "statusX", "total": 9}]
-    
+
 
 def test_query_cbanalyticsalert_invalid_blocked_threat_categories():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(CBAnalyticsAlert).blocked_threat_categories(["MINOR"])
-        
+
 
 def test_query_cbanalyticsalert_invalid_device_locations():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(CBAnalyticsAlert).device_locations(["NARNIA"])
-        
-        
+
+
 def test_query_cbanalyticsalert_invalid_kill_chain_statuses():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
@@ -999,29 +1001,29 @@ def test_query_cbanalyticsalert_invalid_not_blocked_threat_categories():
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(CBAnalyticsAlert).not_blocked_threat_categories(["MINOR"])
-    
-    
+
+
 def test_query_cbanalyticsalert_invalid_policy_applied():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(CBAnalyticsAlert).policy_applied(["MAYBE"])
-    
+
 
 def test_query_cbanalyticsalert_invalid_reason_code():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(CBAnalyticsAlert).reason_code([55])
-    
-    
-def test_query_cbanalyticsalert_invalid_run_states():     
+
+
+def test_query_cbanalyticsalert_invalid_run_states():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(CBAnalyticsAlert).run_states(["MIGHT_HAVE"])
-    
-    
+
+
 def test_query_cbanalyticsalert_invalid_sensor_actions():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
@@ -1034,11 +1036,11 @@ def test_query_cbanalyticsalert_invalid_threat_cause_vectors():
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(CBAnalyticsAlert).threat_cause_vectors(["NETWORK"])
-              
-              
+
+
 def test_query_vmwarealert_with_all_bells_and_whistles(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/vmware/_search"
@@ -1071,9 +1073,9 @@ def test_query_vmwarealert_with_all_bells_and_whistles(monkeypatch):
         assert t2["order"] == "DESC"
         _was_called = True
         body = {"id": "S0L0", "org_key": "Z100", "threat_id": "B0RG", "workflow": {"state": "OPEN"}}
-        envelope = { "results": [ body ], "num_found": 1 }
+        envelope = {"results": [body], "num_found": 1}
         return MockResponse(envelope)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -1093,11 +1095,11 @@ def test_query_vmwarealert_with_all_bells_and_whistles(monkeypatch):
     assert a.org_key == "Z100"
     assert a.threat_id == "B0RG"
     assert a.workflow_.state == "OPEN"
-              
-              
-def test_query_vmwarealert_facets(monkeypatch):    
+
+
+def test_query_vmwarealert_facets(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/vmware/_facet"
@@ -1125,18 +1127,18 @@ def test_query_vmwarealert_facets(monkeypatch):
     assert t["values"] == [{"id": "reputation", "name": "reputationX", "total": 4}]
     t = f[1]
     assert t["values"] == [{"id": "status", "name": "statusX", "total": 9}]
-    
+
 
 def test_query_vmwarealert_invalid_group_ids():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(VMwareAlert).group_ids(["Bogus"])
-        
-        
+
+
 def test_query_watchlistalert_with_all_bells_and_whistles(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/watchlist/_search"
@@ -1170,9 +1172,9 @@ def test_query_watchlistalert_with_all_bells_and_whistles(monkeypatch):
         assert t2["order"] == "DESC"
         _was_called = True
         body = {"id": "S0L0", "org_key": "Z100", "threat_id": "B0RG", "workflow": {"state": "OPEN"}}
-        envelope = { "results": [ body ], "num_found": 1 }
+        envelope = {"results": [body], "num_found": 1}
         return MockResponse(envelope)
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -1192,11 +1194,11 @@ def test_query_watchlistalert_with_all_bells_and_whistles(monkeypatch):
     assert a.org_key == "Z100"
     assert a.threat_id == "B0RG"
     assert a.workflow_.state == "OPEN"
-        
-        
-def test_query_watchlistalert_facets(monkeypatch):    
+
+
+def test_query_watchlistalert_facets(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/watchlist/_facet"
@@ -1224,25 +1226,25 @@ def test_query_watchlistalert_facets(monkeypatch):
     assert t["values"] == [{"id": "reputation", "name": "reputationX", "total": 4}]
     t = f[1]
     assert t["values"] == [{"id": "status", "name": "statusX", "total": 9}]
-    
+
 
 def test_query_watchlistalert_invalid_watchlist_ids():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(WatchlistAlert).watchlist_ids([888])
-        
-        
-def test_query_watchlistalert_invalid_watchlist_names():         
+
+
+def test_query_watchlistalert_invalid_watchlist_names():
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     with pytest.raises(ApiError):
         api.select(WatchlistAlert).watchlist_names([69])
-    
-    
+
+
 def test_alerts_bulk_dismiss(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/workflow/_criteria"
@@ -1254,7 +1256,7 @@ def test_alerts_bulk_dismiss(monkeypatch):
         assert t["device_name"] == ["HAL9000"]
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
-    
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -1269,7 +1271,7 @@ def test_alerts_bulk_dismiss(monkeypatch):
 
 def test_alerts_bulk_undismiss(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/workflow/_criteria"
@@ -1281,7 +1283,7 @@ def test_alerts_bulk_undismiss(monkeypatch):
         assert t["device_name"] == ["HAL9000"]
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
-    
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -1292,11 +1294,11 @@ def test_alerts_bulk_undismiss(monkeypatch):
     reqid = q.update("Fixed", "NoSir")
     assert _was_called
     assert reqid == "497ABX"
-        
-        
+
+
 def test_alerts_bulk_dismiss_watchlist(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/watchlist/workflow/_criteria"
@@ -1308,7 +1310,7 @@ def test_alerts_bulk_dismiss_watchlist(monkeypatch):
         assert t["device_name"] == ["HAL9000"]
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
-    
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -1323,7 +1325,7 @@ def test_alerts_bulk_dismiss_watchlist(monkeypatch):
 
 def test_alerts_bulk_dismiss_cbanalytics(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/cbanalytics/workflow/_criteria"
@@ -1335,7 +1337,7 @@ def test_alerts_bulk_dismiss_cbanalytics(monkeypatch):
         assert t["device_name"] == ["HAL9000"]
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
-    
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -1350,7 +1352,7 @@ def test_alerts_bulk_dismiss_cbanalytics(monkeypatch):
 
 def test_alerts_bulk_dismiss_vmware(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/alerts/vmware/workflow/_criteria"
@@ -1362,7 +1364,7 @@ def test_alerts_bulk_dismiss_vmware(monkeypatch):
         assert t["device_name"] == ["HAL9000"]
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
-    
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -1377,7 +1379,7 @@ def test_alerts_bulk_dismiss_vmware(monkeypatch):
 
 def test_alerts_bulk_dismiss_threat(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/threat/workflow/_criteria"
@@ -1387,7 +1389,7 @@ def test_alerts_bulk_dismiss_threat(monkeypatch):
         assert body["comment"] == "Yessir"
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -1401,7 +1403,7 @@ def test_alerts_bulk_dismiss_threat(monkeypatch):
 
 def test_alerts_bulk_undismiss_threat(monkeypatch):
     _was_called = False
-    
+
     def mock_post_object(url, body, **kwargs):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/threat/workflow/_criteria"
@@ -1411,7 +1413,7 @@ def test_alerts_bulk_undismiss_threat(monkeypatch):
         assert body["comment"] == "NoSir"
         _was_called = True
         return MockResponse({"request_id": "497ABX"})
-        
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", ConnectionMocks.get("GET"))
@@ -1421,11 +1423,11 @@ def test_alerts_bulk_undismiss_threat(monkeypatch):
     reqid = api.bulk_threat_update(["B0RG", "F3R3NG1"], "Fixed", "NoSir")
     assert _was_called
     assert reqid == "497ABX"
-    
-    
+
+
 def test_load_workflow(monkeypatch):
     _was_called = False
-    
+
     def mock_get_object(url, parms=None, default=None):
         nonlocal _was_called
         assert url == "/appservices/v6/orgs/Z100/workflow/status/497ABX"
@@ -1434,7 +1436,7 @@ def test_load_workflow(monkeypatch):
         resp["workflow"] = {"state": "DISMISSED", "remediation": "Fixed", "comment": "Yessir",
                             "changed_by": "Robocop", "last_update_time": "2019-10-31T16:03:13.951Z"}
         return resp
-    
+
     api = CbPSCBaseAPI(url="https://example.com", token="ABCD/1234",
                        org_key="Z100", ssl_verify=True)
     monkeypatch.setattr(api, "get_object", mock_get_object)
@@ -1444,4 +1446,3 @@ def test_load_workflow(monkeypatch):
     workflow = api.select(WorkflowStatus, "497ABX")
     assert _was_called
     assert workflow.id_ == "497ABX"
-    
