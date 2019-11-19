@@ -3,32 +3,25 @@ from feed_helper import FeedHelper
 from cabby import create_client
 from cbapi.psc.threathunter import CbThreatHunterAPI, Report
 from cbapi.errors import ApiError
-from get_feed_ids import get_feed_ids
 from cbapi.psc.threathunter.models import Feed
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-
-
-
-
+log.setLevel(logging.INFO)
 
 class ThreatIntel:
     def __init__(self):
         self.cb = CbThreatHunterAPI()
 
-    def input_validation(self, input):
-        return
-
     def push_to_cb(self, feed_id, results):
         try:
             feed = self.cb.select(Feed, feed_id)
         except ApiError as e:
-            log.error("couldn't find CbTH feed {0}: {1}".format(feed_id, e))
+            log.error(f"couldn't find CbTH feed {feed_id}: {e}")
             return
 
         reports = []
         report_list_to_validate = []
+        
         for result in results:
             rep_dict = {
                 "id": str(result.analysis_name),
@@ -40,8 +33,6 @@ class ThreatIntel:
             }
 
             report_list_to_validate.append(rep_dict)
-
-            # report = self.cb.create(Report, rep_dict)
             report = Report(self.cb, initial_data=rep_dict, feed_id=feed_id)
             reports.append(report)
 
@@ -52,13 +43,9 @@ class ThreatIntel:
         else:
             log.warning("Report Validation failed. Not sending results to Carbon Black Cloud.")
 
-    def get_feed_ids(self):
-        get_feed_ids()
-
     ##########################################################
     # Input validation of reports
     ##########################################################
-
 
     # Input validation for query IOC
     def query_ioc_validation(self, query_ioc):
@@ -234,33 +221,3 @@ class ThreatIntel:
 
             log.debug("Report Validation check complete")
             return True
-
-
-
-    # mock_query_ioc = {
-    #     "index_type": "abc",
-    #     "search_query": "def"
-    # }
-    #
-    # mock_ioc = {
-    #     "md5": ["abc", "def"],
-    #     "ipv4": ["hello", "world"],
-    #     "ipv6": ["ghi", "jkl"],
-    #     "dns": ["mno", "pqr"],
-    #     "query": [{"index_type": "stu", "search_query": "vwx"}]
-    # }
-    #
-    # mock_reports = [
-    #     {
-    #         "id": "ABC123",
-    #         "timestamp": 1543424484422,
-    #         "title": "Test Report 1",
-    #         "description": "",
-    #         "severity":5
-    #     }
-    # ]
-    #
-    # input_validation(mock_reports)
-    # ioc_ret_status = ioc_validation(mock_ioc)
-    # query_ret_status = query_ioc_validation(mock_query_ioc)
-    #
