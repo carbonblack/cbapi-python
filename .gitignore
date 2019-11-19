@@ -68,6 +68,7 @@ target/
 # Eclipse/PyDev
 /.project
 /.pydevproject
+/.settings
 
 # Credential files
 .carbonblack/

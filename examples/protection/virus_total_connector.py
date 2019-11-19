@@ -38,7 +38,7 @@ class VirusTotalConnector(object):
             raise TypeError("Missing required VT authentication token.")
         self.vt_token = vt_token
         self.vt_url = 'https://www.virustotal.com/vtapi/v2'
-        self.polling_frequency = 30 # seconds
+        self.polling_frequency = 30  # seconds
 
         self.malicious_threshold = malicious_threshold
         self.potential_threshold = potential_threshold
@@ -83,7 +83,8 @@ class VirusTotalConnector(object):
             self.schedule_check(binary, binary.fileHash)
         else:
             binary.analysisStatus = PendingAnalysis.StatusCancelled
-            log.info("%s: VirusTotal has no information and we aren't allowed to upload it. Cancelling the analysis request." % binary.fileHash)
+            log.info("%s: VirusTotal has no information and we aren't allowed to upload it. "
+                     "Cancelling the analysis request." % binary.fileHash)
             binary.save()
 
     def report_result(self, binary, scanResults):
@@ -143,9 +144,7 @@ class VirusTotalConnector(object):
                     r = requests.post(self.vt_url + "/file/scan", files=files, params={'apikey': self.vt_token})
                     if r.status_code != 200:
                         vt_upload_error = True
-                    else:
-                        scanId = r.json()['scan_id']
-                except:
+                except Exception:
                     log.exception("Could not send file %s to VirusTotal" % (binary.fileHash,))
                     vt_upload_error = True
 
@@ -157,13 +156,14 @@ class VirusTotalConnector(object):
 
             binary.save()
         else:
-            log.info("%s: VirusTotal has no information on this hash. Waiting for agent to upload it." % binary.fileHash)
+            log.info("%s: VirusTotal has no information on this hash. Waiting for agent to upload it."
+                     % binary.fileHash)
 
     def schedule_check(self, binary, scanId):
         next_check = datetime.datetime.now() + datetime.timedelta(0, 3600)
         self.awaiting_results[binary.fileHash] = {'scanId': scanId, 'nextCheck': next_check}
-        log.info("%s: Waiting for analysis to complete. Will check back after %s." % (binary.fileHash,
-                                                                                      next_check.strftime("%Y-%m-%d %H:%M:%S")))
+        log.info("%s: Waiting for analysis to complete. Will check back after %s."
+                 % (binary.fileHash, next_check.strftime("%Y-%m-%d %H:%M:%S")))
 
     def process_request(self, binary):
         if binary.fileHash in self.awaiting_results:
@@ -218,7 +218,7 @@ def main():
 
     log.info("Configuration:")
     for k, v in iteritems(config):
-        log.info("    %-20s: %s" % (k,v))
+        log.info("    %-20s: %s" % (k, v))
 
     api = get_cb_protection_object(args)
 
@@ -235,4 +235,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-

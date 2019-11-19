@@ -50,7 +50,7 @@ def delete_watchlist(cb, parser, args):
     num_matching_watchlists = len(watchlists)
     if num_matching_watchlists > 1 and not args.force:
         print("{0:d} watchlists match {1:s} and --force not specified. No action taken.".format(num_matching_watchlists,
-                                                                                           attempted_to_find))
+                                                                                                attempted_to_find))
         return
 
     for f in watchlists:
@@ -78,7 +78,7 @@ def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="Watchlist commands", dest="command_name")
 
-    list_command = commands.add_parser("list", help="List all configured watchlists")
+    commands.add_parser("list", help="List all configured watchlists")
 
     list_actions_command = commands.add_parser("list-actions", help="List actions associated with a watchlist")
     list_actions_specifier = list_actions_command.add_mutually_exclusive_group(required=True)

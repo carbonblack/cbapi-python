@@ -243,7 +243,8 @@ def main():
     commands = parser.add_subparsers(help="Feed commands", dest="command_name")
 
     list_command = commands.add_parser("list", help="List all configured watchlists")
-    list_command.add_argument("-r", "--reports", action="store_true", help="List reports for each watchlist", default=False)
+    list_command.add_argument("-r", "--reports", action="store_true", help="List reports for each watchlist",
+                              default=False)
 
     subscribe_command = commands.add_parser("subscribe", help="Create a watchlist with a feed")
     subscribe_command.add_argument("-i", "--feed_id", type=str, help="The Feed ID", required=True)
@@ -252,7 +253,8 @@ def main():
     subscribe_command.add_argument("-t", "--tags", action="store_true", help="Enable tags", default=False)
     subscribe_command.add_argument("-a", "--alerts", action="store_true", help="Enable alerts", default=False)
     subscribe_command.add_argument("-T", "--timestamp", type=int, help="Creation timestamp", default=int(time.time()))
-    subscribe_command.add_argument("-U", "--last_update", type=int, help="Last update timestamp", default=int(time.time()))
+    subscribe_command.add_argument("-U", "--last_update", type=int, help="Last update timestamp",
+                                   default=int(time.time()))
 
     create_command = commands.add_parser("create", help="Create a watchlist with a report")
     create_command.add_argument("-w", "--watchlist_name", type=str, help="Watchlist name", required=True)
@@ -271,7 +273,8 @@ def main():
     create_command.add_argument("--rep_visibility", type=str, help="Report visibility")
 
     delete_command = commands.add_parser("delete", help="Delete a watchlist")
-    delete_command.add_argument("-R", "--reports", action="store_true", help="Delete all associated reports too", default=False)
+    delete_command.add_argument("-R", "--reports", action="store_true", help="Delete all associated reports too",
+                                default=False)
     specifier = delete_command.add_mutually_exclusive_group(required=True)
     specifier.add_argument("-i", "--watchlist_id", type=str, help="The watchlist ID")
     specifier.add_argument("-w", "--watchlist_name", type=str, help="The watchlist name")

@@ -7,6 +7,7 @@ from cbapi.psc.threathunter import Process
 import csv
 import json
 
+
 def main():
     parser = build_cli_parser("Query processes")
     parser.add_argument("-p", type=str, help="process guid", default=None)
@@ -35,7 +36,7 @@ def main():
         else:
             with open(args.f, 'w') as outfile:
                 csvwriter = csv.writer(outfile)
-                for idx,child in enumerate(tree.children):
+                for idx, child in enumerate(tree.children):
                     csvwriter.writerow(child.original_document)
 
 

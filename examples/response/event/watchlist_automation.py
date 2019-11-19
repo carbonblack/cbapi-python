@@ -75,9 +75,11 @@ def perform_liveresponse(lr_session):
                 db.row_factory = sqlite3.Row
                 cur = db.cursor()
                 cur.execute(
-                    "SELECT url, title, datetime(last_visit_time / 1000000 + (strftime('%s', '1601-01-01')), 'unixepoch') as last_visit_time FROM urls ORDER BY last_visit_time DESC LIMIT 10")
+                    "SELECT url, title, "
+                    "datetime(last_visit_time / 1000000 + (strftime('%s', '1601-01-01')), 'unixepoch') "
+                    "as last_visit_time FROM urls ORDER BY last_visit_time DESC LIMIT 10")
                 urls = [dict(u) for u in cur.fetchall()]
-        except:
+        except Exception:
             pass
         else:
             results[user] = urls
@@ -90,7 +92,7 @@ def perform_liveresponse(lr_session):
 def print_result(lr_job):
     try:
         sensor_id, running_services, urls = lr_job.result()
-    except:
+    except Exception:
         print("Error encountered when pulling Live Response data: {0}".format(lr_job.exception()))
     else:
         print("Running services for sensor ID {0}:".format(sensor_id))
@@ -140,7 +142,8 @@ def process_callback(cb, event_type, event_data):
 
 
 def main():
-    parser = build_cli_parser("Event-driven example to BAN hashes, ISOLATE sensors, or LOCK (both ban & isolate) based on watchlist hits")
+    parser = build_cli_parser("Event-driven example to BAN hashes, ISOLATE sensors, or LOCK "
+                              "(both ban & isolate) based on watchlist hits")
     args = parser.parse_args()
     cb = get_cb_response_object(args)
 
@@ -164,4 +167,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

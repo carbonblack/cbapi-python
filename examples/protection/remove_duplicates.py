@@ -29,5 +29,6 @@ def main():
                         print("deleting from server...")
                         p.select(Computer, computer_id["id"]).delete()
 
+
 if __name__ == '__main__':
     sys.exit(main())
