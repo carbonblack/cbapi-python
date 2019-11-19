@@ -9,7 +9,7 @@ from stix_parse import parse_stix, BINDING_CHOICES
 from feed_helper import FeedHelper
 from datetime import datetime
 from results import IOC, AnalysisResult
-
+import urllib3
 
 logging.basicConfig(level=logging.INFO)
 
@@ -56,6 +56,8 @@ class TaxiiSiteConnector():
 
     def create_taxii_client(self):
         conf = self.config
+        if not conf.ssl_verify:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         try:
             client = create_client(conf.site,
                                    use_https=conf.use_https,
@@ -299,31 +301,16 @@ class StixTaxii():
                     analysis_name=f"exception_analyze_{site_name}",
                     error=True)
             else:
-                # for report in reports:
-                #     yield self.format_report(report)
-                logging.info(f"feed id: {site_conn.config.feed_id}")
-                ti.push_to_psc(feed_id=site_conn.config.feed_id, results=self.format_report(reports))
-
-
+                ti.push_to_cb(feed_id=site_conn.config.feed_id, results=self.format_report(reports))
 
 
 
 
 if __name__ == '__main__':
-    # Need to fill in correct def call
     config = load_config_from_file()
-
-
-
-
-    # for site_name, site_conf in config['sites'].items():
-    #     print(site_conf)
     stix_taxii = StixTaxii(config)
-    results = stix_taxii.analyze()
+    reports = stix_taxii.analyze()
 
-    for result in results:
+    #activate generator to send results
+    for report in reports:
         pass
-    #stix_taxii.dispatch_results(reports)
-    # ti = ThreatIntel()
-    # for site_name, site_conf in config['sites'].items():
-    #     ti.push_to_psc(feed_id=site_conf['feed_id'], results=reports)

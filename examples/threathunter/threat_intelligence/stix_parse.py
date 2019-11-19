@@ -144,6 +144,10 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
         for reference in indicator.producer.references:
             link = reference
             break
+    else:
+        split_title = indicator.title.split()
+        if split_title[2][0:8] == 'https://' or split_title[2][0:7] == 'http://':
+            link = split_title[2]
 
     #
     # Sometimes the title is None, so generate a random UUID
