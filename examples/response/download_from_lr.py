@@ -2,9 +2,8 @@
 #
 
 import sys
-from cbapi.response import *
+from cbapi.response import Sensor
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object
-from cbapi.errors import ServerError
 import logging
 
 log = logging.getLogger(__name__)
@@ -12,7 +11,7 @@ log = logging.getLogger(__name__)
 
 def download_file(sensor, path, output_filename=None):
     with sensor.lr_session() as session:
-    
+
         # get basename of the file, if output_filename is None
         if output_filename is None:
             if session.os_type == 1:        # Windows uses backslashes
@@ -25,7 +24,7 @@ def download_file(sensor, path, output_filename=None):
             print("Successfully wrote {0} to local file {1}.".format(path, output_filename))
 
     return 0
-        
+
 
 def main():
     parser = build_cli_parser("Download binary from endpoint through Live Response")
@@ -41,7 +40,8 @@ def main():
         if sensor.status == "Online":
             return download_file(sensor, args.path, args.output)
 
-    print("No sensors for hostname {0} are online, exiting".format(hostname))
+    print("No sensors for hostname {0} are online, exiting".format(args.hostname))
+
 
 if __name__ == "__main__":
     sys.exit(main())

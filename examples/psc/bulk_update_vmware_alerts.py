@@ -6,6 +6,7 @@ from cbapi.example_helpers import build_cli_parser, get_cb_psc_object
 from cbapi.psc.models import VMwareAlert, WorkflowStatus
 from alertsv6common import setup_parser_with_vmware_criteria, load_vmware_criteria
 
+
 def main():
     parser = build_cli_parser("Bulk update the status of VMware alerts")
     setup_parser_with_vmware_criteria(parser)
@@ -14,11 +15,11 @@ def main():
     operation = parser.add_mutually_exclusive_group(required=True)
     operation.add_argument("--dismiss", action="store_true", help="Dismiss all selected alerts")
     operation.add_argument("--undismiss", action="store_true", help="Undismiss all selected alerts")
-    
+
     args = parser.parse_args()
     cb = get_cb_psc_object(args)
 
-    query = cb.select(CBAnalyticsAlert)
+    query = cb.select(VMwareAlert)
     load_vmware_criteria(query, args)
 
     if args.dismiss:
@@ -26,8 +27,8 @@ def main():
     elif args.undismiss:
         reqid = query.update(args.remediation, args.comment)
     else:
-        raise NotImplemented("one of --dismiss or --undismiss must be specified")
-    
+        raise NotImplementedError("one of --dismiss or --undismiss must be specified")
+
     print("Submitted query with ID {0}".format(reqid))
     statobj = cb.select(WorkflowStatus, reqid)
     while not statobj.finished:
@@ -41,7 +42,7 @@ def main():
         print("Failed alert IDs:")
         for i in statobj.failed_ids:
             print("\t{0}".format(err))
-    print("{0} total alert(s) found, of which {1} were successfully changed" \
+    print("{0} total alert(s) found, of which {1} were successfully changed"
           .format(statobj.num_hits, statobj.num_success))
 
 

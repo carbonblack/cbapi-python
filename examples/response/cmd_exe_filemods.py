@@ -31,5 +31,6 @@ def main():
             print("%s,%s,%s,%s,%s,%s,%s,%s,%s" % (str(fm.timestamp), proc.hostname, proc.username, proc.path,
                                                   fm.path, fm.type, fm.md5, signed, product_name))
 
+
 if __name__ == "__main__":
     sys.exit(main())

@@ -30,7 +30,7 @@ def main():
     if args.process:
         try:
             procs = [c.select(Process, args.process, max_children=args.children, force_init=True)]
-        except ObjectNotFoundError as e:
+        except ObjectNotFoundError:
             print("Could not find process {0:s}".format(args.procss))
             return 1
         except ApiError as e:
@@ -53,7 +53,7 @@ def main():
             duration = str(root_proc.end - root_proc.start)
 
         print("Process {0:s} on {1:s} executed by {2:s}:".format(root_proc.cmdline, root_proc.hostname,
-                                                                          root_proc.username))
+                                                                 root_proc.username))
         print("started at {0} ({1})".format(str(root_proc.start), duration))
         print("Cb Response console link: {0}".format(root_proc.webui_link))
         root_proc.walk_children(visitor)

@@ -5,7 +5,8 @@ from cbapi.example_helpers import build_cli_parser, get_cb_psc_object
 from cbapi.psc import Device
 
 import logging
-logging.basicConfig(level=logging.DEBUG)    
+logging.basicConfig(level=logging.DEBUG)
+
 
 def main():
     parser = build_cli_parser("Download device list in CSV format")
@@ -17,10 +18,10 @@ def main():
     parser.add_argument("-S", "--sort_by", help="Field to sort the output by")
     parser.add_argument("-R", "--reverse", action="store_true", help="Reverse order of sort")
     parser.add_argument("-O", "--output", help="File to save output to (default stdout)")
-    
+
     args = parser.parse_args()
     cb = get_cb_psc_object(args)
-    
+
     query = cb.select(Device)
     if args.query:
         query = query.where(args.query)
@@ -44,7 +45,6 @@ def main():
     else:
         print(data)
 
-        
+
 if __name__ == "__main__":
     sys.exit(main())
-        

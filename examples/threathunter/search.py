@@ -3,8 +3,7 @@
 import sys
 
 from cbapi.example_helpers import build_cli_parser, get_cb_threathunter_object
-from cbapi.psc.threathunter import Process, Event, Tree
-from solrq import Range, Value
+from cbapi.psc.threathunter import Process
 
 
 def main():
@@ -65,7 +64,6 @@ def main():
                     print(parent)
                 else:
                     print("\t{}: {}".format(parent.process_name, parent.process_sha256))
-
 
         if args.t:
             print("=========== tree =============")

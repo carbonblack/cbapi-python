@@ -35,5 +35,6 @@ def main():
             except ObjectNotFoundError:
                 print("No binary found for process with hash: {}".format(process.process_sha256))
 
+
 if __name__ == "__main__":
     sys.exit(main())

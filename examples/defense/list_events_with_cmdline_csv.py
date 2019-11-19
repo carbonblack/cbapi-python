@@ -7,7 +7,8 @@
 
 
 # Notes on this script:
-#  - based on https://github.com/carbonblack/cbapi-python/blob/master/examples/defense/list_events.py with 2 primary changes
+#  - based on https://github.com/carbonblack/cbapi-python/blob/master/examples/defense/list_events.py
+#    with 2 primary changes
 #    1. this script outputs the command line of the main process process
 #    2. this script places a '|' delimiter between fields so it can be read into a spreadsheet
 #  - can only pull up to 2 weeks of events at one time ( this is an API limitation)
@@ -48,8 +49,8 @@ def main():
     if args.hostname:
         events = list(cb.select(Event).where("hostNameExact:{0}".format(args.hostname)))
     elif args.start and args.end:
-        # flipped the start and end arguments around so script can be called with the start date being the earliest date.
-        # it's just easier on the eyes for most folks.
+        # flipped the start and end arguments around so script can be called with the start date
+        # being the earliest date. it's just easier on the eyes for most folks.
 
         events = list(cb.select(Event).where("startTime:{0}".format(args.end))) and (
             cb.select(Event).where("endTime:{0}".format(args.start)))
@@ -65,21 +66,20 @@ def main():
         create_time = str(convert_time(event.eventTime))
 
         # stripping HTML tags out of the long description
-        long_description = unicodedata.normalize('NFD',strip_html(event.longDescription))
+        long_description = unicodedata.normalize('NFD', strip_html(event.longDescription))
 
         if event.processDetails:
             # stripping out the command line arguments from the processDetails field
             processDetails = str(event.processDetails)
             start_cmdline = processDetails.find("u'commandLine'")
             end_cmdline = processDetails.find(", u'parentName'")
-            commandline = processDetails[start_cmdline + 18: end_cmdline -1]
-            print("{0}|{1}|{2}|{3}|{4}|{5}".format(event_time, event.eventId, create_time, event.eventType, long_description, commandline))
+            commandline = processDetails[start_cmdline + 18: end_cmdline - 1]
+            print("{0}|{1}|{2}|{3}|{4}|{5}".format(event_time, event.eventId, create_time, event.eventType,
+                                                   long_description, commandline))
         else:
-            print("{0}|{1}|{2}|{3}|{4}".format(event_time, event.eventId, create_time, event.eventType, long_description))
+            print("{0}|{1}|{2}|{3}|{4}".format(event_time, event.eventId, create_time, event.eventType,
+                                               long_description))
         # format and print out the event time, Event ID, Creation time, Event type and Description
-        
-        
-        
 
 
 if __name__ == "__main__":

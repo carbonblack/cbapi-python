@@ -1,5 +1,3 @@
-import sys
-
 def setup_parser_with_basic_criteria(parser):
     parser.add_argument("-q", "--query", help="Query string for looking for alerts")
     parser.add_argument("--category", action="append", choices=["THREAT", "MONITORED", "INFO",
@@ -14,11 +12,13 @@ def setup_parser_with_basic_criteria(parser):
     parser.add_argument("--username", action="append", type=str, help="Restrict search to the specified user names")
     parser.add_argument("--group", action="store_true", help="Group results")
     parser.add_argument("--alertid", action="append", type=str, help="Restrict search to the specified alert IDs")
-    parser.add_argument("--legacyalertid", action="append", type=str, help="Restrict search to the specified legacy alert IDs")
+    parser.add_argument("--legacyalertid", action="append", type=str,
+                        help="Restrict search to the specified legacy alert IDs")
     parser.add_argument("--severity", type=int, help="Restrict search to the specified minimum severity level")
     parser.add_argument("--policyid", action="append", type=int, help="Restrict search to the specified policy IDs")
     parser.add_argument("--policyname", action="append", type=str, help="Restrict search to the specified policy names")
-    parser.add_argument("--processname", action="append", type=str, help="Restrict search to the specified process names")
+    parser.add_argument("--processname", action="append", type=str,
+                        help="Restrict search to the specified process names")
     parser.add_argument("--processhash", action="append", type=str,
                         help="Restrict search to the specified process SHA-256 hash values")
     parser.add_argument("--reputation", action="append", choices=["KNOWN_MALWARE", "SUSPECT_MALWARE", "PUP",
@@ -34,10 +34,10 @@ def setup_parser_with_basic_criteria(parser):
                         help="Restrict search to the specified alert types")
     parser.add_argument("--workflow", action="append", choices=["OPEN", "DISMISSED"],
                         help="Restrict search to the specified workflow statuses")
-    
-    
+
+
 def setup_parser_with_cbanalytics_criteria(parser):
-    setup_parser_with_basic_criteria(parser)    
+    setup_parser_with_basic_criteria(parser)
     parser.add_argument("--blockedthreat", action="append", choices=["UNKNOWN", "NON_MALWARE", "NEW_MALWARE",
                                                                      "KNOWN_MALWARE", "RISKY_PROGRAM"],
                         help="Restrict search to the specified threat categories that were blocked")
@@ -62,18 +62,20 @@ def setup_parser_with_cbanalytics_criteria(parser):
                                                               "REMOTE_DRIVE", "REMOVABLE_MEDIA", "UNKNOWN",
                                                               "APP_STORE", "THIRD_PARTY"],
                         help="Restrict search to the specified threat cause vectors")
-    
-    
-def setup_parser_with_vmware_criteria(parser):    
-    setup_parser_with_basic_criteria(parser)    
+
+
+def setup_parser_with_vmware_criteria(parser):
+    setup_parser_with_basic_criteria(parser)
     parser.add_argument("--groupid", action="append", type=int,
                         help="Restrict search to the specified AppDefense alarm group IDs")
-    
-    
-def setup_parser_with_watchlist_criteria(parser):    
-    setup_parser_with_basic_criteria(parser)    
-    parser.add_argument("--watchlistid", action="append", type=str, help="Restrict search to the specified watchlists by ID")
-    parser.add_argument("--watchlistname", action="append", type=str, help="Restrict search to the specified watchlists by name")
+
+
+def setup_parser_with_watchlist_criteria(parser):
+    setup_parser_with_basic_criteria(parser)
+    parser.add_argument("--watchlistid", action="append", type=str,
+                        help="Restrict search to the specified watchlists by ID")
+    parser.add_argument("--watchlistname", action="append", type=str,
+                        help="Restrict search to the specified watchlists by name")
 
 
 def load_basic_criteria(query, args):
@@ -141,18 +143,17 @@ def load_cbanalytics_criteria(query, args):
         query = query.sensor_actions(args.sensoraction)
     if args.vector:
         query = query.threat_cause_vectors(args.vector)
-    
+
 
 def load_vmware_criteria(query, args):
     load_basic_criteria(query, args)
     if args.groupid:
         query = query.group_ids(args.groupid)
-    
-    
+
+
 def load_watchlist_criteria(query, args):
     load_basic_criteria(query, args)
     if args.watchlistid:
         query = query.watchlist_ids(args.watchlistid)
     if args.watchlistname:
         query = query.watchlist_names(args.watchlistname)
-    

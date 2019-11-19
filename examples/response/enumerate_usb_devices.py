@@ -13,7 +13,7 @@ def main():
     args = parser.parse_args()
     cb = get_cb_response_object(args)
 
-    query_string = r'regmod:registry\machine\system\currentcontrolset\control\deviceclasses\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}\*'
+    query_string = r'regmod:registry\machine\system\currentcontrolset\control\deviceclasses\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}\*'  # noqa: E501
     if args.start_time:
         query_string += ' start:{0:s}'.format(args.start_time)
 
@@ -24,7 +24,7 @@ def main():
                 if len(pieces) < 2:
                     print("WARN:::: {0}".format(str(pieces)))
                 else:
-                    device_info = pieces[1] #.split('{53f56307-b6bf-11d0-94f2-00a0c91efb8b}')[0]
+                    device_info = pieces[1]  # .split('{53f56307-b6bf-11d0-94f2-00a0c91efb8b}')[0]
                     print(device_info)
 
 

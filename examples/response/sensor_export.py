@@ -34,7 +34,8 @@ def main():
     parser = build_cli_parser(description="Export CbR Sensors from your environment as CSV")
     parser.add_argument("--output", "-o", dest="exportfile", help="The file to export to", required=True)
     parser.add_argument("--fields", "-f", dest="exportfields", help="The fields to export",
-                        default="id,hostname,group_id,network_interfaces,os_environment_display_string,build_version_string,network_isolation_enabled,last_checkin_time",
+                        default="id,hostname,group_id,network_interfaces,os_environment_display_string,"
+                        "build_version_string,network_isolation_enabled,last_checkin_time",
                         required=False)
     parser.add_argument("--query", "-q", dest="query", help="optional query to filter exported sensors", required=False)
     args = parser.parse_args()
