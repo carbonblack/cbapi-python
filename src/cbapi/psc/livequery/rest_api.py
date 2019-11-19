@@ -7,7 +7,7 @@ log = logging.getLogger(__name__)
 
 
 class CbLiveQueryAPI(BaseAPI):
-    """The main entry point into the Cb PSC LiveQuery API.
+    """The main entry point into the Carbon Black Cloud LiveQuery API.
 
     :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server.
         Uses the profile named 'default' when not specified.

@@ -40,7 +40,7 @@ def configure(opts):
     if not os.path.exists(credential_path):
         os.makedirs(credential_path, 0o700)
 
-    url = input("URL to the Cb PSC API server (do not include '/integrationServices') [https://hostname]: ")
+    url = input("URL to the Carbon Black Cloud API server (do not include '/integrationServices') [https://hostname]: ")
 
     ssl_verify = True
 
