@@ -42,17 +42,17 @@ class AnalysisResult():
     Models the result of an analysis performed by a connector.
     """
 
-    def __init__(self, analysis_name, scan_time, score, title, description, link=None, tags=None, iocs=None, iocs_v2=None, visibility=None):
+    def __init__(self, analysis_name, scan_time, score, title, description):
         self.id = str(analysis_name)
         self.timestamp = scan_time
         self.title = title
         self.description = description
         self.severity = score
-        self.link = link
-        self.tags = tags
-        self.iocs = iocs
-        self.iocs_v2 = iocs_v2
-        self.visibility = visibility
+        self.iocs = []
+        self.iocs_v2 = []
+        self.link = None
+        self.tags = None
+        self.visibility = None
         self.connector_name = "STIX_TAXII"
 
 
@@ -64,15 +64,15 @@ class AnalysisResult():
         """
         Normalizes this result to make it palatable for the CbTH backend.
         """
-        if self.score <= 0 or self.score > 10:
-            log.warning("normalizing OOB score: {}".format(self.score))
-            self.score=max(1, min(self.score, 10))
+        if self.severity <= 0 or self.severity > 10:
+            log.warning("normalizing OOB score: {}".format(self.severity))
+            self.severity=max(1, min(self.severity, 10))
             # NOTE: min 1 and not 0
             # else err 400 from cbapi: Report severity must be between 1 & 10
         return self
 
     def as_dict(self):
-        return {"iocs_v2": [ioc_v2.as_dict() for ioc_v2 in self.iocs_v2], **super().as_dict()}
+        return {"IOCs_v2": [ioc_v2.as_dict() for ioc_v2 in self.iocs_v2], **super().as_dict()}
 
     def as_dict_full(self):
         return {

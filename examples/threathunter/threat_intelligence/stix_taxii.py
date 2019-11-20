@@ -8,7 +8,7 @@ import os
 from stix_parse import parse_stix, BINDING_CHOICES
 from feed_helper import FeedHelper
 from datetime import datetime
-from results import IOC, AnalysisResult
+from results import IOC_v2, AnalysisResult
 import urllib3
 
 logging.basicConfig(level=logging.INFO)
@@ -198,8 +198,6 @@ class TaxiiSiteConnector():
 
         return reports
 
-    # def dispatch_results_to_feed(self, results):
-    #     ThreatIntel.push_to_psc(feed_id=self.config.feed_id, results=results)
 
 
 
@@ -226,35 +224,6 @@ class StixTaxii():
         result = AnalysisResult(**kwargs).normalize()
         return result
 
-    def ioc(self, *, match_type=IOC.MatchType.Equality, values, field=None, link=None):
-        """
-        Attaches a new IOC to this result.
-
-        :param match_type: The matching strategy for this IOC
-        :type match_type: :py:class:`database.IOC.MatchType`
-        :param values: The list of values for this IOC
-        :type values: list
-        :param field: The corresponding process field
-        :type field: str or None
-        :param link: A link to a description of the IOC
-        :type link: str or None
-        :rtype: :py:class:`database.IOC`
-
-        """
-        return IOC(
-            analysis=self, match_type=match_type, values=values, field=field, link=link
-        )
-
-    def normalize(self):
-        """
-        Normalizes this result to make it palatable for the CbTH backend.
-        """
-        if self.score <= 0 or self.score > 10:
-            log.warning(f"normalizing OOB score: {self.score}")
-            self.update(score=max(1, min(self.score, 10)))
-            # NOTE: min 1 and not 0
-            # else err 400 from cbapi: Report severity must be between 1 & 10
-        return self
 
     def configure_sites(self):
         self.sites = {}
@@ -275,7 +244,7 @@ class StixTaxii():
                 scan_time = datetime.fromtimestamp(report['timestamp'])
                 score = report['score']
                 link = report['link']
-                ioc_dict = report['iocs']
+                ioc_dict = report['iocs_v2']
                 result = self.result(
                                      analysis_name=analysis_name,
                                      scan_time=scan_time,
@@ -283,7 +252,7 @@ class StixTaxii():
                                      title=title,
                                      description=description)
                 for ioc_key, ioc_val in ioc_dict.items():
-                    result.attach_ioc(values=ioc_val, field=ioc_key, link=link)
+                    result.attach_ioc_v2(values=ioc_val, field=ioc_key, link=link)
             except handled_exceptions as e:
                 logging.warning(f"Problem in report formatting: {e}")
                 result = self.result(
@@ -302,8 +271,6 @@ class StixTaxii():
                     error=True)
             else:
                 ti.push_to_cb(feed_id=site_conn.config.feed_id, results=self.format_report(reports))
-
-
 
 
 if __name__ == '__main__':

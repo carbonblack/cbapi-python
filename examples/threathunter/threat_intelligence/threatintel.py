@@ -6,7 +6,7 @@ from cbapi.errors import ApiError
 from cbapi.psc.threathunter.models import Feed
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
+log.setLevel(logging.DEBUG)
 
 class ThreatIntel:
     def __init__(self):
@@ -23,7 +23,7 @@ class ThreatIntel:
         report_list_to_send = []
         report_dict_list_to_validate = []
 
-        optional_report_attributes = ["link", "tags", "iocs", "iocs_v2", "visibility"]
+        #optional_report_attributes = ["link", "tags", "iocs", "iocs_v2", "visibility"]
 
         for result in results:
             try:
@@ -32,26 +32,30 @@ class ThreatIntel:
                     "timestamp": int(result.timestamp.timestamp()),
                     "title": str(result.title),
                     "description": str(result.description),
-                    "severity": int(result.severity)
-                    #"iocs_v2": [ioc_v2.as_dict() for ioc_v2 in result.IOCsv2]
+                    "severity": int(result.severity),
+                    "iocs_v2": [ioc_v2.as_dict() for ioc_v2 in result.iocs_v2]
                 }
 
-                for opt in optional_report_attributes:
-                    try:
-                        report_dict[opt] = result.opt
+
+                # for opt in optional_report_attributes:
+                #     if hasattr(result, opt):
+                #         if 'opt' == 'iocs_v2' or 'opt' == 'iocs':
+                #             report_dict[opt] = [ioc_v2.as_dict() for ioc_v2 in result.iocs_v2]
+                #         else:
+                #             report_dict[opt] = getattr(result, opt)
 
                 report_dict_list_to_validate.append(report_dict)
 
                 report = Report(self.cb, initial_data=report_dict, feed_id=feed_id)
                 report_list_to_send.append(report)
 
-            except e:
+            except Exception as e:
                 log.error(f"Failed to create a report dictionary from result object. {e}")
 
-        validation = self.input_validation(report_list_to_validate)
+        validation = self.input_validation(report_dict_list_to_validate)
         if validation:
             log.debug("Report Validation succeeded. Sending results to Carbon Black Cloud.")
-            feed.append_reports(reports)
+            feed.append_reports(report_list_to_send)
         else:
             log.warning("Report Validation failed. Not sending results to Carbon Black Cloud.")
 

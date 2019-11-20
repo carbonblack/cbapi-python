@@ -1,6 +1,6 @@
 sites:
     alienvault:
-        feed_id: 
+        feed_id: XucspLYKTSeDLqKgJNlB5Q
         site: otx.alienvault.com/taxii
         discovery_path: /discovery
         collection_management_path: /collections
@@ -10,8 +10,8 @@ sites:
         cert_file:
         key_file:
         default_score: 5
-        username:
-        password:
+        username: 0dd92ced56580311a769a496cd1fa72533f7b5d1f4c1b1b6aa7a35425baa97f6
+        password: ignored
         collections: user_AlienVault
         start_date: 2019-10-30 00:00:00
         minutes_to_advance: 1440

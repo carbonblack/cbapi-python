@@ -175,7 +175,7 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
                     iocs['dns'].append(domain_name)
 
             if len(iocs['dns']) > 0:
-                reports.append({'iocs': iocs,
+                reports.append({'iocs_v2': iocs,
                                 'id': sanitize_id(observable.id_),
                                 'description': description,
                                 'title': title,
@@ -200,7 +200,7 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
                     iocs['ipv4'].append(ipv4)
 
             if len(iocs['ipv4']) > 0:
-                reports.append({'iocs': iocs,
+                reports.append({'iocs_v2': iocs,
                                 'id': sanitize_id(observable.id_),
                                 'description': description,
                                 'title': title,
@@ -224,7 +224,7 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
                     iocs['md5'].append(md5)
 
             if len(iocs['md5']) > 0:
-                reports.append({'iocs': iocs,
+                reports.append({'iocs_v2': iocs,
                                 'id': sanitize_id(observable.id_),
                                 'description': description,
                                 'title': title,
