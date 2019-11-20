@@ -1,22 +1,70 @@
 sites:
     alienvault:
-        feed_id: XucspLYKTSeDLqKgJNlB5Q
-        site: otx.alienvault.com/taxii
-        discovery_path: /discovery
-        collection_management_path: /collections
-        poll_path: /poll
+        # the feed_id of the ThreatHunter Feed you want to send ThreatIntel to
+        feed_id: DpB1mJvSc2ONzPjRm9BvA
+
+        # the address of the site (only server ip or dns; don't put https:// or a trailing slash)
+        site: otx.alienvault.com
+
+        # the path of the site for discovering what services are available
+        # this is supplied by your taxii provider
+        discovery_path: /taxii/discovery
+
+        # the path of the site for listing what collections are available to you
+        # this is supplied by your taxii provider
+        collection_management_path: /taxii/collections
+
+        # the path of the site for polling a collection
+        # this is supplied by your taxii provider
+        poll_path: /taxii/poll
+
+        # change to true if you require https for your TAXII service connection
         use_https: True
+
+        # by default, we validate SSL certificates. Turn this off by setting ssl_verify: False
         ssl_verify: False
+
+        # (optional) if you need SSL certificates for authentication, set the path of the
+        # certificate and key here. Please leave blank to ignore.
         cert_file:
         key_file:
+
+        # how to score each result. Accepts values [1,10], and defaults to 5
         default_score: 5
-        username: 0dd92ced56580311a769a496cd1fa72533f7b5d1f4c1b1b6aa7a35425baa97f6
-        password: ignored
-        collections: user_AlienVault
-        start_date: 2019-10-30 00:00:00
+
+        # (optional) username for authorization with your taxii provider
+        username:
+
+        # (optional) password for authorization with your taxii provider
+        password:
+
+        # (optional) specify which collections to convert to feeds (comma-delimited)
+        collections: '*'
+
+        # (optional) the start date for which to start requesting data.
+        # Defaults to 2019-01-01 00:00:00 if you supply nothing
+        start_date: 2019-01-01 00:00:00
+
+        # (optional) the minutes to advance for each request.
+        # If you don't have a lot of data, you could advance your requests
+        # to every 60 minutes, or 1440 minutes for daily chunks
+        # defaults to 60
         minutes_to_advance: 1440
+
+        # (optional) path to a CA SSL certificate
         ca_cert:
+
+        # (optional) if you need requests to go through a proxy, specify an http URL here
         http_proxy_url:
+
+        # (optional) if you need requests to go through a proxy, specify an https URL here
         https_proxy_url:
+
+        # (optional) number of reports to collect from each site
+        # defaults to 10K
         reports_limit: 10000
+
+        # control the number of attempts per-collection before giving up
+        # trying to get (empty/malformed) STIX data out of a TAXII server.
+        # defaults to 10
         fail_limit: 10
