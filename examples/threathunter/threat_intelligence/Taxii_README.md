@@ -20,6 +20,8 @@ The TAXII connector uses the configuration file `config.yml`. An example configu
 ## Running the Connector
 The connector can be activated by running the python 3 file `stix_taxii.py`. The connector will attempt to connect to your TAXII service(s), poll the collection(s), retrieve the STIX data, and send it to the ThreatHunter Feed specified in your `config.yml` file.
 
+`python3 stix_taxii.py`
+
 
 ## File Names and Functionalities
 The connector code is located in the `examples/threathunter/threat_intelligence` directory. Its functionality is split into the following files:
