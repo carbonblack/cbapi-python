@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 
 
-class IOC():
+class IOC_v2():
     """
     Models an indicator of compromise detected during an analysis.
 
@@ -42,18 +42,22 @@ class AnalysisResult():
     Models the result of an analysis performed by a connector.
     """
 
-    def __init__(self, analysis_name, scan_time, score, title, description):
-        self.connector_name = "STIX_TAXII"
-        self.analysis_name = str(analysis_name)
-        self.scan_time = scan_time
-        self.score = score
+    def __init__(self, analysis_name, scan_time, score, title, description, link=None, tags=None, iocs=None, iocs_v2=None, visibility=None):
+        self.id = str(analysis_name)
+        self.timestamp = scan_time
         self.title = title
         self.description = description
-        self.iocs = []
+        self.severity = score
+        self.link = link
+        self.tags = tags
+        self.iocs = iocs
+        self.iocs_v2 = iocs_v2
+        self.visibility = visibility
+        self.connector_name = "STIX_TAXII"
 
-    def attach_ioc(self, *, match_type=IOC.MatchType.Equality, values, field, link):
-        self.iocs.append(IOC(analysis=self.analysis_name, match_type=match_type, values=values, field=field, link=link))
 
+    def attach_ioc_v2(self, *, match_type=IOC_v2.MatchType.Equality, values, field, link):
+        self.iocs_v2.append(IOC_v2(analysis=self.id, match_type=match_type, values=values, field=field, link=link))
 
 
     def normalize(self):
@@ -68,14 +72,14 @@ class AnalysisResult():
         return self
 
     def as_dict(self):
-        return {"iocs": [ioc.as_dict() for ioc in self.iocs], **super().as_dict()}
+        return {"iocs_v2": [ioc_v2.as_dict() for ioc_v2 in self.iocs_v2], **super().as_dict()}
 
     def as_dict_full(self):
         return {
-            "id": self.analysis_name,
-            "timestamp": self.scan_time,
+            "id": self.id,
+            "timestamp": self.timestamp,
             "title": self.title,
             "description": self.description,
-            "severity": self.score,
-            "iocs_v2": [ioc.as_dict() for ioc in self.iocs]
+            "severity": self.severity,
+            "iocs_v2": [iocv2.as_dict() for iocv2 in self.IOCsv2]
         }

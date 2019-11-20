@@ -19,29 +19,42 @@ class ThreatIntel:
             log.error(f"couldn't find CbTH feed {feed_id}: {e}")
             return
 
-        reports = []
-        report_list_to_validate = []
-        
-        for result in results:
-            rep_dict = {
-                "id": str(result.analysis_name),
-                "timestamp": int(result.scan_time.timestamp()),
-                "title": str(result.title),
-                "description": str(result.description),
-                "severity": int(result.score),
-                "iocs_v2": [ioc.as_dict() for ioc in result.iocs]
-            }
 
-            report_list_to_validate.append(rep_dict)
-            report = Report(self.cb, initial_data=rep_dict, feed_id=feed_id)
-            reports.append(report)
+        report_list_to_send = []
+        report_dict_list_to_validate = []
+
+        optional_report_attributes = ["link", "tags", "iocs", "iocs_v2", "visibility"]
+
+        for result in results:
+            try:
+                report_dict = { #document these values and what a result should contain
+                    "id": str(result.id),
+                    "timestamp": int(result.timestamp.timestamp()),
+                    "title": str(result.title),
+                    "description": str(result.description),
+                    "severity": int(result.severity)
+                    #"iocs_v2": [ioc_v2.as_dict() for ioc_v2 in result.IOCsv2]
+                }
+
+                for opt in optional_report_attributes:
+                    try:
+                        report_dict[opt] = result.opt
+
+                report_dict_list_to_validate.append(report_dict)
+
+                report = Report(self.cb, initial_data=report_dict, feed_id=feed_id)
+                report_list_to_send.append(report)
+
+            except e:
+                log.error(f"Failed to create a report dictionary from result object. {e}")
 
         validation = self.input_validation(report_list_to_validate)
         if validation:
-            log.debug("Sending results to Carbon Black Cloud.")
+            log.debug("Report Validation succeeded. Sending results to Carbon Black Cloud.")
             feed.append_reports(reports)
         else:
             log.warning("Report Validation failed. Not sending results to Carbon Black Cloud.")
+
 
     ##########################################################
     # Input validation of reports
@@ -153,7 +166,7 @@ class ThreatIntel:
 
             return no_error
 
-    # Customer will input a list of dictionaries representing
+    # Input a list of dictionaries representing
     # reports to be checked and validated
     def input_validation(self, reports):
         if len(reports) < 1:
