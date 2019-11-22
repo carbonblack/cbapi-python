@@ -27,7 +27,7 @@ Device objects, which can be used to locate a list of Devices.
 *Example:*
 
 	>>> cbapi = CbPSCBaseAPI(...)
-	>>> devices = cbapi.select(Device).os("LINUX").status("ALL")
+	>>> devices = cbapi.select(Device).set_os("LINUX").status("ALL")
 
 Selects all devices running Linux from the current organization.
 
@@ -59,7 +59,7 @@ search for more specialized alert types:
 *Example:*
 
 	>>> cbapi = CbPSCBaseAPI(...)
-	>>> alerts = cbapi.select(BaseAlert).device_os(["WINDOWS"]).process_name(["IEXPLORE.EXE"])
+	>>> alerts = cbapi.select(BaseAlert).set_device_os(["WINDOWS"]).set_process_name(["IEXPLORE.EXE"])
 	
 Selects all alerts on a Windows device running the Internet Explorer process.
 
@@ -73,7 +73,7 @@ finished.
 *Example:*
 
 	>>> cbapi = CbPSCBaseAPI(...)
-	>>> query = cbapi.select(BaseAlert).process_name(["IEXPLORE.EXE"])
+	>>> query = cbapi.select(BaseAlert).set_process_name(["IEXPLORE.EXE"])
 	>>> reqid = query.dismiss("Using Chrome")
 	>>> stat = cbapi.select(WorkflowStatus, reqid)
 	>>> while not stat.finished:
