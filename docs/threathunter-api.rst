@@ -4,7 +4,7 @@ CB ThreatHunter API
 ===================
 
 This page documents the public interfaces exposed by cbapi when communicating with a
-Carbon Black PSC ThreatHunter server.
+Carbon Black Cloud ThreatHunter server.
 
 Main Interface
 --------------
