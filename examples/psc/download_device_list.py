@@ -26,13 +26,13 @@ def main():
     if args.query:
         query = query.where(args.query)
     if args.ad_group_id:
-        query = query.ad_group_ids(args.ad_group_id)
+        query = query.set_ad_group_ids(args.ad_group_id)
     if args.policy_id:
-        query = query.policy_ids(args.policy_id)
+        query = query.set_policy_ids(args.policy_id)
     if args.status:
-        query = query.status(args.status)
+        query = query.set_status(args.status)
     if args.priority:
-        query = query.target_priorities(args.priority)
+        query = query.set_target_priorities(args.priority)
     if args.sort_by:
         direction = "DESC" if args.reverse else "ASC"
         query = query.sort_by(args.sort_by, direction)

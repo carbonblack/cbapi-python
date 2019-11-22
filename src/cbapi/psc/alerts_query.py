@@ -1,588 +1,18 @@
-from cbapi.errors import ApiError, MoreThanOneResultError
-import logging
-import functools
-from six import string_types
-from solrq import Q
-
-log = logging.getLogger(__name__)
-
-
-class QueryBuilder(object):
-    """
-    Provides a flexible interface for building prepared queries for the CB
-    PSC backend.
-
-    This object can be instantiated directly, or can be managed implicitly
-    through the :py:meth:`select` API.
-    """
-
-    def __init__(self, **kwargs):
-        if kwargs:
-            self._query = Q(**kwargs)
-        else:
-            self._query = None
-        self._raw_query = None
-
-    def _guard_query_params(func):
-        """Decorates the query construction methods of *QueryBuilder*, preventing
-        them from being called with parameters that would result in an internally
-        inconsistent query.
-        """
-
-        @functools.wraps(func)
-        def wrap_guard_query_change(self, q, **kwargs):
-            if self._raw_query is not None and (kwargs or isinstance(q, Q)):
-                raise ApiError("Cannot modify a raw query with structured parameters")
-            if self._query is not None and isinstance(q, string_types):
-                raise ApiError("Cannot modify a structured query with a raw parameter")
-            return func(self, q, **kwargs)
-
-        return wrap_guard_query_change
-
-    @_guard_query_params
-    def where(self, q, **kwargs):
-        """Adds a conjunctive filter to a query.
-
-        :param q: string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if isinstance(q, string_types):
-            if self._raw_query is None:
-                self._raw_query = []
-            self._raw_query.append(q)
-        elif isinstance(q, Q) or kwargs:
-            if self._query is not None:
-                raise ApiError("Use .and_() or .or_() for an extant solrq.Q object")
-            if kwargs:
-                q = Q(**kwargs)
-            self._query = q
-        else:
-            raise ApiError(".where() only accepts strings or solrq.Q objects")
-
-        return self
-
-    @_guard_query_params
-    def and_(self, q, **kwargs):
-        """Adds a conjunctive filter to a query.
-
-        :param q: string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if isinstance(q, string_types):
-            self.where(q)
-        elif isinstance(q, Q) or kwargs:
-            if kwargs:
-                q = Q(**kwargs)
-            if self._query is None:
-                self._query = q
-            else:
-                self._query = self._query & q
-        else:
-            raise ApiError(".and_() only accepts strings or solrq.Q objects")
-
-        return self
-
-    @_guard_query_params
-    def or_(self, q, **kwargs):
-        """Adds a disjunctive filter to a query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if kwargs:
-            q = Q(**kwargs)
-
-        if isinstance(q, Q):
-            if self._query is None:
-                self._query = q
-            else:
-                self._query = self._query | q
-        else:
-            raise ApiError(".or_() only accepts solrq.Q objects")
-
-        return self
-
-    @_guard_query_params
-    def not_(self, q, **kwargs):
-        """Adds a negative filter to a query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if kwargs:
-            q = ~Q(**kwargs)
-
-        if isinstance(q, Q):
-            if self._query is None:
-                self._query = q
-            else:
-                self._query = self._query & q
-        else:
-            raise ApiError(".not_() only accepts solrq.Q objects")
-
-    def _collapse(self):
-        """The query can be represented by either an array of strings
-        (_raw_query) which is concatenated and passed directly to Solr, or
-        a solrq.Q object (_query) which is then converted into a string to
-        pass to Solr. This function will perform the appropriate conversions to
-        end up with the 'q' string sent into the POST request to the
-        PSC-R query endpoint."""
-        if self._raw_query is not None:
-            return " ".join(self._raw_query)
-        elif self._query is not None:
-            return str(self._query)
-        else:
-            return None  # return everything
-
-
-class PSCQueryBase:
-    """
-    Represents the base of all LiveQuery query classes.
-    """
-
-    def __init__(self, doc_class, cb):
-        self._doc_class = doc_class
-        self._cb = cb
-
-
-class QueryBuilderSupportMixin:
-    """
-    A mixin that supplies wrapper methods to access the _query_builder.
-    """
-    def where(self, q=None, **kwargs):
-        """Add a filter to this query.
-
-        :param q: Query string, :py:class:`QueryBuilder`, or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-
-        if not q:
-            return self
-        if isinstance(q, QueryBuilder):
-            self._query_builder = q
-        else:
-            self._query_builder.where(q, **kwargs)
-        return self
-
-    def and_(self, q=None, **kwargs):
-        """Add a conjunctive filter to this query.
-
-        :param q: Query string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(".and_() expects a string, a solrq.Q, or kwargs")
-
-        self._query_builder.and_(q, **kwargs)
-        return self
-
-    def or_(self, q=None, **kwargs):
-        """Add a disjunctive filter to this query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(".or_() expects a solrq.Q or kwargs")
-
-        self._query_builder.or_(q, **kwargs)
-        return self
-
-    def not_(self, q=None, **kwargs):
-        """Adds a negated filter to this query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-
-        if not q and not kwargs:
-            raise ApiError(".not_() expects a solrq.Q, or kwargs")
-
-        self._query_builder.not_(q, **kwargs)
-        return self
-
-
-class IterableQueryMixin:
-    """
-    A mix-in to provide iterability to a query.
-    """
-    def all(self):
-        return self._perform_query()
-
-    def first(self):
-        allres = list(self)
-        res = allres[:1]
-        if not len(res):
-            return None
-        return res[0]
-
-    def one(self):
-        allres = list(self)
-        res = allres[:2]
-        if len(res) == 0:
-            raise MoreThanOneResultError(
-                message="0 results for query {0:s}".format(self._query)
-            )
-        if len(res) > 1:
-            raise MoreThanOneResultError(
-                message="{0:d} results found for query {1:s}".format(
-                    len(self), self._query
-                )
-            )
-        return res[0]
-
-    def __len__(self):
-        return 0
-
-    def __getitem__(self, item):
-        return None
-
-    def __iter__(self):
-        return self._perform_query()
-
-
-class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin):
-    """
-    Represents a query that is used to locate Device objects.
-    """
-    valid_os = ["WINDOWS", "ANDROID", "MAC", "IOS", "LINUX", "OTHER"]
-    valid_statuses = ["PENDING", "REGISTERED", "UNINSTALLED", "DEREGISTERED",
-                      "ACTIVE", "INACTIVE", "ERROR", "ALL", "BYPASS_ON",
-                      "BYPASS", "QUARANTINE", "SENSOR_OUTOFDATE",
-                      "DELETED", "LIVE"]
-    valid_priorities = ["LOW", "MEDIUM", "HIGH", "MISSION_CRITICAL"]
-    valid_directions = ["ASC", "DESC"]
-
-    def __init__(self, doc_class, cb):
-        super().__init__(doc_class, cb)
-        self._query_builder = QueryBuilder()
-        self._criteria = {}
-        self._time_filter = {}
-        self._exclusions = {}
-        self._sortcriteria = {}
-
-    def _update_criteria(self, key, newlist):
-        oldlist = self._criteria.get(key, [])
-        self._criteria[key] = oldlist + newlist
-
-    def _update_exclusions(self, key, newlist):
-        oldlist = self._exclusions.get(key, [])
-        self._exclusions[key] = oldlist + newlist
-
-    def ad_group_ids(self, ad_group_ids):
-        """
-        Restricts the devices that this query is performed on to the specified
-        AD group IDs.
-
-        :param ad_group_ids: list of ints
-        :return: This instance
-        """
-        if not all(isinstance(ad_group_id, int) for ad_group_id in ad_group_ids):
-            raise ApiError("One or more invalid AD group IDs")
-        self._update_criteria("ad_group_id", ad_group_ids)
-        return self
-
-    def device_ids(self, device_ids):
-        """
-        Restricts the devices that this query is performed on to the specified
-        device IDs.
-
-        :param ad_group_ids: list of ints
-        :return: This instance
-        """
-        if not all(isinstance(device_id, int) for device_id in device_ids):
-            raise ApiError("One or more invalid device IDs")
-        self._update_criteria("id", device_ids)
-        return self
-
-    def last_contact_time(self, *args, **kwargs):
-        """
-        Restricts the devices that this query is performed on to the specified
-        last contact time (either specified as a start and end point or as a
-        range).
-
-        :return: This instance
-        """
-        if kwargs.get("start", None) and kwargs.get("end", None):
-            if kwargs.get("range", None):
-                raise ApiError("cannot specify range= in addition to start= and end=")
-            stime = kwargs["start"]
-            if not isinstance(stime, str):
-                stime = stime.isoformat()
-            etime = kwargs["end"]
-            if not isinstance(etime, str):
-                etime = etime.isoformat()
-            self._time_filter = {"start": stime, "end": etime}
-        elif kwargs.get("range", None):
-            if kwargs.get("start", None) or kwargs.get("end", None):
-                raise ApiError("cannot specify start= or end= in addition to range=")
-            self._time_filter = {"range": kwargs["range"]}
-        else:
-            raise ApiError("must specify either start= and end= or range=")
-        return self
-
-    def os(self, operating_systems):
-        """
-        Restricts the devices that this query is performed on to the specified
-        operating systems.
-
-        :param operating_systems: list of operating systems
-        :return: This instance
-        """
-        if not all((osval in DeviceSearchQuery.valid_os) for osval in operating_systems):
-            raise ApiError("One or more invalid operating systems")
-        self._update_criteria("os", operating_systems)
-        return self
-
-    def policy_ids(self, policy_ids):
-        """
-        Restricts the devices that this query is performed on to the specified
-        policy IDs.
-
-        :param policy_ids: list of ints
-        :return: This instance
-        """
-        if not all(isinstance(policy_id, int) for policy_id in policy_ids):
-            raise ApiError("One or more invalid policy IDs")
-        self._update_criteria("policy_id", policy_ids)
-        return self
-
-    def status(self, statuses):
-        """
-        Restricts the devices that this query is performed on to the specified
-        status values.
-
-        :param statuses: list of strings
-        :return: This instance
-        """
-        if not all((stat in DeviceSearchQuery.valid_statuses) for stat in statuses):
-            raise ApiError("One or more invalid status values")
-        self._update_criteria("status", statuses)
-        return self
-
-    def target_priorities(self, target_priorities):
-        """
-        Restricts the devices that this query is performed on to the specified
-        target priority values.
-
-        :param target_priorities: list of strings
-        :return: This instance
-        """
-        if not all((prio in DeviceSearchQuery.valid_priorities) for prio in target_priorities):
-            raise ApiError("One or more invalid target priority values")
-        self._update_criteria("target_priority", target_priorities)
-        return self
-
-    def exclude_sensor_versions(self, sensor_versions):
-        """
-        Restricts the devices that this query is performed on to exclude specified
-        sensor versions.
-
-        :param sensor_versions: List of sensor versions to exclude
-        :return: This instance
-        """
-        if not all(isinstance(v, str) for v in sensor_versions):
-            raise ApiError("One or more invalid sensor versions")
-        self._update_exclusions("sensor_version", sensor_versions)
-        return self
-
-    def sort_by(self, key, direction="ASC"):
-        """Sets the sorting behavior on a query's results.
-
-        Example::
-
-        >>> cb.select(Device).sort_by("name")
-
-        :param key: the key in the schema to sort by
-        :param direction: the sort order, either "ASC" or "DESC"
-        :rtype: :py:class:`DeviceSearchQuery`
-        """
-        if direction not in DeviceSearchQuery.valid_directions:
-            raise ApiError("invalid sort direction specified")
-        self._sortcriteria = {"field": key, "order": direction}
-        return self
-
-    def _build_request(self, from_row, max_rows):
-        mycrit = self._criteria
-        if self._time_filter:
-            mycrit["last_contact_time"] = self._time_filter
-        request = {"criteria": mycrit, "exclusions": self._exclusions}
-        request["query"] = self._query_builder._collapse()
-        if from_row > 0:
-            request["start"] = from_row
-        if max_rows >= 0:
-            request["rows"] = max_rows
-        if self._sortcriteria != {}:
-            request["sort"] = [self._sortcriteria]
-        return request
-
-    def _build_url(self, tail_end):
-        url = self._doc_class.urlobject.format(
-            self._cb.credentials.org_key) + tail_end
-        return url
-
-    def _count(self):
-        if self._count_valid:
-            return self._total_results
-
-        url = self._build_url("/_search")
-        request = self._build_request(0, -1)
-        resp = self._cb.post_object(url, body=request)
-        result = resp.json()
-
-        self._total_results = result["num_found"]
-        self._count_valid = True
-
-        return self._total_results
-
-    def _perform_query(self, from_row=0, max_rows=-1):
-        url = self._build_url("/_search")
-        current = from_row
-        numrows = 0
-        still_querying = True
-        while still_querying:
-            request = self._build_request(current, max_rows)
-            resp = self._cb.post_object(url, body=request)
-            result = resp.json()
-
-            self._total_results = result["num_found"]
-            self._count_valid = True
-
-            results = result.get("results", [])
-            for item in results:
-                yield self._doc_class(self._cb, item["id"], item)
-                current += 1
-                numrows += 1
-
-                if max_rows > 0 and numrows == max_rows:
-                    still_querying = False
-                    break
-
-            from_row = current
-            if current >= self._total_results:
-                still_querying = False
-                break
-
-    def download(self):
-        """
-        Uses the query parameters that have been set to download all
-        device listings in CSV format.
-
-        Example::
-
-        >>> cb.select(Device).status(["ALL"]).download()
-
-        :return: The CSV raw data as returned from the server.
-        """
-        tmp = self._criteria.get("status", [])
-        if not tmp:
-            raise ApiError("at least one status must be specified to download")
-        query_params = {"status": ",".join(tmp)}
-        tmp = self._criteria.get("ad_group_id", [])
-        if tmp:
-            query_params["ad_group_id"] = ",".join([str(t) for t in tmp])
-        tmp = self._criteria.get("policy_id", [])
-        if tmp:
-            query_params["policy_id"] = ",".join([str(t) for t in tmp])
-        tmp = self._criteria.get("target_priority", [])
-        if tmp:
-            query_params["target_priority"] = ",".join(tmp)
-        tmp = self._query_builder._collapse()
-        if tmp:
-            query_params["query_string"] = tmp
-        if self._sortcriteria:
-            query_params["sort_field"] = self._sortcriteria["field"]
-            query_params["sort_order"] = self._sortcriteria["order"]
-        url = self._build_url("/_search/download")
-        # AGRB 10/3/2019 - Header is TEMPORARY until bug is fixed in API. Remove when fix deployed.
-        return self._cb.get_raw_data(url, query_params, headers={"Content-Type": "application/json"})
-
-    def _bulk_device_action(self, action_type, options=None):
-        request = {"action_type": action_type, "search": self._build_request(0, -1)}
-        if options:
-            request["options"] = options
-        return self._cb._raw_device_action(request)
-
-    def background_scan(self, flag):
-        """
-        Set the background scan option for the specified devices.
-
-        :param boolean flag: True to turn background scan on, False to turn it off.
-        """
-        return self._bulk_device_action("BACKGROUND_SCAN", self._cb._action_toggle(flag))
-
-    def bypass(self, flag):
-        """
-        Set the bypass option for the specified devices.
-
-        :param boolean flag: True to enable bypass, False to disable it.
-        """
-        return self._bulk_device_action("BYPASS", self._cb._action_toggle(flag))
-
-    def delete_sensor(self):
-        """
-        Delete the specified sensor devices.
-        """
-        return self._bulk_device_action("DELETE_SENSOR")
-
-    def uninstall_sensor(self):
-        """
-        Uninstall the specified sensor devices.
-        """
-        return self._bulk_device_action("UNINSTALL_SENSOR")
-
-    def quarantine(self, flag):
-        """
-        Set the quarantine option for the specified devices.
-
-        :param boolean flag: True to enable quarantine, False to disable it.
-        """
-        return self._bulk_device_action("QUARANTINE", self._cb._action_toggle(flag))
-
-    def update_policy(self, policy_id):
-        """
-        Set the current policy for the specified devices.
-
-        :param int policy_id: ID of the policy to set for the devices.
-        """
-        return self._bulk_device_action("UPDATE_POLICY", {"policy_id": policy_id})
-
-    def update_sensor_version(self, sensor_version):
-        """
-        Update the sensor version for the specified devices.
-
-        :param dict sensor_version: New version properties for the sensor.
-        """
-        return self._bulk_device_action("UPDATE_SENSOR_VERSION",
-                                        {"sensor_version": sensor_version})
+from cbapi.errors import ApiError
+from .base_query import PSCQueryBase, QueryBuilder, QueryBuilderSupportMixin, IterableQueryMixin
+from .devices_query import DeviceSearchQuery
 
 
 class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin):
     """
     Represents a query that is used to locate BaseAlert objects.
     """
-    valid_categories = ["THREAT", "MONITORED", "INFO", "MINOR", "SERIOUS", "CRITICAL"]
-    valid_reputations = ["KNOWN_MALWARE", "SUSPECT_MALWARE", "PUP", "NOT_LISTED", "ADAPTIVE_WHITE_LIST",
+    VALID_CATEGORIES = ["THREAT", "MONITORED", "INFO", "MINOR", "SERIOUS", "CRITICAL"]
+    VALID_REPUTATIONS = ["KNOWN_MALWARE", "SUSPECT_MALWARE", "PUP", "NOT_LISTED", "ADAPTIVE_WHITE_LIST",
                          "COMMON_WHITE_LIST", "TRUSTED_WHITE_LIST", "COMPANY_BLACK_LIST"]
-    valid_alerttypes = ["CB_ANALYTICS", "VMWARE", "WATCHLIST"]
-    valid_workflow_vals = ["OPEN", "DISMISSED"]
-    valid_facet_fields = ["ALERT_TYPE", "CATEGORY", "REPUTATION", "WORKFLOW", "TAG", "POLICY_ID",
+    VALID_ALERTTYPES = ["CB_ANALYTICS", "VMWARE", "WATCHLIST"]
+    VALID_WORKFLOW_VALS = ["OPEN", "DISMISSED"]
+    VALID_FACET_FIELDS = ["ALERT_TYPE", "CATEGORY", "REPUTATION", "WORKFLOW", "TAG", "POLICY_ID",
                           "POLICY_NAME", "DEVICE_ID", "DEVICE_NAME", "APPLICATION_HASH",
                           "APPLICATION_NAME", "STATUS", "RUN_STATE", "POLICY_APPLIED_STATE",
                           "POLICY_APPLIED", "SENSOR_ACTION"]
@@ -596,10 +26,18 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._bulkupdate_url = "/appservices/v6/orgs/{0}/alerts/workflow/_criteria"
 
     def _update_criteria(self, key, newlist):
+        """
+        Updates the criteria being collected for a query. Assumes the specified criteria item is
+        defined as a list; the list passed in will be set as the value for this criteria item, or
+        appended to the existing one if there is one.
+
+        :param str key: The key for the criteria item to be set
+        :param list newlist: List of values to be set for the criteria item
+        """
         oldlist = self._criteria.get(key, [])
         self._criteria[key] = oldlist + newlist
 
-    def categories(self, cats):
+    def set_categories(self, cats):
         """
         Restricts the alerts that this query is performed on to the specified categories.
 
@@ -607,12 +45,12 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
                           "THREAT", "MONITORED", "INFO", "MINOR", "SERIOUS", and "CRITICAL."
         :return: This instance
         """
-        if not all((c in BaseAlertSearchQuery.valid_categories) for c in cats):
+        if not all((c in BaseAlertSearchQuery.VALID_CATEGORIES) for c in cats):
             raise ApiError("One or more invalid category values")
         self._update_criteria("category", cats)
         return self
 
-    def create_time(self, *args, **kwargs):
+    def set_create_time(self, *args, **kwargs):
         """
         Restricts the alerts that this query is performed on to the specified
         creation time (either specified as a start and end point or as a
@@ -638,7 +76,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
             raise ApiError("must specify either start= and end= or range=")
         return self
 
-    def device_ids(self, device_ids):
+    def set_device_ids(self, device_ids):
         """
         Restricts the alerts that this query is performed on to the specified
         device IDs.
@@ -651,7 +89,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("device_id", device_ids)
         return self
 
-    def device_names(self, device_names):
+    def set_device_names(self, device_names):
         """
         Restricts the alerts that this query is performed on to the specified
         device names.
@@ -664,7 +102,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("device_name", device_names)
         return self
 
-    def device_os(self, device_os):
+    def set_device_os(self, device_os):
         """
         Restricts the alerts that this query is performed on to the specified
         device operating systems.
@@ -673,12 +111,12 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
                                "WINDOWS", "ANDROID", "MAC", "IOS", "LINUX", and "OTHER."
         :return: This instance
         """
-        if not all((osval in DeviceSearchQuery.valid_os) for osval in device_os):
+        if not all((osval in DeviceSearchQuery.VALID_OS) for osval in device_os):
             raise ApiError("One or more invalid operating systems")
         self._update_criteria("device_os", device_os)
         return self
 
-    def device_os_versions(self, device_os_versions):
+    def set_device_os_versions(self, device_os_versions):
         """
         Restricts the alerts that this query is performed on to the specified
         device operating system versions.
@@ -691,7 +129,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("device_os_version", device_os_versions)
         return self
 
-    def device_username(self, users):
+    def set_device_username(self, users):
         """
         Restricts the alerts that this query is performed on to the specified
         user names.
@@ -704,17 +142,17 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("device_username", users)
         return self
 
-    def group_results(self, flag):
+    def set_group_results(self, do_group):
         """
         Specifies whether or not to group the results of the query.
 
-        :param flag boolean: True to group the results, False to not do so.
+        :param do_group boolean: True to group the results, False to not do so.
         :return: This instance
         """
-        self._criteria["group_results"] = True if flag else False
+        self._criteria["group_results"] = True if do_group else False
         return self
 
-    def alert_ids(self, alert_ids):
+    def set_alert_ids(self, alert_ids):
         """
         Restricts the alerts that this query is performed on to the specified
         alert IDs.
@@ -727,7 +165,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("id", alert_ids)
         return self
 
-    def legacy_alert_ids(self, alert_ids):
+    def set_legacy_alert_ids(self, alert_ids):
         """
         Restricts the alerts that this query is performed on to the specified
         legacy alert IDs.
@@ -740,7 +178,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("legacy_alert_id", alert_ids)
         return self
 
-    def minimum_severity(self, severity):
+    def set_minimum_severity(self, severity):
         """
         Restricts the alerts that this query is performed on to the specified
         minimum severity level.
@@ -751,7 +189,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._criteria["minimum_severity"] = severity
         return self
 
-    def policy_ids(self, policy_ids):
+    def set_policy_ids(self, policy_ids):
         """
         Restricts the alerts that this query is performed on to the specified
         policy IDs.
@@ -764,7 +202,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("policy_id", policy_ids)
         return self
 
-    def policy_names(self, policy_names):
+    def set_policy_names(self, policy_names):
         """
         Restricts the alerts that this query is performed on to the specified
         policy names.
@@ -777,7 +215,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("policy_name", policy_names)
         return self
 
-    def process_names(self, process_names):
+    def set_process_names(self, process_names):
         """
         Restricts the alerts that this query is performed on to the specified
         process names.
@@ -790,7 +228,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("process_name", process_names)
         return self
 
-    def process_sha256(self, shas):
+    def set_process_sha256(self, shas):
         """
         Restricts the alerts that this query is performed on to the specified
         process SHA-256 hash values.
@@ -803,7 +241,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("process_sha256", shas)
         return self
 
-    def reputations(self, reps):
+    def set_reputations(self, reps):
         """
         Restricts the alerts that this query is performed on to the specified
         reputation values.
@@ -814,12 +252,12 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
                           "TRUSTED_WHITE_LIST", and "COMPANY_BLACK_LIST".
         :return: This instance
         """
-        if not all((r in BaseAlertSearchQuery.valid_reputations) for r in reps):
+        if not all((r in BaseAlertSearchQuery.VALID_REPUTATIONS) for r in reps):
             raise ApiError("One or more invalid reputation values")
         self._update_criteria("reputation", reps)
         return self
 
-    def tags(self, tags):
+    def set_tags(self, tags):
         """
         Restricts the alerts that this query is performed on to the specified
         tag values.
@@ -832,7 +270,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("tag", tags)
         return self
 
-    def target_priorities(self, priorities):
+    def set_target_priorities(self, priorities):
         """
         Restricts the alerts that this query is performed on to the specified
         target priority values.
@@ -841,12 +279,12 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
                                 "LOW", "MEDIUM", "HIGH", and "MISSION_CRITICAL".
         :return: This instance
         """
-        if not all((prio in DeviceSearchQuery.valid_priorities) for prio in priorities):
+        if not all((prio in DeviceSearchQuery.VALID_PRIORITIES) for prio in priorities):
             raise ApiError("One or more invalid priority values")
         self._update_criteria("target_value", priorities)
         return self
 
-    def threat_ids(self, threats):
+    def set_threat_ids(self, threats):
         """
         Restricts the alerts that this query is performed on to the specified
         threat ID values.
@@ -859,7 +297,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._update_criteria("threat_id", threats)
         return self
 
-    def types(self, alerttypes):
+    def set_types(self, alerttypes):
         """
         Restricts the alerts that this query is performed on to the specified
         alert type values.
@@ -868,12 +306,12 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
                                 "CB_ANALYTICS", "VMWARE", and "WATCHLIST".
         :return: This instance
         """
-        if not all((t in BaseAlertSearchQuery.valid_alerttypes) for t in alerttypes):
+        if not all((t in BaseAlertSearchQuery.VALID_ALERTTYPES) for t in alerttypes):
             raise ApiError("One or more invalid alert type values")
         self._update_criteria("type", alerttypes)
         return self
 
-    def workflows(self, workflow_vals):
+    def set_workflows(self, workflow_vals):
         """
         Restricts the alerts that this query is performed on to the specified
         workflow status values.
@@ -882,7 +320,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
                                    "OPEN" and "DISMISSED".
         :return: This instance
         """
-        if not all((t in BaseAlertSearchQuery.valid_workflow_vals) for t in workflow_vals):
+        if not all((t in BaseAlertSearchQuery.VALID_WORKFLOW_VALS) for t in workflow_vals):
             raise ApiError("One or more invalid workflow status values")
         self._update_criteria("workflow", workflow_vals)
         return self
@@ -909,12 +347,20 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         :param direction: the sort order, either "ASC" or "DESC"
         :rtype: :py:class:`BaseAlertSearchQuery`
         """
-        if direction not in DeviceSearchQuery.valid_directions:
+        if direction not in DeviceSearchQuery.VALID_DIRECTIONS:
             raise ApiError("invalid sort direction specified")
         self._sortcriteria = {"field": key, "order": direction}
         return self
 
     def _build_request(self, from_row, max_rows, add_sort=True):
+        """
+        Creates the request body for an API call.
+
+        :param int from_row: The row to start the query at.
+        :param int max_rows: The maximum number of rows to be returned.
+        :param boolean add_sort: If True(default), the sort criteria will be added as part of the request.
+        :return: A dict containing the complete request body.
+        """
         request = {"criteria": self._build_criteria()}
         request["query"] = self._query_builder._collapse()
         if from_row > 0:
@@ -926,10 +372,20 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         return request
 
     def _build_url(self, tail_end):
+        """
+        Creates the URL to be used for an API call.
+
+        :param str tail_end: String to be appended to the end of the generated URL.
+        """
         url = self._doc_class.urlobject.format(self._cb.credentials.org_key) + tail_end
         return url
 
     def _count(self):
+        """
+        Returns the number of results from the run of this query.
+
+        :return: The number of results from the run of this query.
+        """
         if self._count_valid:
             return self._total_results
 
@@ -944,6 +400,12 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         return self._total_results
 
     def _perform_query(self, from_row=0, max_rows=-1):
+        """
+        Performs the query and returns the results of the query in an iterable fashion.
+
+        :param int from_row: The row to start the query at (default 0).
+        :param int max_rows: The maximum number of rows to be returned (default -1, meaning "all").
+        """
         url = self._build_url("/_search")
         current = from_row
         numrows = 0
@@ -983,7 +445,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         :param max_rows int: The maximum number of rows to return. 0 means return all rows.
         :return: A list of facet information specified as dicts.
         """
-        if not all((field in BaseAlertSearchQuery.valid_facet_fields) for field in fieldlist):
+        if not all((field in BaseAlertSearchQuery.VALID_FACET_FIELDS) for field in fieldlist):
             raise ApiError("One or more invalid term field names")
         request = self._build_request(0, -1, False)
         request["terms"] = {"fields": fieldlist, "rows": max_rows}
@@ -993,6 +455,14 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         return result.get("results", [])
 
     def _update_status(self, status, remediation, comment):
+        """
+        Updates the status of all alerts matching the given query.
+
+        :param str state: The status to put the alerts into, either "OPEN" or "DISMISSED".
+        :param remediation str: The remediation state to set for all alerts.
+        :param comment str: The comment to set for all alerts.
+        :return: The request ID, which may be used to select a WorkflowStatus object.
+        """
         request = {"state": status, "criteria": self._build_criteria(), "query": self._query_builder._collapse()}
         if remediation is not None:
             request["remediation_state"] = remediation
@@ -1031,7 +501,7 @@ class WatchlistAlertSearchQuery(BaseAlertSearchQuery):
         super().__init__(doc_class, cb)
         self._bulkupdate_url = "/appservices/v6/orgs/{0}/alerts/watchlist/workflow/_criteria"
 
-    def watchlist_ids(self, ids):
+    def set_watchlist_ids(self, ids):
         """
         Restricts the alerts that this query is performed on to the specified
         watchlist ID values.
@@ -1044,7 +514,7 @@ class WatchlistAlertSearchQuery(BaseAlertSearchQuery):
         self._update_criteria("watchlist_id", ids)
         return self
 
-    def watchlist_names(self, names):
+    def set_watchlist_names(self, names):
         """
         Restricts the alerts that this query is performed on to the specified
         watchlist name values.
@@ -1062,21 +532,21 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
     """
     Represents a query that is used to locate CBAnalyticsAlert objects.
     """
-    valid_threat_categories = ["UNKNOWN", "NON_MALWARE", "NEW_MALWARE", "KNOWN_MALWARE", "RISKY_PROGRAM"]
-    valid_locations = ["ONSITE", "OFFSITE", "UNKNOWN"]
-    valid_kill_chain_statuses = ["RECONNAISSANCE", "WEAPONIZE", "DELIVER_EXPLOIT", "INSTALL_RUN",
+    VALID_THREAT_CATEGORIES = ["UNKNOWN", "NON_MALWARE", "NEW_MALWARE", "KNOWN_MALWARE", "RISKY_PROGRAM"]
+    VALID_LOCATIONS = ["ONSITE", "OFFSITE", "UNKNOWN"]
+    VALID_KILL_CHAIN_STATUSES = ["RECONNAISSANCE", "WEAPONIZE", "DELIVER_EXPLOIT", "INSTALL_RUN",
                                  "COMMAND_AND_CONTROL", "EXECUTE_GOAL", "BREACH"]
-    valid_policy_applied = ["APPLIED", "NOT_APPLIED"]
-    valid_run_states = ["DID_NOT_RUN", "RAN", "UNKNOWN"]
-    valid_sensor_actions = ["POLICY_NOT_APPLIED", "ALLOW", "ALLOW_AND_LOG", "TERMINATE", "DENY"]
-    valid_threat_cause_vectors = ["EMAIL", "WEB", "GENERIC_SERVER", "GENERIC_CLIENT", "REMOTE_DRIVE",
+    VALID_POLICY_APPLIED = ["APPLIED", "NOT_APPLIED"]
+    VALID_RUN_STATES = ["DID_NOT_RUN", "RAN", "UNKNOWN"]
+    VALID_SENSOR_ACTIONS = ["POLICY_NOT_APPLIED", "ALLOW", "ALLOW_AND_LOG", "TERMINATE", "DENY"]
+    VALID_THREAT_CAUSE_VECTORS = ["EMAIL", "WEB", "GENERIC_SERVER", "GENERIC_CLIENT", "REMOTE_DRIVE",
                                   "REMOVABLE_MEDIA", "UNKNOWN", "APP_STORE", "THIRD_PARTY"]
 
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
         self._bulkupdate_url = "/appservices/v6/orgs/{0}/alerts/cbanalytics/workflow/_criteria"
 
-    def blocked_threat_categories(self, categories):
+    def set_blocked_threat_categories(self, categories):
         """
         Restricts the alerts that this query is performed on to the specified
         threat categories that were blocked.
@@ -1085,13 +555,13 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
                                 "NON_MALWARE", "NEW_MALWARE", "KNOWN_MALWARE", and "RISKY_PROGRAM".
         :return: This instance.
         """
-        if not all((category in CBAnalyticsAlertSearchQuery.valid_threat_categories)
+        if not all((category in CBAnalyticsAlertSearchQuery.VALID_THREAT_CATEGORIES)
                    for category in categories):
             raise ApiError("One or more invalid threat categories")
         self._update_criteria("blocked_threat_category", categories)
         return self
 
-    def device_locations(self, locations):
+    def set_device_locations(self, locations):
         """
         Restricts the alerts that this query is performed on to the specified
         device locations.
@@ -1100,13 +570,13 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
                                and "UNKNOWN".
         :return: This instance.
         """
-        if not all((location in CBAnalyticsAlertSearchQuery.valid_locations)
+        if not all((location in CBAnalyticsAlertSearchQuery.VALID_LOCATIONS)
                    for location in locations):
             raise ApiError("One or more invalid device locations")
         self._update_criteria("device_location", locations)
         return self
 
-    def kill_chain_statuses(self, statuses):
+    def set_kill_chain_statuses(self, statuses):
         """
         Restricts the alerts that this query is performed on to the specified
         kill chain statuses.
@@ -1116,13 +586,13 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
                               "EXECUTE_GOAL", and "BREACH".
         :return: This instance.
         """
-        if not all((status in CBAnalyticsAlertSearchQuery.valid_kill_chain_statuses)
+        if not all((status in CBAnalyticsAlertSearchQuery.VALID_KILL_CHAIN_STATUSES)
                    for status in statuses):
             raise ApiError("One or more invalid kill chain status values")
         self._update_criteria("kill_chain_status", statuses)
         return self
 
-    def not_blocked_threat_categories(self, categories):
+    def set_not_blocked_threat_categories(self, categories):
         """
         Restricts the alerts that this query is performed on to the specified
         threat categories that were NOT blocked.
@@ -1131,13 +601,13 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
                                 "NON_MALWARE", "NEW_MALWARE", "KNOWN_MALWARE", and "RISKY_PROGRAM".
         :return: This instance.
         """
-        if not all((category in CBAnalyticsAlertSearchQuery.valid_threat_categories)
+        if not all((category in CBAnalyticsAlertSearchQuery.VALID_THREAT_CATEGORIES)
                    for category in categories):
             raise ApiError("One or more invalid threat categories")
         self._update_criteria("not_blocked_threat_category", categories)
         return self
 
-    def policy_applied(self, applied_statuses):
+    def set_policy_applied(self, applied_statuses):
         """
         Restricts the alerts that this query is performed on to the specified
         status values showing whether policies were applied.
@@ -1146,13 +616,13 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
                                       "APPLIED" and "NOT_APPLIED".
         :return: This instance.
         """
-        if not all((s in CBAnalyticsAlertSearchQuery.valid_policy_applied)
+        if not all((s in CBAnalyticsAlertSearchQuery.VALID_POLICY_APPLIED)
                    for s in applied_statuses):
             raise ApiError("One or more invalid policy-applied values")
         self._update_criteria("policy_applied", applied_statuses)
         return self
 
-    def reason_code(self, reason):
+    def set_reason_code(self, reason):
         """
         Restricts the alerts that this query is performed on to the specified
         reason codes (enum values).
@@ -1165,7 +635,7 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
         self._update_criteria("reason_code", reason)
         return self
 
-    def run_states(self, states):
+    def set_run_states(self, states):
         """
         Restricts the alerts that this query is performed on to the specified run states.
 
@@ -1173,13 +643,13 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
                             and "UNKNOWN".
         :return: This instance.
         """
-        if not all((s in CBAnalyticsAlertSearchQuery.valid_run_states)
+        if not all((s in CBAnalyticsAlertSearchQuery.VALID_RUN_STATES)
                    for s in states):
             raise ApiError("One or more invalid run states")
         self._update_criteria("run_state", states)
         return self
 
-    def sensor_actions(self, actions):
+    def set_sensor_actions(self, actions):
         """
         Restricts the alerts that this query is performed on to the specified sensor actions.
 
@@ -1187,13 +657,13 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
                              "ALLOW", "ALLOW_AND_LOG", "TERMINATE", and "DENY".
         :return: This instance.
         """
-        if not all((action in CBAnalyticsAlertSearchQuery.valid_sensor_actions)
+        if not all((action in CBAnalyticsAlertSearchQuery.VALID_SENSOR_ACTIONS)
                    for action in actions):
             raise ApiError("One or more invalid sensor actions")
         self._update_criteria("sensor_action", actions)
         return self
 
-    def threat_cause_vectors(self, vectors):
+    def set_threat_cause_vectors(self, vectors):
         """
         Restricts the alerts that this query is performed on to the specified threat cause vectors.
 
@@ -1202,7 +672,7 @@ class CBAnalyticsAlertSearchQuery(BaseAlertSearchQuery):
                              "UNKNOWN", "APP_STORE", and "THIRD_PARTY".
         :return: This instance.
         """
-        if not all((vector in CBAnalyticsAlertSearchQuery.valid_threat_cause_vectors)
+        if not all((vector in CBAnalyticsAlertSearchQuery.VALID_THREAT_CAUSE_VECTORS)
                    for vector in vectors):
             raise ApiError("One or more invalid threat cause vectors")
         self._update_criteria("threat_cause_vector", vectors)
@@ -1217,7 +687,7 @@ class VMwareAlertSearchQuery(BaseAlertSearchQuery):
         super().__init__(doc_class, cb)
         self._bulkupdate_url = "/appservices/v6/orgs/{0}/alerts/vmware/workflow/_criteria"
 
-    def group_ids(self, groupids):
+    def set_group_ids(self, groupids):
         """
         Restricts the alerts that this query is performed on to the specified
         AppDefense-assigned alarm group IDs.

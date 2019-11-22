@@ -82,78 +82,78 @@ def load_basic_criteria(query, args):
     if args.query:
         query = query.where(args.query)
     if args.category:
-        query = query.categories(args.category)
+        query = query.set_categories(args.category)
     if args.deviceid:
-        query = query.device_ids(args.deviceid)
+        query = query.set_device_ids(args.deviceid)
     if args.devicename:
-        query = query.device_names(args.devicename)
+        query = query.set_device_names(args.devicename)
     if args.os:
-        query = query.device_os(args.os)
+        query = query.set_device_os(args.os)
     if args.osversion:
-        query = query.device_os_version(args.osversion)
+        query = query.set_device_os_versions(args.osversion)
     if args.username:
-        query = query.device_username(args.username)
+        query = query.set_device_username(args.username)
     if args.group:
-        query = query.group_results(True)
+        query = query.set_group_results(True)
     if args.alertid:
-        query = query.alert_ids(args.alertid)
+        query = query.set_alert_ids(args.alertid)
     if args.legacyalertid:
-        query = query.legacy_alert_ids(args.legacyalertid)
+        query = query.set_legacy_alert_ids(args.legacyalertid)
     if args.severity:
-        query = query.minimum_severity(args.severity)
+        query = query.set_minimum_severity(args.severity)
     if args.policyid:
-        query = query.policy_ids(args.policyid)
+        query = query.set_policy_ids(args.policyid)
     if args.policyname:
-        query = query.policy_names(args.policyname)
+        query = query.set_policy_names(args.policyname)
     if args.processname:
-        query = query.process_names(args.processname)
+        query = query.set_process_names(args.processname)
     if args.processhash:
-        query = query.process_sha256(args.processhash)
+        query = query.set_process_sha256(args.processhash)
     if args.reputation:
-        query = query.reputations(args.reputation)
+        query = query.set_reputations(args.reputation)
     if args.tag:
-        query = query.tags(args.tag)
+        query = query.set_tags(args.tag)
     if args.priority:
-        query = query.target_priorities(args.priority)
+        query = query.set_target_priorities(args.priority)
     if args.threatid:
-        query = query.threat_ids(args.threatid)
+        query = query.set_threat_ids(args.threatid)
     if args.type:
-        query = query.types(args.type)
+        query = query.set_types(args.type)
     if args.workflow:
-        query = query.workflows(args.workflow)
+        query = query.set_workflows(args.workflow)
 
 
 def load_cbanalytics_criteria(query, args):
     load_basic_criteria(query, args)
     if args.blockedthreat:
-        query = query.blocked_threat_categories(args.blockedthreat)
+        query = query.set_blocked_threat_categories(args.blockedthreat)
     if args.location:
-        query = query.device_locations(args.location)
+        query = query.set_device_locations(args.location)
     if args.killchain:
-        query = query.kill_chain_statuses(args.killchain)
+        query = query.set_kill_chain_statuses(args.killchain)
     if args.notblockedthreat:
-        query = query.not_blocked_threat_categories(args.notblockedthreat)
+        query = query.set_not_blocked_threat_categories(args.notblockedthreat)
     if args.policyapplied:
-        query = query.policy_applied(args.policyapplied)
+        query = query.set_policy_applied(args.policyapplied)
     if args.reason:
-        query = query.reason_code(args.reason)
+        query = query.set_reason_code(args.reason)
     if args.runstate:
-        query = query.run_states(args.runstate)
+        query = query.set_run_states(args.runstate)
     if args.sensoraction:
-        query = query.sensor_actions(args.sensoraction)
+        query = query.set_sensor_actions(args.sensoraction)
     if args.vector:
-        query = query.threat_cause_vectors(args.vector)
+        query = query.set_threat_cause_vectors(args.vector)
 
 
 def load_vmware_criteria(query, args):
     load_basic_criteria(query, args)
     if args.groupid:
-        query = query.group_ids(args.groupid)
+        query = query.set_group_ids(args.groupid)
 
 
 def load_watchlist_criteria(query, args):
     load_basic_criteria(query, args)
     if args.watchlistid:
-        query = query.watchlist_ids(args.watchlistid)
+        query = query.set_watchlist_ids(args.watchlistid)
     if args.watchlistname:
-        query = query.watchlist_names(args.watchlistname)
+        query = query.set_watchlist_names(args.watchlistname)

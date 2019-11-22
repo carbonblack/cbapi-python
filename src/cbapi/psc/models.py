@@ -1,7 +1,8 @@
 from cbapi.models import MutableBaseModel, UnrefreshableModel
 from cbapi.errors import ServerError
-from cbapi.psc.query import DeviceSearchQuery, BaseAlertSearchQuery, WatchlistAlertSearchQuery, \
-                            CBAnalyticsAlertSearchQuery, VMwareAlertSearchQuery
+from cbapi.psc.devices_query import DeviceSearchQuery
+from cbapi.psc.alerts_query import BaseAlertSearchQuery, WatchlistAlertSearchQuery, \
+                                   CBAnalyticsAlertSearchQuery, VMwareAlertSearchQuery
 
 from copy import deepcopy
 import logging
@@ -208,7 +209,7 @@ class BaseAlert(PSCMutableModel):
 
     def __init__(self, cb, model_unique_id, initial_data=None):
         super(BaseAlert, self).__init__(cb, model_unique_id, initial_data)
-        self._workflow = Workflow(cb, initial_data.get("workflow", None))
+        self._workflow = Workflow(cb, initial_data.get("workflow", None) if initial_data else None)
         if model_unique_id is not None and initial_data is None:
             self._refresh()
 
@@ -229,6 +230,13 @@ class BaseAlert(PSCMutableModel):
         return self._workflow
 
     def _update_workflow_status(self, state, remediation, comment):
+        """
+        Update the workflow status of this alert.
+
+        :param str state: The state to set for this alert, either "OPEN" or "DISMISSED".
+        :param remediation str: The remediation status to set for the alert.
+        :param comment str: The comment to set for the alert.
+        """
         request = {"state": state}
         if remediation:
             request["remediation_state"] = remediation
@@ -259,6 +267,13 @@ class BaseAlert(PSCMutableModel):
         self._update_workflow_status("OPEN", remediation, comment)
 
     def _update_threat_workflow_status(self, state, remediation, comment):
+        """
+        Update the workflow status of all alerts with the same threat ID, past or future.
+
+        :param str state: The state to set for this alert, either "OPEN" or "DISMISSED".
+        :param remediation str: The remediation status to set for the alert.
+        :param comment str: The comment to set for the alert.
+        """
         request = {"state": state}
         if remediation:
             request["remediation_state"] = remediation
