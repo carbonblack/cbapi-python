@@ -3,7 +3,7 @@
 import sys
 from cbapi.example_helpers import build_cli_parser, get_cb_psc_object
 from cbapi.psc.models import BaseAlert
-from alertsv6common import setup_parser_with_basic_criteria, load_basic_criteria
+from helpers.alertsv6 import setup_parser_with_basic_criteria, load_basic_criteria
 
 
 def main():

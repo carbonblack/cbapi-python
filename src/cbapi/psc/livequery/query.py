@@ -1,6 +1,6 @@
 from cbapi.errors import ApiError
-from cbapi.psc.query import QueryBuilder, PSCQueryBase
-from cbapi.psc.query import QueryBuilderSupportMixin, IterableQueryMixin
+from cbapi.psc.base_query import QueryBuilder, PSCQueryBase
+from cbapi.psc.base_query import QueryBuilderSupportMixin, IterableQueryMixin
 import logging
 from six import string_types
 

@@ -4,7 +4,7 @@ import sys
 from time import sleep
 from cbapi.example_helpers import build_cli_parser, get_cb_psc_object
 from cbapi.psc.models import CBAnalyticsAlert, WorkflowStatus
-from alertsv6common import setup_parser_with_cbanalytics_criteria, load_cbanalytics_criteria
+from helpers.alertsv6 import setup_parser_with_cbanalytics_criteria, load_cbanalytics_criteria
 
 
 def main():

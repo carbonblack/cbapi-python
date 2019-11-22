@@ -4,7 +4,7 @@ import sys
 from time import sleep
 from cbapi.example_helpers import build_cli_parser, get_cb_psc_object
 from cbapi.psc.models import VMwareAlert, WorkflowStatus
-from alertsv6common import setup_parser_with_vmware_criteria, load_vmware_criteria
+from helpers.alertsv6 import setup_parser_with_vmware_criteria, load_vmware_criteria
 
 
 def main():
