@@ -10,7 +10,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
     VALID_CATEGORIES = ["THREAT", "MONITORED", "INFO", "MINOR", "SERIOUS", "CRITICAL"]
     VALID_REPUTATIONS = ["KNOWN_MALWARE", "SUSPECT_MALWARE", "PUP", "NOT_LISTED", "ADAPTIVE_WHITE_LIST",
                          "COMMON_WHITE_LIST", "TRUSTED_WHITE_LIST", "COMPANY_BLACK_LIST"]
-    VALID_ALERTTYPES = ["CB_ANALYTICS", "VMWARE", "WATCHLIST"]
+    VALID_ALERT_TYPES = ["CB_ANALYTICS", "VMWARE", "WATCHLIST"]
     VALID_WORKFLOW_VALS = ["OPEN", "DISMISSED"]
     VALID_FACET_FIELDS = ["ALERT_TYPE", "CATEGORY", "REPUTATION", "WORKFLOW", "TAG", "POLICY_ID",
                           "POLICY_NAME", "DEVICE_ID", "DEVICE_NAME", "APPLICATION_HASH",
@@ -37,17 +37,17 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         oldlist = self._criteria.get(key, [])
         self._criteria[key] = oldlist + newlist
 
-    def set_categories(self, cats):
+    def set_categories(self, categories):
         """
         Restricts the alerts that this query is performed on to the specified categories.
 
-        :param cats list: List of categories to be restricted to. Valid categories are
-                          "THREAT", "MONITORED", "INFO", "MINOR", "SERIOUS", and "CRITICAL."
+        :param categories list: List of categories to be restricted to. Valid categories are
+                                "THREAT", "MONITORED", "INFO", "MINOR", "SERIOUS", and "CRITICAL."
         :return: This instance
         """
-        if not all((c in BaseAlertSearchQuery.VALID_CATEGORIES) for c in cats):
+        if not all((c in BaseAlertSearchQuery.VALID_CATEGORIES) for c in categories):
             raise ApiError("One or more invalid category values")
-        self._update_criteria("category", cats)
+        self._update_criteria("category", categories)
         return self
 
     def set_create_time(self, *args, **kwargs):
@@ -306,7 +306,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
                                 "CB_ANALYTICS", "VMWARE", and "WATCHLIST".
         :return: This instance
         """
-        if not all((t in BaseAlertSearchQuery.VALID_ALERTTYPES) for t in alerttypes):
+        if not all((t in BaseAlertSearchQuery.VALID_ALERT_TYPES) for t in alerttypes):
             raise ApiError("One or more invalid alert type values")
         self._update_criteria("type", alerttypes)
         return self
