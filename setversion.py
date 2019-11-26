@@ -9,6 +9,7 @@ import re
 import argparse
 from datetime import date
 
+
 def readme_rewriter(line, ctxt):
     expr = ctxt.get("readme_expr", None)
     if not expr:
@@ -72,7 +73,7 @@ def init_rewriter(line, ctxt):
     if expr.match(line):
         return "__version__ = '{0}'\n".format(ctxt["version"])
     return None
-    
+
 
 def rewrite_file(infilename, rewritefunc, ctxt):
     outfilename = infilename + ".new"
@@ -93,15 +94,18 @@ def rewrite_file(infilename, rewritefunc, ctxt):
     if not ctxt["nodelete"]:
         os.remove(infilename)
         os.rename(outfilename, infilename)
-    
-    
+
+
 def main():
     parser = argparse.ArgumentParser(description="Set the version number in CbAPI source and documentation.\n"
-                                                 "Execute this on a release or hotfix branch to update the version numbers in the source.",
-                                     epilog="After running, edit docs/changelog.rst and add the new changelog information under the new heading.")
+                                                 "Execute this on a release or hotfix branch to update "
+                                                 "the version numbers in the source.",
+                                     epilog="After running, edit docs/changelog.rst and add the new changelog "
+                                            "information under the new heading.")
     parser.add_argument("version", help="New version number to add")
-    parser.add_argument("-n", "--nodelete", action="store_true", help="Do not delete existing files, leave new files with .new extension")
-    
+    parser.add_argument("-n", "--nodelete", action="store_true",
+                        help="Do not delete existing files, leave new files with .new extension")
+
     args = parser.parse_args()
     ctxt = {"version": args.version, "nodelete": args.nodelete}
     rewrite_file("README.md", readme_rewriter, ctxt)
@@ -110,6 +114,7 @@ def main():
     rewrite_file("setup.py", setup_rewriter, ctxt)
     rewrite_file("src/cbapi/__init__.py", init_rewriter, ctxt)
     return 0
-    
+
+
 if __name__ == "__main__":
     sys.exit(main())
