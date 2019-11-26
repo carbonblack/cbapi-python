@@ -1,5 +1,13 @@
 CbAPI Changelog
 ===============
+CbAPI 1.5.6 - Released November 19, 2019
+----------------------------------------
+
+Updates
+
+* General
+    * Name change to Carbon Black Cloud from PSC.
+
 CbAPI 1.5.5 - Released November 12, 2019
 ----------------------------------------
 
