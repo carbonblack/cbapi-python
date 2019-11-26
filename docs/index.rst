@@ -137,7 +137,7 @@ For distinction between credentials of different Carbon Black products, use the 
 * ``credentials.response`` for CB Response
 * ``credentials.protection`` for CB Protection
 
-For example, if you use a PSC product, you should have created a credentials file in one of these locations:
+For example, if you use a Carbon Black Cloud product, you should have created a credentials file in one of these locations:
 
 * ``/etc/carbonblack/credentials.psc``
 * ``~/.carbonblack/credentials.psc``
@@ -170,7 +170,7 @@ The possible options for each credential profile are:
   different tokens for each.
 * **ssl_verify**: True or False; controls whether the SSL/TLS certificate presented by the server is validated against
   the local trusted CA store.
-* **org_key**: The organization key. This is required to access the PSC, and can be found in the console. The format is ``123ABC45``.
+* **org_key**: The organization key. This is required to access the Carbon Black Cloud, and can be found in the console. The format is ``123ABC45``.
 * **proxy**: A proxy specification that will be used when connecting to the CB server. The format is:
   ``http://myusername:mypassword@proxy.company.com:8001/`` where the hostname of the proxy is ``proxy.company.com``, port
   8001, and using username/password ``myusername`` and ``mypassword`` respectively.
@@ -184,9 +184,9 @@ Environment Variable Support
 
 The latest cbapi for python supports specifying API credentials in the following three environment variables:
 
-`CBAPI_TOKEN` the envar for holding the CbR/CbP api token or the ConnectorId/APIKEY combination for CB Defense/PSC.
+`CBAPI_TOKEN` the envar for holding the CbR/CbP api token or the ConnectorId/APIKEY combination for CB Defense/Carbon Black Cloud.
 
-The `CBAPI_URL` envar holds the FQDN of the target, a CbR , CBD, or CbD/PSC server specified just as they are in the
+The `CBAPI_URL` envar holds the FQDN of the target, a CbR , CBD, or CbD/Carbon Black Cloud server specified just as they are in the
 configuration file format specified above.
 
 The  optional `CBAPI_SSL_VERIFY` envar can be used to control SSL validation(True/False or 0/1), which will default to ON when

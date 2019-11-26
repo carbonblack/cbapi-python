@@ -30,8 +30,7 @@ from cbapi.response import sensor_events, event
 import sys
 import time
 
-
-autoruns_regex = re.compile("|".join("""\\registry\\machine\\system\\currentcontrolset\\control\\session manager\\bootexecute(.*)
+autoruns = """\\registry\\machine\\system\\currentcontrolset\\control\\session manager\\bootexecute(.*)
 \\registry\\machine\\system\\currentcontrolset\\services(.*)
 \\registry\\machine\\system\\currentcontrolset\\services(.*)
 \\registry\\machine\\software\\microsoft\\windows\\currentversion\\runservicesonce(.*)
@@ -53,8 +52,9 @@ autoruns_regex = re.compile("|".join("""\\registry\\machine\\system\\currentcont
 \\registry\\user\\(.*)\\software\\microsoft\\windows\\currentversion\\run(.*)
 \\registry\\user\\(.*)\\software\\microsoft\\windows\\currentversion\\runonce(.*)
 \\registry\\user\\(.*)\\software\\microsoft\\windows\\currentversion\\policies\\explorer\\run(.*)
-\\registry\\user\\(.*)\\software\\microsoft\\windows nt\\currentversion\\windows\\load(.*)""".replace("\\", "\\\\").split("\n")))
+\\registry\\user\\(.*)\\software\\microsoft\\windows nt\\currentversion\\windows\\load(.*)"""
 
+autoruns_regex = re.compile("|".join(autoruns.replace("\\", "\\\\").split("\n")))
 
 
 class GetRegistryValue(object):
@@ -85,7 +85,7 @@ def process_callback(cb, event_type, event_data):
 def print_result(registry_job):
     try:
         timestamp, sensor_id, registry_key, registry_value = registry_job.result()
-    except:
+    except Exception:
         print("Error encountered when pulling registry key: {0}".format(registry_job.exception()))
     else:
         print("Got result for sensor ID {0} registry key {1}: value is {2}".format(sensor_id, registry_key,
@@ -118,7 +118,5 @@ def main():
         print(error["exception"])
 
 
-
 if __name__ == "__main__":
     sys.exit(main())
-

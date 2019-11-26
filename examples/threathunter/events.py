@@ -28,5 +28,6 @@ def main():
         print("\tEvent GUID: {}".format(event.event_guid))
         print("\tEvent Timestamp: {}".format(event.event_timestamp))
 
+
 if __name__ == "__main__":
     sys.exit(main())

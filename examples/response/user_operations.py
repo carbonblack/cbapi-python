@@ -3,7 +3,7 @@
 
 import sys
 from cbapi.response.models import User, Team, SensorGroup
-from cbapi.example_helpers import build_cli_parser, get_cb_response_object, get_object_by_name_or_id
+from cbapi.example_helpers import build_cli_parser, get_cb_response_object
 from cbapi.errors import ServerError
 import logging
 import getpass
@@ -118,8 +118,8 @@ def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="User commands", dest="command_name")
 
-    list_command = commands.add_parser("list", help="List all configured users")
-    list_teams_command = commands.add_parser("list-teams", help="List all configured user teams")
+    commands.add_parser("list", help="List all configured users")
+    commands.add_parser("list-teams", help="List all configured user teams")
 
     add_command = commands.add_parser("add", help="Add new user")
     add_command.add_argument("-u", "--username", help="New user's username", required=True)

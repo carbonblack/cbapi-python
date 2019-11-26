@@ -4,7 +4,7 @@
 import sys
 from cbapi.response.models import Process
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object
-from cbapi.errors import ServerError, ObjectNotFoundError
+from cbapi.errors import ObjectNotFoundError
 import logging
 
 log = logging.getLogger(__name__)
@@ -68,13 +68,13 @@ def process_hit(cb, parent_proc_name, proc_name, value, ratio, child_behavior):
 def main():
     parser = build_cli_parser("Term Frequency Analysis")
     parser.add_argument("-p", "--percentage", action="store", default="2", dest="percentless",
-                      help="Max Percentage of Term Frequency e.g., 2 ")
+                        help="Max Percentage of Term Frequency e.g., 2 ")
 
     process_selection = parser.add_mutually_exclusive_group(required=True)
     process_selection.add_argument("-t", "--term", action="store", default=None, dest="procname",
-                      help="Comma separated list of parent processes to get term frequency")
+                                   help="Comma separated list of parent processes to get term frequency")
     process_selection.add_argument("-f", "--termfile", action="store", default=None, dest="procnamefile",
-                      help="Text file new line separated list of parent processes to get term frequency")
+                                   help="Text file new line separated list of parent processes to get term frequency")
 
     output_selection = parser.add_mutually_exclusive_group(required=False)
     output_selection.add_argument("--count", action="store_true",

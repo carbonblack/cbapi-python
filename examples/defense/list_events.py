@@ -42,8 +42,8 @@ def main():
     if args.hostname:
         events = list(cb.select(Event).where("hostNameExact:{0}".format(args.hostname)))
     elif args.start and args.end:
-        # flipped the start and end arguments around so script can be called with the start date being the earliest date.
-        # it's just easier on the eyes for most folks.
+        # flipped the start and end arguments around so script can be called with the start date being
+        # the earliest date. it's just easier on the eyes for most folks.
 
         events = list(cb.select(Event).where("startTime:{0}".format(args.end))) and (
             cb.select(Event).where("endTime:{0}".format(args.start)))

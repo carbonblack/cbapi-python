@@ -27,7 +27,7 @@ def main():
     #
     parser = build_cli_parser("System Check After Specified Date")
     parser.add_argument("-d", "--date-to-query", action="store", dest="date",
-                      help="New since DATE, format YYYY-MM-DD")
+                        help="New since DATE, format YYYY-MM-DD")
     parser.add_argument("-f", "--output-file", action="store", dest="output_file",
                         help="output file in csv format")
 
@@ -122,11 +122,10 @@ def main():
                                      binary.host_count,
                                      binary_timestamp,
                                      number_of_times_executed))
-            except:
-                print binary
+            except Exception:
+                print(binary)
     pbar.finish()
+
 
 if __name__ == "__main__":
     sys.exit(main())
-
-

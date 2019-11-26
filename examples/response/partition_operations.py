@@ -2,8 +2,7 @@ import sys
 from distutils.version import LooseVersion
 
 from cbapi.response.models import StoragePartition
-from cbapi.example_helpers import build_cli_parser, get_cb_response_object, get_object_by_name_or_id
-from cbapi.errors import ServerError
+from cbapi.example_helpers import build_cli_parser, get_cb_response_object
 import logging
 
 log = logging.getLogger(__name__)
@@ -58,9 +57,9 @@ def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="Storage Partition commands", dest="command_name")
 
-    list_command = commands.add_parser("list", help="List all storage partitions")
+    commands.add_parser("list", help="List all storage partitions")
 
-    create_command = commands.add_parser("create", help="Create new active writer partition")
+    commands.add_parser("create", help="Create new active writer partition")
 
     del_command = commands.add_parser("delete", help="Delete partition")
     del_command.add_argument("-N", "--name", help="Name of partition to delete.", required=True)
