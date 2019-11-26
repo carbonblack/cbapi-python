@@ -25,7 +25,7 @@ def main():
         required=False,
         help="Fields to be displayed in results",
     )
-    
+
     parser.add_argument("-q", "--query", type=str, required=False, help="Search query")
     parser.add_argument(
         "--device_ids",
@@ -70,15 +70,15 @@ def main():
     if args.result and args.device_summary:
         print("ERROR: --result and --device_summary cannot both be specified")
         return 1
-    
+
     cb = get_cb_livequery_object(args)
-    
+
     results = cb.select(Result).run_id(args.id)
     result = results.first()
     if result is None:
         print("ERROR: No results.")
         return 1
-    
+
     if args.result:
         facets = result.query_result_facets()
     elif args.device_summary:
@@ -97,11 +97,10 @@ def main():
         facets.criteria(policy_name=args.policy_names)
     if args.statuses:
         facets.criteria(status=args.statuses)
-    
+
     for facet in facets:
         print(facet)
-    
-    
+
+
 if __name__ == "__main__":
     sys.exit(main())
-    

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from cbapi.defense import *
+from cbapi.defense import Device
 from cbapi.example_helpers import build_cli_parser, get_cb_defense_object
 from concurrent.futures import as_completed
 import sys
@@ -60,12 +60,11 @@ def main():
             print("Sensor {0} had error:".format(futures[f]))
             print(f.exception())
 
-
     still_to_do = set([s.deviceId for s in online_sensors]) - set(completed_sensors)
     print("The following sensors were attempted but not completed or errored out:")
     for sensor in still_to_do:
         print("  {0}".format(still_to_do))
-    
+
 
 if __name__ == '__main__':
     sys.exit(main())

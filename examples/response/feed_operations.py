@@ -2,7 +2,7 @@
 #
 
 import sys
-from cbapi.response.models import Feed, FeedAction
+from cbapi.response.models import Feed
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object, get_object_by_name_or_id
 from cbapi.errors import ServerError
 import logging
@@ -145,7 +145,7 @@ def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="Feed commands", dest="command_name")
 
-    list_command = commands.add_parser("list", help="List all configured feeds")
+    commands.add_parser("list", help="List all configured feeds")
 
     list_actions_command = commands.add_parser("list-actions", help="List actions associated with a feed")
     list_actions_specifier = list_actions_command.add_mutually_exclusive_group(required=True)
@@ -195,7 +195,7 @@ def main():
     elif args.command_name == "delete":
         return delete_feed(cb, parser, args)
     elif args.command_name in ("disable", "enable"):
-        return toggle_feed(cb, args.feedname, enable=args.command_name=="enable")
+        return toggle_feed(cb, args.feedname, enable=(args.command_name == "enable"))
 
 
 if __name__ == "__main__":

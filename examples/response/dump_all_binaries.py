@@ -21,7 +21,7 @@ def get_path_for_md5(d, basepath=''):
 def create_directory(pathname):
     try:
         os.makedirs(os.path.dirname(pathname))
-    except:
+    except Exception:
         pass
 
 
@@ -35,21 +35,21 @@ class BinaryWorker(threading.Thread):
             filesize = os.path.getsize(pathname)
             if filesize == item.copied_size:
                 return True
-        except:
+        except Exception:
             pass
 
         return False
 
     def run(self):
-        l = logging.getLogger(__name__)
-        l.setLevel(logging.INFO)
+        log = logging.getLogger(__name__)
+        log.setLevel(logging.INFO)
 
         while True:
             item = worker_queue.get()
             pathname = get_path_for_md5(item.md5sum, self.basepath)
 
             if self.already_exists(pathname, item):
-                l.info('already have %s' % item.md5sum)
+                log.info('already have %s' % item.md5sum)
             else:
                 create_directory(pathname)
                 write_progress = 0
@@ -58,15 +58,15 @@ class BinaryWorker(threading.Thread):
                     write_progress += 1
                     json.dump(item.original_document, open(pathname + '.json', 'w'))
                     write_progress += 1
-                except:
+                except Exception:
                     pass
 
                 if not write_progress:
-                    l.error(u'Could not grab {0:s}'.format(item.md5sum))
+                    log.error(u'Could not grab {0:s}'.format(item.md5sum))
                 elif write_progress == 1:
-                    l.info(u'Grabbed {0:s} binary'.format(item.md5sum))
+                    log.info(u'Grabbed {0:s} binary'.format(item.md5sum))
                 elif write_progress == 2:
-                    l.info(u'Grabbed {0:s} binary & process document'.format(item.md5sum))
+                    log.info(u'Grabbed {0:s} binary & process document'.format(item.md5sum))
             worker_queue.task_done()
 
 
@@ -112,4 +112,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-

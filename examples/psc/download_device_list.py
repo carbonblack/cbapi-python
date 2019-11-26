@@ -5,7 +5,8 @@ from cbapi.example_helpers import build_cli_parser, get_cb_psc_object
 from cbapi.psc import Device
 
 import logging
-logging.basicConfig(level=logging.DEBUG)    
+logging.basicConfig(level=logging.DEBUG)
+
 
 def main():
     parser = build_cli_parser("Download device list in CSV format")
@@ -17,21 +18,21 @@ def main():
     parser.add_argument("-S", "--sort_by", help="Field to sort the output by")
     parser.add_argument("-R", "--reverse", action="store_true", help="Reverse order of sort")
     parser.add_argument("-O", "--output", help="File to save output to (default stdout)")
-    
+
     args = parser.parse_args()
     cb = get_cb_psc_object(args)
-    
+
     query = cb.select(Device)
     if args.query:
         query = query.where(args.query)
     if args.ad_group_id:
-        query = query.ad_group_ids(args.ad_group_id)
+        query = query.set_ad_group_ids(args.ad_group_id)
     if args.policy_id:
-        query = query.policy_ids(args.policy_id)
+        query = query.set_policy_ids(args.policy_id)
     if args.status:
-        query = query.status(args.status)
+        query = query.set_status(args.status)
     if args.priority:
-        query = query.target_priorities(args.priority)
+        query = query.set_target_priorities(args.priority)
     if args.sort_by:
         direction = "DESC" if args.reverse else "ASC"
         query = query.sort_by(args.sort_by, direction)
@@ -44,7 +45,6 @@ def main():
     else:
         print(data)
 
-        
+
 if __name__ == "__main__":
     sys.exit(main())
-        

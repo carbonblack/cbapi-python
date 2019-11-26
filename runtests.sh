@@ -1,2 +1,2 @@
 #!/bin/bash
-PYTHONPATH=src pytest test/
+PYTHONPATH=src pytest -v test/

@@ -1,273 +1,18 @@
-from cbapi.errors import ApiError, MoreThanOneResultError
-import logging
-import functools
-from six import string_types
-from solrq import Q
-
-log = logging.getLogger(__name__)
-
-
-class QueryBuilder(object):
-    """
-    Provides a flexible interface for building prepared queries for the CB
-    PSC backend.
-
-    This object can be instantiated directly, or can be managed implicitly
-    through the :py:meth:`select` API.
-    """
-
-    def __init__(self, **kwargs):
-        if kwargs:
-            self._query = Q(**kwargs)
-        else:
-            self._query = None
-        self._raw_query = None
-
-    def _guard_query_params(func):
-        """Decorates the query construction methods of *QueryBuilder*, preventing
-        them from being called with parameters that would result in an internally
-        inconsistent query.
-        """
-
-        @functools.wraps(func)
-        def wrap_guard_query_change(self, q, **kwargs):
-            if self._raw_query is not None and (kwargs or isinstance(q, Q)):
-                raise ApiError("Cannot modify a raw query with structured parameters")
-            if self._query is not None and isinstance(q, string_types):
-                raise ApiError("Cannot modify a structured query with a raw parameter")
-            return func(self, q, **kwargs)
-
-        return wrap_guard_query_change
-
-    @_guard_query_params
-    def where(self, q, **kwargs):
-        """Adds a conjunctive filter to a query.
-
-        :param q: string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if isinstance(q, string_types):
-            if self._raw_query is None:
-                self._raw_query = []
-            self._raw_query.append(q)
-        elif isinstance(q, Q) or kwargs:
-            if self._query is not None:
-                raise ApiError("Use .and_() or .or_() for an extant solrq.Q object")
-            if kwargs:
-                q = Q(**kwargs)
-            self._query = q
-        else:
-            raise ApiError(".where() only accepts strings or solrq.Q objects")
-
-        return self
-
-    @_guard_query_params
-    def and_(self, q, **kwargs):
-        """Adds a conjunctive filter to a query.
-
-        :param q: string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if isinstance(q, string_types):
-            self.where(q)
-        elif isinstance(q, Q) or kwargs:
-            if kwargs:
-                q = Q(**kwargs)
-            if self._query is None:
-                self._query = q
-            else:
-                self._query = self._query & q
-        else:
-            raise ApiError(".and_() only accepts strings or solrq.Q objects")
-
-        return self
-
-    @_guard_query_params
-    def or_(self, q, **kwargs):
-        """Adds a disjunctive filter to a query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if kwargs:
-            q = Q(**kwargs)
-
-        if isinstance(q, Q):
-            if self._query is None:
-                self._query = q
-            else:
-                self._query = self._query | q
-        else:
-            raise ApiError(".or_() only accepts solrq.Q objects")
-
-        return self
-
-    @_guard_query_params
-    def not_(self, q, **kwargs):
-        """Adds a negative filter to a query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if kwargs:
-            q = ~Q(**kwargs)
-
-        if isinstance(q, Q):
-            if self._query is None:
-                self._query = q
-            else:
-                self._query = self._query & q
-        else:
-            raise ApiError(".not_() only accepts solrq.Q objects")
-
-    def _collapse(self):
-        """The query can be represented by either an array of strings
-        (_raw_query) which is concatenated and passed directly to Solr, or
-        a solrq.Q object (_query) which is then converted into a string to
-        pass to Solr. This function will perform the appropriate conversions to
-        end up with the 'q' string sent into the POST request to the
-        PSC-R query endpoint."""
-        if self._raw_query is not None:
-            return " ".join(self._raw_query)
-        elif self._query is not None:
-            return str(self._query)
-        else:
-            return None  # return everything
-
-
-class PSCQueryBase:
-    """
-    Represents the base of all LiveQuery query classes.
-    """
-
-    def __init__(self, doc_class, cb):
-        self._doc_class = doc_class
-        self._cb = cb
-
-
-class QueryBuilderSupportMixin:
-    """
-    A mixin that supplies wrapper methods to access the _query_builder.
-    """
-    def where(self, q=None, **kwargs):
-        """Add a filter to this query.
-
-        :param q: Query string, :py:class:`QueryBuilder`, or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-
-        if not q:
-            return self
-        if isinstance(q, QueryBuilder):
-            self._query_builder = q
-        else:
-            self._query_builder.where(q, **kwargs)
-        return self
-
-    def and_(self, q=None, **kwargs):
-        """Add a conjunctive filter to this query.
-
-        :param q: Query string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(".and_() expects a string, a solrq.Q, or kwargs")
-
-        self._query_builder.and_(q, **kwargs)
-        return self
-
-    def or_(self, q=None, **kwargs):
-        """Add a disjunctive filter to this query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(".or_() expects a solrq.Q or kwargs")
-
-        self._query_builder.or_(q, **kwargs)
-        return self
-
-    def not_(self, q=None, **kwargs):
-        """Adds a negated filter to this query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-
-        if not q and not kwargs:
-            raise ApiError(".not_() expects a solrq.Q, or kwargs")
-
-        self._query_builder.not_(q, **kwargs)
-        return self
-
-
-class IterableQueryMixin:
-    """
-    A mix-in to provide iterability to a query.
-    """
-    def all(self):
-        return self._perform_query()
-
-    def first(self):
-        allres = list(self)
-        res = allres[:1]
-        if not len(res):
-            return None
-        return res[0]
-
-    def one(self):
-        allres = list(self)
-        res = allres[:2]
-        if len(res) == 0:
-            raise MoreThanOneResultError(
-                message="0 results for query {0:s}".format(self._query)
-            )
-        if len(res) > 1:
-            raise MoreThanOneResultError(
-                message="{0:d} results found for query {1:s}".format(
-                    len(self), self._query
-                )
-            )
-        return res[0]
-
-    def __len__(self):
-        return 0
-
-    def __getitem__(self, item):
-        return None
-
-    def __iter__(self):
-        return self._perform_query()
+from cbapi.errors import ApiError
+from .base_query import PSCQueryBase, QueryBuilder, QueryBuilderSupportMixin, IterableQueryMixin
 
 
 class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin):
     """
     Represents a query that is used to locate Device objects.
     """
-    valid_os = ["WINDOWS", "ANDROID", "MAC", "IOS", "LINUX", "OTHER"]
-    valid_statuses = ["PENDING", "REGISTERED", "UNINSTALLED", "DEREGISTERED",
+    VALID_OS = ["WINDOWS", "ANDROID", "MAC", "IOS", "LINUX", "OTHER"]
+    VALID_STATUSES = ["PENDING", "REGISTERED", "UNINSTALLED", "DEREGISTERED",
                       "ACTIVE", "INACTIVE", "ERROR", "ALL", "BYPASS_ON",
                       "BYPASS", "QUARANTINE", "SENSOR_OUTOFDATE",
                       "DELETED", "LIVE"]
-    valid_priorities = ["LOW", "MEDIUM", "HIGH", "MISSION_CRITICAL"]
-    valid_directions = ["ASC", "DESC"]
+    VALID_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "MISSION_CRITICAL"]
+    VALID_DIRECTIONS = ["ASC", "DESC"]
 
     def __init__(self, doc_class, cb):
         super().__init__(doc_class, cb)
@@ -278,14 +23,30 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         self._sortcriteria = {}
 
     def _update_criteria(self, key, newlist):
+        """
+        Updates the criteria being collected for a query. Assumes the specified criteria item is
+        defined as a list; the list passed in will be set as the value for this criteria item, or
+        appended to the existing one if there is one.
+
+        :param str key: The key for the criteria item to be set
+        :param list newlist: List of values to be set for the criteria item
+        """
         oldlist = self._criteria.get(key, [])
         self._criteria[key] = oldlist + newlist
 
     def _update_exclusions(self, key, newlist):
+        """
+        Updates the exclusion criteria being collected for a query. Assumes the specified criteria item is
+        defined as a list; the list passed in will be set as the value for this criteria item, or
+        appended to the existing one if there is one.
+
+        :param str key: The key for the criteria item to be set
+        :param list newlist: List of values to be set for the criteria item
+        """
         oldlist = self._exclusions.get(key, [])
         self._exclusions[key] = oldlist + newlist
 
-    def ad_group_ids(self, ad_group_ids):
+    def set_ad_group_ids(self, ad_group_ids):
         """
         Restricts the devices that this query is performed on to the specified
         AD group IDs.
@@ -298,7 +59,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         self._update_criteria("ad_group_id", ad_group_ids)
         return self
 
-    def device_ids(self, device_ids):
+    def set_device_ids(self, device_ids):
         """
         Restricts the devices that this query is performed on to the specified
         device IDs.
@@ -311,7 +72,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         self._update_criteria("id", device_ids)
         return self
 
-    def last_contact_time(self, *args, **kwargs):
+    def set_last_contact_time(self, *args, **kwargs):
         """
         Restricts the devices that this query is performed on to the specified
         last contact time (either specified as a start and end point or as a
@@ -337,7 +98,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
             raise ApiError("must specify either start= and end= or range=")
         return self
 
-    def os(self, operating_systems):
+    def set_os(self, operating_systems):
         """
         Restricts the devices that this query is performed on to the specified
         operating systems.
@@ -345,12 +106,12 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         :param operating_systems: list of operating systems
         :return: This instance
         """
-        if not all((osval in DeviceSearchQuery.valid_os) for osval in operating_systems):
+        if not all((osval in DeviceSearchQuery.VALID_OS) for osval in operating_systems):
             raise ApiError("One or more invalid operating systems")
         self._update_criteria("os", operating_systems)
         return self
 
-    def policy_ids(self, policy_ids):
+    def set_policy_ids(self, policy_ids):
         """
         Restricts the devices that this query is performed on to the specified
         policy IDs.
@@ -363,7 +124,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         self._update_criteria("policy_id", policy_ids)
         return self
 
-    def status(self, statuses):
+    def set_status(self, statuses):
         """
         Restricts the devices that this query is performed on to the specified
         status values.
@@ -371,12 +132,12 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         :param statuses: list of strings
         :return: This instance
         """
-        if not all((stat in DeviceSearchQuery.valid_statuses) for stat in statuses):
+        if not all((stat in DeviceSearchQuery.VALID_STATUSES) for stat in statuses):
             raise ApiError("One or more invalid status values")
         self._update_criteria("status", statuses)
         return self
 
-    def target_priorities(self, target_priorities):
+    def set_target_priorities(self, target_priorities):
         """
         Restricts the devices that this query is performed on to the specified
         target priority values.
@@ -384,12 +145,12 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         :param target_priorities: list of strings
         :return: This instance
         """
-        if not all((prio in DeviceSearchQuery.valid_priorities) for prio in target_priorities):
+        if not all((prio in DeviceSearchQuery.VALID_PRIORITIES) for prio in target_priorities):
             raise ApiError("One or more invalid target priority values")
         self._update_criteria("target_priority", target_priorities)
         return self
 
-    def exclude_sensor_versions(self, sensor_versions):
+    def set_exclude_sensor_versions(self, sensor_versions):
         """
         Restricts the devices that this query is performed on to exclude specified
         sensor versions.
@@ -413,12 +174,19 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         :param direction: the sort order, either "ASC" or "DESC"
         :rtype: :py:class:`DeviceSearchQuery`
         """
-        if direction not in DeviceSearchQuery.valid_directions:
+        if direction not in DeviceSearchQuery.VALID_DIRECTIONS:
             raise ApiError("invalid sort direction specified")
         self._sortcriteria = {"field": key, "order": direction}
         return self
 
     def _build_request(self, from_row, max_rows):
+        """
+        Creates the request body for an API call.
+
+        :param int from_row: The row to start the query at.
+        :param int max_rows: The maximum number of rows to be returned.
+        :return: A dict containing the complete request body.
+        """
         mycrit = self._criteria
         if self._time_filter:
             mycrit["last_contact_time"] = self._time_filter
@@ -433,11 +201,20 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         return request
 
     def _build_url(self, tail_end):
-        url = self._doc_class.urlobject.format(
-            self._cb.credentials.org_key) + tail_end
+        """
+        Creates the URL to be used for an API call.
+
+        :param str tail_end: String to be appended to the end of the generated URL.
+        """
+        url = self._doc_class.urlobject.format(self._cb.credentials.org_key) + tail_end
         return url
 
     def _count(self):
+        """
+        Returns the number of results from the run of this query.
+
+        :return: The number of results from the run of this query.
+        """
         if self._count_valid:
             return self._total_results
 
@@ -452,6 +229,12 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         return self._total_results
 
     def _perform_query(self, from_row=0, max_rows=-1):
+        """
+        Performs the query and returns the results of the query in an iterable fashion.
+
+        :param int from_row: The row to start the query at (default 0).
+        :param int max_rows: The maximum number of rows to be returned (default -1, meaning "all").
+        """
         url = self._build_url("/_search")
         current = from_row
         numrows = 0
@@ -514,26 +297,32 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         return self._cb.get_raw_data(url, query_params, headers={"Content-Type": "application/json"})
 
     def _bulk_device_action(self, action_type, options=None):
+        """
+        Perform a bulk action on all devices matching the current search criteria.
+
+        :param str action_type: The action type to be performed.
+        :param dict options: Options for the bulk device action.  Default None.
+        """
         request = {"action_type": action_type, "search": self._build_request(0, -1)}
         if options:
             request["options"] = options
         return self._cb._raw_device_action(request)
 
-    def background_scan(self, flag):
+    def background_scan(self, scan):
         """
         Set the background scan option for the specified devices.
 
-        :param boolean flag: True to turn background scan on, False to turn it off.
+        :param boolean scan: True to turn background scan on, False to turn it off.
         """
-        return self._bulk_device_action("BACKGROUND_SCAN", self._cb._action_toggle(flag))
+        return self._bulk_device_action("BACKGROUND_SCAN", self._cb._action_toggle(scan))
 
-    def bypass(self, flag):
+    def bypass(self, enable):
         """
         Set the bypass option for the specified devices.
 
-        :param boolean flag: True to enable bypass, False to disable it.
+        :param boolean enable: True to enable bypass, False to disable it.
         """
-        return self._bulk_device_action("BYPASS", self._cb._action_toggle(flag))
+        return self._bulk_device_action("BYPASS", self._cb._action_toggle(enable))
 
     def delete_sensor(self):
         """
@@ -547,13 +336,13 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         """
         return self._bulk_device_action("UNINSTALL_SENSOR")
 
-    def quarantine(self, flag):
+    def quarantine(self, enable):
         """
         Set the quarantine option for the specified devices.
 
-        :param boolean flag: True to enable quarantine, False to disable it.
+        :param boolean enable: True to enable quarantine, False to disable it.
         """
-        return self._bulk_device_action("QUARANTINE", self._cb._action_toggle(flag))
+        return self._bulk_device_action("QUARANTINE", self._cb._action_toggle(enable))
 
     def update_policy(self, policy_id):
         """
@@ -569,5 +358,4 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
 
         :param dict sensor_version: New version properties for the sensor.
         """
-        return self._bulk_device_action("UPDATE_SENSOR_VERSION",
-                                        {"sensor_version": sensor_version})
+        return self._bulk_device_action("UPDATE_SENSOR_VERSION", {"sensor_version": sensor_version})

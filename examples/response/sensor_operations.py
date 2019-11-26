@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#ZE 2018 AD
+# ZE 2018 AD
 
 import sys
 from cbapi.response.models import Alert
@@ -11,8 +11,9 @@ log = logging.getLogger(__name__)
 
 '''
 This is a utility designed to use watchlists to perform operations on affected sensors:
-supported operations: memory dump, isolation and process termination. 
+supported operations: memory dump, isolation and process termination.
 '''
+
 
 def sensor_operations(cb, watchlists, operation, dryrun=False):
     print("Trying to {0} based on watchlists: {1}".format(operation, watchlists))
@@ -34,7 +35,7 @@ def sensor_operations(cb, watchlists, operation, dryrun=False):
                     lr.close()
             else:
                 print("DRYRUN: would have {0} sensor {1}".format(sensor, operation))
-        except Exception as e:
+        except Exception:
             print(traceback.format_exc(0))
 
     print("Sensor operations finished")

@@ -25,8 +25,8 @@ def create_run(cb, args):
 def run_status(cb, args):
     run = cb.select(Run, args.id)
     print(run)
-    
-    
+
+
 def run_stop(cb, args):
     run = cb.select(Run, args.id)
     if run.stop():
@@ -34,16 +34,16 @@ def run_stop(cb, args):
         print(run)
     else:
         print("Unable to stop run {}".format(run.id))
-        
-        
+
+
 def run_delete(cb, args):
     run = cb.select(Run, args.id)
     if run.delete():
         print("Run {} has been deleted.".format(run.id))
     else:
         print("Unable to delete run {}".format(run.id))
-        
-        
+
+
 def run_history(cb, args):
     results = cb.query_history(args.query)
     if args.sort_by:
@@ -51,7 +51,6 @@ def run_history(cb, args):
         results.sort_by(args.sort_by, direction=dir)
     for result in results:
         print(result)
-    
 
 
 def main():
@@ -99,21 +98,21 @@ def main():
     status_command.add_argument(
         "-i", "--id", type=str, required=True, help="The run ID"
     )
-    
+
     stop_command = commands.add_parser(
         "stop", help="Stops/cancels a current run"
     )
     stop_command.add_argument(
         "-i", "--id", type=str, required=True, help="The run ID"
     )
-    
+
     delete_command = commands.add_parser(
         "delete", help="Permanently delete a run"
     )
     delete_command.add_argument(
         "-i", "--id", type=str, required=True, help="The run ID"
     )
-    
+
     history_command = commands.add_parser(
         "history", help="List history of all runs"
     )
@@ -144,6 +143,7 @@ def main():
         return run_delete(cb, args)
     elif args.command_name == "history":
         return run_history(cb, args)
+
 
 if __name__ == "__main__":
     sys.exit(main())

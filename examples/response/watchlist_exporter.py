@@ -4,8 +4,7 @@
 import sys
 import cbapi.six as six
 from cbapi.response.models import Watchlist
-from cbapi.example_helpers import build_cli_parser, get_cb_response_object, get_object_by_name_or_id
-from cbapi.errors import ServerError
+from cbapi.example_helpers import build_cli_parser, get_cb_response_object
 import logging
 from datetime import datetime
 import json
@@ -16,7 +15,7 @@ log = logging.getLogger(__name__)
 if six.PY3:
     confirm_input = input
 else:
-    confirm_input = raw_input
+    confirm_input = raw_input  # noqa: F821
 
 
 def confirm(watch_list):
