@@ -23,11 +23,10 @@ class ThreatIntel:
         report_list_to_send = []
         report_dict_list_to_validate = []
 
-        #optional_report_attributes = ["link", "tags", "iocs", "iocs_v2", "visibility"]
 
         for result in results:
             try:
-                report_dict = { #document these values and what a result should contain
+                report_dict = {
                     "id": str(result.id),
                     "timestamp": int(result.timestamp.timestamp()),
                     "title": str(result.title),
@@ -36,17 +35,11 @@ class ThreatIntel:
                     "iocs_v2": [ioc_v2.as_dict() for ioc_v2 in result.iocs_v2]
                 }
 
-
-                # for opt in optional_report_attributes:
-                #     if hasattr(result, opt):
-                #         if 'opt' == 'iocs_v2' or 'opt' == 'iocs':
-                #             report_dict[opt] = [ioc_v2.as_dict() for ioc_v2 in result.iocs_v2]
-                #         else:
-                #             report_dict[opt] = getattr(result, opt)
-
                 report_dict_list_to_validate.append(report_dict)
 
+                #create CB Report object
                 report = Report(self.cb, initial_data=report_dict, feed_id=feed_id)
+                
                 report_list_to_send.append(report)
 
             except Exception as e:

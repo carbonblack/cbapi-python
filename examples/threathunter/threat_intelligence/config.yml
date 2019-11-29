@@ -1,7 +1,7 @@
 sites:
     alienvault:
         # the feed_id of the ThreatHunter Feed you want to send ThreatIntel to
-        feed_id: DpB1mJvSc2ONzPjRm9BvA
+        feed_id: 5thTpazzRdWhQeHnjWUfbA
 
         # the address of the site (only server ip or dns; don't put https:// or a trailing slash)
         site: otx.alienvault.com
@@ -33,17 +33,17 @@ sites:
         default_score: 5
 
         # (optional) username for authorization with your taxii provider
-        username:
+        username: 0dd92ced56580311a769a496cd1fa72533f7b5d1f4c1b1b6aa7a35425baa97f6
 
         # (optional) password for authorization with your taxii provider
         password:
 
         # (optional) specify which collections to convert to feeds (comma-delimited)
-        collections: '*'
+        collections: 'user_AlienVault'
 
         # (optional) the start date for which to start requesting data.
         # Defaults to 2019-01-01 00:00:00 if you supply nothing
-        start_date: 2019-01-01 00:00:00
+        start_date: 2019-11-01 00:00:00
 
         # (optional) the minutes to advance for each request.
         # If you don't have a lot of data, you could advance your requests
@@ -61,8 +61,8 @@ sites:
         https_proxy_url:
 
         # (optional) number of reports to collect from each site
-        # defaults to 10K
-        reports_limit: 10000
+        # defaults to 10K. leave blank for no limit
+        reports_limit:
 
         # control the number of attempts per-collection before giving up
         # trying to get (empty/malformed) STIX data out of a TAXII server.

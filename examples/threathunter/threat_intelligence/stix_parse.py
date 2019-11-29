@@ -102,6 +102,7 @@ def validate_ip_address(ip_address):
 def cybox_parse_observable(observable, indicator, timestamp, score):
     """
     parses a cybox observable and returns a list of iocs.
+    cybox is a open standard language encoding info about cyber observables
     :param observable: the cybox obserable to parse
     :return: list of observables
     """

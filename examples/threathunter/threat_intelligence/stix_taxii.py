@@ -11,7 +11,7 @@ from datetime import datetime
 from results import IOC_v2, AnalysisResult
 import urllib3
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 handled_exceptions = (NoURIProvidedError, ClientException)
 
@@ -135,6 +135,9 @@ class TaxiiSiteConnector():
         feed_helper = FeedHelper(self.config.start_date,
                                  self.config.minutes_to_advance)
 
+        # config parameters `start_date` and `minutes_to_advance` tell this Feed Helper
+        # where to start polling in the collection, and then will advance polling in chunks of
+        # `minutes_to_advance` minutes until we hit the most current `content_block`.
         while feed_helper.advance():
             num_reports = 0
             content_blocks = self.poll_server(collection, feed_helper)
@@ -142,7 +145,7 @@ class TaxiiSiteConnector():
             for report in reports:
                 yield report
                 num_reports += 1
-                if num_reports > reports_limit:
+                if reports_limit is not None and num_reports > reports_limit:
                     logging.info(f"Reports limit of {reports_limit} reached")
                     advance = False
                     break
@@ -157,7 +160,8 @@ class TaxiiSiteConnector():
             if num_times_empty_content_blocks > self.config.fail_limit:
                 logging.error('Max fail limit reached; Exiting.')
                 break
-            reports_limit -= num_reports
+            if reports_limit is not None:
+                reports_limit -= num_reports
 
     def import_collections(self, available_collections):
         desired_collections = self.config.collections
@@ -208,17 +212,7 @@ class StixTaxii():
 
     def result(self, **kwargs):
         """
-        Returns a new AnalysisResult with the given fields populated, updating
-        the database in the background.
-
-        This should be used within the :meth:`analyze` method to create
-        analysis results.
-
-        :rtype: :class:`AnalysisResult`
-
-        Example::
-
-        >>> self.result(analysis_name="foo", score=10)
+        Returns a new AnalysisResult with the given fields populated.
         """
 
         result = AnalysisResult(**kwargs).normalize()
@@ -259,25 +253,18 @@ class StixTaxii():
                     analysis_name="exception_format_report", error=True)
             yield result
 
-    def analyze(self):
+    def get_send_reports(self):
         self.configure_sites()
         ti = ThreatIntel()
         for site_name, site_conn in self.sites.items():
             logging.info(f"Talking to {site_name} server")
             reports = site_conn.generate_reports()
-            if not reports:
-                yield self.result(
-                    analysis_name=f"exception_analyze_{site_name}",
-                    error=True)
-            else:
+            try:
                 ti.push_to_cb(feed_id=site_conn.config.feed_id, results=self.format_report(reports))
-
+            except:
+                logging.error(f"Failed to push reports to {site_conn.config.feed_id}")
 
 if __name__ == '__main__':
     config = load_config_from_file()
     stix_taxii = StixTaxii(config)
-    reports = stix_taxii.analyze()
-
-    #activate generator to send results
-    for report in reports:
-        pass
+    stix_taxii.get_send_reports()
