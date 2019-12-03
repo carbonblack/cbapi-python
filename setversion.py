@@ -77,20 +77,25 @@ def init_rewriter(line, ctxt):
 
 def rewrite_file(infilename, rewritefunc, ctxt):
     outfilename = infilename + ".new"
-    infile = open(infilename, "r")
-    outfile = open(outfilename, "w")
-    try:
-        s = infile.readline()
-        while s:
-            s2 = rewritefunc(s, ctxt)
-            if s2:
-                outfile.write(s2)
-            else:
-                outfile.write(s)
+    if not ctxt["renameonly"]:
+        infile = open(infilename, "r")
+        outfile = open(outfilename, "w")
+        try:
             s = infile.readline()
-    finally:
-        infile.close()
-        outfile.close()
+            while s:
+                s2 = rewritefunc(s, ctxt)
+                if s2:
+                    outfile.write(s2)
+                else:
+                    outfile.write(s)
+                s = infile.readline()
+        finally:
+            infile.close()
+            outfile.close()
+    else:
+        if not os.access(outfilename, os.F_OK):
+            print("warning: new file {0} does not exist to be renamed".format(outfilename))
+            return
     if not ctxt["nodelete"]:
         if ctxt["backup"]:
             os.rename(infilename, infilename + ".bak")
@@ -110,15 +115,22 @@ def main():
                         help="Do not delete existing files, leave new files with .new extension")
     parser.add_argument("-b", "--backup", action="store_true",
                         help="Keep old versions of files around with a .bak extension")
+    parser.add_argument("-r", "--renameonly", action="store_true",
+                        help="Do rename of .new files only; don't rewrite")
 
     args = parser.parse_args()
     
-    vnexpr = re.compile(r"^[1-9]\d*\.\d+\.\d+$")
-    if not vnexpr.match(args.version):
-        print("Invalid version number {0}: must be three numeric values separated by dots\n".format(args.version))
+    if args.renameonly and args.nodelete:
+        print("cannot specify --renameonly and --nodelete together")
         return 1
     
-    ctxt = {"version": args.version, "nodelete": args.nodelete, "backup": args.backup}
+    if not args.renameonly:
+        vnexpr = re.compile(r"^[1-9]\d*\.\d+\.\d+$")
+        if not vnexpr.match(args.version):
+            print("Invalid version number {0}: must be three numeric values separated by dots\n".format(args.version))
+            return 1
+    
+    ctxt = {"version": args.version, "nodelete": args.nodelete, "backup": args.backup, "renameonly": args.renameonly}
     rewrite_file("README.md", readme_rewriter, ctxt)
     rewrite_file("docs/changelog.rst", changelog_rewriter, ctxt)
     rewrite_file("docs/conf.py", doc_conf_rewriter, ctxt)
