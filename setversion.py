@@ -107,6 +107,12 @@ def main():
                         help="Do not delete existing files, leave new files with .new extension")
 
     args = parser.parse_args()
+    
+    vnexpr = re.compile(r"^[1-9]\d*\.\d+\.\d+$")
+    if not vnexpr.match(args.version):
+        print("Invalid version number {0}: must be three numeric values separated by dots\n".format(args.version))
+        return 1
+    
     ctxt = {"version": args.version, "nodelete": args.nodelete}
     rewrite_file("README.md", readme_rewriter, ctxt)
     rewrite_file("docs/changelog.rst", changelog_rewriter, ctxt)
