@@ -77,7 +77,7 @@ def init_rewriter(line, ctxt):
 
 def rewrite_file(infilename, rewritefunc, ctxt):
     outfilename = infilename + ".new"
-    if not ctxt["renameonly"]:
+    if not ctxt["accept"]:
         infile = open(infilename, "r")
         outfile = open(outfilename, "w")
         try:
@@ -110,27 +110,27 @@ def main():
                                                  "the version numbers in the source.",
                                      epilog="After running, edit docs/changelog.rst and add the new changelog "
                                             "information under the new heading.")
-    parser.add_argument("version", help="New version number to add")
+    parser.add_argument("version", help="New version number to add, or \"accept\" to accept changes to .new files")
     parser.add_argument("-n", "--nodelete", action="store_true",
                         help="Do not delete existing files, leave new files with .new extension")
     parser.add_argument("-b", "--backup", action="store_true",
                         help="Keep old versions of files around with a .bak extension")
-    parser.add_argument("-r", "--renameonly", action="store_true",
-                        help="Do rename of .new files only; don't rewrite")
 
     args = parser.parse_args()
 
-    if args.renameonly and args.nodelete:
-        print("cannot specify --renameonly and --nodelete together")
-        return 1
-
-    if not args.renameonly:
+    is_accept = False    
+    if args.version == "accept":
+        if args.nodelete:
+            print("cannot specify --nodelete with accept command")
+            return 1
+        is_accept = True 
+    else:
         vnexpr = re.compile(r"^[1-9]\d*\.\d+\.\d+$")
         if not vnexpr.match(args.version):
             print("Invalid version number {0}: must be three numeric values separated by dots\n".format(args.version))
             return 1
 
-    ctxt = {"version": args.version, "nodelete": args.nodelete, "backup": args.backup, "renameonly": args.renameonly}
+    ctxt = {"version": args.version, "nodelete": args.nodelete, "backup": args.backup, "accept": is_accept}
     rewrite_file("README.md", readme_rewriter, ctxt)
     rewrite_file("docs/changelog.rst", changelog_rewriter, ctxt)
     rewrite_file("docs/conf.py", doc_conf_rewriter, ctxt)
