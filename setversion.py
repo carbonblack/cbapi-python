@@ -119,17 +119,17 @@ def main():
                         help="Do rename of .new files only; don't rewrite")
 
     args = parser.parse_args()
-    
+
     if args.renameonly and args.nodelete:
         print("cannot specify --renameonly and --nodelete together")
         return 1
-    
+
     if not args.renameonly:
         vnexpr = re.compile(r"^[1-9]\d*\.\d+\.\d+$")
         if not vnexpr.match(args.version):
             print("Invalid version number {0}: must be three numeric values separated by dots\n".format(args.version))
             return 1
-    
+
     ctxt = {"version": args.version, "nodelete": args.nodelete, "backup": args.backup, "renameonly": args.renameonly}
     rewrite_file("README.md", readme_rewriter, ctxt)
     rewrite_file("docs/changelog.rst", changelog_rewriter, ctxt)
