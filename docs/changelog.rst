@@ -2,6 +2,42 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.6.0 - Released December 3, 2019
+---------------------------------------
+
+Updates
+
+* New Carbon Black Cloud API Support
+	* Support for Devices v6:
+		* List and search for devices
+		* Export device information to CSV
+		* Device control actions: quarantine, bypass, background scan, deregister/delete, update
+	* Support for Alerts v6:
+		* Search for and retrieve alerts
+		* Update alert status (dismiss alerts)
+	
+Examples
+
+* Devices v6:
+	*	psc/device_control.py
+	*	psc/download_device_list.py
+	*	psc/list_devices.py
+* Alerts v6:
+	*	psc/alert_search_suggestions.py
+	*	psc/bulk_update_alerts.py
+	*	psc/bulk_update_cbanalytics_alerts.py
+	*	psc/bulk_update_threat_alerts.py
+	*	psc/bulk_update_vmware_alerts.py
+	*	psc/bulk_update_watchlist_alerts.py
+	*	psc/list_alert_facets.py
+	*	psc/list_alerts.py
+	*	psc/list_cbanalytics_alert_facets.py
+	*	psc/list_cbanalytics_alerts.py
+	*	psc/list_vmware_alert_facets.py
+	*	psc/list_vmware_alerts.py
+	*	psc/list_watchlist_alert_facets.py
+	*	psc/list_watchlist_alerts.py
+
 CbAPI 1.5.6 - Released November 19, 2019
 ----------------------------------------
 
