@@ -92,7 +92,10 @@ def rewrite_file(infilename, rewritefunc, ctxt):
         infile.close()
         outfile.close()
     if not ctxt["nodelete"]:
-        os.remove(infilename)
+        if ctxt["backup"]:
+            os.rename(infilename, infilename + ".bak")
+        else:
+            os.remove(infilename)
         os.rename(outfilename, infilename)
 
 
@@ -105,6 +108,8 @@ def main():
     parser.add_argument("version", help="New version number to add")
     parser.add_argument("-n", "--nodelete", action="store_true",
                         help="Do not delete existing files, leave new files with .new extension")
+    parser.add_argument("-b", "--backup", action="store_true",
+                        help="Keep old versions of files around with a .bak extension")
 
     args = parser.parse_args()
     
@@ -113,7 +118,7 @@ def main():
         print("Invalid version number {0}: must be three numeric values separated by dots\n".format(args.version))
         return 1
     
-    ctxt = {"version": args.version, "nodelete": args.nodelete}
+    ctxt = {"version": args.version, "nodelete": args.nodelete, "backup": args.backup}
     rewrite_file("README.md", readme_rewriter, ctxt)
     rewrite_file("docs/changelog.rst", changelog_rewriter, ctxt)
     rewrite_file("docs/conf.py", doc_conf_rewriter, ctxt)
