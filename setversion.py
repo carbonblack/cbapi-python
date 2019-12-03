@@ -61,7 +61,7 @@ def setup_rewriter(line, ctxt):
         ctxt["setup_expr"] = expr
     m = expr.match(line)
     if m:
-        return "{0}version='{1}'\n".format(m.group(1), ctxt["version"])
+        return "{0}version='{1}',\n".format(m.group(1), ctxt["version"])
     return None
 
 
