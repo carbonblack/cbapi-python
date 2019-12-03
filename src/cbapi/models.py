@@ -6,6 +6,7 @@ from copy import deepcopy
 
 from cbapi.six import python_2_unicode_compatible
 
+import sys
 import base64
 import os.path
 from cbapi.six import iteritems, add_metaclass
@@ -144,6 +145,7 @@ class EpochDateTimeFieldDescriptor(FieldDescriptor):
 
     def __get__(self, instance, instance_type=None):
         d = super(EpochDateTimeFieldDescriptor, self).__get__(instance, instance_type)
+        long = long if sys.version_info < (3, 0) else int
         if type(d) is float or type(d) is int or type(d) is long:
             epoch_seconds = d / self.multiplier
             return datetime.utcfromtimestamp(epoch_seconds)
