@@ -24,5 +24,6 @@ def main():
         print("\tGUID: {}".format(child.process_guid))
         print("\tNumber of children: {}".format(len(child.children)))
 
+
 if __name__ == "__main__":
     sys.exit(main())

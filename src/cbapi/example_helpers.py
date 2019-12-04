@@ -1,4 +1,5 @@
 from __future__ import print_function
+from cbapi.six import PY3
 import sys
 import time
 import argparse
@@ -14,6 +15,7 @@ import validators
 import hashlib
 
 from cbapi.protection import CbEnterpriseProtectionAPI
+from cbapi.psc import CbPSCBaseAPI
 from cbapi.psc.defense import CbDefenseAPI
 from cbapi.psc.threathunter import CbThreatHunterAPI
 from cbapi.psc.livequery import CbLiveQueryAPI
@@ -23,12 +25,13 @@ log = logging.getLogger(__name__)
 
 
 # Example scripts: we want to make sure that sys.stdout is using utf-8 encoding. See issue #36.
-from cbapi.six import PY3
 if not PY3:
     sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 
+
 def eprint(*args, **kwargs):
-    _print(*args, file=sys.stderr, **kwargs)
+    print(*args, file=sys.stderr, **kwargs)
+
 
 def build_cli_parser(description="Cb Example Script"):
     parser = argparse.ArgumentParser(description=description)
@@ -65,7 +68,6 @@ def get_cb_response_object(args):
 
 def get_cb_protection_object(args):
     if args.verbose:
-        import logging
         logging.basicConfig()
         logging.getLogger("cbapi").setLevel(logging.DEBUG)
         logging.getLogger("__main__").setLevel(logging.DEBUG)
@@ -78,9 +80,22 @@ def get_cb_protection_object(args):
     return cb
 
 
+def get_cb_psc_object(args):
+    if args.verbose:
+        logging.basicConfig()
+        logging.getLogger("cbapi").setLevel(logging.DEBUG)
+        logging.getLogger("__main__").setLevel(logging.DEBUG)
+
+    if args.cburl and args.apitoken:
+        cb = CbPSCBaseAPI(url=args.cburl, token=args.apitoken, ssl_verify=(not args.no_ssl_verify))
+    else:
+        cb = CbPSCBaseAPI(profile=args.profile)
+
+    return cb
+
+
 def get_cb_defense_object(args):
     if args.verbose:
-        import logging
         logging.basicConfig()
         logging.getLogger("cbapi").setLevel(logging.DEBUG)
         logging.getLogger("__main__").setLevel(logging.DEBUG)
@@ -115,7 +130,7 @@ def get_cb_livequery_object(args):
 
     if args.cburl and args.apitoken and args.orgkey:
         cb = CbLiveQueryAPI(url=args.cburl, token=args.apitoken, org_key=args.orgkey,
-                             ssl_verify=(not args.no_ssl_verify))
+                            ssl_verify=(not args.no_ssl_verify))
     else:
         cb = CbLiveQueryAPI(profile=args.profile)
 
@@ -166,21 +181,27 @@ def read_iocs(cb, file=sys.stdin):
                 eprint("line {}: invalid query".format(idx + 1))
 
     return (report_id.hexdigest(), dict(iocs))
+
 #
 # Live Response
 #
 
+
 class QuitException(Exception):
     pass
+
 
 class CliArgsException(Exception):
     pass
 
+
 class CliHelpException(Exception):
     pass
 
+
 class CliAttachError(Exception):
     pass
+
 
 def split_cli(line):
     '''
@@ -193,7 +214,6 @@ def split_cli(line):
     parts = line.split(' ')
     final = []
 
-    inQuotes = False
     while len(parts) > 0:
 
         tok = parts.pop(0)
@@ -277,7 +297,7 @@ class CblrCli(cmd.Cmd):
                 break
             except KeyboardInterrupt:
                 break
-            except CliAttachError as e:
+            except CliAttachError:
                 print("You must attach to a session")
                 continue
             except CliArgsException as e:
@@ -324,7 +344,6 @@ class CblrCli(cmd.Cmd):
         This function takes in a given file path arguemnt
         and performs the fixups.
         '''
-
 
         if (self._is_path_absolute(path)):
             return path
@@ -490,11 +509,13 @@ class CblrCli(cmd.Cmd):
         self._needs_attached()
 
         p = CliArgs(usage='ps [OPTIONS]')
-        p.add_option('-v', '--verbose', default=False, action='store_true', help='Display verbose info about each process')
+        p.add_option('-v', '--verbose', default=False, action='store_true',
+                     help='Display verbose info about each process')
         p.add_option('-p', '--pid', default=None, help='Display only the given pid')
         (opts, args) = p.parse_line(line)
 
-        if (opts.pid): opts.pid = int(opts.pid)
+        if opts.pid:
+            opts.pid = int(opts.pid)
 
         processes = self.lr_session.list_processes()
 
@@ -563,7 +584,7 @@ class CblrCli(cmd.Cmd):
 
         exe = tok
 
-        #ok - now the command (exe) is in tok
+        # ok - now the command (exe) is in tok
         # we need to do some crappy path manipulation
         # to see what we are supposed to execute
         if (self._is_path_absolute(exe)):
@@ -579,7 +600,7 @@ class CblrCli(cmd.Cmd):
                 # then a file exist in the current working
                 # directory that matches the exe name - execute it
                 exe = ntpath.join(self.cwd, exe)
-            else :
+            else:
                 # the cwd + exe does not exist - let windows
                 # resolve the path
                 pass
@@ -589,7 +610,7 @@ class CblrCli(cmd.Cmd):
             cmdline = exe + ' ' + ' '.join(parts)
         else:
             cmdline = exe
-        #print "CMD: %s" % cmdline
+        # print "CMD: %s" % cmdline
 
         if not optWorkDir:
             optWorkDir = self.cwd
@@ -637,7 +658,6 @@ class CblrCli(cmd.Cmd):
         del <FileToDelete>
         '''
 
-
         self._needs_attached()
 
         if line is None or line == '':
@@ -656,7 +676,6 @@ class CblrCli(cmd.Cmd):
         Args:
         mdkir <PathToCreate>
         '''
-
 
         self._needs_attached()
 

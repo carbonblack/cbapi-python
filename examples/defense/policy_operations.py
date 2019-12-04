@@ -134,11 +134,12 @@ def replace_rule(cb, parser, args):
     print("Replaced rule id {0} from policy {1} with rule from file {2}.".format(args.ruleid, policy.name,
                                                                                  args.rulefile))
 
+
 def main():
     parser = build_cli_parser("Policy operations")
     commands = parser.add_subparsers(help="Policy commands", dest="command_name")
 
-    list_command = commands.add_parser("list", help="List all configured policies")
+    commands.add_parser("list", help="List all configured policies")
 
     import_policy_command = commands.add_parser("import", help="Import policy from JSON file")
     import_policy_command.add_argument("-N", "--name", help="Name of new policy", required=True)
@@ -157,7 +158,7 @@ def main():
     del_policy_specifier = del_command.add_mutually_exclusive_group(required=True)
     del_policy_specifier.add_argument("-i", "--id", type=int, help="ID of policy to delete")
     del_policy_specifier.add_argument("-N", "--name", help="Name of policy to delete. Specify --force to delete"
-                                         " multiple policies that have the same name")
+                                      " multiple policies that have the same name")
     del_command.add_argument("--force", help="If NAME matches multiple policies, delete all matching policies",
                              action="store_true", default=False)
 

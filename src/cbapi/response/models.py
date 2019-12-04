@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-
 from __future__ import absolute_import
 
-import contextlib
 import copy
 import json
 from distutils.version import LooseVersion
@@ -20,7 +18,19 @@ import time
 
 from cbapi.utils import convert_query_params
 from ..errors import InvalidObjectError, ApiError, TimeoutError
-from ..oldmodels import BaseModel, MutableModel, immutable
+from ..oldmodels import BaseModel, immutable
+
+from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
+from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time, parse_process_guid, \
+    convert_to_solr
+from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
+from ..query import SimpleQuery, PaginatedQuery
+from .query import Query
+
+from cbapi.six import python_2_unicode_compatible, iteritems
+
+# Get constants for decoding the Netconn events
+import socket
 
 if six.PY3:
     long = int
@@ -28,23 +38,10 @@ if six.PY3:
 else:
     from cStringIO import StringIO
 
-from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
-from ..oldmodels import BaseModel, immutable
-from .utils import convert_from_cb, convert_from_solr, parse_42_guid, convert_event_time, parse_process_guid, \
-    convert_to_solr
-from ..errors import ServerError, InvalidHashError, ObjectNotFoundError
-from ..query import SimpleQuery, PaginatedQuery
-from .query import Query
-
 try:
     from functools import total_ordering
 except ImportError:
     from total_ordering import total_ordering
-
-from cbapi.six import python_2_unicode_compatible, iteritems
-
-# Get constants for decoding the Netconn events
-import socket
 
 
 log = logging.getLogger(__name__)
@@ -102,7 +99,7 @@ class StoragePartitionQuery(SimpleQuery):
     def results(self):
         if not self._full_init:
             self._results = []
-            for k,v in iteritems(self._cb.get_object(self._urlobject, default={})):
+            for k, v in iteritems(self._cb.get_object(self._urlobject, default={})):
                 t = self._doc_class.new_object(self._cb, v, full_doc=True)
                 if self._match_query(t):
                     self._results.append(t)
@@ -345,7 +342,8 @@ class Feed(MutableBaseModel, CreatableModelMixin):
 
         :param min_score: minimum feed score
         :param max_score: maximum feed score
-        :return: Returns a :py:class:`response.rest_api.Query` object with the appropriate search parameters for processes
+        :return: Returns a :py:class:`response.rest_api.Query` object with the appropriate
+            search parameters for processes
         :rtype: :py:class:`response.rest_api.Query`
         """
         return self._search(Process, min_score, max_score)
@@ -355,7 +353,8 @@ class Feed(MutableBaseModel, CreatableModelMixin):
         Perform a *Binary* search within this feed that satisfies min_score and max_score
         :param min_score: minimum feed score
         :param max_score: maximum feed score
-        :return: Returns a :py:class:`response.rest_api.Query` object within the appropriate search parameters for binaries
+        :return: Returns a :py:class:`response.rest_api.Query` object within the appropriate
+            search parameters for binaries
         :rtype: :py:class:`response.rest_api.Query`
         """
         return self._search(Binary, min_score, max_score)
@@ -655,7 +654,7 @@ class Sensor(MutableBaseModel):
         for adapter in getattr(self, 'network_adapters', '').split('|'):
             parts = adapter.split(',')
             if len(parts) == 2:
-                out.append(Sensor.NetworkAdapter._make([':'.join(a+b for a,b in zip(parts[1][::2], parts[1][1::2])),
+                out.append(Sensor.NetworkAdapter._make([':'.join(a+b for a, b in zip(parts[1][::2], parts[1][1::2])),
                                                         parts[0]]))
         return out
 
@@ -742,7 +741,6 @@ class Sensor(MutableBaseModel):
         :warning: This may cause a significant amount of network traffic from this sensor to the Cb Response Server
         """
 
-
         # Note that Cb Response 6 requires the date/time stamp to be sent in RFC822 format (not ISO 8601).
         # since the date/time stamp just needs to be far in the future, we just fake a GMT timezone.
         self.event_log_flush_time = datetime.now() + timedelta(days=365)
@@ -816,7 +814,8 @@ class Sensor(MutableBaseModel):
         #
         # Note that even though we delete the event_log_flush_time here, it'll get re-initialized when we GET
         #  the sensor after sending the PUT request.
-        if "event_log_flush_time" in self._dirty_attributes and self._info.get("event_log_flush_time", None) is not None:
+        if "event_log_flush_time" in self._dirty_attributes and self._info.get("event_log_flush_time",
+                                                                               None) is not None:
             if self._cb.cb_server_version > LooseVersion("6.0.0"):
                 # since the date/time stamp just needs to be far in the future, we just fake a GMT timezone.
                 try:
@@ -882,12 +881,12 @@ class SensorQuery(SimpleQuery):
     @property
     def results(self):
         if not self._full_init:
-            #ZE CB-15681 - REMOVE BLOCK WHEN BUG IS FIXED
+            # ZE CB-15681 - REMOVE BLOCK WHEN BUG IS FIXED
             try:
                 full_results = self._cb.get_object(self._urlobject, query_parameters=convert_query_params(self._query))
-            except ServerError as se:
+            except ServerError:
                 full_results = False
-            #ZE CB-15681 - REMOVE BLOCK WHEN BUG IS FIXED
+            # ZE CB-15681 - REMOVE BLOCK WHEN BUG IS FIXED
             if not full_results:
                 self._results = []
             else:
@@ -945,7 +944,7 @@ class User(MutableBaseModel, CreatableModelMixin):
         return info
 
     def _update_object(self):
-        if self._cb.cb_server_version < LooseVersion("6.1.0") or self._info.get("id", None) == None:
+        if self._cb.cb_server_version < LooseVersion("6.1.0") or self._info.get("id", None) is None:
             # only include IDs of the teams and not the entire dictionary
             # - applies to Cb Response server < 6.0 as well as Cb Response servers >= 6.0 where the user hasn't
             #   been created yet.
@@ -1074,7 +1073,7 @@ class Watchlist(MutableBaseModel, CreatableModelMixin):
         self._reset_query()
         qt = list(self._query)
         qt.append(("q", new_query))
-        self.search_query = "&".join(("{0}={1}".format(k, urllib.parse.quote(v)) for k,v in qt))
+        self.search_query = "&".join(("{0}={1}".format(k, urllib.parse.quote(v)) for k, v in qt))
 
     @property
     def facets(self):
@@ -1257,7 +1256,7 @@ class TaggedModel(BaseModel):
 class ThreatReportQuery(Query):
     def set_ignored(self, ignored_flag=True):
         qt = (("cb.urlver", "1"), ("q", self._query))
-        search_query = "&".join(("{0}={1}".format(k, urllib.parse.quote(v)) for k,v in qt))
+        search_query = "&".join(("{0}={1}".format(k, urllib.parse.quote(v)) for k, v in qt))
 
         payload = {"updates": {"is_ignored": ignored_flag}, "query": search_query}
         self._cb.post_object("/api/v1/threat_report", payload)
@@ -1304,8 +1303,8 @@ class ThreatReport(MutableBaseModel):
             try:
                 # fill in feed_id and id
                 (feed_id, report_id) = full_id.split(":")
-                initial_data = { "feed_id": feed_id, "id": report_id }
-            except:
+                initial_data = {"feed_id": feed_id, "id": report_id}
+            except Exception:
                 raise ApiError("ThreatReport ID must be in form '<feed_id>:<report_id>'")
 
         super(ThreatReport, self).__init__(cb, full_id, initial_data)
@@ -1315,7 +1314,7 @@ class ThreatReport(MutableBaseModel):
         return self._join(Feed, "feed_id")
 
     def _update_object(self):
-        update_content = { "ids": { str(self.feed_id): [str(self.id)] }, "updates": {}}
+        update_content = {"ids": {str(self.feed_id): [str(self.id)]}, "updates": {}}
         for k in self._dirty_attributes.keys():
             update_content["updates"][k] = getattr(self, k)
 
@@ -1324,7 +1323,7 @@ class ThreatReport(MutableBaseModel):
         if ret.status_code not in (200, 204):
             try:
                 message = json.loads(ret.text)[0]
-            except:
+            except Exception:
                 message = ret.text
 
             raise ServerError(ret.status_code, message,
@@ -1343,7 +1342,7 @@ class ThreatReport(MutableBaseModel):
                 else:
                     self._info = json.loads(ret.text)
                     self._full_init = True
-            except:
+            except Exception:
                 self.refresh()
 
         self._dirty_attributes = {}
@@ -1715,8 +1714,8 @@ class Binary(TaggedModel):
     @property
     def version_info(self):
         """
-        Returns a :class:`.VersionInfo` object containing detailed information: File Descritpion, File Version, Product Name,
-        Product Version, Company Name, Legal Copyright, and Original FileName
+        Returns a :class:`.VersionInfo` object containing detailed information: File Descritpion, File Version,
+        Product Name, Product Version, Company Name, Legal Copyright, and Original FileName
         """
         return Binary.VersionInfo._make([self._attribute('file_desc', ""), self._attribute('file_version', ""),
                                          self._attribute('product_name', ""), self._attribute('product_version', ""),
@@ -1802,7 +1801,6 @@ class Binary(TaggedModel):
         """
         return self._attribute('is_executable_image', False)
 
-
     @property
     def icon(self):
         """
@@ -1813,7 +1811,7 @@ class Binary(TaggedModel):
             icon = self._attribute('icon')
             if not icon:
                 icon = ''
-        except:
+        except Exception:
             pass
 
         return base64.b64decode(icon)
@@ -1917,7 +1915,7 @@ class ProcessV1Parser(object):
         timestamp = convert_event_time(parts[0])
         try:
             new_conn['remote_ip'] = socket.inet_ntoa(struct.pack('>i', int(parts[1])))
-        except:
+        except Exception:
             new_conn['remote_ip'] = '0.0.0.0'
         new_conn['remote_port'] = int(parts[2])
         new_conn['proto'] = protocols[int(parts[3])]
@@ -2021,7 +2019,7 @@ class ProcessV1Parser(object):
             if parts[8] == 'true':
                 new_crossproc['is_target'] = True
 
-        if new_crossproc['is_target'] == True:
+        if new_crossproc['is_target']:
             new_crossproc['target_procguid'] = self.process_model.id
             new_crossproc['target_md5'] = self.process_model.process_md5
             new_crossproc['target_path'] = self.process_model.path
@@ -2056,7 +2054,7 @@ class ProcessV2Parser(ProcessV1Parser):
         for ipfield in ('remote_ip', 'local_ip', 'proxy_ip'):
             try:
                 new_conn[ipfield] = socket.inet_ntoa(struct.pack('>i', int(netconn.get(ipfield, 0))))
-            except:
+            except Exception:
                 new_conn[ipfield] = netconn.get(ipfield, '0.0.0.0')
 
         for portfield in ('remote_port', 'local_port', 'proxy_port'):
@@ -2134,7 +2132,8 @@ class Process(TaggedModel):
     @classmethod
     def new_object(cls, cb, item, max_children=15):
         # 'id' did not exist in some process documents from a 5.2 -> 6.1 upgrade
-        return cb.select(Process, item['id'] or item['unique_id'], long(item['segment_id']), max_children, initial_data=item)
+        return cb.select(Process, item['id'] or item['unique_id'], long(item['segment_id']),
+                         max_children, initial_data=item)
 
     def parse_guid(self, procguid):
         try:
@@ -2149,7 +2148,8 @@ class Process(TaggedModel):
             else:
                 return None, None
 
-    def __init__(self, cb, procguid, segment=None, max_children=15, initial_data=None, force_init=False, suppressed_process=False):
+    def __init__(self, cb, procguid, segment=None, max_children=15, initial_data=None, force_init=False,
+                 suppressed_process=False):
         self.max_children = max_children
         self.current_segment = segment
         self.suppressed_process = suppressed_process
@@ -2255,7 +2255,7 @@ class Process(TaggedModel):
         # Relaxing this a bit to allow for cases where the information is there
         if attrname in ['parent_unique_id',
                         'parent_name'] and not self._full_init:
-            if attrname in self._info and self._info[attrname] != None and self._info[attrname] != "":
+            if attrname in self._info and self._info[attrname] is not None and self._info[attrname] != "":
                 return self._info[attrname]
             else:
                 self._retrieve_cb_info()
@@ -2300,7 +2300,7 @@ class Process(TaggedModel):
                 else:
                     log.debug("Unable to recover start time and process PID for process %s, marking invalid" % self.id)
                     self.valid_process = False
-            except Exception as e:
+            except Exception:
                 log.debug("Unable to parse process GUID %s, marking invalid" % self.id)
                 self.valid_process = False
 
@@ -2412,7 +2412,7 @@ class Process(TaggedModel):
         if self._info.get("end") is not None:
             return convert_from_solr(self._info.get('end', -1))
 
-        if self.get("terminated", False) == True and self.get("last_update") is not None:
+        if self.get("terminated", False) and self.get("last_update") is not None:
             return convert_from_solr(self._attribute('last_update', -1))
 
     def require_events(self):
@@ -2529,17 +2529,18 @@ class Process(TaggedModel):
 
     @property
     def parents(self):
-            current_process = self
-            while True:
-                    try :
-                        parent = current_process.parent
-                        if not(parent) or parent.get('process_pid',-1) == -1:
-                            break
-                        yield parent
-                        current_process = parent
-                    except ObjectNotFoundError:
-                        return
-            return
+        current_process = self
+        while True:
+            try:
+                parent = current_process.parent
+                if not(parent) or parent.get('process_pid', -1) == -1:
+                    break
+                yield parent
+                current_process = parent
+            except ObjectNotFoundError:
+                return
+        return
+
     @property
     def children(self):
         """
@@ -2560,10 +2561,10 @@ class Process(TaggedModel):
                 timestamp = convert_event_time(child.get("start") or "1970-01-01T00:00:00Z")
                 yield CbChildProcEvent(self, timestamp, i,
                                        {
-                                           "procguid": child.get("unique_id",None),
-                                           "md5": child.get("process_md5",None),
-                                           "pid": child.get("process_pid",None),
-                                           "path": child.get("path",None),
+                                           "procguid": child.get("unique_id", None),
+                                           "md5": child.get("process_md5", None),
+                                           "pid": child.get("process_pid", None),
+                                           "path": child.get("path", None),
                                            "terminated": False
                                        },
                                        is_suppressed=child.get("is_suppressed", False),
@@ -2593,7 +2594,7 @@ class Process(TaggedModel):
         :return: list of CbEvent objects
         """
         segment_events = list(self.modloads) + list(self.netconns) + list(self.filemods) + \
-                         list(self.children) + list(self.regmods) + list(self.crossprocs)
+            list(self.children) + list(self.regmods) + list(self.crossprocs)
         segment_events.sort()
         return segment_events
 
@@ -2665,9 +2666,10 @@ class Process(TaggedModel):
     @property
     def threat_intel_hits(self):
         try:
-            hits = self._cb.get_object("/api/v1/process/{0}/{1}/threat_intel_hits".format(self.id, self.current_segment))
+            hits = self._cb.get_object("/api/v1/process/{0}/{1}/threat_intel_hits".format(self.id,
+                                                                                          self.current_segment))
             return hits
-        except ServerError as e:
+        except ServerError:
             raise ApiError("Sharing IOCs not set up in Cb server. See {}/#/share for more information."
                            .format(self._cb.credentials.url))
 
@@ -2711,7 +2713,7 @@ class Process(TaggedModel):
         """
         try:
             ip_address = socket.inet_ntoa(struct.pack('>i', self._attribute('comms_ip', 0)))
-        except:
+        except Exception:
             ip_address = self._attribute('comms_ip', 0)
 
         return ip_address
@@ -2724,7 +2726,7 @@ class Process(TaggedModel):
         """
         try:
             ip_address = socket.inet_ntoa(struct.pack('>i', self._attribute('interface_ip', 0)))
-        except:
+        except Exception:
             ip_address = self._attribute('interface_ip', 0)
 
         return ip_address
@@ -2738,13 +2740,12 @@ class Process(TaggedModel):
         except StopIteration:
             return None
 
-
     @property
     def path(self):
         # Some processes don't have a path associated with them. Try and use the first modload as the file path
         # otherwise, return None. (tested with Cb Response server 5.2.0.161004.1206)
         try:
-            return self._attribute("path","") or next(self.modloads).path
+            return self._attribute("path", "") or next(self.modloads).path
         except StopIteration:
             return None
 
@@ -2881,10 +2882,11 @@ class Process(TaggedModel):
             return
 
         # Get all events
-        res = self._cb.get_object("/api/{0}/process/{1}/{2}/event".format(self._process_event_api, self.id, 0)).get("process", {})
+        res = self._cb.get_object("/api/{0}/process/{1}/{2}/event".format(self._process_event_api,
+                                                                          self.id, 0)).get("process", {})
 
         self._events['all'] = {}
-        for (event_count,event_complete) in event_types.items():
+        for (event_count, event_complete) in event_types.items():
             complete_events = res.get(event_complete, 0)
             if complete_events:
                 self._info[event_count] = len(complete_events)
@@ -2892,7 +2894,7 @@ class Process(TaggedModel):
                 self._events['all'][event_count] = self._info[event_count]
                 self._events['all'][event_complete] = self._info[event_complete]
 
-        #total_events = sum([self._info[event_count] for event_count in event_types])
+        # total_events = sum([self._info[event_count] for event_count in event_types])
 
         # Delete references in res.
         if not self._full_init:
@@ -2906,7 +2908,6 @@ class Process(TaggedModel):
             self._full_init = True
 
         self.all_events_loaded = True
-
 
     def all_childprocs(self):
         if self._cb.cb_server_version < LooseVersion('6.0.0'):
@@ -3040,11 +3041,12 @@ class Process(TaggedModel):
                 yield self._event_parser.parse_netconn(i, raw_netconn)
                 i += 1
 
+
 def get_constants(prefix):
     return dict((getattr(socket, n), n)
                 for n in dir(socket)
                 if n.startswith(prefix)
-    )
+                )
 
 
 protocols = get_constants("IPPROTO_")
@@ -3102,7 +3104,7 @@ class CbEvent(object):
 
 class CbModLoadEvent(CbEvent):
     def __init__(self, parent_process, timestamp, sequence, event_data, binary_data=None):
-        super(CbModLoadEvent,self).__init__(parent_process, timestamp, sequence, event_data)
+        super(CbModLoadEvent, self).__init__(parent_process, timestamp, sequence, event_data)
         self.event_type = u'Cb Module Load event'
         self.stat_titles.extend(['md5', 'path'])
 
@@ -3119,21 +3121,21 @@ class CbModLoadEvent(CbEvent):
 
 class CbFileModEvent(CbEvent):
     def __init__(self, parent_process, timestamp, sequence, event_data):
-        super(CbFileModEvent,self).__init__(parent_process, timestamp, sequence, event_data)
+        super(CbFileModEvent, self).__init__(parent_process, timestamp, sequence, event_data)
         self.event_type = u'Cb File Modification event'
         self.stat_titles.extend(['type', 'path', 'filetype', 'md5'])
 
 
 class CbRegModEvent(CbEvent):
     def __init__(self, parent_process, timestamp, sequence, event_data):
-        super(CbRegModEvent,self).__init__(parent_process, timestamp, sequence, event_data)
+        super(CbRegModEvent, self).__init__(parent_process, timestamp, sequence, event_data)
         self.event_type = u'Cb Registry Modification event'
         self.stat_titles.extend(['type', 'path'])
 
 
 class CbNetConnEvent(CbEvent):
     def __init__(self, parent_process, timestamp, sequence, event_data, version=1):
-        super(CbNetConnEvent,self).__init__(parent_process, timestamp, sequence, event_data)
+        super(CbNetConnEvent, self).__init__(parent_process, timestamp, sequence, event_data)
         self.event_type = u'Cb Network Connection event'
         self.stat_titles.extend(['domain', 'remote_ip', 'remote_port', 'proto', 'direction'])
         if version == 2:
@@ -3142,7 +3144,7 @@ class CbNetConnEvent(CbEvent):
 
 class CbChildProcEvent(CbEvent):
     def __init__(self, parent_process, timestamp, sequence, event_data, is_suppressed=False, proc_data=None):
-        super(CbChildProcEvent,self).__init__(parent_process, timestamp, sequence, event_data)
+        super(CbChildProcEvent, self).__init__(parent_process, timestamp, sequence, event_data)
         self.event_type = u'Cb Child Process event'
         self.stat_titles.extend(['procguid', 'pid', 'path', 'md5'])
         self.is_suppressed = is_suppressed
@@ -3189,7 +3191,7 @@ class CbChildProcEvent(CbEvent):
 
 class CbCrossProcEvent(CbEvent):
     def __init__(self, parent_process, timestamp, sequence, event_data):
-        super(CbCrossProcEvent,self).__init__(parent_process, timestamp, sequence, event_data)
+        super(CbCrossProcEvent, self).__init__(parent_process, timestamp, sequence, event_data)
         self.event_type = u'Cb Cross Process event'
         self.stat_titles.extend(['type', 'privileges', 'target_md5', 'target_path'])
 

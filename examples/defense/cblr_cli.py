@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--log", help="Log activity to a file", default='')
     args = parser.parse_args()
     cb = get_cb_defense_object(args)
-    
+
     if args.log:
         file_handler = logging.FileHandler(args.log)
         file_handler.setLevel(logging.DEBUG)

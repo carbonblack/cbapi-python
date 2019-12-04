@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from cbapi.protection import Connector, PendingAnalysis, Notification
+from cbapi.protection import Connector, Notification
 from cbapi.example_helpers import get_cb_protection_object, build_cli_parser
 import logging
 import time
@@ -48,4 +48,3 @@ if __name__ == '__main__':
         for i in vt_connector.pendingAnalyses:
             process_request(api, i)
         time.sleep(10)
-

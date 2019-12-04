@@ -76,8 +76,8 @@ def delete_sensor_group(cb, parser, args):
 
     num_matching_sensor_groups = len(groups)
     if num_matching_sensor_groups > 1 and not args.force:
-        print("{0:d} sensor groups match {1:s} and --force not specified. No action taken.".format(num_matching_sensor_groups,
-                                                                                           attempted_to_find))
+        print("{0:d} sensor groups match {1:s} and --force not specified. No action taken."
+              .format(num_matching_sensor_groups, attempted_to_find))
         return
 
     for g in groups:
@@ -93,7 +93,7 @@ def main():
     parser = build_cli_parser()
     commands = parser.add_subparsers(help="Sensor Group commands", dest="command_name")
 
-    list_command = commands.add_parser("list", help="List all configured sensor groups")
+    commands.add_parser("list", help="List all configured sensor groups")
 
     add_command = commands.add_parser("add", help="Add new sensor group")
     add_command.add_argument("-n", "--name", action="store", help="Sensor group name", required=True,
@@ -105,9 +105,11 @@ def main():
     del_command = commands.add_parser("delete", help="Delete sensor groups")
     del_sensor_group_specifier = del_command.add_mutually_exclusive_group(required=True)
     del_sensor_group_specifier.add_argument("-i", "--id", type=int, help="ID of sensor group to delete")
-    del_sensor_group_specifier.add_argument("-n", "--name", help="Name of sensor group to delete. Specify --force to delete"
-                                    " multiple sensor groups that have the same name", dest="groupname")
-    del_command.add_argument("--force", help="If NAME matches multiple sensor groups, delete all matching sensor groups",
+    del_sensor_group_specifier.add_argument("-n", "--name",
+                                            help="Name of sensor group to delete. Specify --force to delete"
+                                            " multiple sensor groups that have the same name", dest="groupname")
+    del_command.add_argument("--force",
+                             help="If NAME matches multiple sensor groups, delete all matching sensor groups",
                              action="store_true", default=False)
 
     list_sensors_command = commands.add_parser("list-sensors", help="List all sensors in a sensor group")

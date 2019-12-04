@@ -253,7 +253,7 @@ class MutableModel(BaseModel):
         if ret.status_code not in (200, 204):
             try:
                 message = json.loads(ret.text)[0]
-            except:
+            except Exception:
                 message = ret.text
 
             raise ServerError(ret.status_code, message,
@@ -273,7 +273,7 @@ class MutableModel(BaseModel):
                 else:
                     self._info = json.loads(ret.text)
                     self._full_init = True
-            except:
+            except Exception:
                 self.refresh()
 
         if not self._model_unique_id:
@@ -295,7 +295,7 @@ class MutableModel(BaseModel):
         if ret.status_code not in (200, 204):
             try:
                 message = json.loads(ret.text)[0]
-            except:
+            except Exception:
                 message = ret.text
             raise ServerError(ret.status_code, message, result="Did not delete {0:s}.".format(str(self)))
 

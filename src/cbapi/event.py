@@ -58,7 +58,7 @@ class EventRegistry(threading.Thread):
 
             try:
                 callback["func"](*callback["args"], **kwargs)
-            except Exception as e:
+            except Exception:
                 with self._error_lock:
                     self._errors.append({"exception": traceback.format_exc(), "timestamp": time.time(),
                                          "callback_func": callback["func"].__name__,

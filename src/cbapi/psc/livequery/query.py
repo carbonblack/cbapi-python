@@ -1,199 +1,13 @@
-from cbapi.errors import ApiError, MoreThanOneResultError
+from cbapi.errors import ApiError
+from cbapi.psc.base_query import QueryBuilder, PSCQueryBase
+from cbapi.psc.base_query import QueryBuilderSupportMixin, IterableQueryMixin
 import logging
-import functools
 from six import string_types
-from solrq import Q
 
 log = logging.getLogger(__name__)
 
 
-class QueryBuilder(object):
-    """
-    Provides a flexible interface for building prepared queries for the CB
-    LiveQuqery backend.
-
-    This object can be instantiated directly, or can be managed implicitly
-    through the :py:meth:`CbLiveQuqeryAPI.select` API.
-    """
-
-    def __init__(self, **kwargs):
-        if kwargs:
-            self._query = Q(**kwargs)
-        else:
-            self._query = None
-        self._raw_query = None
-
-    def _guard_query_params(func):
-        """Decorates the query construction methods of *QueryBuilder*, preventing
-        them from being called with parameters that would result in an intetnally
-        inconsistent query.
-        """
-
-        @functools.wraps(func)
-        def wrap_guard_query_change(self, q, **kwargs):
-            if self._raw_query is not None and (kwargs or isinstance(q, Q)):
-                raise ApiError("Cannot modify a raw query with structured parameters")
-            if self._query is not None and isinstance(q, string_types):
-                raise ApiError("Cannot modify a structured query with a raw parameter")
-            return func(self, q, **kwargs)
-
-        return wrap_guard_query_change
-
-    @_guard_query_params
-    def where(self, q, **kwargs):
-        """Adds a conjunctive filter to a query.
-
-        :param q: string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if isinstance(q, string_types):
-            if self._raw_query is None:
-                self._raw_query = []
-            self._raw_query.append(q)
-        elif isinstance(q, Q) or kwargs:
-            if self._query is not None:
-                raise ApiError("Use .and_() or .or_() for an extant solrq.Q object")
-            if kwargs:
-                q = Q(**kwargs)
-            self._query = q
-        else:
-            raise ApiError(".where() only accepts strings or solrq.Q objects")
-
-        return self
-
-    @_guard_query_params
-    def and_(self, q, **kwargs):
-        """Adds a conjunctive filter to a query.
-
-        :param q: string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if isinstance(q, string_types):
-            self.where(q)
-        elif isinstance(q, Q) or kwargs:
-            if kwargs:
-                q = Q(**kwargs)
-            if self._query is None:
-                self._query = q
-            else:
-                self._query = self._query & q
-        else:
-            raise ApiError(".and_() only accepts strings or solrq.Q objects")
-
-        return self
-
-    @_guard_query_params
-    def or_(self, q, **kwargs):
-        """Adds a disjunctive filter to a query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if kwargs:
-            q = Q(**kwargs)
-
-        if isinstance(q, Q):
-            if self._query is None:
-                self._query = q
-            else:
-                self._query = self._query | q
-        else:
-            raise ApiError(".or_() only accepts solrq.Q objects")
-
-        return self
-
-    @_guard_query_params
-    def not_(self, q, **kwargs):
-        """Adds a negative filter to a query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: QueryBuilder object
-        :rtype: :py:class:`QueryBuilder`
-        """
-        if kwargs:
-            q = ~Q(**kwargs)
-
-        if isinstance(q, Q):
-            if self._query is None:
-                self._query = q
-            else:
-                self._query = self._query & q
-        else:
-            raise ApiError(".not_() only accepts solrq.Q objects")
-
-    def _collapse(self):
-        """The query can be represented by either an array of strings
-        (_raw_query) which is concatenated and passed directly to Solr, or
-        a solrq.Q object (_query) which is then converted into a string to
-        pass to Solr. This function will perform the appropriate conversions to
-        end up with the 'q' string sent into the POST request to the
-        PSC-R query endpoint."""
-        if self._raw_query is not None:
-            return " ".join(self._raw_query)
-        elif self._query is not None:
-            return str(self._query)
-        else:
-            return None  # return everything
-
-
-class LiveQueryBase:
-    """
-    Represents the base of all LiveQuery query classes.
-    """
-
-    def __init__(self, doc_class, cb):
-        self._doc_class = doc_class
-        self._cb = cb
-
-
-class IterableQueryMixin:
-    """
-    A mix-in to provide iterability to a query.
-    """
-
-    def all(self):
-        return self._perform_query()
-
-    def first(self):
-        allres = list(self)
-        res = allres[:1]
-        if not len(res):
-            return None
-        return res[0]
-
-    def one(self):
-        allres = list(self)
-        res = allres[:2]
-        if len(res) == 0:
-            raise MoreThanOneResultError(
-                message="0 results for query {0:s}".format(self._query)
-            )
-        if len(res) > 1:
-            raise MoreThanOneResultError(
-                message="{0:d} results found for query {1:s}".format(
-                    len(self), self._query
-                )
-            )
-        return res[0]
-
-    def __len__(self):
-        return 0
-
-    def __getitem__(self, item):
-        return None
-
-    def __iter__(self):
-        return self._perform_query()
-
-
-class RunQuery(LiveQueryBase):
+class RunQuery(PSCQueryBase):
     """
     Represents a query that either creates or retrieves the
     status of a LiveQuery run.
@@ -293,7 +107,7 @@ class RunQuery(LiveQueryBase):
         return self._doc_class(self._cb, initial_data=resp.json())
 
 
-class RunHistoryQuery(LiveQueryBase, IterableQueryMixin):
+class RunHistoryQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin):
     """
     Represents a query that retrieves historic LiveQuery runs.
     """
@@ -301,66 +115,6 @@ class RunHistoryQuery(LiveQueryBase, IterableQueryMixin):
         super().__init__(doc_class, cb)
         self._query_builder = QueryBuilder()
         self._sort = {}
-    
-    def where(self, q=None, **kwargs):
-        """Add a filter to this query.
-
-        :param q: Query string, :py:class:`QueryBuilder`, or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-
-        if not q:
-            return self
-        if isinstance(q, QueryBuilder):
-            self._query_builder = q
-        else:
-            self._query_builder.where(q, **kwargs)
-        return self
-
-    def and_(self, q=None, **kwargs):
-        """Add a conjunctive filter to this query.
-
-        :param q: Query string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(".and_() expects a string, a solrq.Q, or kwargs")
-
-        self._query_builder.and_(q, **kwargs)
-        return self
-
-    def or_(self, q=None, **kwargs):
-        """Add a disjunctive filter to this query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(".or_() expects a solrq.Q or kwargs")
-
-        self._query_builder.or_(q, **kwargs)
-        return self
-
-    def not_(self, q=None, **kwargs):
-        """Adds a negated filter to this query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-
-        if not q and not kwargs:
-            raise ApiError(".not_() expects a solrq.Q, or kwargs")
-
-        self._query_builder.not_(q, **kwargs)
-        return self
 
     def sort_by(self, key, direction="ASC"):
         """Sets the sorting behavior on a query's results.
@@ -377,10 +131,10 @@ class RunHistoryQuery(LiveQueryBase, IterableQueryMixin):
         return self
 
     def _build_request(self, start, rows):
-        request = {"start": start }
+        request = {"start": start}
 
         if self._query_builder:
-            request["query"] = self._query_builder._collapse();
+            request["query"] = self._query_builder._collapse()
         if rows != 0:
             request["rows"] = rows
         if self._sort:
@@ -435,7 +189,7 @@ class RunHistoryQuery(LiveQueryBase, IterableQueryMixin):
                 break
 
 
-class ResultQuery(LiveQueryBase, IterableQueryMixin):
+class ResultQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin):
     """
     Represents a query that retrieves results from a LiveQuery run.
     """
@@ -446,68 +200,6 @@ class ResultQuery(LiveQueryBase, IterableQueryMixin):
         self._sort = {}
         self._batch_size = 100
         self._run_id = None
-
-    def where(self, q=None, **kwargs):
-        """Add a filter to this query.
-
-        :param q: Query string, :py:class:`QueryBuilder`, or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(
-                ".where() expects a string, a QueryBuilder, a solrq.Q, or kwargs"
-            )
-
-        if isinstance(q, QueryBuilder):
-            self._query_builder = q
-        else:
-            self._query_builder.where(q, **kwargs)
-        return self
-
-    def and_(self, q=None, **kwargs):
-        """Add a conjunctive filter to this query.
-
-        :param q: Query string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(".and_() expects a string, a solrq.Q, or kwargs")
-
-        self._query_builder.and_(q, **kwargs)
-        return self
-
-    def or_(self, q=None, **kwargs):
-        """Add a disjunctive filter to this query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(".or_() expects a solrq.Q or kwargs")
-
-        self._query_builder.or_(q, **kwargs)
-        return self
-
-    def not_(self, q=None, **kwargs):
-        """Adds a negated filter to this query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-
-        if not q and not kwargs:
-            raise ApiError(".not_() expects a solrq.Q, or kwargs")
-
-        self._query_builder.not_(q, **kwargs)
-        return self
 
     def criteria(self, **kwargs):
         """Sets the filter criteria on a query's results.
@@ -609,7 +301,7 @@ class ResultQuery(LiveQueryBase, IterableQueryMixin):
                 break
 
 
-class FacetQuery(LiveQueryBase, IterableQueryMixin):
+class FacetQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMixin):
     """
     Represents a query that receives facet information from a LiveQuery run.
     """
@@ -619,76 +311,14 @@ class FacetQuery(LiveQueryBase, IterableQueryMixin):
         self._facet_fields = []
         self._criteria = {}
         self._run_id = None
-    
-    def where(self, q=None, **kwargs):
-        """Add a filter to this query.
 
-        :param q: Query string, :py:class:`QueryBuilder`, or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(
-                ".where() expects a string, a QueryBuilder, a solrq.Q, or kwargs"
-            )
-
-        if isinstance(q, QueryBuilder):
-            self._query_builder = q
-        else:
-            self._query_builder.where(q, **kwargs)
-        return self
-
-    def and_(self, q=None, **kwargs):
-        """Add a conjunctive filter to this query.
-
-        :param q: Query string or `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(".and_() expects a string, a solrq.Q, or kwargs")
-
-        self._query_builder.and_(q, **kwargs)
-        return self
-
-    def or_(self, q=None, **kwargs):
-        """Add a disjunctive filter to this query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-        if not q and not kwargs:
-            raise ApiError(".or_() expects a solrq.Q or kwargs")
-
-        self._query_builder.or_(q, **kwargs)
-        return self
-
-    def not_(self, q=None, **kwargs):
-        """Adds a negated filter to this query.
-
-        :param q: `solrq.Q` object
-        :param kwargs: Arguments to construct a `solrq.Q` with
-        :return: Query object
-        :rtype: :py:class:`Query`
-        """
-
-        if not q and not kwargs:
-            raise ApiError(".not_() expects a solrq.Q, or kwargs")
-
-        self._query_builder.not_(q, **kwargs)
-        return self
-    
     def facet_field(self, field):
         """Sets the facet fields to be received by this query.
-        
+
         Example::
-        
+
         >>> cb.select(ResultFacet).run_id(my_run).facet_field(["device.policy_name", "device.os"])
-        
+
         :param field: Field(s) to be received, either single string or list of strings
         :return: Query object
         :rtype: :py:class:`Query`
@@ -720,17 +350,17 @@ class FacetQuery(LiveQueryBase, IterableQueryMixin):
         """
         self._run_id = run_id
         return self
-    
+
     def _build_request(self, rows):
-        terms = { "fields": self._facet_fields }
+        terms = {"fields": self._facet_fields}
         if rows != 0:
             terms["rows"] = rows
         request = {"query": self._query_builder._collapse(), "terms": terms}
         if self._criteria:
             request["criteria"] = self._criteria
         return request
-    
-    def _perform_query(self, rows=0):      
+
+    def _perform_query(self, rows=0):
         if self._run_id is None:
             raise ApiError("Can't retrieve results without a run ID")
 
@@ -743,4 +373,3 @@ class FacetQuery(LiveQueryBase, IterableQueryMixin):
         results = result.get("terms", [])
         for item in results:
             yield self._doc_class(self._cb, item)
-        

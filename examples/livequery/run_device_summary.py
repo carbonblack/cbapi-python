@@ -56,13 +56,13 @@ def main():
 
     args = parser.parse_args()
     cb = get_cb_livequery_object(args)
-    
+
     results = cb.select(Result).run_id(args.id)
     result = results.first()
     if result is None:
         print("ERROR: No results.")
         return 1
-    
+
     summaries = result.query_device_summaries()
     if args.query:
         summaries.where(args.query)
@@ -79,7 +79,7 @@ def main():
     if args.sort_by:
         dir = "DESC" if args.descending_results else "ASC"
         summaries.sort_by(args.sort_by, direction=dir)
-        
+
     for summary in summaries:
         print(summary)
 

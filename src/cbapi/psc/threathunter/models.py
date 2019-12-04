@@ -96,7 +96,8 @@ class Process(UnrefreshableModel):
     def parents(self):
         """Returns a query for parent processes associated with this process.
 
-        :return: Returns a Query object with the appropriate search parameters for parent processes, or None if the process has no recorded parent
+        :return: Returns a Query object with the appropriate search parameters for parent processes,
+                 or None if the process has no recorded parent
         :rtype: :py:class:`cbapi.psc.threathunter.query.AsyncProcessQuery` or None
         """
         if "parent_guid" in self._info:

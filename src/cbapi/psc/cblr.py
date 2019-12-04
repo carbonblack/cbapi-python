@@ -6,7 +6,8 @@ from concurrent.futures import _base
 
 from cbapi.errors import TimeoutError
 from cbapi.live_response_api import CbLRManagerBase, CbLRSessionBase, poll_status
-from cbapi.psc.defense.models import Device
+from cbapi.psc.models import Device
+
 
 OS_LIVE_RESPONSE_ENUM = {
     "WINDOWS": 1,
@@ -16,11 +17,13 @@ OS_LIVE_RESPONSE_ENUM = {
 
 log = logging.getLogger(__name__)
 
+
 class LiveResponseSession(CbLRSessionBase):
     def __init__(self, cblr_manager, session_id, sensor_id, session_data=None):
         super(LiveResponseSession, self).__init__(cblr_manager, session_id, sensor_id, session_data=session_data)
         device_info = self._cb.select(Device, self.sensor_id)
         self.os_type = OS_LIVE_RESPONSE_ENUM.get(device_info.deviceType, None)
+
 
 class WorkItem(object):
     def __init__(self, fn, sensor_id):
@@ -29,8 +32,10 @@ class WorkItem(object):
             self.sensor_id = sensor_id.deviceId
         else:
             self.sensor_id = int(sensor_id)
-        
+
         self.future = _base.Future()
+
+
 class CompletionNotification(object):
     def __init__(self, sensor_id):
         self.sensor_id = sensor_id
@@ -79,6 +84,7 @@ class JobWorker(threading.Thread):
         except Exception as e:
             work_item.future.set_exception(e)
 
+
 class LiveResponseSessionManager(CbLRManagerBase):
     cblr_base = "/integrationServices/v3/cblr"
     cblr_session_cls = LiveResponseSession
@@ -88,7 +94,7 @@ class LiveResponseSessionManager(CbLRManagerBase):
             # spawn the scheduler thread
             self._job_scheduler = LiveResponseJobScheduler(self._cb)
             self._job_scheduler.start()
-        
+
         work_item = WorkItem(job, sensor)
         self._job_scheduler.submit_job(work_item)
         return work_item.future
@@ -114,7 +120,7 @@ class LiveResponseSessionManager(CbLRManagerBase):
         try:
             self._cb.put_object("{cblr_base}/session".format(session_id, cblr_base=self.cblr_base),
                                 {"session_id": session_id, "status": "CLOSE"})
-        except:
+        except Exception:
             pass
 
     def _create_session(self, sensor_id):
@@ -122,6 +128,7 @@ class LiveResponseSessionManager(CbLRManagerBase):
                                         {"sensor_id": sensor_id}).json()
         session_id = response["id"]
         return session_id
+
 
 class LiveResponseJobScheduler(threading.Thread):
     daemon = True
@@ -223,7 +230,7 @@ class LiveResponseJobScheduler(threading.Thread):
     def _spawn_new_workers(self):
         if len(self._job_workers) >= self._max_workers:
             return
-    
+
         schedule_max = self._max_workers - len(self._job_workers)
         '''
         sensors = [s for s in self._cb.select(Device) if s.deviceId in self._unscheduled_jobs
@@ -232,7 +239,7 @@ class LiveResponseJobScheduler(threading.Thread):
         '''
         log.debug("spawning new workers to handle unscheduled jobs: {0}".format(self._unscheduled_jobs))
         sensors = [s for s in self._cb.select(Device) if s.deviceId in self._unscheduled_jobs
-                    and s.deviceId not in self._job_workers] 
+                   and s.deviceId not in self._job_workers]
         sensors_to_schedule = sensors[:schedule_max]
         log.debug("Spawning new workers to handle these sensors: {0}".format(sensors_to_schedule))
         for sensor in sensors_to_schedule:

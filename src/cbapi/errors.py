@@ -102,4 +102,3 @@ class InvalidHashError(Exception):
 class MoreThanOneResultError(ApiError):
     """Only one object was requested, but multiple matches were found in the Carbon Black datastore."""
     pass
-

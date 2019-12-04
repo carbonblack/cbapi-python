@@ -46,10 +46,10 @@ if PY3:
 
     MAXSIZE = sys.maxsize
 else:
-    string_types = basestring,
-    integer_types = (int, long)
+    string_types = basestring,             # noqa: F821
+    integer_types = (int, long)            # noqa: F821
     class_types = (type, types.ClassType)
-    text_type = unicode
+    text_type = unicode                    # noqa: F821
     binary_type = str
 
     if sys.platform.startswith("java"):
@@ -222,6 +222,7 @@ class _SixMetaPathImporter(object):
         self.__get_module(fullname)  # eventually raises ImportError
         return None
     get_source = get_code  # same as get_code
+
 
 _importer = _SixMetaPathImporter(__name__)
 
@@ -479,6 +480,7 @@ class Module_six_moves_urllib(types.ModuleType):
     def __dir__(self):
         return ['parse', 'error', 'request', 'response', 'robotparser']
 
+
 _importer._add_module(Module_six_moves_urllib(__name__ + ".moves.urllib"),
                       "moves.urllib")
 
@@ -644,7 +646,7 @@ else:
     # Workaround for standalone backslash
 
     def u(s):
-        return unicode(s.replace(r'\\', r'\\\\'), "unicode_escape")
+        return unicode(s.replace(r'\\', r'\\\\'), "unicode_escape")   # noqa: F821
     unichr = unichr
     int2byte = chr
 
@@ -727,11 +729,11 @@ if print_ is None:
             return
 
         def write(data):
-            if not isinstance(data, basestring):
+            if not isinstance(data, basestring):     # noqa: F821
                 data = str(data)
             # If the file has an encoding, encode unicode with it.
-            if (isinstance(fp, file) and
-                    isinstance(data, unicode) and
+            if (isinstance(fp, file) and             # noqa: F821
+                    isinstance(data, unicode) and    # noqa: F821
                     fp.encoding is not None):
                 errors = getattr(fp, "errors", None)
                 if errors is None:
@@ -741,13 +743,13 @@ if print_ is None:
         want_unicode = False
         sep = kwargs.pop("sep", None)
         if sep is not None:
-            if isinstance(sep, unicode):
+            if isinstance(sep, unicode):      # noqa: F821
                 want_unicode = True
             elif not isinstance(sep, str):
                 raise TypeError("sep must be None or a string")
         end = kwargs.pop("end", None)
         if end is not None:
-            if isinstance(end, unicode):
+            if isinstance(end, unicode):      # noqa: F821
                 want_unicode = True
             elif not isinstance(end, str):
                 raise TypeError("end must be None or a string")
@@ -755,12 +757,12 @@ if print_ is None:
             raise TypeError("invalid keyword arguments to print()")
         if not want_unicode:
             for arg in args:
-                if isinstance(arg, unicode):
+                if isinstance(arg, unicode):  # noqa: F821
                     want_unicode = True
                     break
         if want_unicode:
-            newline = unicode("\n")
-            space = unicode(" ")
+            newline = unicode("\n")     # noqa: F821
+            space = unicode(" ")        # noqa: F821
         else:
             newline = "\n"
             space = " "

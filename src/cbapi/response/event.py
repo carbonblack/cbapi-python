@@ -33,18 +33,18 @@ class FileEventSource(threading.Thread):
 
     def run(self):
         while not self._fp.closed:
-            l = self._fp.readline()
-            if l == "":
+            line = self._fp.readline()
+            if line == "":
                 # wait for new events
                 sleep(1)
                 continue
 
             try:
-                msg = json.loads(l)
+                msg = json.loads(line)
                 routing_key = msg.get("type")
                 # log.debug("Received message with routing key %s" % routing_key)
-                registry.eval_callback(routing_key, l, self._cb)
-            except:
+                registry.eval_callback(routing_key, line, self._cb)
+            except Exception:
                 pass
 
     def stop(self):
@@ -76,8 +76,8 @@ class EventForwarderHTTPSource(threading.Thread):
             certfile = kwargs.get("certfile", None)
             if not keyfile or not certfile:
                 raise CredentialError("Need to specify 'keyfile' and 'certfile' for HTTPS")
-            self.httpd.socket = ssl.wrap_socket (self.httpd.socket, certfile=certfile, keyfile=keyfile,
-                                                 server_side=True)
+            self.httpd.socket = ssl.wrap_socket(self.httpd.socket, certfile=certfile, keyfile=keyfile,
+                                                server_side=True)
 
     def run(self):
         self.httpd.serve_forever()
@@ -168,7 +168,7 @@ class RabbitMQEventSource(threading.Thread):
             self._connection.ioloop.stop()
         else:
             log.warning('Connection closed, reopening in 5 seconds: (%s) %s',
-                           reply_code, reply_text)
+                        reply_code, reply_text)
             self._connection.add_timeout(5, self.reconnect)
 
     def reconnect(self):
@@ -231,7 +231,7 @@ class RabbitMQEventSource(threading.Thread):
 
         """
         log.warning('Channel %i was closed: (%s) %s',
-                       channel, reply_code, reply_text)
+                    channel, reply_code, reply_text)
         self._connection.close()
 
     def setup_exchange(self, exchange_name):
@@ -282,7 +282,7 @@ class RabbitMQEventSource(threading.Thread):
         """
         for routing_key in self.ROUTING_KEYS:
             log.debug('Binding %s to %s with %s',
-                        self.EXCHANGE, self.QUEUE, routing_key)
+                      self.EXCHANGE, self.QUEUE, routing_key)
             self._channel.queue_bind(self.on_bindok, self.QUEUE,
                                      self.EXCHANGE, routing_key)
 
@@ -331,7 +331,7 @@ class RabbitMQEventSource(threading.Thread):
 
         """
         log.debug('Consumer was cancelled remotely, shutting down: %r',
-                    method_frame)
+                  method_frame)
         if self._channel:
             self._channel.close()
 
@@ -419,7 +419,7 @@ class RabbitMQEventSource(threading.Thread):
 
         """
         log.debug('Received message # %s with properties %s',
-                    basic_deliver.delivery_tag, properties)
+                  basic_deliver.delivery_tag, properties)
 
         registry.eval_callback(basic_deliver.routing_key, body, self._cb)
 

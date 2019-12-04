@@ -1,8 +1,7 @@
 from cbapi.utils import convert_query_params
 from cbapi.query import PaginatedQuery
-from .cblr import LiveResponseSessionManager
 
-from cbapi.connection import BaseAPI
+from cbapi.psc.rest_api import CbPSCBaseAPI
 import logging
 import time
 
@@ -14,7 +13,7 @@ def convert_to_kv_pairs(q):
     return k, v
 
 
-class CbDefenseAPI(BaseAPI):
+class CbDefenseAPI(CbPSCBaseAPI):
     """The main entry point into the Cb Defense API.
 
     :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server.
@@ -26,8 +25,7 @@ class CbDefenseAPI(BaseAPI):
     >>> cb = CbDefenseAPI(profile="production")
     """
     def __init__(self, *args, **kwargs):
-        super(CbDefenseAPI, self).__init__(product_name="psc", *args, **kwargs)
-        self._lr_scheduler = None
+        super(CbDefenseAPI, self).__init__(*args, **kwargs)
 
     def _perform_query(self, cls, query_string=None):
         return Query(cls, self, query_string)
@@ -49,16 +47,6 @@ class CbDefenseAPI(BaseAPI):
         """
         res = self.get_object("/integrationServices/v3/notification")
         return res.get("notifications", [])
-
-    @property
-    def live_response(self):
-        if self._lr_scheduler is None:
-            self._lr_scheduler = LiveResponseSessionManager(self)
-
-        return self._lr_scheduler
-
-    def _request_lr_session(self, sensor_id):
-        return self.live_response.request_session(sensor_id)
 
 
 class Query(PaginatedQuery):

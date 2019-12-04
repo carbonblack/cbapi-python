@@ -1,7 +1,5 @@
 import boto3
 import json
-import pprint
-import traceback
 import time
 from cbapi.response.models import BannedHash
 from cbapi.example_helpers import build_cli_parser, get_cb_response_object
@@ -47,13 +45,13 @@ def process_events(data):
                     print(e.message)
 
 
-
 def save_progress(processed_list):
     #
     # Save our progress in a log file
     #
     with open('script_progress.log', 'wb') as hfile:
         hfile.write(json.dumps(list(processed_list)))
+
 
 def listen_mode(bucket):
 
@@ -74,7 +72,7 @@ def listen_mode(bucket):
         for obj in bucket.objects.all():
             key = obj.key
             if key not in current_list:
-                print "[+]: New File: {}".format(key)
+                print("[+]: New File: {}".format(key))
                 #
                 # We have not processed this file.
                 #
@@ -142,7 +140,7 @@ if __name__ == "__main__":
         with open('script_progress.log', 'rb') as hfile:
             for item in json.loads(hfile.read()):
                 processed_list.add(item)
-    except:
+    except Exception:
         print("[?]: No previous progress file found: script_progress.log")
         processed_list = set()
 
@@ -170,4 +168,3 @@ if __name__ == "__main__":
 
     print("[+]: saving progess to file script_progress.log")
     save_progress(processed_list)
-

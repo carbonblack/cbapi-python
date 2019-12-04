@@ -1,0 +1,310 @@
+type: object
+properties:
+  activation_code:
+    type: string
+    description: Device activation code
+  activation_code_expiry_time:
+    type: string
+    description: When the expiration code expires and cannot be used to register a device
+  ad_group_id:
+    type: integer
+    format: int64
+    description: Device's AD group
+  av_ave_version:
+    type: string
+    description: AVE version (part of AV Version)
+  av_engine:
+    type: string
+    example: '4.3.0.203-ave.8.3.42.106:avpack.8.4.2.36:vdf.8.12.142.100'
+    description: Current AV version
+  av_last_scan_time:
+    type: string
+    description: Last AV scan time
+  av_master:
+    type: boolean
+    description: Whether the device is an AV Master (?)
+  av_pack_version:
+    type: string
+    description: Pack version (part of AV Version)
+  av_product_version:
+    type: string
+    description: AV Product version (part of AV Version)
+  av_status:
+    type: array
+    description: AV Statuses
+    items:
+      type: string
+      enum:
+        - AV_NOT_REGISTERED
+        - AV_REGISTERED
+        - AV_DEREGISTERED
+        - AV_ACTIVE
+        - AV_BYPASS
+        - NOT_INSTALLED
+        - INSTALLED
+        - UNINSTALLED
+        - INSTALLED_SERVER
+        - UNINSTALLED_SERVER
+        - FULLY_ENABLED
+        - FULLY_DISABLED
+        - SIGNATURE_UPDATE_DISABLED
+        - ONACCESS_SCAN_DISABLED
+        - ONDEMOND_SCAN_DISABLED
+        - ONDEMAND_SCAN_DISABLED
+        - PRODUCT_UPDATE_DISABLED
+  av_update_servers:
+    type: array
+    description: Device's AV servers
+    items:
+      type: string
+  av_vdf_version:
+    type: string
+    description: VDF version (part of AV Version)
+  current_sensor_policy_name:
+    type: string
+    description: Current MSM policy name
+  deregistered_time:
+    type: string
+    format: date-time
+    description: When the device was deregistered with the PSC backend
+  device_id:
+    type: integer
+    format: int64
+    description: ID of the device
+  device_meta_data_item_list:
+    type: array
+    description: MSM Device metadata
+    items:
+      type: object
+      properties:
+        key_name:
+          type: string
+        key_value:
+          type: string
+        position:
+          type: integer
+          format: int32    
+  device_owner_id:
+    type: integer
+    format: int64
+    description: ID of the user who owns the device
+  email:
+    type: string
+    description: Email of the user who owns the device
+  encoded_activation_code:
+    type: string
+    description: Encoded device activation code
+  first_name:
+    type: string
+    description: First name of the user who owns the device
+  id:
+    type: integer
+    format: int64
+    description: ID of the device
+  last_contact_time:
+    type: string
+    format: date-time
+    description: Time the device last checked into the PSC backend
+  last_device_policy_changed_time:
+    type: string
+    format: date-time
+    description: Last time the device's policy was changed
+  last_device_policy_requested_time:
+    type: string
+    format: date-time
+    description: Last time the device requested policy updates
+  last_external_ip_address:
+    type: string
+    description: Device's external IP
+  last_internal_ip_address:
+    type: string
+    description: Device's internal IP
+  last_location:
+    type: string
+    description: Location of the device (on-/off-premises)
+    enum:
+      - UNKNOWN
+      - ONSITE
+      - OFFSITE
+  last_name:
+    type: string
+    description: Last name of the user who owns the device
+  last_policy_updated_time:
+    type: string
+    format: date-time
+    description: Last time the device was MSM processed
+  last_reported_time:
+    type: string
+    format: date-time
+    description: Time when device last reported an event to PSC backend
+  last_reset_time:
+    type: string
+    format: date-time
+    description: When the sensor was last reset
+  last_shutdown_time:
+    type: string
+    format: date-time
+    description: When the device last shut down
+  linux_kernel_version:
+    type: string
+    description: Linux kernel version
+  login_user_name:
+    type: string
+    description: Last acive logged in username
+  mac_address:
+    type: string
+    description: Device's hardware MAC address
+  middle_name:
+    type: string
+    description: Middle name of the user who owns the device
+  name:
+    type: string
+    description: Device Hostname
+  organization_id:
+    type: integer
+    format: int64
+    example: 1000
+    description: Org ID to which the device belongs
+  organization_name:
+    type: string
+    description: Name of the org that owns this device
+  os:
+    type: string
+    example: WINDOWS
+    description: Device type
+    enum:
+      - WINDOWS
+      - ANDROID
+      - MAC
+      - IOS
+      - LINUX
+      - OTHER
+  os_version:
+    type: string
+    example: 'Windows 7 x86 SP: 1'
+    description: Version of the OS
+  passive_mode:
+    type: boolean
+    description: Whether the device is in passive mode (bypass?)
+  policy_id:
+    type: integer
+    format: int64
+    description: ID of the policy this device is using
+  policy_name:
+    type: string
+    description: Name of the policy this device is using
+  policy_override:
+    type: boolean
+    description: Manually assigned policy (overrides mass sensor management)
+  quarantined:
+    type: boolean
+    description: Whether the device is quarantined
+  registered_time:
+    type: string
+    format: date-time
+    description: When the device was registered with the PSC backend
+  scan_last_action_time:
+    type: string
+    format: date-time
+    description: When the background scan was last active
+  scan_last_complete_time:
+    type: string
+    format: date-time
+    description: When the background scan was last completed
+  scan_status:
+    type: string
+    description: Background scan status
+    enum:
+      - NEVER_RUN
+      - STOPPED
+      - IN_PROGRESS
+      - COMPLETED
+  sensor_out_of_date:
+    type: boolean
+    description: Whether the device is out of date
+  sensor_states:
+    type: array
+    description: Active sensor states
+    items:
+      type: string
+      enum:
+        - ACTIVE
+        - PANICS_DETECTED
+        - LOOP_DETECTED
+        - DB_CORRUPTION_DETECTED
+        - CSR_ACTION
+        - REPUX_ACTION
+        - DRIVER_INIT_ERROR
+        - REMGR_INIT_ERROR
+        - UNSUPPORTED_OS
+        - SENSOR_UPGRADE_IN_PROGRESS
+        - SENSOR_UNREGISTERED
+        - WATCHDOG
+        - SENSOR_RESET_IN_PROGRESS
+        - DRIVER_INIT_REBOOT_REQUIRED
+        - SENSOR_SHUTDOWN
+        - SENSOR_MAINTENANCE
+        - DEBUG_MODE_ENABLED
+        - AUTO_UPDATE_DISABLED
+        - SELF_PROTECT_DISABLED
+        - VDI_MODE_ENABLED
+        - POC_MODE_ENABLED
+        - SECURITY_CENTER_OPTLN_DISABLED
+        - LIVE_RESPONSE_RUNNING
+        - LIVE_RESPONSE_NOT_RUNNING
+        - LIVE_RESPONSE_KILLED
+        - LIVE_RESPONSE_NOT_KILLED
+        - LIVE_RESPONSE_ENABLED
+        - LIVE_RESPONSE_DISABLED
+  sensor_version:
+    type: string
+    example: 3.4.0.0
+    description: Version of the PSC sensor
+  status:
+    type: string
+    description: Device status
+    enum:
+      - PENDING
+      - REGISTERED
+      - UNINSTALLED
+      - DEREGISTERED
+      - ACTIVE
+      - INACTIVE
+      - ERROR
+      - ALL
+      - BYPASS_ON
+      - BYPASS
+      - QUARANTINE
+      - SENSOR_OUTOFDATE
+      - DELETED
+      - LIVE
+  target_priority_type:
+    type: string
+    example: MISSION_CRITICAL
+    description: Priority of the device
+    enum:
+      - LOW
+      - MEDIUM
+      - HIGH
+      - MISSION_CRITICAL
+  uninstall_code:
+    type: string
+    description: Code to enter to uninstall this device
+  vdi_base_device:
+    type: integer
+    format: int64
+    description: VDI Base device
+  virtual_machine:
+    type: boolean
+    description: Whether this device is a Virtual Machine (VMware AppDefense integration
+  virtualization_provider:
+    type: string
+    description: VM Virtualization Provider
+  windows_platform:
+    type: string
+    description: 'Type of windows platform (client/server, x86/x64)'
+    enum:
+      - CLIENT_X86
+      - CLIENT_X64
+      - SERVER_X86
+      - SERVER_X64
