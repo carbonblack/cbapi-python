@@ -1,3 +1,13 @@
+"""Parses STIX observables from the XML data returned by the TAXII server.
+
+The following IOC types are extracted from STIX data:
+
+* MD5 Hashes
+* Domain Names
+* IP-Addresses
+* IP-Address Ranges
+"""
+
 from cybox.objects.domain_name_object import DomainName
 from cybox.objects.address_object import Address
 from cybox.objects.file_object import File
@@ -27,18 +37,20 @@ BINDING_CHOICES = [CB_STIX_XML_111, CB_CAP_11, CB_SMIME, CB_STIX_XML_12,
 
 logger = logging.getLogger(__name__)
 
-#
-# Used by validate_domain_name function
-#
-domain_allowed_chars = string.printable[:-6]
+
+domain_allowed_chars = string.printable[:-6] # Used by validate_domain_name function
 
 
 def validate_domain_name(domain_name):
+    """Validates a domain name to ensure validity and saneness.
+
+    Args:
+        domain_name: Domain name string to check.
+
+    Returns:
+        True if checks pass, False otherwise.
     """
-    Validate a domain name to ensure validity and saneness
-    :param domain_name: The domain name to check
-    :return: True or False
-    """
+
     if len(domain_name) > 255:
         logger.warn(
             "Excessively long domain name {} in IOC list".format(domain_name))
@@ -49,7 +61,7 @@ def validate_domain_name(domain_name):
         return False
 
     parts = domain_name.split('.')
-    if 0 == len(parts):
+    if not parts:
         logger.warn("Empty domain name found in IOC list")
         return False
 
@@ -63,11 +75,15 @@ def validate_domain_name(domain_name):
 
 
 def validate_md5sum(md5):
+    """Validates md5sum.
+
+    Args:
+        md5sum: md5sum to check.
+
+    Returns:
+        True if checks pass, False otherwise.
     """
-    Validate md5sum
-    :param md5: md5sum to valiate
-    :return: True or False
-    """
+
     if 32 != len(md5):
         logger.warn("Invalid md5 length for md5 {}".format(md5))
         return False
@@ -83,15 +99,23 @@ def validate_md5sum(md5):
 
 
 def sanitize_id(id):
+    """Removes unallowed chars from an ID.
+
+    Ids may only contain a-z, A-Z, 0-9, - and must have one character.
+
+    Args:
+        id: the ID to be sanitized.
+
+    Returns:
+        A saniized ID.
     """
-    Ids may only contain a-z, A-Z, 0-9, - and must have one character
-    :param id: the ID to be sanitized
-    :return: sanitized ID
-    """
+
     return id.replace(':', '-')
 
 
 def validate_ip_address(ip_address):
+    """Validates an IPv4 address."""
+
     try:
         socket.inet_aton(ip_address)
         return True
@@ -100,11 +124,22 @@ def validate_ip_address(ip_address):
 
 
 def cybox_parse_observable(observable, indicator, timestamp, score):
-    """
-    parses a cybox observable and returns a list of iocs.
-    cybox is a open standard language encoding info about cyber observables
-    :param observable: the cybox obserable to parse
-    :return: list of observables
+    """Parses a cybox observable and returns a list containing a report dictionary.
+
+    cybox is a open standard language encoding info about cyber observables.
+
+    Args:
+        observable: the cybox obserable to parse.
+
+    Returns:
+        A report dictionary if the cybox observable has props of type:
+
+            cybox.objects.address_object.Address,
+            cybox.objects.file_object.File, or
+            cybox.objects.domain_name_object.DomainName.
+
+        Otherwise it will return an empty list.
+
     """
     reports = []
 
@@ -138,7 +173,7 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
 
     #
     # use the first reference as a link
-    # NOTE: This was added for RecordedFuture
+    # This was added for RecordedFuture
     #
     link = ''
     if indicator and indicator.producer and indicator.producer.references:
@@ -160,85 +195,114 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
         title = str(uuid.uuid4())
 
     if type(props) == DomainName:
-        if props.value and props.value.value:
-            iocs = {'dns': []}
-            #
-            # Sometimes props.value.value is a list
-            #
-
-            if type(props.value.value) is list:
-                for domain_name in props.value.value:
-                    if validate_domain_name(domain_name.strip()):
-                        iocs['dns'].append(domain_name.strip())
-            else:
-                domain_name = props.value.value.strip()
-                if validate_domain_name(domain_name):
-                    iocs['dns'].append(domain_name)
-
-            if len(iocs['dns']) > 0:
-                reports.append({'iocs_v2': iocs,
-                                'id': sanitize_id(observable.id_),
-                                'description': description,
-                                'title': title,
-                                'timestamp': timestamp,
-                                'link': link,
-                                'score': score})
+        # go into domainname function
+        reports = parse_domain_name_observable(observable, props, id, description, title, timestamp, link, score)
 
     elif type(props) == Address:
-        if props.category == 'ipv4-addr' and props.address_value:
-            iocs = {'ipv4': []}
-
-            #
-            # Sometimes props.address_value.value is a list vs a string
-            #
-            if type(props.address_value.value) is list:
-                for ip in props.address_value.value:
-                    if validate_ip_address(ip.strip()):
-                        iocs['ipv4'].append(ip.strip())
-            else:
-                ipv4 = props.address_value.value.strip()
-                if validate_ip_address(ipv4):
-                    iocs['ipv4'].append(ipv4)
-
-            if len(iocs['ipv4']) > 0:
-                reports.append({'iocs_v2': iocs,
-                                'id': sanitize_id(observable.id_),
-                                'description': description,
-                                'title': title,
-                                'timestamp': timestamp,
-                                'link': link,
-                                'score': score})
+        reports = parse_address_observable(observable, props, id, description, title, timestamp, link, score)
 
     elif type(props) == File:
-        iocs = {'md5': []}
-        if props.md5:
-            if type(props.md5) is list:
-                for md5 in props.md5:
-                    if validate_md5sum(md5.strip()):
-                        iocs['md5'].append(md5.strip())
+        reports = parse_file_observable(observable, props, id, description, title, timestamp, link, score)
+
+    else:
+        return reports
+
+    return reports
+
+
+def parse_domain_name_observable(observable, props, id, description, title, timestamp, link, score):
+
+    reports = []
+    if props.value and props.value.value:
+        iocs = {'dns': []}
+        #
+        # Sometimes props.value.value is a list
+        #
+
+        if type(props.value.value) is list:
+            for domain_name in props.value.value:
+                if validate_domain_name(domain_name.strip()):
+                    iocs['dns'].append(domain_name.strip())
+        else:
+            domain_name = props.value.value.strip()
+            if validate_domain_name(domain_name):
+                iocs['dns'].append(domain_name)
+
+        if len(iocs['dns']) > 0:
+            reports.append({'iocs_v2': iocs,
+                            'id': sanitize_id(observable.id_),
+                            'description': description,
+                            'title': title,
+                            'timestamp': timestamp,
+                            'link': link,
+                            'score': score})
+    return reports
+
+
+def parse_address_observable(observable, props, id, description, title, timestamp, link, score):
+
+    reports = []
+    if props.category == 'ipv4-addr' and props.address_value:
+        iocs = {'ipv4': []}
+
+        #
+        # Sometimes props.address_value.value is a list vs a string
+        #
+        if type(props.address_value.value) is list:
+            for ip in props.address_value.value:
+                if validate_ip_address(ip.strip()):
+                    iocs['ipv4'].append(ip.strip())
+        else:
+            ipv4 = props.address_value.value.strip()
+            if validate_ip_address(ipv4):
+                iocs['ipv4'].append(ipv4)
+
+        if len(iocs['ipv4']) > 0:
+            reports.append({'iocs_v2': iocs,
+                            'id': sanitize_id(observable.id_),
+                            'description': description,
+                            'title': title,
+                            'timestamp': timestamp,
+                            'link': link,
+                            'score': score})
+
+    return reports
+
+def parse_file_observable(observable, props, id, description, title, timestamp, link, score):
+
+    reports = []
+    iocs = {'md5': []}
+    if props.md5:
+        if type(props.md5) is list:
+            for md5 in props.md5:
+                if validate_md5sum(md5.strip()):
+                    iocs['md5'].append(md5.strip())
+        else:
+            if hasattr(props.md5, 'value'):
+                md5 = props.md5.value.strip()
             else:
-                if hasattr(props.md5, 'value'):
-                    md5 = props.md5.value.strip()
-                else:
-                    md5 = props.md5.strip()
-                if validate_md5sum(md5):
-                    iocs['md5'].append(md5)
+                md5 = props.md5.strip()
+            if validate_md5sum(md5):
+                iocs['md5'].append(md5)
 
-            if len(iocs['md5']) > 0:
-                reports.append({'iocs_v2': iocs,
-                                'id': sanitize_id(observable.id_),
-                                'description': description,
-                                'title': title,
-                                'timestamp': timestamp,
-                                'link': link,
-                                'score': score})
-
-    logger.debug(f"sending reports: {reports}")
+        if len(iocs['md5']) > 0:
+            reports.append({'iocs_v2': iocs,
+                            'id': sanitize_id(observable.id_),
+                            'description': description,
+                            'title': title,
+                            'timestamp': timestamp,
+                            'link': link,
+                            'score': score})
 
     return reports
 
 
 def get_stix_indicator_score(indicator, default_score):
+    """Returns a digit representing the indicator score.
+
+    Converts from "high", "medium", or "low" into a digit, if necessary.
+    """
+
     if not indicator.confidence:
         return default_score
 
@@ -246,14 +310,14 @@ def get_stix_indicator_score(indicator, default_score):
     if confidence_val_str.isdigit():
         score = int(indicator.confidence.to_dict().get("value", default_score))
         return score
-    if confidence_val_str.lower() == "high":
+    elif confidence_val_str.lower() == "high":
         return 7  # 75
-    if confidence_val_str.lower() == "medium":
+    elif confidence_val_str.lower() == "medium":
         return 5  # 50
-    if confidence_val_str.lower() == "low":
+    elif confidence_val_str.lower() == "low":
         return 2  # 25
-
-    return default_score
+    else:
+        return default_score
 
 
 def get_stix_indicator_timestamp(indicator):
@@ -330,7 +394,6 @@ def sanitize_stix(stix_xml):
 
 
 def parse_stix(stix_xml, default_score):
-
     reports = []
     try:
         stix_xml = sanitize_stix(stix_xml)

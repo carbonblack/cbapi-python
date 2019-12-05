@@ -1,38 +1,24 @@
-from datetime import datetime, timedelta, tzinfo
+"""Advances the `begin_date` and `end_date` fields while polling the TAXII server to iteratively get per-collection STIX content.
 
+This is tied to the `start_date` and `size_of_request_in_minutes` configuration options in your `config.yml`.
+"""
 
-class UTC(tzinfo):
-    """UTC"""
-
-    def utcoffset(self, dt):
-        return timedelta(0)
-
-    def tzname(self, dt):
-        return "UTC"
-
-    def dst(self, dt):
-        return timedelta(0)
-
+from datetime import datetime, timedelta, tzinfo, timezone
 
 class FeedHelper():
-    def __init__(self, start_date, minutes_to_advance):
-        TZ_UTC = UTC()
-        self.minutes_to_advance = minutes_to_advance
-        self.start_date = start_date.replace(tzinfo=TZ_UTC)
+    def __init__(self, start_date, size_of_request_in_minutes):
+        self.size_of_request_in_minutes = size_of_request_in_minutes
+        self.start_date = start_date.replace(tzinfo=timezone.utc)
         self.end_date = self.start_date + \
-            timedelta(minutes=self.minutes_to_advance)
-        self.now = datetime.utcnow().replace(tzinfo=TZ_UTC)
+            timedelta(minutes=self.size_of_request_in_minutes)
+        self.now = datetime.utcnow().replace(tzinfo=timezone.utc)
         if self.end_date > self.now:
             self.end_date = self.now
         self.start = False
         self.done = False
 
     def advance(self):
-        """
-        Returns True if keep going,
-                False if we already hit the end time and cannot advance
-        :return: True or False
-        """
+        """Returns True if keep going, False if we already hit the end time and cannot advance."""
         if not self.start:
             self.start = True
             return True
@@ -40,8 +26,9 @@ class FeedHelper():
         if self.done:
             return False
 
+        # continues shifting the time window by size_of_request_in_minutes until we hit current time, then stops
         self.start_date = self.end_date
-        self.end_date += timedelta(minutes=self.minutes_to_advance)
+        self.end_date += timedelta(minutes=self.size_of_request_in_minutes)
         if self.end_date > self.now:
             self.end_date = self.now
             self.done = True

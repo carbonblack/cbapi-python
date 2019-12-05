@@ -4,8 +4,7 @@ from datetime import datetime
 
 
 class IOC_v2():
-    """
-    Models an indicator of compromise detected during an analysis.
+    """Models an indicator of compromise detected during an analysis.
 
     Every IOC belongs to an AnalysisResult.
     """
@@ -38,9 +37,7 @@ class IOC_v2():
 
 
 class AnalysisResult():
-    """
-    Models the result of an analysis performed by a connector.
-    """
+    """Models the result of an analysis performed by a connector."""
 
     def __init__(self, analysis_name, scan_time, score, title, description):
         self.id = str(analysis_name)
@@ -61,9 +58,8 @@ class AnalysisResult():
 
 
     def normalize(self):
-        """
-        Normalizes this result to make it palatable for the CbTH backend.
-        """
+        """Normalizes this result to make it palatable for the CbTH backend."""
+
         if self.severity <= 0 or self.severity > 10:
             log.warning("normalizing OOB score: {}".format(self.severity))
             self.severity=max(1, min(self.severity, 10))
@@ -81,5 +77,5 @@ class AnalysisResult():
             "title": self.title,
             "description": self.description,
             "severity": self.severity,
-            "iocs_v2": [iocv2.as_dict() for iocv2 in self.IOCsv2]
+            "iocs_v2": [iocv2.as_dict() for iocv2 in self.iocs_v2]
         }

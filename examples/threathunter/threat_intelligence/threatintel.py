@@ -1,4 +1,10 @@
+"""Validates result dictionaries, creates ThreatHunter Reports, validates ThreatHunter Reports, and sends them to a ThreatHunter Feed.
+
+Also allows for conversion from result dictionaries into ThreatHunter `Report` objects.
+"""
+
 import logging
+import json
 from feed_helper import FeedHelper
 from cabby import create_client
 from cbapi.psc.threathunter import CbThreatHunterAPI, Report
@@ -21,8 +27,7 @@ class ThreatIntel:
 
 
         report_list_to_send = []
-        report_dict_list_to_validate = []
-
+        malformed_reports = []
 
         for result in results:
             try:
@@ -35,23 +40,25 @@ class ThreatIntel:
                     "iocs_v2": [ioc_v2.as_dict() for ioc_v2 in result.iocs_v2]
                 }
 
-                report_dict_list_to_validate.append(report_dict)
-
-                #create CB Report object
-                report = Report(self.cb, initial_data=report_dict, feed_id=feed_id)
-                
-                report_list_to_send.append(report)
-
+                if self.input_validation([report_dict]):
+                    #create CB Report object
+                    report = Report(self.cb, initial_data=report_dict, feed_id=feed_id)
+                    report_list_to_send.append(report)
+                else:
+                    log.warning("Report Validation failed. Saving report to file for reference.")
+                    malformed_reports.append(report_dict)
             except Exception as e:
                 log.error(f"Failed to create a report dictionary from result object. {e}")
 
-        validation = self.input_validation(report_dict_list_to_validate)
-        if validation:
-            log.debug("Report Validation succeeded. Sending results to Carbon Black Cloud.")
-            feed.append_reports(report_list_to_send)
-        else:
-            log.warning("Report Validation failed. Not sending results to Carbon Black Cloud.")
-
+        log.debug("Sending results to Carbon Black Cloud.")
+        feed.append_reports(report_list_to_send)
+        if malformed_reports:
+            log.warning("Some report(s) failed validation. See malformed_reports.json for reports that failed.")
+            try:
+                with open('malformed_reports.json', 'w') as f:
+                    json.dump(malformed_reports, f, indent=4)
+            except:
+                log.error("Failed to write malformed_reports to file.")
 
     ##########################################################
     # Input validation of reports

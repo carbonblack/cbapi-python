@@ -6,15 +6,15 @@ Python3 module that can be used in the development of Threat Intelligence Connec
 The file `requirements.txt` contains a list of dependencies for this project. After cloning this repository, run the following command from the `examples/threathunter/threat_intelligence` directory:
 
 ```
-pip install -r ./requirements.txt
+pip3 install -r ./requirements.txt
 ```
 
 
 ## Introduction
-This document describes how to use the ThreatIntel Python3 module for development of connectors that retrieve Threat Intelligence and import it into a Carbon Black Cloud instance. This document describes how to use the ThreatIntel Python3 module for development of connectors that retrieve Threat Intelligence and import it into a Carbon Black Cloud instance. Documentation on Feed and Report definitions is [available here.](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions)
+This document describes how to use the ThreatIntel Python3 module for development of connectors that retrieve Threat Intelligence and import it into a Carbon Black Cloud instance. Documentation on Feed and Report definitions is [available here.](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions)
 
 The ThreatIntel `push_to_cb` method expects a list of objects that have six attributes:
-`id, timestamp, title, description, severity, and iocs_v2`. For these objects, may use the pre-built `AnalysisResult` class from `results.py`, which has these attributes already, or build your own custom class.
+`id, timestamp, title, description, severity, and iocs_v2`. For these objects, you may use the pre-built `AnalysisResult` class from `results.py`, which has these attributes already, or build your own custom class.
 
 ### Files
 
@@ -73,33 +73,6 @@ The `results.py` file contains the `AnalysisResult` class. When initiating a new
 |`description`|string|
 |`score`|integer|
 
-
-Here is part of the `AnalysisResult` class from `results.py`:
-
-```python
-class AnalysisResult():
-    """
-    Models the result of an analysis performed by a connector.
-    """
-
-    def __init__(self, analysis_name, scan_time, score, title, description):
-        self.id = str(analysis_name)
-        self.timestamp = scan_time
-        self.title = title
-        self.description = description
-        self.severity = score
-        self.link = None
-        self.tags = None
-        self.iocs = []
-        self.iocs_v2 = []
-        self.visibility = None
-        self.connector_name = "STIX_TAXII"
-
-
-    def attach_ioc_v2(self, *, match_type=IOC_v2.MatchType.Equality, values, field, link):
-        self.iocs_v2.append(IOC_v2(analysis=self.id, match_type=match_type, values=values, field=field, link=link))
-```
-
 ### IOC
 
 The `results.py` file contains the `IOC` class. When attaching an IOC to a result, you can use the function `AnalysisResult.attach_ioc_v2()`. IOCs have the following required and optional parameters:
@@ -110,24 +83,6 @@ The `results.py` file contains the `IOC` class. When attaching an IOC to a resul
 |`id`|string|`field`|string|
 |`match_type`|integer|`link`|str|
 |`values`|string|||
-
-Here is part of the `IOC_v2` class from `results.py`:
-
-```python
-class IOC_v2():
-    """
-    Models an indicator of compromise detected during an analysis.
-
-    Every IOC belongs to an AnalysisResult.
-    """
-
-    def __init__(self, analysis, match_type, values, field, link):
-        self.id = analysis
-        self.match_type = match_type
-        self.values = values
-        self.field = field
-        self.link = link
-```
 
 ## Writing a Custom Threat Intelligence Polling Connector
 
