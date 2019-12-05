@@ -374,4 +374,4 @@ if __name__ == '__main__':
 
     config = load_config_from_file()
     stix_taxii = StixTaxii(config)
-    stix_taxii.get_send_reports()
+    stix_taxii.collect_and_send_reports()
