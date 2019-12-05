@@ -21,3 +21,7 @@ The TAXII connector uses the configuration file `config.yml`. An example configu
 The connector can be activated by running the python 3 file `stix_taxii.py`. The connector will attempt to connect to your TAXII service(s), poll the collection(s), retrieve the STIX data, and send it to the ThreatHunter Feed specified in your `config.yml` file.
 
 `python3 stix_taxii.py`
+
+If running this script on a schedule, the `start_date` for each TAXII service can be updated via command line arguments. To change the value for each site in your config file, you must supply the site name and desired `start_date` in `%Y-%m-%d %H:%M:%S` format.
+
+`python3 stix_taxii.py my_site_name_1 '2019-11-05 00:00:00' my_site_name_2 '2019-11-05 00:00:00'`
