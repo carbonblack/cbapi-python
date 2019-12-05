@@ -332,7 +332,7 @@ class StixTaxii():
                     analysis_name="exception_format_report", error=True)
             yield result
 
-    def get_send_reports(self):
+    def collect_and_send_reports(self):
         """Collects and sends formatted reports to ThreatIntel.push_to_cb for validation and dispatching to a feed."""
 
         self.configure_sites()
