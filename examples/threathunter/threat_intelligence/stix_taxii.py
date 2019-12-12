@@ -192,13 +192,14 @@ class TaxiiSiteConnector():
         # or reports_limit is reached.
         while feed_helper.advance():
             num_reports = 0
+            num_times_empty_content_blocks = 0
             content_blocks = self.poll_server(collection, feed_helper)
             reports = self.parse_collection_content(content_blocks)
             for report in reports:
                 yield report
                 num_reports += 1
                 if reports_limit is not None and num_reports > reports_limit:
-                    logging.info(f"Reports limit of {reports_limit} reached")
+                    logging.info(f"Reports limit of {self.config.reports_limit} reached")
                     advance = False
                     break
 
@@ -346,8 +347,8 @@ class StixTaxii():
             else:
                 try:
                     ti.push_to_cb(feed_id=site_conn.config.feed_id, results=self.format_report(reports))
-                except:
-                    logging.error(f"Failed to push reports to feed {site_conn.config.feed_id}")
+                except Exception as e:
+                    logging.error(f"Failed to push reports to feed {site_conn.config.feed_id}: {e}")
 
 if __name__ == '__main__':
 

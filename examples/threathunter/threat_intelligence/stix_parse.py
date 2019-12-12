@@ -168,8 +168,8 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
     #
     # if description is still empty, use the indicator's title
     #
-    if not description and indicator and indicator.title:
-        description = str(indicator.title)
+    # if not description and indicator and indicator.title:
+    #     description = str(indicator.title)
 
     #
     # use the first reference as a link
@@ -193,6 +193,9 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
         title = observable.title
     else:
         title = str(uuid.uuid4())
+
+    # ID must be unique. Collisions cause 500 error on Carbon Black backend
+    id = str(uuid.uuid4())
 
     if type(props) == DomainName:
         # go into domainname function
@@ -230,7 +233,8 @@ def parse_domain_name_observable(observable, props, id, description, title, time
 
         if len(iocs['dns']) > 0:
             reports.append({'iocs_v2': iocs,
-                            'id': sanitize_id(observable.id_),
+                            #'id': sanitize_id(observable.id_),
+                            'id': id,
                             'description': description,
                             'title': title,
                             'timestamp': timestamp,
@@ -259,7 +263,8 @@ def parse_address_observable(observable, props, id, description, title, timestam
 
         if len(iocs['ipv4']) > 0:
             reports.append({'iocs_v2': iocs,
-                            'id': sanitize_id(observable.id_),
+                            #'id': sanitize_id(observable.id_),
+                            'id': id,
                             'description': description,
                             'title': title,
                             'timestamp': timestamp,
@@ -287,7 +292,8 @@ def parse_file_observable(observable, props, id, description, title, timestamp, 
 
         if len(iocs['md5']) > 0:
             reports.append({'iocs_v2': iocs,
-                            'id': sanitize_id(observable.id_),
+                            #'id': sanitize_id(observable.id_),
+                            'id': id,
                             'description': description,
                             'title': title,
                             'timestamp': timestamp,

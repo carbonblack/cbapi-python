@@ -6,7 +6,7 @@ Connector for pulling and converting STIX information from TAXII Service Provide
 The file `requirements.txt` contains a list of dependencies for this project. After cloning this repository, run the following command from the `examples/threathunter/threat_intelligence` directory:
 
 ```
-pip install -r ./requirements.txt
+pip3 install -r ./requirements.txt
 ```
 
 ## Introduction

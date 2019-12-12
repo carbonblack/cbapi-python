@@ -16,7 +16,7 @@ log.setLevel(logging.DEBUG)
 
 class ThreatIntel:
     def __init__(self):
-        self.cb = CbThreatHunterAPI()
+        self.cb = CbThreatHunterAPI(timeout=200)
 
     def push_to_cb(self, feed_id, results):
         try:
@@ -27,6 +27,7 @@ class ThreatIntel:
 
 
         report_list_to_send = []
+        reports = []
         malformed_reports = []
 
         for result in results:
@@ -44,14 +45,30 @@ class ThreatIntel:
                     #create CB Report object
                     report = Report(self.cb, initial_data=report_dict, feed_id=feed_id)
                     report_list_to_send.append(report)
+                    reports.append(report_dict)
                 else:
                     log.warning("Report Validation failed. Saving report to file for reference.")
                     malformed_reports.append(report_dict)
             except Exception as e:
                 log.error(f"Failed to create a report dictionary from result object. {e}")
 
+
+        log.debug(f"Num Reports: {len(report_list_to_send)}")
+        try:
+            with open('reports.json', 'w') as f:
+                json.dump(reports, f, indent=4)
+        except:
+            log.error("Failed to write reports to file.")
+
+
+
         log.debug("Sending results to Carbon Black Cloud.")
-        feed.append_reports(report_list_to_send)
+
+        try:
+            feed.replace_reports(report_list_to_send)
+        except Exception as e:
+            log.debug(f"Failed sending {len(report_list_to_send)} reports: {e}")
+
         if malformed_reports:
             log.warning("Some report(s) failed validation. See malformed_reports.json for reports that failed.")
             try:
