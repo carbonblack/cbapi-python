@@ -6,7 +6,6 @@ from concurrent.futures import _base
 
 from cbapi.errors import TimeoutError
 from cbapi.live_response_api import CbLRManagerBase, CbLRSessionBase, poll_status
-from cbapi.psc.models import Device
 
 
 OS_LIVE_RESPONSE_ENUM = {
@@ -21,12 +20,14 @@ log = logging.getLogger(__name__)
 class LiveResponseSession(CbLRSessionBase):
     def __init__(self, cblr_manager, session_id, sensor_id, session_data=None):
         super(LiveResponseSession, self).__init__(cblr_manager, session_id, sensor_id, session_data=session_data)
+        from cbapi.psc.defense.models import Device
         device_info = self._cb.select(Device, self.sensor_id)
         self.os_type = OS_LIVE_RESPONSE_ENUM.get(device_info.deviceType, None)
 
 
 class WorkItem(object):
     def __init__(self, fn, sensor_id):
+        from cbapi.psc.defense.models import Device
         self.fn = fn
         if isinstance(sensor_id, Device):
             self.sensor_id = sensor_id.deviceId
@@ -228,6 +229,7 @@ class LiveResponseJobScheduler(threading.Thread):
         self.schedule_queue.put(work_item)
 
     def _spawn_new_workers(self):
+        from cbapi.psc.defense.models import Device
         if len(self._job_workers) >= self._max_workers:
             return
 
