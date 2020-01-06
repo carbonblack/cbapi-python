@@ -33,15 +33,15 @@ Selects all devices running Linux from the current organization.
 
 **Query Object:**
 
-.. autoclass:: cbapi.psc.query.DeviceSearchQuery
+.. autoclass:: cbapi.psc.devices_query.DeviceSearchQuery
 	:members:
-	
+
 **Model Object:**
 
 .. autoclass:: cbapi.psc.models.Device
 	:members:
 	:undoc-members:
-	
+
 Alerts API
 ----------
 
@@ -60,7 +60,7 @@ search for more specialized alert types:
 
 	>>> cbapi = CbPSCBaseAPI(...)
 	>>> alerts = cbapi.select(BaseAlert).set_device_os(["WINDOWS"]).set_process_name(["IEXPLORE.EXE"])
-	
+
 Selects all alerts on a Windows device running the Internet Explorer process.
 
 Individual alerts may have their status changed using the dismiss() or update()
@@ -78,21 +78,21 @@ finished.
 	>>> stat = cbapi.select(WorkflowStatus, reqid)
 	>>> while not stat.finished:
 	>>>     # wait for it to finish
-	
+
 This dismisses all alerts which reference the Internet Explorer process.
 
 **Query Objects:**
 
-.. autoclass:: cbapi.psc.query.BaseAlertSearchQuery
-	:members:
-	
-.. autoclass:: cbapi.psc.query.CBAnalyticsAlertSearchQuery
+.. autoclass:: cbapi.psc.alerts_query.BaseAlertSearchQuery
 	:members:
 
-.. autoclass:: cbapi.psc.query.VMwareAlertSearchQuery
+.. autoclass:: cbapi.psc.alerts_query.CBAnalyticsAlertSearchQuery
 	:members:
 
-.. autoclass:: cbapi.psc.query.WatchlistAlertSearchQuery
+.. autoclass:: cbapi.psc.alerts_query.VMwareAlertSearchQuery
+	:members:
+
+.. autoclass:: cbapi.psc.alerts_query.WatchlistAlertSearchQuery
 	:members:
 
 **Model Objects:**
@@ -100,24 +100,23 @@ This dismisses all alerts which reference the Internet Explorer process.
 .. autoclass:: cbapi.psc.models.Workflow
 	:members:
 	:undoc-members:
-	
+
 .. autoclass:: cbapi.psc.models.BaseAlert
 	:members:
 	:undoc-members:
-	
+
 .. autoclass:: cbapi.psc.models.CBAnalyticsAlert
 	:members:
 	:undoc-members:
-	
+
 .. autoclass:: cbapi.psc.models.VMwareAlert
 	:members:
 	:undoc-members:
-	
+
 .. autoclass:: cbapi.psc.models.WatchlistAlert
 	:members:
 	:undoc-members:
-	
+
 .. autoclass:: cbapi.psc.models.WorkflowStatus
 	:members:
 	:undoc-members:
-	
