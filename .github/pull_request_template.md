@@ -1,6 +1,7 @@
 ## Pull request checklist
 
 Please check if your PR fulfills the following requirements:
+<!-- These checkboxes can be checked like this: [x] no spaces between the brackets and the x!-->
 - [ ] Docs have been reviewed and added / updated if needed (for bug fixes / features)
 - [ ] Tests have been added that prove the fix is effective or that the feature works.
 - [ ] New and existing tests pass locally with the changes.
