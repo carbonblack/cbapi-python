@@ -30,11 +30,8 @@ Please check the type of change your PR introduces:
 
 - Issue Number: N/A
 
-## What is the current behavior?
-<!-- Please describe the current behavior that you are modifying. -->
-
-## What is the new behavior?
-<!-- Please describe the behavior or changes that are being added by this PR. -->
+## Pull Request Description
+<!-- Please describe the behavior or changes that are being added by this PR. If this is a bug fix please describe the current behavior as well -->
 
 ## Does this introduce a breaking change?
 
