@@ -1,11 +1,11 @@
 # ThreatIntel Module
 Python3 module that can be used in the development of Threat Intelligence Connectors for the Carbon Black Cloud.
 
-## Requirements/Installation
+## Requirements
 
 The file `requirements.txt` contains a list of dependencies for this project. After cloning this repository, run the following command from the `examples/threathunter/threat_intelligence` directory:
 
-```
+```python
 pip3 install -r ./requirements.txt
 ```
 
@@ -13,85 +13,111 @@ pip3 install -r ./requirements.txt
 ## Introduction
 This document describes how to use the ThreatIntel Python3 module for development of connectors that retrieve Threat Intelligence and import it into a Carbon Black Cloud instance. Documentation on Feed and Report definitions is [available here.](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions)
 
-The ThreatIntel `push_to_cb` method expects a list of objects that have six attributes:
-`id, timestamp, title, description, severity, and iocs_v2`. For these objects, you may use the pre-built `AnalysisResult` class from `results.py`, which has these attributes already, or build your own custom class.
 
-### Files
+## Usage
 
-#### `threatintel.py`
+`threatintel.py` has two main uses:
 
-Contains the `ThreatIntel` class. This converts Threat Intelligence from result dictionaries into ThreatHunter `Reports`, and then sends them to a ThreatHunter `Feed`.
+1. Report Validation
+2. Pushing Reports to a Carbon Black ThreatHunter Feed.
 
-#### `results.py`
+### Report validation
 
-Contains the `AnalysisResult` and `IOC_v2` classes. This contains the logic to attach `iocs_v2` dictionaries to `AnalysisResult` objects.
-
-### Important ThreatIntel Methods
-
-#### `ThreatIntel.push_to_cb(feed_id, results)`:
-Input a ThreatHunter Feed ID and a list of result objects. The result objects must contain the following required attributes: `id, timestamp, title, description, severity, and iocs_v2`. Formats the result objects into ThreatHunter `Report` objects, calls the input validation function, then sends the `Report` objects to a ThreatHunter `Feed`.
-
-#### `ThreatIntel.input_validation(reports)`:
-Input a list of `Report` dictionaries, and outputs a boolean value indicating if the dictionaries are properly formatted for submission to a ThreatHunter `Feed`.
-
-
-## Data Classes
-
-### ThreatHunter Report
-CBAPI includes the `cbapi.psc.threathunter.Report` class. ThreatHunter `Report` objects have the following required and optional parameters:
+Each Report to be sent to the Carbon Black Cloud should be validated
+before sending. The ThreatHunter Report format is a JSON object with
+five required and five optional values.
 
 |Required|Type|Optional|Type|
 |---|---|---|---|
 |`id`|string|`link`|string|
 |`timestamp`|integer|`[tags]`|[str]|
-|`title`|string|`iocs`|IOC Format| #document IOC Format
-|`description`|string|`[iocs_v2]`|[IOCv2 Format]| #document IOCv2 Format
+|`title`|string|`iocs`|[IOC Format](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions)|
+|`description`|string|`[iocs_v2]`|[[IOCv2 Format](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions)]|
 |`severity`|integer|`visibility`|string|
 
-Note: `IOC` and `IOC_v2` definitions are [available here.](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions)
+The `input_validation` function checks for the existence and type of the five
+required values, and (if applicable) checks the optional values. The
+function takes a list of dictionaries as input, and outputs a Boolean
+indicating if validation was successful.
 
-ThreatHunter `Reports` can be built using dictionaries. This ThreatIntel module builds reports with the following method:
+### Pushing Reports to a Carbon Black ThreatHunter FeedHelper
 
-```python
-report = Report(self.cb, initial_data=report_dict, feed_id=feed_id)
+The `push_to_cb` function takes a list of `AnalysisResult` objects (or objects of your own custom class) and a Carbon
+Black ThreatHunter Feed ID as input, and writes output to the console.
+The `AnalysisResult` class is defined in `results.py`, and requirements for a custom class are outlined in the Customization section below.
+
+`AnalysisResult` objects are expected to have the same properties as
+ThreatHunter Reports (listed in the table above in Report Validation), with the addition of `iocs_v2`. The
+`push_to_cb` function will convert `AnalysisResult` objects into
+Report dictionaries, and then those dictionaries into ThreatHunter
+Report objects.
+
+Report dictionaries are passed through the Report validation function
+`input_validation` described above. Any improperly formatted report
+dictionaries are saved to a file called `malformed_reports.json`.
+
+Upon successful sending of reports to a ThreatHunter Feed, you should
+see something similar to the following INFO message in the console:
+
+`INFO:threatintel:Appended 1000 reports to ThreatHunter Feed AbCdEfGhIjKlMnOp`
+
+
+### Using Validation and Pushing to ThreatHunter in your own code
+
+Import the module and supporting classes like any other python package:
+
+ ```python
+  from threatintel import ThreatIntel
+  from results import IOC_v2, AnalysisResult
+  ti = ThreatIntel()
 ```
 
-This takes an instance of `cbapi.psc.threathunter.CbThreatHunterAPI` as `self.cb`, a report dictionary as `report_dict`, and a ThreatHunter Feed ID to send the report to as `feed_id`.
+Take the threat intelligence data from your source, and convert it into ``AnalysisResult`` objects. Then, attach the indicators of compromise, and store your data in a list.
 
-The `report_dict` dictionary is generated in `ThreatIntel.push_to_cb()` by extracting required parameters from `AnalysisResult` objects, as well as any IOCs attached to the result.
+```python
+  myResults = []
+  for incident in myThreatIntelligenceData:
+    result = AnalysisResult(analysis_name=incident.name, scan_time=incident.scan_time, score=incident.score, title=incident.title, description=incident.description)
+    #ioc_dict could be a collection of md5 hashes, dns values, file hashes, etc.
+    for ioc_key, ioc_val in incident.ioc_dict.items():
+      result.attach_ioc_v2(values=ioc_val, field=ioc_key, link=link)
+    myResults.append(result)
+```
 
-### AnalysisResult
+Finally, push your threat intelligence data to a ThreatHunter Feed.
+```python
+  ti.push_to_cb(feed_id='AbCdEfGhIjKlMnOp', results=myResults)
+```
 
-The `results.py` file contains the `AnalysisResult` class. When initiating a new result, the class expects the following attributes: `analysis_name, scan_time, title, description, score`. You may create your own custom class for a result object, but to use it with the included `ThreatIntel` class, it must include these five attrbutes:
+`ti.push_to_cb` automatically validates your input to ensure it has the values required for ThreatHunter. Validated reports will be sent to your specified ThreatHunter Feed, and any malformed reports will be available for review locally at `malformed_reports.json`.
 
 
-|Required|Type|
+
+## Customization
+
+Although the `AnalysisResult` class is provided in `results.py` as an example, you may create your own custom class to use with `push_to_cb`. The class must have the following attributes to work with the provided `push_to_cb` and `input_validation` functions, as well as the ThreatHunter backend:
+
+
+|Attribute|Type|
 |---|---|
-|`analysis_name`|string|
-|`scan_time`|integer|
+|`id`|string|
+|`timestamp`|integer|
 |`title`|string|
 |`description`|string|
-|`score`|integer|
+|`severity`|integer|
+|`iocs_v2`|[[IOCv2 Format](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions)]|
 
-### IOC
+It is strongly recommended to use the provided `IOC_v2()` class from `results.py`. If you decide to use a custom `iocs_v2` class, that class must have a method called `as_dict` that returns `id`, `match_type`, `values`, `field`, and `link` as a dictionary.
 
-The `results.py` file contains the `IOC` class. When attaching an IOC to a result, you can use the function `AnalysisResult.attach_ioc_v2()`. IOCs have the following required and optional parameters:
-
-
-|Required|Type|Optional|Type|
-|---|---|---|---|
-|`id`|string|`field`|string|
-|`match_type`|integer|`link`|str|
-|`values`|string|||
 
 ## Writing a Custom Threat Intelligence Polling Connector
 
-An example of a custom Threat Intel connector that uses the `ThreatIntel` Python3 module is included in this repository as `stix_taxii.py`. Most use cases will warrant the use of the ThreatHunter `Report` attribute `iocs_v2`, so it is included in `ThreatIntel.push_to_cb()`. Other useful items include the `AnalysisResult` and `IOC_v2` classes in `results.py`.
+An example of a custom Threat Intel connector that uses the `ThreatIntel` Python3 module is included in this repository as `stix_taxii.py`. Most use cases will warrant the use of the ThreatHunter `Report` attribute `iocs_v2`, so it is included in `ThreatIntel.push_to_cb()`.
 
 `ThreatIntel.push_to_cb()` and `AnalysisResult` can be adapted to include other ThreatHunter `Report` attributes like `link, tags, iocs, and visibility`.
 
-#### Using `ThreatIntel.push_to_cb(feed_id, results)`
 
-After writing the code required to connect and ingest Threat Intelligence from your chosen source, it must be formatted before sending it to the Carbon Black Cloud. It is recommended that you use the existing `AnalysisResult` and `IOC_v2` classes to make interfacing with Carbon Black easier.
+## Troubleshooting
 
-After ingesting data from your chosen source, feed it into `AnalysisResult` objects, which can have attached `IOC_v2`'s. These `AnalysisResult` objects can then be fed into `ThreatIntel.push_to_cb()` as a list, and will be validated and sent to your specified ThreatHunter `feed_id`.
+### 504 Gateway Timeout Error
+The [Carbon Black ThreatHunter Feed Manager API](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/) is used in this code. When posting to a Feed, there is a 60 second limit before the gateway terminates your connection. The amount of reports you can POST to a Feed is limited by your connection speed. In this case, you will have to split your threat intelligence into smaller collections until the request takes less than 60 seconds, and send each smaller collection to an individual ThreatHunter Feed.

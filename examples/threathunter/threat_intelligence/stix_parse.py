@@ -292,7 +292,6 @@ def parse_file_observable(observable, props, id, description, title, timestamp, 
 
         if len(iocs['md5']) > 0:
             reports.append({'iocs_v2': iocs,
-                            #'id': sanitize_id(observable.id_),
                             'id': id,
                             'description': description,
                             'title': title,
