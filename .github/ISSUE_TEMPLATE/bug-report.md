@@ -10,7 +10,7 @@ assignees: kebringer-cb, talfano-cb
 **I am seeing this behaviour on: (please complete the following information):**
  - OS: [e.g. iOS]
  - Carbon Black Product: [e.g. CB Protection, CB Defense]
- - Version: [e.g. 22]
+ - Python Version: [e.g. 2.7]
 
 **Describe the bug**
 A clear and concise description of what the bug is.
