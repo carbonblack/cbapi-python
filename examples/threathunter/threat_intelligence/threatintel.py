@@ -55,7 +55,7 @@ class ThreatIntel:
 
         log.debug(f"Num Reports: {len(report_list_to_send)}")
         try:
-            with open('reports.json', 'w') as f:
+            with open('malformed_reports.json', 'w') as f:
                 json.dump(reports, f, indent=4)
         except:
             log.error("Failed to write reports to file.")
@@ -65,7 +65,8 @@ class ThreatIntel:
         log.debug("Sending results to Carbon Black Cloud.")
 
         try:
-            feed.replace_reports(report_list_to_send)
+            feed.append_reports(report_list_to_send)
+            log.info(f"Appended {len(report_list_to_send)} reports to ThreatHunter Feed {feed_id}")
         except Exception as e:
             log.debug(f"Failed sending {len(report_list_to_send)} reports: {e}")
 
