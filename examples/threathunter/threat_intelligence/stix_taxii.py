@@ -198,7 +198,7 @@ class TaxiiSiteConnector():
             for report in reports:
                 yield report
                 num_reports += 1
-                if reports_limit is not None and num_reports > reports_limit:
+                if reports_limit is not None and num_reports >= reports_limit:
                     logging.info(f"Reports limit of {self.config.reports_limit} reached")
                     advance = False
                     break
