@@ -1,3 +1,5 @@
+.. _readme:
+
 ThreatIntel Module
 ==================
 
@@ -10,7 +12,7 @@ Dependencies
 The file ``requirements.txt`` contains a list of dependencies. After cloning this repository, run the following command from
 the ``examples/threathunter/threat_intelligence`` directory:
 
-.. code-block:: python
+.. code:: python
 
    pip3 install -r ./requirements.txt
 
@@ -28,10 +30,10 @@ Usage
 
 ``threatintel.py`` has two main uses:
 
-1. Report validation
+1. Report Validation
 2. Pushing Reports to a Carbon Black ThreatHunter Feed.
 
-Report validation
+Report Validation
 ~~~~~~~~~~~~~~~~~
 
 Each Report to be sent to the Carbon Black Cloud should be validated
@@ -61,7 +63,7 @@ Black ThreatHunter Feed ID as input, and writes output to the console.
 The ``AnalysisResult`` class is defined in ``results.py``, and requirements for a custom class are outlined in the Customization section below.
 
 ``AnalysisResult`` objects are expected to have the same properties as
-ThreatHunter Reports, with the addition of ``IOCs_v2``. The
+ThreatHunter Reports (listed in the table above in Report Validation), with the addition of ``iocs_v2``. The
 ``push_to_cb`` function will convert ``AnalysisResult`` objects into
 Report dictionaries, and then those dictionaries into ThreatHunter
 Report objects.
@@ -75,12 +77,39 @@ see something similar to the following INFO message in the console:
 
 ``INFO:threatintel:Appended 1000 reports to ThreatHunter Feed AbCdEfGhIjKlMnOp``
 
+
+Using Validation and Pushing to ThreatHunter in your own code
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Import the module and supporting classes like any other python package:
+
+.. code:: python
+
+  from threatintel import ThreatIntel
+  from results import IOC_v2, AnalysisResult
+  ti = ThreatIntel()
+
+Take the threat intelligence data from your source, and convert it into ``AnalysisResult`` objects.
+
+.. code:: python
+
+  result = AnalysisResult(
+                         analysis_name=analysis_name,
+                         scan_time=scan_time,
+                         score=score,
+                         title=title,
+                         description=description)
+
+
+  ti.push_to_cb(feed_id='AbCdEfGhIjKlMnOp', results=)
+
+
 Customization
 -------------
 
 Although the ``AnalysisResult`` class is provided in ``results.py`` as
-an example, you may create your own custom class to use with
-``push_to_cb``. The class must have the following attributes to work
+an example, you may create your own custom class to use with the
+``push_to_cb`` function. The class must have the following attributes to work
 with the provided ``push_to_cb`` and ``input_validation`` functions, as
 well as the ThreatHunter backend:
 
@@ -95,10 +124,11 @@ Attribute       Type
 ``iocs_v2``     [iocs_v2]
 =============== =========
 
-It is strongly reccomended to use the provided ``IOC_v2()`` class from
+It is strongly recommended to use the provided ``IOC_v2`` class from
 ``results.py``. If you are using a custom ``iocs_v2`` class, you must
 create a method called ``as_dict`` that returns ``id``, ``match_type``,
-``values``, ``field``, and ``link`` as a dictionary.
+``values``, ``field``, and ``link`` as a dictionary, in order to be compatible with
+the ``push_to_cb`` function.
 
 Developing New ThreatIntel Sources
 ----------------------------------
@@ -132,8 +162,7 @@ An example of a custom Threat Intel connector that uses the
 ``ThreatIntel`` Python3 module is included in this repository as
 ``stix_taxii.py``. Most use cases will warrant the use of the
 ThreatHunter ``Report`` attribute ``iocs_v2``, so it is included in
-``ThreatIntel.push_to_cb()``. Other useful items include the
-``AnalysisResult`` and ``IOC_v2`` classes in ``results.py``.
+``ThreatIntel.push_to_cb()``.
 
 ``ThreatIntel.push_to_cb()`` and ``AnalysisResult`` can be adapted to
 include other ThreatHunter ``Report`` attributes like
