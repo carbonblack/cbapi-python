@@ -46,7 +46,7 @@ required values, and (if applicable) checks the optional values. The
 function takes a list of dictionaries as input, and outputs a Boolean
 indicating if validation was successful.
 
-### Pushing Reports to a Carbon Black ThreatHunter FeedHelper
+### Pushing Reports to a Carbon Black ThreatHunter Feed
 
 The `push_to_cb` function takes a list of `AnalysisResult` objects (or objects of your own custom class) and a Carbon
 Black ThreatHunter Feed ID as input, and writes output to the console.
