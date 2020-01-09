@@ -55,7 +55,7 @@ class ThreatIntel:
 
         log.debug(f"Num Reports: {len(report_list_to_send)}")
         try:
-            with open('malformed_reports.json', 'w') as f:
+            with open('reports.json', 'w') as f:
                 json.dump(reports, f, indent=4)
         except:
             log.error("Failed to write reports to file.")
