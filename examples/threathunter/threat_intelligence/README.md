@@ -24,8 +24,8 @@ An example of implementing this ThreatIntel module is [available here](Taxii_REA
 
 `threatintel.py` has two main uses:
 
-1. Report Validation
-2. Pushing Reports to a Carbon Black ThreatHunter Feed.
+1. Report Validation with `threatintel.input_validation()`
+2. Pushing Reports to a Carbon Black ThreatHunter Feed with `threatintel.push_to_cb()`
 
 ### Report validation
 
@@ -70,7 +70,7 @@ see something similar to the following INFO message in the console:
 
 ### Using Validation and Pushing to ThreatHunter in your own code
 
-Import the module and supporting classes like any other python package:
+Import the module and supporting classes like any other python package, and instantiate a ThreatIntel object:
 
  ```python
   from threatintel import ThreatIntel
@@ -82,10 +82,10 @@ Take the threat intelligence data from your source, and convert it into ``Analys
 
 ```python
   myResults = []
-  for incident in myThreatIntelligenceData:
-    result = AnalysisResult(analysis_name=incident.name, scan_time=incident.scan_time, score=incident.score, title=incident.title, description=incident.description)
+  for intel in myThreatIntelligenceData:
+    result = AnalysisResult(analysis_name=intel.name, scan_time=intel.scan_time, score=intel.score, title=intel.title, description=intel.description)
     #ioc_dict could be a collection of md5 hashes, dns values, file hashes, etc.
-    for ioc_key, ioc_val in incident.ioc_dict.items():
+    for ioc_key, ioc_val in intel.ioc_dict.items():
       result.attach_ioc_v2(values=ioc_val, field=ioc_key, link=link)
     myResults.append(result)
 ```
