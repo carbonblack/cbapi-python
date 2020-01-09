@@ -11,7 +11,13 @@ pip3 install -r ./requirements.txt
 
 
 ## Introduction
-This document describes how to use the ThreatIntel Python3 module for development of connectors that retrieve Threat Intelligence and import it into a Carbon Black Cloud instance. Documentation on Feed and Report definitions is [available here.](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions)
+This document describes how to use the ThreatIntel Python3 module for development of connectors that retrieve Threat Intelligence and import it into a Carbon Black Cloud instance.
+
+Throughout this document, there are references to Carbon Black ThreatHunter Feed and Report formats. Documentation on Feed and Report definitions is [available here.](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions)
+
+## Example
+
+An example of implementing this ThreatIntel module is [available here](Taxii_README.md). The example uses cabby to connect to a TAXII server, collect threat intelligence, and send it to a ThreatHunter Feed.
 
 
 ## Usage

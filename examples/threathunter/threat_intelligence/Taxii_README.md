@@ -26,7 +26,9 @@ python3 stix_taxii.py
 
 If running this script on a schedule, the `start_date` for each TAXII service can be updated via command line arguments. To change the value for each site in your config file, you must supply the site name and desired `start_date` in `%Y-%m-%d %H:%M:%S` format.
 
-`python3 stix_taxii.py my_site_name_1 '2019-11-05 00:00:00' my_site_name_2 '2019-11-05 00:00:00'`
+```python
+python3 stix_taxii.py my_site_name_1 '2019-11-05 00:00:00' my_site_name_2 '2019-11-05 00:00:00'
+```
 
 This may be useful if the intention is to keep an up-to-date collection of STIX data in a ThreatHunter Feed.
 
