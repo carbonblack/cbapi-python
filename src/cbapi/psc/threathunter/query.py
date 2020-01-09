@@ -169,7 +169,7 @@ class Query(PaginatedQuery):
 
     Examples::
 
-    >>> from cbapi.psc.threathunter import CbThreatHunterAPI
+    >>> from cbapi.psc.threathunter import CbThreatHunterAPI,Process
     >>> cb = CbThreatHunterAPI()
     >>> query = cb.select(Process)
     >>> query = query.where(process_name="notepad.exe")
