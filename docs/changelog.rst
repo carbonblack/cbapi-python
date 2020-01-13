@@ -2,6 +2,18 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.6.1 - Released January 13, 2020
+---------------------------------------
+
+Updates
+
+* CB Response
+	* Fix Alert.save() to use alert v1 API
+* Carbon Black Cloud
+	* Fix Live Response flow to use integrationServices/v3/device to prevent need for multiple API keys
+* CB ThreatHunter
+	* Update example for ThreatHunter Query
+
 CbAPI 1.6.0 - Released December 3, 2019
 ---------------------------------------
 
@@ -15,7 +27,7 @@ Updates
 	* Support for Alerts v6:
 		* Search for and retrieve alerts
 		* Update alert status (dismiss alerts)
-	
+
 Examples
 
 * Devices v6:
