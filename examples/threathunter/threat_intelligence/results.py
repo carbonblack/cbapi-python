@@ -1,6 +1,5 @@
 import enum
 import logging
-from datetime import datetime
 
 
 class IOC_v2():
@@ -24,7 +23,6 @@ class IOC_v2():
         Equality: str = "equality"
         Regex: str = "regex"
         Query: str = "query"
-
 
     def as_dict(self):
         return {
@@ -52,17 +50,15 @@ class AnalysisResult():
         self.visibility = None
         self.connector_name = "STIX_TAXII"
 
-
     def attach_ioc_v2(self, *, match_type=IOC_v2.MatchType.Equality, values, field, link):
         self.iocs_v2.append(IOC_v2(analysis=self.id, match_type=match_type, values=values, field=field, link=link))
-
 
     def normalize(self):
         """Normalizes this result to make it palatable for the CbTH backend."""
 
         if self.severity <= 0 or self.severity > 10:
-            log.warning("normalizing OOB score: {}".format(self.severity))
-            self.severity=max(1, min(self.severity, 10))
+            logging.warning("normalizing OOB score: {}".format(self.severity))
+            self.severity = max(1, min(self.severity, 10))
             # NOTE: min 1 and not 0
             # else err 400 from cbapi: Report severity must be between 1 & 10
         return self

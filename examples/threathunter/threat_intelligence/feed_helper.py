@@ -3,7 +3,8 @@
 This is tied to the `start_date` and `size_of_request_in_minutes` configuration options in your `config.yml`.
 """
 
-from datetime import datetime, timedelta, tzinfo, timezone
+from datetime import datetime, timedelta, timezone
+
 
 class FeedHelper():
     def __init__(self, start_date, size_of_request_in_minutes):

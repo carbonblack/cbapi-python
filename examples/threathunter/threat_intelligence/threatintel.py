@@ -5,14 +5,13 @@ Also allows for conversion from result dictionaries into ThreatHunter `Report` o
 
 import logging
 import json
-from feed_helper import FeedHelper
-from cabby import create_client
 from cbapi.psc.threathunter import CbThreatHunterAPI, Report
 from cbapi.errors import ApiError
 from cbapi.psc.threathunter.models import Feed
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
+
 
 class ThreatIntel:
     def __init__(self):
@@ -24,7 +23,6 @@ class ThreatIntel:
         except ApiError as e:
             log.error(f"couldn't find CbTH feed {feed_id}: {e}")
             return
-
 
         report_list_to_send = []
         reports = []
@@ -42,7 +40,7 @@ class ThreatIntel:
                 }
 
                 if self.input_validation([report_dict]):
-                    #create CB Report object
+                    # create CB Report object
                     report = Report(self.cb, initial_data=report_dict, feed_id=feed_id)
                     report_list_to_send.append(report)
                     reports.append(report_dict)
@@ -52,15 +50,12 @@ class ThreatIntel:
             except Exception as e:
                 log.error(f"Failed to create a report dictionary from result object. {e}")
 
-
         log.debug(f"Num Reports: {len(report_list_to_send)}")
         try:
             with open('reports.json', 'w') as f:
                 json.dump(reports, f, indent=4)
-        except:
-            log.error("Failed to write reports to file.")
-
-
+        except Exception as e:
+            log.error(f"Failed to write reports to file: {e}")
 
         log.debug("Sending results to Carbon Black Cloud.")
 
@@ -75,8 +70,8 @@ class ThreatIntel:
             try:
                 with open('malformed_reports.json', 'w') as f:
                     json.dump(malformed_reports, f, indent=4)
-            except:
-                log.error("Failed to write malformed_reports to file.")
+            except Exception as e:
+                log.error(f"Failed to write malformed_reports to file: {e}")
 
     ##########################################################
     # Input validation of reports
@@ -142,8 +137,6 @@ class ThreatIntel:
         else:
             fields_req = ["id", "match_type", "values"]
             fields_opt = ["field", "link"]
-            fields_req_data = [str, str, str]
-            fields_opt_data = [str, str]
             no_error = True
 
             for ioc_dictionary in iocv2:
@@ -197,8 +190,6 @@ class ThreatIntel:
 
             fields_req = ["id", "timestamp", "title", "description", "severity"]
             fields_opt = ["link", "tags", "iocs", "iocs_v2", "visibility"]
-            data_req = [str, int, str, str, int]
-            data_opt = [str, str, str]
 
             # Iterate though the array and check for invalidation of each field
             for index, report in enumerate(reports):
@@ -236,7 +227,7 @@ class ThreatIntel:
                         else:
                             if isinstance(val, str):
                                 idx = fields_opt.index(key)
-                                status_opt[idx][1] = True #this is always true? What's the point
+                                status_opt[idx][1] = True  # this is always true? What's the point
                                 no_error = no_error and status_opt[idx][1]
                             else:
                                 log.warning(f"Missing field or invalid data type: {str(key)}")
@@ -246,13 +237,11 @@ class ThreatIntel:
 
                 log.debug(f"Report {str(index)} validation complete")
 
-
             if no_error:
                 log.debug("Report Validation found no errors in report schema")
             else:
                 log.warning("Report Validation found an error in report schema")
                 return False
-
 
             log.debug("Report Validation check complete")
             return True

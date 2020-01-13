@@ -6,6 +6,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 def get_feed_ids():
     cb = CbThreatHunterAPI()
     feeds = cb.select(Feed)
@@ -14,5 +15,7 @@ def get_feed_ids():
     else:
         for feed in feeds:
             log.info("Feed name: {:<20} \t Feed ID: {:>20}".format(feed.name, feed.id))
+
+
 if __name__ == '__main__':
     get_feed_ids()

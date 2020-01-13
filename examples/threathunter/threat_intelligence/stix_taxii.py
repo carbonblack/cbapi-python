@@ -5,13 +5,13 @@ import logging
 from threatintel import ThreatIntel
 from cabby.exceptions import NoURIProvidedError, ClientException
 from cabby import create_client
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import yaml
 import os
 from stix_parse import parse_stix, BINDING_CHOICES
 from feed_helper import FeedHelper
 from datetime import datetime
-from results import IOC_v2, AnalysisResult
+from results import AnalysisResult
 import urllib3
 
 logging.basicConfig(level=logging.DEBUG)
@@ -97,8 +97,6 @@ class TaxiiSiteConnector():
         except handled_exceptions as e:
             logging.error(f"Error creating client: {e}")
 
-
-
     def create_uri(self, config_path):
         """Formats a URI for discovery, collection, or polling of a TAXII server.
 
@@ -117,8 +115,6 @@ class TaxiiSiteConnector():
                 uri = 'http://'
             uri = uri + self.config.site + config_path
         return uri
-
-
 
     def query_collections(self):
         """Returns a list of STIX collections available to the user to poll."""
@@ -232,7 +228,6 @@ class TaxiiSiteConnector():
 
         want_all = True if '*' in desired_collections else False
 
-
         for collection in available_collections:
             if collection.type != 'DATA_FEED' and collection.type != 'DATA_SET':
                 logging.debug(f"collection:{collection}; type not feed or data")
@@ -266,8 +261,6 @@ class TaxiiSiteConnector():
         return reports
 
 
-
-
 class StixTaxii():
     """Allows for interfacing with multiple TAXII servers.
 
@@ -275,7 +268,6 @@ class StixTaxii():
     Formats report dictionaries into AnalysisResult objects with formatted IOC_v2 attirbutes.
     Sends AnalysisResult objects to ThreatIntel.push_to_cb for dispatching to a feed.
     """
-
 
     def __init__(self, site_confs):
         self.config = site_confs
@@ -286,7 +278,6 @@ class StixTaxii():
 
         result = AnalysisResult(**kwargs).normalize()
         return result
-
 
     def configure_sites(self):
         """Creates a TaxiiSiteConnector for each site in config.yml"""
@@ -350,6 +341,7 @@ class StixTaxii():
                 except Exception as e:
                     logging.error(f"Failed to push reports to feed {site_conn.config.feed_id}: {e}")
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Modify configuration values via command line.')
@@ -357,21 +349,17 @@ if __name__ == '__main__':
                         help='the site name and desired start date to begin polling from')
     args = parser.parse_args()
 
-
     config = load_config_from_file()
-
-
 
     if args.site_start_date:
         for index in range(len(args.site_start_date)):
             arg = args.site_start_date[index]
-            if arg in config['sites']: #if we see a name that matches a site Name
+            if arg in config['sites']:  # if we see a name that matches a site Name
                 try:
                     new_time = datetime.strptime(args.site_start_date[index+1], "%Y-%m-%d %H:%M:%S")
                     config['sites'][arg]['start_date'] = new_time
                 except ValueError as e:
                     logging.error(f"Failed to update start_date for {arg}: {e}")
-
 
     config = load_config_from_file()
     stix_taxii = StixTaxii(config)

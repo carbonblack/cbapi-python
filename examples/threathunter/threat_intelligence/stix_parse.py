@@ -38,7 +38,7 @@ BINDING_CHOICES = [CB_STIX_XML_111, CB_CAP_11, CB_SMIME, CB_STIX_XML_12,
 logger = logging.getLogger(__name__)
 
 
-domain_allowed_chars = string.printable[:-6] # Used by validate_domain_name function
+domain_allowed_chars = string.printable[:-6]  # Used by validate_domain_name function
 
 
 def validate_domain_name(domain_name):
@@ -107,7 +107,7 @@ def sanitize_id(id):
         id: the ID to be sanitized.
 
     Returns:
-        A saniized ID.
+        A sanitized ID.
     """
 
     return id.replace(':', '-')
@@ -233,8 +233,7 @@ def parse_domain_name_observable(observable, props, id, description, title, time
 
         if len(iocs['dns']) > 0:
             reports.append({'iocs_v2': iocs,
-                            #'id': sanitize_id(observable.id_),
-                            'id': id,
+                            'id': sanitize_id(id),
                             'description': description,
                             'title': title,
                             'timestamp': timestamp,
@@ -263,8 +262,7 @@ def parse_address_observable(observable, props, id, description, title, timestam
 
         if len(iocs['ipv4']) > 0:
             reports.append({'iocs_v2': iocs,
-                            #'id': sanitize_id(observable.id_),
-                            'id': id,
+                            'id': sanitize_id(observable.id_),
                             'description': description,
                             'title': title,
                             'timestamp': timestamp,
@@ -272,6 +270,7 @@ def parse_address_observable(observable, props, id, description, title, timestam
                             'score': score})
 
     return reports
+
 
 def parse_file_observable(observable, props, id, description, title, timestamp, link, score):
 
@@ -292,7 +291,7 @@ def parse_file_observable(observable, props, id, description, title, timestamp, 
 
         if len(iocs['md5']) > 0:
             reports.append({'iocs_v2': iocs,
-                            'id': id,
+                            'id': sanitize_id(id),
                             'description': description,
                             'title': title,
                             'timestamp': timestamp,
