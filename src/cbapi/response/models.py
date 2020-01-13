@@ -308,6 +308,17 @@ class Alert(MutableBaseModel):
     def trigger_ioc(self):
         return self.ioc_attr
 
+    # override the Alert API URL to /api/v1/alert when performing POST/PUTs
+    def _build_api_request_uri(self, http_method="GET"):
+        if http_method == "GET":
+            return super(Alert, self)._build_api_request_uri(http_method)
+        else:
+            baseuri = "/api/v1/alert"
+            if self._model_unique_id is not None:
+                return baseuri + "/%s" % self._model_unique_id
+            else:
+                return baseuri
+
 
 class Feed(MutableBaseModel, CreatableModelMixin):
     swagger_meta_file = "response/models/feed.yaml"
