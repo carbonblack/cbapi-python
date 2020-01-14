@@ -30,7 +30,7 @@ An example of implementing this ThreatIntel module is [available here](Taxii_REA
 ### Report validation
 
 Each Report to be sent to the Carbon Black Cloud should be validated
-before sending. The ThreatHunter Report format is a JSON object with
+before sending. The [ThreatHunter Report format](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions) is a JSON object with
 five required and five optional values.
 
 |Required|Type|Optional|Type|
