@@ -56,7 +56,7 @@ class TaxiiSiteConfig:
     ca_cert: str = None
     http_proxy_url: str = None
     https_proxy_url: str = None
-    reports_limit: int = 10000
+    reports_limit: int
     fail_limit: int = 10   # num attempts per collection for polling & parsing
 
 
