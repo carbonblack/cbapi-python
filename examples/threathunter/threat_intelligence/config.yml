@@ -60,11 +60,11 @@ sites:
         # (optional) if you need requests to go through a proxy, specify an https URL here
         https_proxy_url:
 
-        # (optional) number of reports to collect from each site
-        # defaults to 10K. leave blank for no limit
+        # (optional) number of reports to collect from each site.
+        # Leave blank for no limit
         reports_limit:
 
         # control the number of attempts per-collection before giving up
         # trying to get (empty/malformed) STIX data out of a TAXII server.
         # defaults to 10
-        fail_limit: 
+        fail_limit:
