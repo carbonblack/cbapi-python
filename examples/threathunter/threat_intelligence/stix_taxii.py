@@ -56,7 +56,7 @@ class TaxiiSiteConfig:
     ca_cert: str = None
     http_proxy_url: str = None
     https_proxy_url: str = None
-    reports_limit: int
+    reports_limit: int = None
     fail_limit: int = 10   # num attempts per collection for polling & parsing
 
 
@@ -358,9 +358,9 @@ if __name__ == '__main__':
                 try:
                     new_time = datetime.strptime(args.site_start_date[index+1], "%Y-%m-%d %H:%M:%S")
                     config['sites'][arg]['start_date'] = new_time
+                    logging.info(f"Updated the start_date for {arg} to {new_time}")
                 except ValueError as e:
                     logging.error(f"Failed to update start_date for {arg}: {e}")
-
-    config = load_config_from_file()
+                    
     stix_taxii = StixTaxii(config)
     stix_taxii.collect_and_send_reports()
