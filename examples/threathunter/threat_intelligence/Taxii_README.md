@@ -24,10 +24,10 @@ The connector can be activated by running the Python3 file `stix_taxii.py`. The 
 python3 stix_taxii.py
 ```
 
-If running this script on a schedule, the `start_date` for each TAXII service can be updated via command line arguments. To change the value for each site in your config file, you must supply the site name and desired `start_date` in `%Y-%m-%d %H:%M:%S` format.
+This script supports updating each TAXII configuration's `start_date`, the date for which to start requesting data, via the command line with the argument `site_start_date`. To change the `stat_date` value for each site in your config file, you must supply the site name and desired `start_date` in `%Y-%m-%d %H:%M:%S` format.
 
 ```python
-python3 stix_taxii.py my_site_name_1 '2019-11-05 00:00:00' my_site_name_2 '2019-11-05 00:00:00'
+python3 stix_taxii.py --site_start_date my_site_name_1 '2019-11-05 00:00:00' my_site_name_2 '2019-11-05 00:00:00'
 ```
 
 This may be useful if the intention is to keep an up-to-date collection of STIX data in a ThreatHunter Feed.
@@ -39,3 +39,4 @@ In order to use this code, you must have CBAPI installed and configured. If you 
 
 ### 504 Gateway Timeout Error
 The [Carbon Black ThreatHunter Feed Manager API](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/) is used in this code. When posting to a Feed, there is a 60 second limit before the gateway terminates your connection. The amount of reports you can POST to a Feed is limited by your connection speed. In this case, you will have to split your threat intelligence into smaller collections until the request takes less than 60 seconds, and send each smaller collection to an individual ThreatHunter Feed.
+
