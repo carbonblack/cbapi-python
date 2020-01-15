@@ -42,7 +42,8 @@ sites:
         collections:
 
         # (optional) the start date for which to start requesting data.
-        # Defaults to 2019-01-01 00:00:00 if you supply nothing
+        # Use %y-%m-%d %H:%M:%S format.
+        # Defaults to 2019-01-01 00:00:00 if you supply nothing.
         start_date:
 
         # (optional) the minutes to advance for each request.
