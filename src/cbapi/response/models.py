@@ -2579,7 +2579,8 @@ class Process(TaggedModel):
                                            "terminated": False
                                        },
                                        is_suppressed=child.get("is_suppressed", False),
-                                       proc_data=child)
+                                       proc_data=child,
+                                       max_children=self.max_children)
         else:
             for cp in self.childprocs:
                 yield cp
@@ -3154,8 +3155,9 @@ class CbNetConnEvent(CbEvent):
 
 
 class CbChildProcEvent(CbEvent):
-    def __init__(self, parent_process, timestamp, sequence, event_data, is_suppressed=False, proc_data=None):
+    def __init__(self, parent_process, timestamp, sequence, event_data, is_suppressed=False, proc_data=None, max_children=15):
         super(CbChildProcEvent, self).__init__(parent_process, timestamp, sequence, event_data)
+        self.max_children = max_children
         self.event_type = u'Cb Child Process event'
         self.stat_titles.extend(['procguid', 'pid', 'path', 'md5'])
         self.is_suppressed = is_suppressed
@@ -3197,7 +3199,7 @@ class CbChildProcEvent(CbEvent):
             child_unique_id = self.procguid
 
         return self.parent._cb.select(Process, child_unique_id, initial_data=proc_data,
-                                      suppressed_process=self.is_suppressed)
+                                      suppressed_process=self.is_suppressed, max_children=self.max_children)
 
 
 class CbCrossProcEvent(CbEvent):
