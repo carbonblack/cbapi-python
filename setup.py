@@ -49,7 +49,7 @@ setup(
     description='Carbon Black REST API Python Bindings',
     packages=packages,
     include_package_data=True,
-    package_dir = {'': 'src'},
+    package_dir={'': 'src'},
     zip_safe=False,
     platforms='any',
     install_requires=install_requires,
