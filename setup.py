@@ -16,7 +16,7 @@ packages = [
     'cbapi.psc.livequery'
 ]
 
-install_requires=[
+install_requires = [
     'requests',
     'attrdict',
     'cachetools',
@@ -24,11 +24,14 @@ install_requires=[
     'pika',
     'prompt_toolkit',
     'pygments',
-    'pytest<=5.0',
     'python-dateutil',
     'protobuf',
     'solrq',
     'validators'
+]
+
+tests_requires = [
+    'pytest<=5.0'
 ]
 
 if sys.version_info < (2, 7):
@@ -50,6 +53,7 @@ setup(
     zip_safe=False,
     platforms='any',
     install_requires=install_requires,
+    tests_requires=tests_requires,
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
