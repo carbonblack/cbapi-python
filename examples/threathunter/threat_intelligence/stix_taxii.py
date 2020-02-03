@@ -14,7 +14,7 @@ from datetime import datetime
 from results import AnalysisResult
 import urllib3
 
-logging.basicConfig(filename='stix.log', level=logging.DEBUG)
+logging.basicConfig(filename='stix.log', filemode='w', level=logging.DEBUG)
 
 handled_exceptions = (NoURIProvidedError, ClientException)
 
@@ -52,7 +52,7 @@ class TaxiiSiteConfig:
     password: str = None
     collections: str = '*'
     start_date: str = '2019-01-01 00:00:00'
-    size_of_request_in_minutes: int = 60
+    size_of_request_in_minutes: int = 1440
     ca_cert: str = None
     http_proxy_url: str = None
     https_proxy_url: str = None
@@ -185,7 +185,7 @@ class TaxiiSiteConnector():
         else:
             start_date = self.config.start_date
         if not self.config.size_of_request_in_minutes:
-            size_of_request_in_minutes = 60
+            size_of_request_in_minutes = 1440
         else:
             size_of_request_in_minutes = self.config.size_of_request_in_minutes
         feed_helper = FeedHelper(start_date,
