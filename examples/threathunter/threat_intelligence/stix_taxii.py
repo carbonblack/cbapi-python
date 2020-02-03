@@ -14,7 +14,7 @@ from datetime import datetime
 from results import AnalysisResult
 import urllib3
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(filename='stix.log', level=logging.DEBUG)
 
 handled_exceptions = (NoURIProvidedError, ClientException)
 
@@ -180,8 +180,16 @@ class TaxiiSiteConnector():
         advance = True
         reports_limit = self.config.reports_limit
         logging.info(f"reports limit: {reports_limit}")
-        feed_helper = FeedHelper(self.config.start_date,
-                                 self.config.size_of_request_in_minutes)
+        if not self.config.start_date:
+            start_date = '2019-01-01 00:00:00'
+        else:
+            start_date = self.config.start_date
+        if not self.config.size_of_request_in_minutes:
+            size_of_request_in_minutes = 60
+        else:
+            size_of_request_in_minutes = self.config.size_of_request_in_minutes
+        feed_helper = FeedHelper(start_date,
+                                 size_of_request_in_minutes)
         # config parameters `start_date` and `size_of_request_in_minutes` tell this Feed Helper
         # where to start polling in the collection, and then will advance polling in chunks of
         # `size_of_request_in_minutes` until we hit the most current `content_block`,
@@ -222,7 +230,11 @@ class TaxiiSiteConnector():
             From import_collection(self, collection) for each desired collection.
         """
 
-        desired_collections = self.config.collections
+        if not self.config.collections:
+            desired_collections = '*'
+        else:
+            desired_collections = self.config.collections
+
         desired_collections = [x.strip()
                                for x in desired_collections.lower().split(',')]
 
@@ -361,6 +373,5 @@ if __name__ == '__main__':
                     logging.info(f"Updated the start_date for {arg} to {new_time}")
                 except ValueError as e:
                     logging.error(f"Failed to update start_date for {arg}: {e}")
-                    
     stix_taxii = StixTaxii(config)
     stix_taxii.collect_and_send_reports()

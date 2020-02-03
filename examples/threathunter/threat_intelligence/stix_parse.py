@@ -11,6 +11,7 @@ The following IOC types are extracted from STIX data:
 from cybox.objects.domain_name_object import DomainName
 from cybox.objects.address_object import Address
 from cybox.objects.file_object import File
+from cybox.objects.uri_object import URI
 from lxml import etree
 from io import BytesIO
 from stix.core import STIXPackage
@@ -168,8 +169,8 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
     #
     # if description is still empty, use the indicator's title
     #
-    # if not description and indicator and indicator.title:
-    #     description = str(indicator.title)
+    if not description and indicator and indicator.title:
+        description = str(indicator.title)
 
     #
     # use the first reference as a link
@@ -181,15 +182,23 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
             link = reference
             break
     else:
-        split_title = indicator.title.split()
-        if split_title[2][0:8] == 'https://' or split_title[2][0:7] == 'http://':
-            link = split_title[2]
+        if indicator and indicator.title:
+            split_title = indicator.title.split()
+            if split_title[2][0:8] == 'https://' or split_title[2][0:7] == 'http://':
+                link = split_title[2]
+        elif observable and observable.title:
+            split_title = observable.title.split()
+            if split_title[1][0:8] == 'https://' or split_title[1][0:7] == 'http://':
+                link = split_title[1]
+        else:
+            link = ''
+
 
     #
     # Sometimes the title is None, so generate a random UUID
     #
 
-    if observable.title:
+    if observable and observable.title:
         title = observable.title
     else:
         title = str(uuid.uuid4())
@@ -207,9 +216,42 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
     elif type(props) == File:
         reports = parse_file_observable(observable, props, id, description, title, timestamp, link, score)
 
+    elif type(props) == URI:
+        reports = parse_uri_observable(observable, props, id, description, title, timestamp, link, score)
+
     else:
         return reports
 
+    return reports
+
+def parse_uri_observable(observable, props, id, description, title, timestamp, link, score):
+
+    reports = []
+
+    if props.value and props.value.value:
+
+        iocs = {'dns': []}
+        #
+        # Sometimes props.value.value is a list
+        #
+
+        if type(props.value.value) is list:
+            for domain_name in props.value.value:
+                if validate_domain_name(domain_name.strip()):
+                    iocs['dns'].append(domain_name.strip())
+        else:
+            domain_name = props.value.value.strip()
+            if validate_domain_name(domain_name):
+                iocs['dns'].append(domain_name)
+                
+        if len(iocs['dns']) > 0:
+            reports.append({'iocs_v2': iocs,
+                            'id': sanitize_id(id),
+                            'description': description,
+                            'title': title,
+                            'timestamp': timestamp,
+                            'link': link,
+                            'score': score})
     return reports
 
 
