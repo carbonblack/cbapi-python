@@ -51,7 +51,7 @@ class TaxiiSiteConfig:
     username: str = None
     password: str = None
     collections: str = '*'
-    start_date: str = '2019-01-01 00:00:00'
+    start_date: str = None
     size_of_request_in_minutes: int = 1440
     ca_cert: str = None
     http_proxy_url: str = None
@@ -71,6 +71,9 @@ class TaxiiSiteConnector():
         """Connects to a TAXII server using cabby and configuration entries."""
 
         conf = self.config
+        if not conf.start_date:
+            logging.error(f"A start_date is required for site {conf.site}. Exiting.")
+            return
         if not conf.ssl_verify:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         try:
@@ -180,15 +183,11 @@ class TaxiiSiteConnector():
         advance = True
         reports_limit = self.config.reports_limit
         logging.info(f"reports limit: {reports_limit}")
-        if not self.config.start_date:
-            start_date = '2019-01-01 00:00:00'
-        else:
-            start_date = self.config.start_date
         if not self.config.size_of_request_in_minutes:
             size_of_request_in_minutes = 1440
         else:
             size_of_request_in_minutes = self.config.size_of_request_in_minutes
-        feed_helper = FeedHelper(start_date,
+        feed_helper = FeedHelper(self.config.start_date,
                                  size_of_request_in_minutes)
         # config parameters `start_date` and `size_of_request_in_minutes` tell this Feed Helper
         # where to start polling in the collection, and then will advance polling in chunks of
