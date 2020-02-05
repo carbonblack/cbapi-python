@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 class FeedHelper():
     def __init__(self, start_date, size_of_request_in_minutes):
         self.size_of_request_in_minutes = size_of_request_in_minutes
-        self.start_date = start_date.replace(tzinfo=timezone.utc)
+        self.start_date = datetime.strptime(start_date, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
         self.end_date = self.start_date + \
             timedelta(minutes=self.size_of_request_in_minutes)
         self.now = datetime.utcnow().replace(tzinfo=timezone.utc)

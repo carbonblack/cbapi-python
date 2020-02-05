@@ -41,15 +41,14 @@ sites:
         # (optional) specify which collections to convert to feeds (comma-delimited)
         collections:
 
-        # (optional) the start date for which to start requesting data.
-        # Use %y-%m-%d %H:%M:%S format.
-        # Defaults to 2019-01-01 00:00:00 if you supply nothing.
+        # the start date for which to start requesting data.
+        # Use %y-%m-%d %H:%M:%S format, for example: '2019-01-01 00:00:00'
         start_date:
 
         # (optional) the minutes to advance for each request.
         # If you don't have a lot of data, you could advance your requests
         # to every 60 minutes, or 1440 minutes for daily chunks
-        # defaults to 60
+        # defaults to 1440
         size_of_request_in_minutes:
 
         # (optional) path to a CA SSL certificate
