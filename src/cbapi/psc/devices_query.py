@@ -269,7 +269,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
 
         Example::
 
-        >>> cb.select(Device).status(["ALL"]).download()
+        >>> cb.select(Device).set_status(["ALL"]).download()
 
         :return: The CSV raw data as returned from the server.
         """
