@@ -797,7 +797,9 @@ class LiveResponseJobScheduler(threading.Thread):
         sensors = [s for s in self._cb.select(Sensor) if s.id in self._unscheduled_jobs
                    and s.id not in self._job_workers
                    and s.status == "Online"]
-        sensors_to_schedule = sorted(sensors, key=lambda x: x.next_checkin_time)[:schedule_max]
+        sensors_to_schedule = sorted(sensors, key=lambda x: (
+            int(x.num_storefiles_bytes) + int(x.num_eventlog_bytes), x.next_checkin_time
+            ))[:schedule_max]
 
         log.debug("Spawning new workers to handle these sensors: {0}".format(sensors_to_schedule))
         for sensor in sensors_to_schedule:
