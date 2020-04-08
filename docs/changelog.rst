@@ -2,6 +2,13 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.6.2 - Released April 08, 2020
+-------------------------------------
+
+Updates
+
+.. (add your updates here)
+
 CbAPI 1.6.1 - Released January 13, 2020
 ---------------------------------------
 
