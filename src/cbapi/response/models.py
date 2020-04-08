@@ -818,13 +818,18 @@ class Sensor(MutableBaseModel):
         return True
 
     def _update_object(self):
-        # Workarounds for issuing a sensor queue flush in Cb Response 6.0
+        # 1st Workarounds for issuing a sensor queue flush in Cb Response 6.0
         # - We only want to reflect back the event_log_flush_time if the user explicitly set it to a new value
         #   (therefore, set the event_log_flush_time to None if it isn't marked dirty)
         # - The event_log_flush_time must be sent in RFC822 format (not ISO 8601) for Cb Response 6.x servers.
         #
         # Note that even though we delete the event_log_flush_time here, it'll get re-initialized when we GET
         #  the sensor after sending the PUT request.
+        #
+        # 2nd Workarounds for updating a sensor's ability to update attributes in Cb Response 7.1
+        # - Only allowed fields are: ['network_isolation_enabled', 'restart_queued', 'uninstall', 'liveresponse_init', 'group_id', 'notes', 'event_log_flush_time']
+        # - Instead of sending in entire sensorObject fields, we will only send in the above 7
+
         if "event_log_flush_time" in self._dirty_attributes and self._info.get("event_log_flush_time",
                                                                                None) is not None:
             if self._cb.cb_server_version > LooseVersion("6.0.0"):
@@ -837,7 +842,33 @@ class Sensor(MutableBaseModel):
         else:
             self._info["event_log_flush_time"] = None
 
-        return super(Sensor, self)._update_object()
+        if self.__class__.primary_key in self._dirty_attributes.keys() or self._model_unique_id is None:
+            new_object_info = deepcopy(self._info)
+            try:
+                if not self._new_object_needs_primary_key:
+                    del(new_object_info[self.__class__.primary_key])
+            except Exception:
+                pass
+            log.debug("Creating a new {0:s} object".format(self.__class__.__name__))
+            ret = self._cb.api_json_request(self.__class__._new_object_http_method, self.urlobject,
+                                            data=new_object_info)
+        else:
+            log.debug("Updating {0:s} with unique ID {1:s}".format(self.__class__.__name__, str(self._model_unique_id)))
+            http_method = self.__class__._change_object_http_method
+
+            allowed_fields = {
+                'network_isolation_enabled': self._info['network_isolation_enabled'],
+                'restart_queued': self._info['restart_queued'],
+                'uninstall': self._info['uninstall'],
+                'group_id': self._info['group_id'],
+                'notes': self._info['notes'],
+                'event_log_flush_time': self._info['event_log_flush_time']
+            }
+
+            ret = self._cb.api_json_request(http_method, self._build_api_request_uri(http_method=http_method),
+                                            data=allowed_fields)
+
+        return self._refresh_if_needed(ret)
 
 
 class SensorGroup(MutableBaseModel, CreatableModelMixin):
