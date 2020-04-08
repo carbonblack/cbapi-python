@@ -7,7 +7,8 @@ CbAPI 1.6.2 - Released April 08, 2020
 
 Updates
 
-.. (add your updates here)
+* CB Response
+  * Changes to align with limits placed on the sensor update function in CB Response 7.1.0. Release notes are available on User Exchange, the ID is `CB 28683 <https://community.carbonblack.com/t5/Documentation-Downloads/CB-Response-7-1-0-Server-Release-Notes/ta-p/88027>`_.
 
 CbAPI 1.6.1 - Released January 13, 2020
 ---------------------------------------
