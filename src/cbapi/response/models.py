@@ -860,7 +860,6 @@ class Sensor(MutableBaseModel):
                 'network_isolation_enabled': self._info['network_isolation_enabled'],
                 'restart_queued': self._info['restart_queued'],
                 'uninstall': self._info['uninstall'],
-                'liveresponse_init': self._info['liveresponse_init'],
                 'group_id': self._info['group_id'],
                 'notes': self._info['notes'],
                 'event_log_flush_time': self._info['event_log_flush_time']
