@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import traceback
 from threatintel import ThreatIntel
 from cabby.exceptions import NoURIProvidedError, ClientException
 from cabby import create_client
@@ -13,9 +14,12 @@ from feed_helper import FeedHelper
 from datetime import datetime
 from results import AnalysisResult
 import urllib3
+import copy
 
-logging.basicConfig(filename='stix.log', filemode='w', level=logging.DEBUG)
-
+# logging.basicConfig(filename='stix.log', filemode='w', level=logging.DEBUG)
+logging.basicConfig(filename='stix.log', filemode='w', format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+    datefmt='%Y-%m-%d:%H:%M:%S',
+    level=logging.DEBUG)
 handled_exceptions = (NoURIProvidedError, ClientException)
 
 
@@ -26,8 +30,13 @@ def load_config_from_file():
     config_filename = os.path.join(os.path.dirname((os.path.abspath(__file__))), "config.yml")
     with open(config_filename, "r") as config_file:
         config_data = yaml.load(config_file, Loader=yaml.SafeLoader)
-        logging.info(f"loaded config data: {config_data}")
-        return config_data
+        config_data_without_none_vals = copy.deepcopy(config_data)
+        for site_name, site_config_dict in config_data['sites'].items():
+            for conf_key, conf_value in site_config_dict.items():
+                if conf_value is None:
+                    del config_data_without_none_vals['sites'][site_name][conf_key]
+        logging.info(f"loaded config data: {config_data_without_none_vals}")
+        return config_data_without_none_vals
 
 
 @dataclass(eq=True, frozen=True)
@@ -43,8 +52,8 @@ class TaxiiSiteConfig:
     discovery_path: str = ''
     collection_management_path: str = ''
     poll_path: str = ''
-    use_https: bool = False
-    ssl_verify: bool = False
+    use_https: bool = True
+    ssl_verify: bool = True
     cert_file: str = None
     key_file: str = None
     default_score: int = 5  # [1,10]
@@ -350,9 +359,8 @@ class StixTaxii():
                 try:
                     ti.push_to_cb(feed_id=site_conn.config.feed_id, results=self.format_report(reports))
                 except Exception as e:
+                    logging.error(traceback.format_exc())
                     logging.error(f"Failed to push reports to feed {site_conn.config.feed_id}: {e}")
-
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Modify configuration values via command line.')
