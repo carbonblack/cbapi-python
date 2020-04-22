@@ -166,7 +166,6 @@ class ThreatIntel:
                     elif ioc_v2_field in fields_opt:
                         if not ioc_dictionary[ioc_v2_field]:
                             log.warning(f"Optional field {str(ioc_v2_field)} is empty")
-                            no_error = False
                         else:
                             iocv2_status = isinstance(ioc_dictionary[ioc_v2_field], str)
                             index = fields_opt.index(ioc_v2_field)
