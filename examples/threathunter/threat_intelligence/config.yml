@@ -1,5 +1,5 @@
 sites:
-    anomali:
+    my_site_name_1:
         # the feed_id of the ThreatHunter Feed you want to send ThreatIntel to
         # example: 7wP8BEc2QsS8ciEqaRv7Ad
         feed_id:
