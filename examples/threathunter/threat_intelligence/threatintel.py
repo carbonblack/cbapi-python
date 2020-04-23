@@ -17,13 +17,15 @@ class ThreatIntel:
     def __init__(self):
         self.cb = CbThreatHunterAPI(timeout=200)
 
-    def push_to_cb(self, feed_id, results):
+    def verify_feed_exists(self, feed_id):
+        """Verify that a Feed exists"""
         try:
             feed = self.cb.select(Feed, feed_id)
         except ApiError as e:
-            log.error(f"couldn't find CbTH feed {feed_id}: {e}")
-            return
+            raise ApiError
 
+    def push_to_cb(self, feed_id, results):
+        self.verify_feed_exists(feed_id)
         report_list_to_send = []
         reports = []
         malformed_reports = []

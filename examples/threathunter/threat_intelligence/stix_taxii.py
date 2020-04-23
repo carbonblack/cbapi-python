@@ -5,6 +5,8 @@ import logging
 import traceback
 from threatintel import ThreatIntel
 from cabby.exceptions import NoURIProvidedError, ClientException
+from requests.exceptions import ConnectionError
+from cbapi.errors import ApiError
 from cabby import create_client
 from dataclasses import dataclass
 import yaml
@@ -13,6 +15,7 @@ from stix_parse import parse_stix, BINDING_CHOICES
 from feed_helper import FeedHelper
 from datetime import datetime
 from results import AnalysisResult
+from cbapi.psc.threathunter.models import Feed
 import urllib3
 import copy
 
@@ -20,7 +23,7 @@ import copy
 logging.basicConfig(filename='stix.log', filemode='w', format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
     datefmt='%Y-%m-%d:%H:%M:%S',
     level=logging.DEBUG)
-handled_exceptions = (NoURIProvidedError, ClientException)
+handled_exceptions = (NoURIProvidedError, ClientException, ConnectionError)
 
 
 def load_config_from_file():
@@ -139,7 +142,7 @@ class TaxiiSiteConnector():
             for collection in collections:
                 logging.info(f"Collection: {collection.name}, {collection.type}")
         except handled_exceptions as e:
-            logging.warning(f"Problem fetching collections from taxii server: {e}")
+            logging.warning(f"Problem fetching collections from TAXII server. Check your TAXII Provider URL and username/password (if required to access TAXII server): {e}")
         return collections
 
     def poll_server(self, collection, feed_helper):
@@ -350,6 +353,12 @@ class StixTaxii():
         self.configure_sites()
         ti = ThreatIntel()
         for site_name, site_conn in self.sites.items():
+            logging.debug(f"Verifying Feed {site_conn.config.feed_id} exists")
+            try:
+                ti.verify_feed_exists(site_conn.config.feed_id)
+            except ApiError as e:
+                logging.error(f"Couldn't find CbTH Feed {site_conn.config.feed_id}. Skipping {site_name}: {e}")
+                continue
             logging.info(f"Talking to {site_name} server")
             reports = site_conn.generate_reports()
             if not reports:
