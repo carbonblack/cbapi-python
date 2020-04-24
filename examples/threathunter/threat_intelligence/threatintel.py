@@ -21,11 +21,15 @@ class ThreatIntel:
         """Verify that a Feed exists"""
         try:
             feed = self.cb.select(Feed, feed_id)
+            return feed
         except ApiError as e:
             raise ApiError
+            return None
 
     def push_to_cb(self, feed_id, results):
-        self.verify_feed_exists(feed_id)
+        feed = self.verify_feed_exists(feed_id)
+        if not feed:
+            return
         report_list_to_send = []
         reports = []
         malformed_reports = []
