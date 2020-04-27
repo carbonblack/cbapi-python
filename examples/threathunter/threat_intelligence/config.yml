@@ -70,7 +70,7 @@ sites:
 
         # (optional) number of reports to collect from each site.
         # Leave blank for no limit
-        reports_limit: 1
+        reports_limit:
 
         # (optional) control the number of failed attempts per-collection before giving up
         # trying to get (empty/malformed) STIX data out of a TAXII server.

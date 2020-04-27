@@ -22,7 +22,7 @@ import copy
 # logging.basicConfig(filename='stix.log', filemode='w', level=logging.DEBUG)
 logging.basicConfig(filename='stix.log', filemode='w', format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
     datefmt='%Y-%m-%d:%H:%M:%S',
-    level=logging.DEBUG)
+    level=logging.INFO)
 handled_exceptions = (NoURIProvidedError, ClientException, ConnectionError)
 
 

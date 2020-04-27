@@ -10,8 +10,6 @@ from cbapi.errors import ApiError
 from cbapi.psc.threathunter.models import Feed
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-
 
 class ThreatIntel:
     def __init__(self):
@@ -22,12 +20,11 @@ class ThreatIntel:
         try:
             feed = self.cb.select(Feed, feed_id)
             return feed
-        except ApiError as e:
+        except ApiError:
             raise ApiError
-            return None
 
     def push_to_cb(self, feed_id, results):
-        feed = self.verify_feed_exists(feed_id)
+        feed = self.verify_feed_exists(feed_id)  # will raise an ApiError if the feed cannot be found
         if not feed:
             return
         report_list_to_send = []
