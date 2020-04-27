@@ -10,20 +10,23 @@ from cbapi.errors import ApiError
 from cbapi.psc.threathunter.models import Feed
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-
 
 class ThreatIntel:
     def __init__(self):
         self.cb = CbThreatHunterAPI(timeout=200)
 
-    def push_to_cb(self, feed_id, results):
+    def verify_feed_exists(self, feed_id):
+        """Verify that a Feed exists"""
         try:
             feed = self.cb.select(Feed, feed_id)
-        except ApiError as e:
-            log.error(f"couldn't find CbTH feed {feed_id}: {e}")
-            return
+            return feed
+        except ApiError:
+            raise ApiError
 
+    def push_to_cb(self, feed_id, results):
+        feed = self.verify_feed_exists(feed_id)  # will raise an ApiError if the feed cannot be found
+        if not feed:
+            return
         report_list_to_send = []
         reports = []
         malformed_reports = []
@@ -166,7 +169,6 @@ class ThreatIntel:
                     elif ioc_v2_field in fields_opt:
                         if not ioc_dictionary[ioc_v2_field]:
                             log.warning(f"Optional field {str(ioc_v2_field)} is empty")
-                            no_error = False
                         else:
                             iocv2_status = isinstance(ioc_dictionary[ioc_v2_field], str)
                             index = fields_opt.index(ioc_v2_field)

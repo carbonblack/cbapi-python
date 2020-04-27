@@ -1,35 +1,41 @@
 sites:
     my_site_name_1:
         # the feed_id of the ThreatHunter Feed you want to send ThreatIntel to
+        # example: 7wP8BEc2QsS8ciEqaRv7Ad
         feed_id:
 
         # the address of the site (only server ip or dns; don't put https:// or a trailing slash)
+        # example: limo.anomali.com
         site:
 
         # the path of the site for discovering what services are available
         # this is supplied by your taxii provider
+        # example: /api/v1/taxii/taxii-discovery-service/
         discovery_path:
 
         # the path of the site for listing what collections are available to you
         # this is supplied by your taxii provider
+        # example: /api/v1/taxii/collection_management/
         collection_management_path:
 
         # the path of the site for polling a collection
         # this is supplied by your taxii provider
+        # example: /api/v1/taxii/poll/
         poll_path:
 
-        # change to true if you require https for your TAXII service connection
+        # if you require https for your TAXII service connection, set to true
+        # defaults to true
         use_https:
 
-        # by default, we validate SSL certificates. Turn this off by setting ssl_verify: False
+        # by default, we validate SSL certificates. Change to false to turn off SSL verification
         ssl_verify:
 
         # (optional) if you need SSL certificates for authentication, set the path of the
-        # certificate and key here. Please leave blank to ignore.
+        # certificate and key here.
         cert_file:
         key_file:
 
-        # how to score each result. Accepts values [1,10], and defaults to 5
+        # (optional) how to score each result. Accepts values [1,10], and defaults to 5
         default_score:
 
         # (optional) username for authorization with your taxii provider
@@ -39,10 +45,12 @@ sites:
         password:
 
         # (optional) specify which collections to convert to feeds (comma-delimited)
+        # example: Abuse_ch_Ransomware_IPs_F135, DShield_Scanning_IPs_F150
         collections:
 
         # the start date for which to start requesting data.
-        # Use %y-%m-%d %H:%M:%S format, for example: '2019-01-01 00:00:00'
+        # Use %y-%m-%d %H:%M:%S format
+        # example: 2019-01-01 00:00:00
         start_date:
 
         # (optional) the minutes to advance for each request.
@@ -64,7 +72,7 @@ sites:
         # Leave blank for no limit
         reports_limit:
 
-        # control the number of attempts per-collection before giving up
+        # (optional) control the number of failed attempts per-collection before giving up
         # trying to get (empty/malformed) STIX data out of a TAXII server.
         # defaults to 10
         fail_limit:

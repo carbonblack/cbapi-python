@@ -24,6 +24,7 @@ import time
 import datetime
 import dateutil
 import dateutil.tz
+import re
 
 from cabby.constants import (
     CB_STIX_XML_111, CB_CAP_11, CB_SMIME,
@@ -184,14 +185,19 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
     else:
         if indicator and indicator.title:
             split_title = indicator.title.split()
-            if split_title[2][0:8] == 'https://' or split_title[2][0:7] == 'http://':
-                link = split_title[2]
+            title_found = True
         elif observable and observable.title:
             split_title = observable.title.split()
-            if split_title[1][0:8] == 'https://' or split_title[1][0:7] == 'http://':
-                link = split_title[1]
+            title_found = True
         else:
-            link = ''
+            title_found = False
+            
+        if title_found:
+            url_pattern = re.compile("^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$")
+            for token in split_title:
+                if url_pattern.match(token):
+                    link = token
+                    break
 
 
     #
@@ -243,7 +249,7 @@ def parse_uri_observable(observable, props, id, description, title, timestamp, l
             domain_name = props.value.value.strip()
             if validate_domain_name(domain_name):
                 iocs['dns'].append(domain_name)
-                
+
         if len(iocs['dns']) > 0:
             reports.append({'iocs_v2': iocs,
                             'id': sanitize_id(id),
@@ -352,9 +358,10 @@ def get_stix_indicator_score(indicator, default_score):
     if not indicator.confidence:
         return default_score
 
-    confidence_val_str = str(indicator.confidence.value)
+
+    confidence_val_str = indicator.confidence.value.__str__()
     if confidence_val_str.isdigit():
-        score = int(indicator.confidence.to_dict().get("value", default_score))
+        score = int(confidence_val_str)
         return score
     elif confidence_val_str.lower() == "high":
         return 7  # 75

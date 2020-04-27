@@ -2,8 +2,11 @@
 
 import argparse
 import logging
+import traceback
 from threatintel import ThreatIntel
 from cabby.exceptions import NoURIProvidedError, ClientException
+from requests.exceptions import ConnectionError
+from cbapi.errors import ApiError
 from cabby import create_client
 from dataclasses import dataclass
 import yaml
@@ -12,11 +15,15 @@ from stix_parse import parse_stix, BINDING_CHOICES
 from feed_helper import FeedHelper
 from datetime import datetime
 from results import AnalysisResult
+from cbapi.psc.threathunter.models import Feed
 import urllib3
+import copy
 
-logging.basicConfig(filename='stix.log', filemode='w', level=logging.DEBUG)
-
-handled_exceptions = (NoURIProvidedError, ClientException)
+# logging.basicConfig(filename='stix.log', filemode='w', level=logging.DEBUG)
+logging.basicConfig(filename='stix.log', filemode='w', format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+    datefmt='%Y-%m-%d:%H:%M:%S',
+    level=logging.INFO)
+handled_exceptions = (NoURIProvidedError, ClientException, ConnectionError)
 
 
 def load_config_from_file():
@@ -26,8 +33,13 @@ def load_config_from_file():
     config_filename = os.path.join(os.path.dirname((os.path.abspath(__file__))), "config.yml")
     with open(config_filename, "r") as config_file:
         config_data = yaml.load(config_file, Loader=yaml.SafeLoader)
-        logging.info(f"loaded config data: {config_data}")
-        return config_data
+        config_data_without_none_vals = copy.deepcopy(config_data)
+        for site_name, site_config_dict in config_data['sites'].items():
+            for conf_key, conf_value in site_config_dict.items():
+                if conf_value is None:
+                    del config_data_without_none_vals['sites'][site_name][conf_key]
+        logging.info(f"loaded config data: {config_data_without_none_vals}")
+        return config_data_without_none_vals
 
 
 @dataclass(eq=True, frozen=True)
@@ -43,8 +55,8 @@ class TaxiiSiteConfig:
     discovery_path: str = ''
     collection_management_path: str = ''
     poll_path: str = ''
-    use_https: bool = False
-    ssl_verify: bool = False
+    use_https: bool = True
+    ssl_verify: bool = True
     cert_file: str = None
     key_file: str = None
     default_score: int = 5  # [1,10]
@@ -130,7 +142,7 @@ class TaxiiSiteConnector():
             for collection in collections:
                 logging.info(f"Collection: {collection.name}, {collection.type}")
         except handled_exceptions as e:
-            logging.warning(f"Problem fetching collections from taxii server: {e}")
+            logging.warning(f"Problem fetching collections from TAXII server. Check your TAXII Provider URL and username/password (if required to access TAXII server): {e}")
         return collections
 
     def poll_server(self, collection, feed_helper):
@@ -341,6 +353,12 @@ class StixTaxii():
         self.configure_sites()
         ti = ThreatIntel()
         for site_name, site_conn in self.sites.items():
+            logging.debug(f"Verifying Feed {site_conn.config.feed_id} exists")
+            try:
+                ti.verify_feed_exists(site_conn.config.feed_id)
+            except ApiError as e:
+                logging.error(f"Couldn't find CbTH Feed {site_conn.config.feed_id}. Skipping {site_name}: {e}")
+                continue
             logging.info(f"Talking to {site_name} server")
             reports = site_conn.generate_reports()
             if not reports:
@@ -350,9 +368,8 @@ class StixTaxii():
                 try:
                     ti.push_to_cb(feed_id=site_conn.config.feed_id, results=self.format_report(reports))
                 except Exception as e:
+                    logging.error(traceback.format_exc())
                     logging.error(f"Failed to push reports to feed {site_conn.config.feed_id}: {e}")
-
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Modify configuration values via command line.')
