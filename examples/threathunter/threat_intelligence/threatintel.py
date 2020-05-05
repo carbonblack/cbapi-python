@@ -79,3 +79,4 @@ class ThreatIntel:
                     json.dump(malformed_reports, f, indent=4)
             except Exception as e:
                 log.error(f"Failed to write malformed_reports to file: {e}")
+
