@@ -8,17 +8,18 @@ import json
 from cbapi.psc.threathunter import CbThreatHunterAPI, Report
 from cbapi.errors import ApiError
 from cbapi.psc.threathunter.models import Feed
-from schemas import IOCv2Schema, IOCSchema, QueryIOCSchema, ReportSchema
+from schemas import ReportSchema
 from schema import SchemaError
 
 log = logging.getLogger(__name__)
+
 
 class ThreatIntel:
     def __init__(self):
         self.cb = CbThreatHunterAPI(timeout=200)
 
     def verify_feed_exists(self, feed_id):
-        """Verify that a Feed exists"""
+        """Verify that a Feed exists."""
         try:
             feed = self.cb.select(Feed, feed_id)
             return feed

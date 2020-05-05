@@ -60,7 +60,7 @@ class AnalysisResult():
             logging.warning("normalizing OOB score: {}".format(self.severity))
             if self.severity > 10 and self.severity < 100:
                 #assume it's a percentage
-                self.severity = round(self.severity)
+                self.severity = round(self.severity/10)
             else:
                 self.severity = max(1, min(self.severity, 10))
                 # NOTE: min 1 and not 0
