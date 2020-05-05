@@ -194,7 +194,6 @@ class TaxiiSiteConnector():
         num_times_empty_content_blocks = 0
         advance = True
         reports_limit = self.config.reports_limit
-        logging.info(f"reports limit: {reports_limit}")
         if not self.config.size_of_request_in_minutes:
             size_of_request_in_minutes = 1440
         else:
