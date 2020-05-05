@@ -62,9 +62,9 @@ class AnalysisResult():
                 #assume it's a percentage
                 self.severity = round(self.severity/10)
             else:
+                # any severity above 10 becomes 10, or below 1 becomes 1
+                # Report severity must be between 1 & 10, else CBAPI throws 400 error
                 self.severity = max(1, min(self.severity, 10))
-                # NOTE: min 1 and not 0
-                # else err 400 from cbapi: Report severity must be between 1 & 10
         return self
 
     def as_dict(self):
