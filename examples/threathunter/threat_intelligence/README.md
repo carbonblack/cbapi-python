@@ -24,7 +24,7 @@ An example of implementing this ThreatIntel module is [available here](Taxii_REA
 
 `threatintel.py` has two main uses:
 
-1. Report Validation with `threatintel.input_validation()`
+1. Report Validation with `schemas.ReportSchema`
 2. Pushing Reports to a Carbon Black ThreatHunter Feed with `threatintel.push_to_cb()`
 
 ### Report validation
@@ -41,10 +41,9 @@ five required and five optional values.
 |`description`|string|`[iocs_v2]`|[[IOCv2 Format](https://developer.carbonblack.com/reference/carbon-black-cloud/cb-threathunter/latest/feed-api/#definitions)]|
 |`severity`|integer|`visibility`|string|
 
-The `input_validation` function checks for the existence and type of the five
-required values, and (if applicable) checks the optional values. The
-function takes a list of dictionaries as input, and outputs a Boolean
-indicating if validation was successful.
+The `push_to_cb` function checks for the existence and type of the five
+required values, and (if applicable) checks the optional values, through a Schema.
+See `schemas.py` for the definitions.
 
 ### Pushing Reports to a Carbon Black ThreatHunter Feed
 
@@ -58,9 +57,7 @@ ThreatHunter Reports (listed in the table above in Report Validation), with the 
 Report dictionaries, and then those dictionaries into ThreatHunter
 Report objects.
 
-Report dictionaries are passed through the Report validation function
-`input_validation` described above. Any improperly formatted report
-dictionaries are saved to a file called `malformed_reports.json`.
+Any improperly formatted report dictionaries are saved to a file called `malformed_reports.json`.
 
 Upon successful sending of reports to a ThreatHunter Feed, you should
 see something similar to the following INFO message in the console:
@@ -101,7 +98,7 @@ Finally, push your threat intelligence data to a ThreatHunter Feed.
 
 ## Customization
 
-Although the `AnalysisResult` class is provided in `results.py` as an example, you may create your own custom class to use with `push_to_cb`. The class must have the following attributes to work with the provided `push_to_cb` and `input_validation` functions, as well as the ThreatHunter backend:
+Although the `AnalysisResult` class is provided in `results.py` as an example, you may create your own custom class to use with `push_to_cb`. The class must have the following attributes to work with the provided `push_to_cb` function, as well as the ThreatHunter backend:
 
 
 |Attribute|Type|
