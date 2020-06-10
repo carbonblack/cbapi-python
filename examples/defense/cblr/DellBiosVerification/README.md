@@ -78,4 +78,4 @@ c:\program files\confer\temp>powershell.exe -ExecutionPolicy Bypass Compress-Arc
 ```
 
 
-This script is compatible with the full VMware Carbon Black Cloud API and requires the python cbapi
+This script is compatible with the full VMware Carbon Black Cloud API and requires the python cbapi.
