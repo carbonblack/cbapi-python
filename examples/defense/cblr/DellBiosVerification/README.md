@@ -1,4 +1,4 @@
-# BiosVerification.py Live Response API Script
+# Dell BiosVerification.py Live Response API Script
 
 ## References
 https://www.dell.com/support/manuals/us/en/04/trusted-device/trusted_device/results-troubleshooting-and-remediation?guid=guid-240f1964-167a-41b0-9fb3-687dddbdb71f&lang=en-us
