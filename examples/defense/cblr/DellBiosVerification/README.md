@@ -30,8 +30,9 @@ To retrieve the BIOS image files from a device in a failed verification state vi
 
 1. Copy the BiosVerification.py and dellbios.bat files to the same directory on the administrator system. 
 2. Install the cbapi Python bindings: https://github.com/carbonblack/cbapi-python
-3. Create necessary API keys and configure credentials on the administrator system: https://cbapi.readthedocs.io/en/latest/getting-started.html 
-4. Run the provided BiosVerification.py utility with the following command line to target the failed system:
+3. Create a Live Response API key https://developer.carbonblack.com/reference/carbon-black-cloud/authentication/ 
+4. Configure credentials on the administrator system: https://cbapi.readthedocs.io/en/latest/getting-started.html 
+5. Run the provided BiosVerification.py utility with the following command line to target the failed system:
 ```
 BiosVerification.py --get --machinename <MACHINE NAME>
 ```

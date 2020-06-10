@@ -83,12 +83,7 @@ def main():
     args = parser.parse_args()
 
     #Create the CbD LR API object
-    profile = CbDefenseAPI(profile="{}".format(args.orgprofile))
-    cb_url = profile.credentials.url
-    cb_token = profile.credentials.token
-    cb_org_key = profile.credentials.org_key
-    cb_ssl = "True"
-    cb = CbDefenseAPI(url=cb_url, token=cb_token, orgId=cb_org_key, ssl_verify=cb_ssl)
+    cb = CbDefenseAPI(profile="{}".format(args.orgprofile))
 
     if args.machinename:
         if args.get:
