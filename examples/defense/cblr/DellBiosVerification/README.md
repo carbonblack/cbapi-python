@@ -1,7 +1,10 @@
 # Dell BiosVerification.py Live Response API Script
 
 ## References
-https://www.dell.com/support/manuals/us/en/04/trusted-device/trusted_device/results-troubleshooting-and-remediation?guid=guid-240f1964-167a-41b0-9fb3-687dddbdb71f&lang=en-us
+
+Troubleshooting: https://www.dell.com/support/manuals/us/en/04/trusted-device/trusted_device/results-troubleshooting-and-remediation?guid=guid-240f1964-167a-41b0-9fb3-687dddbdb71f&lang=en-us 
+
+Dell Trusted Device Installation Instructions: https://www.dell.com/support/manuals/us/en/04/trusted-device/trusted_device/installation?guid=guid-b9217d4f-6932-47d2-8db5-50633eb47691&lang=en-us
 
 ## Summary
 
@@ -17,10 +20,10 @@ Usage:
 To retrieve the BIOS image files from a device in a failed verification state via the Live Response API:
 
 
-Copy the BiosVerification.py and dellbios.bat files to the same directory on the administrator system. 
-Install the cbapi Python bindings: https://github.com/carbonblack/cbapi-python
-Create necessary API keys and configure credentials on the administrator system: https://cbapi.readthedocs.io/en/latest/getting-started.html 
-Run the provided BiosVerification.py utility with the following command line to target the failed system:
+1. Copy the BiosVerification.py and dellbios.bat files to the same directory on the administrator system. 
+2. Install the cbapi Python bindings: https://github.com/carbonblack/cbapi-python
+3. Create necessary API keys and configure credentials on the administrator system: https://cbapi.readthedocs.io/en/latest/getting-started.html 
+4. Run the provided BiosVerification.py utility with the following command line to target the failed system:
 ```
 BiosVerification.py --get --machinename <MACHINE NAME>
 ```
