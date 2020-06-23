@@ -254,21 +254,24 @@ class Query(PaginatedQuery):
 
     def _get_query_parameters(self):
         args = self._default_args.copy()
-        args['q'] = self._query_builder._collapse()
+        args['query'] = self._query_builder._collapse()
+
+        # TODO move this cb.process_guid somewhere
         if self._query_builder._process_guid is not None:
             args["cb.process_guid"] = self._query_builder._process_guid
-        args["fl"] = "*,parent_hash,parent_name,process_cmdline,backend_timestamp,device_external_ip,device_group," \
-            + "device_internal_ip,device_os,process_effective_reputation,process_reputation,ttp"
+        args["fields"] = ["*","parent_hash","parent_name","process_cmdline","backend_timestamp","device_external_ip",
+                          "device_group","device_internal_ip","device_os","process_effective_reputation",
+                          "process_reputation","ttp"]
 
         return args
 
     def _count(self):
-        args = {"search_params": self._get_query_parameters()}
+        args = self._get_query_parameters()
 
         log.debug("args: {}".format(str(args)))
 
         self._total_results = int(self._cb.post_object(self._doc_class.urlobject, body=args)
-                                  .json().get("response_header", {}).get("num_available", 0))
+                                  .json().get("num_available", 0))
         self._count_valid = True
         return self._total_results
 
@@ -291,8 +294,6 @@ class Query(PaginatedQuery):
             args['start'] = start
         args['rows'] = self._batch_size
 
-        args = {"search_params": args}
-
         current = start
         numrows = 0
 
@@ -303,10 +304,10 @@ class Query(PaginatedQuery):
             resp = self._cb.post_object(url, body=args)
             result = resp.json()
 
-            self._total_results = result.get("response_header", {}).get("num_available", 0)
+            self._total_results = result.get("num_available", 0)
             self._count_valid = True
 
-            results = result.get('docs', [])
+            results = result.get('results', [])
 
             for item in results:
                 yield item
@@ -357,7 +358,7 @@ class AsyncProcessQuery(Query):
         self._sort_direction = direction
 
         # Append to search_job query
-        self._default_args['sort'] = '{} {}'.format(key, direction)
+        self._default_args['sort'] = [{[key]: direction}]
         return self
 
     def timeout(self, msecs):
@@ -381,7 +382,7 @@ class AsyncProcessQuery(Query):
         args = self._get_query_parameters()
         self._validate(args)
 
-        url = "/threathunter/search/v1/orgs/{}/processes/search_jobs".format(self._cb.credentials.org_key)
+        url = "/api/investigate/search/v2/orgs/{}/processes/search_jobs".format(self._cb.credentials.org_key)
         query_start = self._cb.post_object(url, body={"search_params": args})
 
         self._query_token = query_start.json().get("query_id")
@@ -392,7 +393,7 @@ class AsyncProcessQuery(Query):
         if not self._query_token:
             self._submit()
 
-        status_url = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}".format(
+        status_url = "/api/investigate/search/v1/orgs/{}/processes/search_jobs/{}".format(
             self._cb.credentials.org_key,
             self._query_token,
         )
@@ -421,13 +422,13 @@ class AsyncProcessQuery(Query):
         if self._timed_out:
             raise TimeoutError(message="user-specified timeout exceeded while waiting for results")
 
-        result_url = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}/results".format(
+        result_url = "/api/investigate/search/v2/orgs/{}/processes/search_jobs/{}/results".format(
             self._cb.credentials.org_key,
             self._query_token,
         )
         result = self._cb.get_object(result_url)
 
-        self._total_results = result.get('response_header', {}).get('num_available', 0)
+        self._total_results = result.get('num_available', 0)
         self._count_valid = True
 
         return self._total_results
@@ -447,7 +448,7 @@ class AsyncProcessQuery(Query):
         current = start
         rows_fetched = 0
         still_fetching = True
-        result_url_template = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}/results".format(
+        result_url_template = "/api/investigate/search/v2/orgs/{}/processes/search_jobs/{}/results".format(
             self._cb.credentials.org_key,
             self._query_token
         )
@@ -461,10 +462,10 @@ class AsyncProcessQuery(Query):
 
             result = self._cb.get_object(result_url, query_parameters=query_parameters)
 
-            self._total_results = result.get('response_header', {}).get('num_available', 0)
+            self._total_results = result.get('num_available', 0)
             self._count_valid = True
 
-            results = result.get('data', [])
+            results = result.get('results', [])
 
             for item in results:
                 yield item

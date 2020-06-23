@@ -52,7 +52,7 @@ class CbThreatHunterAPI(CbPSCBaseAPI):
         :rtype: bool
         """
         args = {"q": query}
-        url = "/threathunter/search/v1/orgs/{}/processes/search_validation".format(
+        url = "/api/investigate/v1/orgs/{}/processes/search_validation".format(
             self.credentials.org_key
         )
         resp = self.get_object(url, query_parameters=args)
@@ -67,7 +67,7 @@ class CbThreatHunterAPI(CbPSCBaseAPI):
         :rtype: str
         """
         args = {"query": query}
-        resp = self.post_object("/threathunter/feedmgr/v2/query/translate", args).json()
+        resp = self.post_object("/api/feedmgr/v2/query/translate", args).json()
 
         return resp.get("query")
 
@@ -78,7 +78,7 @@ class CbThreatHunterAPI(CbPSCBaseAPI):
         :rtype: list[:py:class:`ReportSeverity`]
         """
         # TODO(ww): There's probably a better place to put this.
-        url = "/threathunter/watchlistmgr/v3/orgs/{}/reports/severity".format(
+        url = "/api/watchlistmgr/v3/orgs/{}/reports/severity".format(
             self.credentials.org_key
         )
         resp = self.get_object(url)
@@ -92,7 +92,7 @@ class CbThreatHunterAPI(CbPSCBaseAPI):
         :return: a list of query ids
         :rtype: list(str)
         """
-        url = "/threathunter/search/v1/orgs/{}/processes/search_jobs".format(
+        url = "/api/investigate/v1/orgs/{}/processes/search_jobs".format(
             self.credentials.org_key
         )
         ids = self.get_object(url)
@@ -109,7 +109,7 @@ class CbThreatHunterAPI(CbPSCBaseAPI):
         :return: a dict of limiting information
         :rtype: dict(str, str)
         """
-        url = "/threathunter/search/v1/orgs/{}/processes/limits".format(
+        url = "/api/investigate/v1/orgs/{}/processes/limits".format(
             self.credentials.org_key
         )
         return self.get_object(url)
