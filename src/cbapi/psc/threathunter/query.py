@@ -267,7 +267,7 @@ class Query(PaginatedQuery):
 
         log.debug("args: {}".format(str(args)))
 
-        self._total_results = int(self._cb.post_object(self._doc_class.urlobject, body=args)
+        self._total_results = int(self._cb.post_object(self._doc_class.urlobject.format(self._cb.credentials.org_key), body=args)
                                   .json().get("response_header", {}).get("num_available", 0))
         self._count_valid = True
         return self._total_results
