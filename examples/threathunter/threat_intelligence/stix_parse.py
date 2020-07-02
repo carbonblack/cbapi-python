@@ -137,8 +137,9 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
         A report dictionary if the cybox observable has props of type:
 
             cybox.objects.address_object.Address,
-            cybox.objects.file_object.File, or
-            cybox.objects.domain_name_object.DomainName.
+            cybox.objects.file_object.File,
+            cybox.objects.domain_name_object.DomainName, or
+            cybox.objects.uri_object.URI
 
         Otherwise it will return an empty list.
 
