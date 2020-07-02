@@ -295,7 +295,7 @@ def parse_address_observable(observable, props, id, description, title, timestam
 
     reports = []
     if props.category == 'ipv4-addr' and props.address_value:
-        iocs = {'netconn_remote_ipv4': []}
+        iocs = {'netconn_ipv4': []}
 
         #
         # Sometimes props.address_value.value is a list vs a string
@@ -303,13 +303,13 @@ def parse_address_observable(observable, props, id, description, title, timestam
         if type(props.address_value.value) is list:
             for ip in props.address_value.value:
                 if validate_ip_address(ip.strip()):
-                    iocs['netconn_remote_ipv4'].append(ip.strip())
+                    iocs['netconn_ipv4'].append(ip.strip())
         else:
             ipv4 = props.address_value.value.strip()
             if validate_ip_address(ipv4):
-                iocs['netconn_remote_ipv4'].append(ipv4)
+                iocs['netconn_ipv4'].append(ipv4)
 
-        if len(iocs['netconn_remote_ipv4']) > 0:
+        if len(iocs['netconn_ipv4']) > 0:
             reports.append({'iocs_v2': iocs,
                             'id': sanitize_id(observable.id_),
                             'description': description,
