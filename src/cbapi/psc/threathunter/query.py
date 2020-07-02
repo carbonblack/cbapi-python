@@ -531,7 +531,7 @@ class TreeQuery(BaseQuery):
         results = self._cb.get_object(url, query_parameters=self._args)
 
         while results["incomplete_results"]:
-            result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+            result = self._cb.get_object(url, query_parameters=self._args)
             results["nodes"]["children"].extend(result["nodes"]["children"])
             results["incomplete_results"] = result["incomplete_results"]
 
