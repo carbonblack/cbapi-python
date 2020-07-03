@@ -20,7 +20,7 @@ class Process(UnrefreshableModel):
     """
     default_sort = 'last_update desc'
     primary_key = "process_guid"
-    validation_url = "/threathunter/search/v1/orgs/{}/processes/search_validation"
+    validation_url = "/api/investigate/v1/orgs/{}/processes/search_validation"
 
     class Summary(UnrefreshableModel):
         """Represents a summary of organization-specific information for
@@ -28,7 +28,7 @@ class Process(UnrefreshableModel):
         """
         default_sort = "last_update desc"
         primary_key = "process_guid"
-        urlobject_single = "/threathunter/search/v1/orgs/{}/processes/summary"
+        urlobject_single = "/api/investigate/v1/orgs/{}/processes/summary"
 
         def __init__(self, cb, model_unique_id):
             url = self.urlobject_single.format(cb.credentials.org_key)
@@ -171,8 +171,8 @@ class Event(UnrefreshableModel):
     """Events can be queried for via ``CbThreatHunterAPI.select``
     or though an already selected process with ``Process.events()``.
     """
-    urlobject = '/threathunter/search/v1/orgs/{}/events/_search'
-    validation_url = '/threathunter/search/v1/orgs/{}/events/search_validation'
+    urlobject = '/api/investigate/v2/orgs/{}/events/{}/_search'
+    validation_url = '/api/investigate/v1/orgs/{}/events/search_validation'
     default_sort = 'last_update desc'
     primary_key = "process_guid"
 
@@ -180,7 +180,7 @@ class Event(UnrefreshableModel):
     def _query_implementation(cls, cb):
         return Query(cls, cb)
 
-    def __init__(self, cb,  model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
+    def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
         super(Event, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
                                     force_init=force_init, full_doc=full_doc)
 
@@ -197,8 +197,10 @@ class Tree(UnrefreshableModel):
         return TreeQuery(cls, cb)
 
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False, full_doc=True):
-        super(Tree, self).__init__(cb, model_unique_id=model_unique_id, initial_data=initial_data,
-                                   force_init=force_init, full_doc=full_doc)
+        super(Tree, self).__init__(
+            cb, model_unique_id=model_unique_id, initial_data=initial_data,
+            force_init=force_init, full_doc=full_doc
+        )
 
     @property
     def children(self):

@@ -254,22 +254,40 @@ class Query(PaginatedQuery):
 
     def _get_query_parameters(self):
         args = self._default_args.copy()
-        args['q'] = self._query_builder._collapse()
+        args['query'] = self._query_builder._collapse()
         if self._query_builder._process_guid is not None:
-            args["cb.process_guid"] = self._query_builder._process_guid
-        args["fl"] = "*,parent_hash,parent_name,process_cmdline,backend_timestamp,device_external_ip,device_group," \
-            + "device_internal_ip,device_os,process_effective_reputation,process_reputation,ttp"
+            args["process_guid"] = self._query_builder._process_guid
+        args["fields"] = [
+            "*",
+            "parent_hash",
+            "parent_name",
+            "process_cmdline",
+            "backend_timestamp",
+            "device_external_ip",
+            "device_group",
+            "device_internal_ip",
+            "device_os",
+            "process_effective_reputation",
+            "process_reputation,ttp"
+        ]
 
         return args
 
     def _count(self):
-        args = {"search_params": self._get_query_parameters()}
+        args = self._get_query_parameters()
 
         log.debug("args: {}".format(str(args)))
 
-        self._total_results = int(self._cb.post_object(self._doc_class.urlobject, body=args)
-                                  .json().get("response_header", {}).get("num_available", 0))
+        result = self._cb.post_object(
+            self._doc_class.urlobject.format(
+                self._cb.credentials.org_key,
+                args["process_guid"]
+            ), body=args
+        ).json()
+
+        self._total_results = int(result.get('num_available', 0))
         self._count_valid = True
+
         return self._total_results
 
     def _validate(self, args):
@@ -285,13 +303,13 @@ class Query(PaginatedQuery):
     def _search(self, start=0, rows=0):
         # iterate over total result set, 100 at a time
         args = self._get_query_parameters()
-        self._validate(args)
+        #self._validate(args)
 
         if start != 0:
             args['start'] = start
         args['rows'] = self._batch_size
 
-        args = {"search_params": args}
+        #args = {"search_params": args}
 
         current = start
         numrows = 0
@@ -299,14 +317,17 @@ class Query(PaginatedQuery):
         still_querying = True
 
         while still_querying:
-            url = self._doc_class.urlobject.format(self._cb.credentials.org_key)
+            url = self._doc_class.urlobject.format(
+                self._cb.credentials.org_key,
+                args["process_guid"]
+            )
             resp = self._cb.post_object(url, body=args)
             result = resp.json()
 
-            self._total_results = result.get("response_header", {}).get("num_available", 0)
+            self._total_results = result.get('num_available', 0)
             self._count_valid = True
 
-            results = result.get('docs', [])
+            results = result.get('results', [])
 
             for item in results:
                 yield item
@@ -379,12 +400,13 @@ class AsyncProcessQuery(Query):
             raise ApiError("Query already submitted: token {0}".format(self._query_token))
 
         args = self._get_query_parameters()
-        self._validate(args)
+        #self._validate(args)
 
-        url = "/threathunter/search/v1/orgs/{}/processes/search_jobs".format(self._cb.credentials.org_key)
-        query_start = self._cb.post_object(url, body={"search_params": args})
+        url = "/api/investigate/v2/orgs/{}/processes/search_jobs".format(self._cb.credentials.org_key)
+        query_start = self._cb.post_object(url, body=args)
 
-        self._query_token = query_start.json().get("query_id")
+        self._query_token = query_start.json().get("job_id")
+
         self._timed_out = False
         self._submit_time = time.time() * 1000
 
@@ -392,7 +414,7 @@ class AsyncProcessQuery(Query):
         if not self._query_token:
             self._submit()
 
-        status_url = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}".format(
+        status_url = "/api/investigate/v1/orgs/{}/processes/search_jobs/{}".format(
             self._cb.credentials.org_key,
             self._query_token,
         )
@@ -421,13 +443,13 @@ class AsyncProcessQuery(Query):
         if self._timed_out:
             raise TimeoutError(message="user-specified timeout exceeded while waiting for results")
 
-        result_url = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}/results".format(
+        result_url = "/api/investigate/v2/orgs/{}/processes/search_jobs/{}/results".format(
             self._cb.credentials.org_key,
             self._query_token,
         )
         result = self._cb.get_object(result_url)
 
-        self._total_results = result.get('response_header', {}).get('num_available', 0)
+        self._total_results = result.get('num_available', 0)
         self._count_valid = True
 
         return self._total_results
@@ -447,7 +469,7 @@ class AsyncProcessQuery(Query):
         current = start
         rows_fetched = 0
         still_fetching = True
-        result_url_template = "/threathunter/search/v1/orgs/{}/processes/search_jobs/{}/results".format(
+        result_url_template = "/api/investigate/v2/orgs/{}/processes/search_jobs/{}/results".format(
             self._cb.credentials.org_key,
             self._query_token
         )
@@ -461,10 +483,10 @@ class AsyncProcessQuery(Query):
 
             result = self._cb.get_object(result_url, query_parameters=query_parameters)
 
-            self._total_results = result.get('response_header', {}).get('num_available', 0)
+            self._total_results = result.get('num_available', 0)
             self._count_valid = True
 
-            results = result.get('data', [])
+            results = result.get('results', [])
 
             for item in results:
                 yield item
@@ -531,7 +553,7 @@ class TreeQuery(BaseQuery):
         results = self._cb.get_object(url, query_parameters=self._args)
 
         while results["incomplete_results"]:
-            result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+            result = self._cb.get_object(url, query_parameters=self._args)
             results["nodes"]["children"].extend(result["nodes"]["children"])
             results["incomplete_results"] = result["incomplete_results"]
 
