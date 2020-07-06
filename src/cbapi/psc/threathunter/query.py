@@ -295,7 +295,7 @@ class Query(PaginatedQuery):
             return
 
         url = self._doc_class.validation_url.format(self._cb.credentials.org_key)
-        validated = self._cb.get_object(url, query_parameters=args)
+        validated = self._cb.get_object(url, query_parameters={'q': args['query']})
 
         if not validated.get("valid"):
             raise ApiError("Invalid query: {}: {}".format(args, validated["invalid_message"]))
@@ -303,13 +303,13 @@ class Query(PaginatedQuery):
     def _search(self, start=0, rows=0):
         # iterate over total result set, 100 at a time
         args = self._get_query_parameters()
-        #self._validate(args)
+        self._validate(args)
 
         if start != 0:
             args['start'] = start
         args['rows'] = self._batch_size
 
-        #args = {"search_params": args}
+        # args = {"search_params": args}
 
         current = start
         numrows = 0
@@ -400,7 +400,7 @@ class AsyncProcessQuery(Query):
             raise ApiError("Query already submitted: token {0}".format(self._query_token))
 
         args = self._get_query_parameters()
-        #self._validate(args)
+        self._validate(args)
 
         url = "/api/investigate/v2/orgs/{}/processes/search_jobs".format(self._cb.credentials.org_key)
         query_start = self._cb.post_object(url, body=args)
