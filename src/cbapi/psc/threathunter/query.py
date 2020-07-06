@@ -295,7 +295,11 @@ class Query(PaginatedQuery):
             return
 
         url = self._doc_class.validation_url.format(self._cb.credentials.org_key)
-        validated = self._cb.get_object(url, query_parameters={'q': args['query']})
+
+        if args.get('query', False):
+            args['q'] = args['query']
+
+        validated = self._cb.get_object(url, query_parameters=args)
 
         if not validated.get("valid"):
             raise ApiError("Invalid query: {}: {}".format(args, validated["invalid_message"]))
