@@ -304,6 +304,8 @@ class Query(PaginatedQuery):
             result = resp.json()
 
             self._total_results = result.get("response_header", {}).get("num_available", 0)
+            self._total_segments = result.get("response_header", {}).get("total_segments", 0)
+            self._processed_segments = result.get("response_header", {}).get("processed_segments", 0)
             self._count_valid = True
 
             results = result.get('docs', [])
