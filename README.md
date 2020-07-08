@@ -11,9 +11,9 @@ an overview of the concepts that underly this API binding.
 
 ## Support
 
-1. View all API and integration offerings on the [Developer Network](https://developer.carbonblack.com) along with reference documentation, video tutorials, and how-to guides.
-2. Use the [Developer Community Forum](https://community.carbonblack.com/community/resources/developer-relations) to discuss issues and get answers from other API developers in the Carbon Black Community.
-3. Report bugs and change requests to [Carbon Black Support](http://carbonblack.com/resources/support).
+1. View all API and integration offerings on the [Developer Network](https://developer.carbonblack.com/) along with reference documentation, video tutorials, and how-to guides.
+2. Use the [Developer Community Forum](https://community.carbonblack.com/t5/Developer-Relations/bd-p/developer-relations) to discuss issues and get answers from other API developers in the Carbon Black Community.
+3. Report bugs and change requests to [Carbon Black Support](http://carbonblack.com/resources/support/).
 
 ## Requirements
 
