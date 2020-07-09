@@ -44,11 +44,16 @@ def main():
             with open(args.f, 'w') as outfile:
                 for p in processes:
                     json.dump(p.original_document, outfile)
+                    print(p.original_document)
         else:
+            headers = set()
+            headers.update(*(d.original_document.keys() for d in processes))
             with open(args.f, 'w') as outfile:
-                csvwriter = csv.writer(outfile)
+                csvwriter = csv.DictWriter(outfile, fieldnames=headers)
+                csvwriter.writeheader()
                 for p in processes:
                     csvwriter.writerow(p.original_document)
+
 
 
 if __name__ == "__main__":

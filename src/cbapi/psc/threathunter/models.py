@@ -112,10 +112,13 @@ class Process(UnrefreshableModel):
         :return: Returns a list of process objects
         :rtype: list of :py:class:`Process`
         """
-        return [
-            Process(self._cb, initial_data=child)
-            for child in self.summary.children
-        ]
+        if isinstance(self.summary.children, list):
+            return [
+                Process(self._cb, initial_data=child)
+                for child in self.summary.children
+            ]
+        else:
+            return []
 
     @property
     def siblings(self):
