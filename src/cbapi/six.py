@@ -39,7 +39,7 @@ PY34 = sys.version_info[0:2] >= (3, 4)
 
 if PY3:
     string_types = str,
-    integer_types = int,
+    integer_types = (int,),
     class_types = type,
     text_type = str
     binary_type = bytes
