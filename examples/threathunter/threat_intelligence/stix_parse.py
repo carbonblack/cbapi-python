@@ -137,8 +137,9 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
         A report dictionary if the cybox observable has props of type:
 
             cybox.objects.address_object.Address,
-            cybox.objects.file_object.File, or
-            cybox.objects.domain_name_object.DomainName.
+            cybox.objects.file_object.File,
+            cybox.objects.domain_name_object.DomainName, or
+            cybox.objects.uri_object.URI
 
         Otherwise it will return an empty list.
 
@@ -191,7 +192,7 @@ def cybox_parse_observable(observable, indicator, timestamp, score):
             title_found = True
         else:
             title_found = False
-            
+
         if title_found:
             url_pattern = re.compile("^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$")
             for token in split_title:
@@ -236,7 +237,7 @@ def parse_uri_observable(observable, props, id, description, title, timestamp, l
 
     if props.value and props.value.value:
 
-        iocs = {'dns': []}
+        iocs = {'netconn_domain': []}
         #
         # Sometimes props.value.value is a list
         #
@@ -244,13 +245,13 @@ def parse_uri_observable(observable, props, id, description, title, timestamp, l
         if type(props.value.value) is list:
             for domain_name in props.value.value:
                 if validate_domain_name(domain_name.strip()):
-                    iocs['dns'].append(domain_name.strip())
+                    iocs['netconn_domain'].append(domain_name.strip())
         else:
             domain_name = props.value.value.strip()
             if validate_domain_name(domain_name):
-                iocs['dns'].append(domain_name)
+                iocs['netconn_domain'].append(domain_name)
 
-        if len(iocs['dns']) > 0:
+        if len(iocs['netconn_domain']) > 0:
             reports.append({'iocs_v2': iocs,
                             'id': sanitize_id(id),
                             'description': description,
@@ -265,7 +266,7 @@ def parse_domain_name_observable(observable, props, id, description, title, time
 
     reports = []
     if props.value and props.value.value:
-        iocs = {'dns': []}
+        iocs = {'netconn_domain': []}
         #
         # Sometimes props.value.value is a list
         #
@@ -273,13 +274,13 @@ def parse_domain_name_observable(observable, props, id, description, title, time
         if type(props.value.value) is list:
             for domain_name in props.value.value:
                 if validate_domain_name(domain_name.strip()):
-                    iocs['dns'].append(domain_name.strip())
+                    iocs['netconn_domain'].append(domain_name.strip())
         else:
             domain_name = props.value.value.strip()
             if validate_domain_name(domain_name):
-                iocs['dns'].append(domain_name)
+                iocs['netconn_domain'].append(domain_name)
 
-        if len(iocs['dns']) > 0:
+        if len(iocs['netconn_domain']) > 0:
             reports.append({'iocs_v2': iocs,
                             'id': sanitize_id(id),
                             'description': description,
@@ -294,7 +295,7 @@ def parse_address_observable(observable, props, id, description, title, timestam
 
     reports = []
     if props.category == 'ipv4-addr' and props.address_value:
-        iocs = {'ipv4': []}
+        iocs = {'netconn_ipv4': []}
 
         #
         # Sometimes props.address_value.value is a list vs a string
@@ -302,13 +303,13 @@ def parse_address_observable(observable, props, id, description, title, timestam
         if type(props.address_value.value) is list:
             for ip in props.address_value.value:
                 if validate_ip_address(ip.strip()):
-                    iocs['ipv4'].append(ip.strip())
+                    iocs['netconn_ipv4'].append(ip.strip())
         else:
             ipv4 = props.address_value.value.strip()
             if validate_ip_address(ipv4):
-                iocs['ipv4'].append(ipv4)
+                iocs['netconn_ipv4'].append(ipv4)
 
-        if len(iocs['ipv4']) > 0:
+        if len(iocs['netconn_ipv4']) > 0:
             reports.append({'iocs_v2': iocs,
                             'id': sanitize_id(observable.id_),
                             'description': description,
@@ -323,21 +324,21 @@ def parse_address_observable(observable, props, id, description, title, timestam
 def parse_file_observable(observable, props, id, description, title, timestamp, link, score):
 
     reports = []
-    iocs = {'md5': []}
+    iocs = {'hash': []}
     if props.md5:
         if type(props.md5) is list:
-            for md5 in props.md5:
-                if validate_md5sum(md5.strip()):
-                    iocs['md5'].append(md5.strip())
+            for hash in props.md5:
+                if validate_md5sum(hash.strip()):
+                    iocs['hash'].append(hash.strip())
         else:
             if hasattr(props.md5, 'value'):
-                md5 = props.md5.value.strip()
+                hash = props.md5.value.strip()
             else:
-                md5 = props.md5.strip()
-            if validate_md5sum(md5):
-                iocs['md5'].append(md5)
+                hash = props.md5.strip()
+            if validate_md5sum(hash):
+                iocs['hash'].append(hash)
 
-        if len(iocs['md5']) > 0:
+        if len(iocs['hash']) > 0:
             reports.append({'iocs_v2': iocs,
                             'id': sanitize_id(id),
                             'description': description,

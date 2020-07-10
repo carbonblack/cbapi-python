@@ -328,7 +328,9 @@ class Query(PaginatedQuery):
             resp = self._cb.post_object(url, body=args)
             result = resp.json()
 
-            self._total_results = result.get('num_available', 0)
+            self._total_results = result.get("num_available", 0)
+            self._total_segments = result.get("total_segments", 0)
+            self._processed_segments = result.get("processed_segments", 0)
             self._count_valid = True
 
             results = result.get('results', [])
