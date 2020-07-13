@@ -267,7 +267,7 @@ class Query(PaginatedQuery):
 
         log.debug("args: {}".format(str(args)))
 
-        self._total_results = int(self._cb.post_object(self._doc_class.urlobject, body=args)
+        self._total_results = int(self._cb.post_object(self._doc_class.urlobject.format(self._cb.credentials.org_key), body=args)
                                   .json().get("response_header", {}).get("num_available", 0))
         self._count_valid = True
         return self._total_results
@@ -533,7 +533,7 @@ class TreeQuery(BaseQuery):
         results = self._cb.get_object(url, query_parameters=self._args)
 
         while results["incomplete_results"]:
-            result = self._cb.get_object(self._doc_class.urlobject, query_parameters=self._args)
+            result = self._cb.get_object(url, query_parameters=self._args)
             results["nodes"]["children"].extend(result["nodes"]["children"])
             results["incomplete_results"] = result["incomplete_results"]
 
