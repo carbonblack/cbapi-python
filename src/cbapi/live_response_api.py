@@ -1,3 +1,6 @@
+
+"""The Live Response API and associated objects."""
+
 from __future__ import absolute_import
 
 import json
@@ -24,7 +27,15 @@ log = logging.getLogger(__name__)
 
 
 class LiveResponseError(Exception):
+    """Exception raised for errors with Live Response."""
+
     def __init__(self, details):
+        """
+        Initialize the LiveResponseError.
+
+        Args:
+            details (object): Details of the specific error.
+        """
         message_list = []
 
         self.details = details
@@ -53,13 +64,30 @@ class LiveResponseError(Exception):
         self.message = ": ".join(message_list)
 
     def __str__(self):
+        """
+        Return the string equivalent of this exception (the exception's message).
+
+        Returns:
+            str: The exception's message.
+        """
         return self.message
 
 
 class CbLRSessionBase(object):
+    """A Live Response session that interacts with a remote machine."""
+
     MAX_RETRY_COUNT = 5
 
     def __init__(self, cblr_manager, session_id, sensor_id, session_data=None):
+        """
+        Initialize the CbLRSessionBase.
+
+        Args:
+            cblr_manager (CbLRManagerBase): The Live Response manager governing this session.
+            session_id (str): The ID of this session.
+            sensor_id (int): The ID of the sensor (remote machine) we're connected to.
+            session_data (dict): Additional session data.
+        """
         self.session_id = session_id
         self.sensor_id = sensor_id
         self._cblr_manager = cblr_manager
@@ -73,16 +101,32 @@ class CbLRSessionBase(object):
         self.cblr_base = self._cblr_manager.cblr_base
 
     def __enter__(self):
+        """Enter the Live Response session context."""
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Exit the Live Response session context.
+
+        Args:
+            exc_type (str): Exception type, if any.
+            exc_val (Exception): Exception value, if any.
+            exc_tb (str): Exception traceback, if any.
+        """
         self.close()
 
     def close(self):
+        """Close the Live Response session."""
         self._cblr_manager.close_session(self.sensor_id, self.session_id)
         self._closed = True
 
     def get_session_archive(self):
+        """
+        Get the archive data of the current session.
+
+        Returns:
+            object: Contains the archive data of the current session.
+        """
         response = self._cb.session.get("{cblr_base}/session/{0}/archive".format(self.session_id,
                                                                                  cblr_base=self.cblr_base), stream=True)
         response.raw.decode_content = True
@@ -92,6 +136,17 @@ class CbLRSessionBase(object):
     # File operations
     #
     def get_raw_file(self, file_name, timeout=None, delay=None):
+        """
+        Retrieve contents of the specified file on the remote machine.
+
+        Args:
+            file_name (str): Name of the file to be retrieved.
+            timeout (int): Timeout for the operation.
+            delay (float): TBD
+
+        Returns:
+            object: Contains the data of the file.
+        """
         data = {"name": "get file", "object": file_name}
 
         resp = self._lr_post_command(data).json()
@@ -108,11 +163,15 @@ class CbLRSessionBase(object):
 
     def get_file(self, file_name, timeout=None, delay=None):
         """
-        Retrieve contents of the specified file name
+        Retrieve contents of the specified file on the remote machine.
 
-        :param str file_name: Name of the file
-        :return: Content of the specified file name
-        :rtype: str
+        Args:
+            file_name (str): Name of the file to be retrieved.
+            timeout (int): Timeout for the operation.
+            delay (float): TBD
+
+        Returns:
+            str: Contents of the specified file.
         """
         fp = self.get_raw_file(file_name, timeout=timeout, delay=delay)
         content = fp.read()
@@ -122,10 +181,10 @@ class CbLRSessionBase(object):
 
     def delete_file(self, filename):
         """
-        Delete the specified file name
+        Delete the specified file name on the remote machine.
 
-        :param str filename: Name of the file
-        :return: None
+        Args:
+            filename (str): Name of the file to be deleted.
         """
         data = {"name": "delete file", "object": filename}
         resp = self._lr_post_command(data).json()
@@ -133,17 +192,16 @@ class CbLRSessionBase(object):
         self._poll_command(command_id)
 
     def put_file(self, infp, remote_filename):
-        """
-        Create a new file on the remote endpoint with the specified data
+        r"""
+        Create a new file on the remote machine with the specified data.
 
-        :Example:
-
+        Example:
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         ...     lr_session.put_file(open("test.txt", "rb"), r"c:\test.txt")
 
-        :param str infp: Python file-like containing data to upload to the remote endpoint
-        :param str remote_filename: File name to create on the remote endpoint
-        :return: None
+        Args:
+            infp (object): Python file-like containing data to upload to the remote endpoint.
+            remote_filename (str): File name to create on the remote endpoint.
         """
         data = {"name": "put file", "object": remote_filename}
         file_id = self._upload_file(infp)
@@ -154,11 +212,10 @@ class CbLRSessionBase(object):
         self._poll_command(command_id)
 
     def list_directory(self, dir_name):
-        """
-        List the contents of a directory
+        r"""
+        List the contents of a directory on the remote machine.
 
-        :Example:
-
+        Example:
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         ...     pprint.pprint(lr_session.list_directory('C:\\\\temp\\\\'))
         [{u'attributes': [u'DIRECTORY'],
@@ -180,9 +237,11 @@ class CbLRSessionBase(object):
           u'last_write_time': 1476390668,
           u'size': 0}]
 
-        :param str dir_name: Directory to list.  This parameter should end with '\'
-        :return: Returns a directory listing
-        :rtype: list
+        Args:
+            dir_name (str): Directory to list.  This parameter should end with the path separator.
+
+        Returns:
+            list: A list of dicts, each one describing a directory entry.
         """
         data = {"name": "directory list", "object": dir_name}
         resp = self._lr_post_command(data).json()
@@ -191,10 +250,10 @@ class CbLRSessionBase(object):
 
     def create_directory(self, dir_name):
         """
-        Create a directory on the remote endpoint
+        Create a directory on the remote machine.
 
-        :param str dir_name: New directory name
-        :return: None
+        Args:
+            dir_name (str): The new directory name.
         """
         data = {"name": "create directory", "object": dir_name}
         resp = self._lr_post_command(data).json()
@@ -202,6 +261,15 @@ class CbLRSessionBase(object):
         self._poll_command(command_id)
 
     def path_join(self, *dirnames):
+        """
+        Join multiple directory names into a single one.
+
+        Args:
+            *dirnames (list): List of directory names to join together.
+
+        Returns:
+            str: The joined directory name.
+        """
         if self.os_type == 1:
             # Windows
             return "\\".join(dirnames)
@@ -210,27 +278,37 @@ class CbLRSessionBase(object):
             return "/".join(dirnames)
 
     def path_islink(self, fi):
+        """
+        Determine if the path is a link. Not implemented.
+
+        Args:
+            fi (str): File to check.
+
+        Returns:
+            True if the file is a link, False if not.
+        """
         # TODO: implement
         return False
 
     def walk(self, top, topdown=True, onerror=None, followlinks=False):
-        """
-        Perform a full directory walk with recursion into subdirectories
+        r"""
+        Perform a full directory walk with recursion into subdirectories on the remote machine.
 
-        :Example:
-
+        Example:
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         ...     for entry in lr_session.walk(directory_name):
         ...         print(entry)
         ('C:\\temp\\', [u'dir1', u'dir2'], [u'file1.txt'])
 
-        :param str top: Directory to recurse
-        :param bool topdown: if True, start output from top level directory
-        :param bool onerror: Callback if an error occurs.
-                        This function is called with one argument (the exception that occurred)
-        :param bool followlinks: Follow symbolic links
-        :return: Returns output in the follow tuple format: (Directory Name, [dirnames], [filenames])
-        :rtype: tuple
+        Args:
+            top (str): Directory to recurse on.
+            topdown (bool): If True, start output from top level directory.
+            onerror (func): Callback if an error occurs. This function is called with one argument (the exception
+                that occurred).
+            followlinks (bool): True to follow symbolic links.
+
+        Returns:
+            list: List of tuples containing directory name, subdirectory names, file names.
         """
         try:
             allfiles = self.list_directory(self.path_join(top, "*"))
@@ -266,11 +344,13 @@ class CbLRSessionBase(object):
 
     def kill_process(self, pid):
         """
-        Terminate a process on the remote endpoint
+        Terminate a process on the remote machine.
 
-        :param pid: Process ID to terminate
-        :return: True if success, False if failure
-        :rtype: bool
+        Args:
+            pid (int): Process ID to be terminated.
+
+        Returns:
+            bool: True if success, False if failure.
         """
         data = {"name": "kill", "object": pid}
         resp = self._lr_post_command(data).json()
@@ -286,24 +366,25 @@ class CbLRSessionBase(object):
     def create_process(self, command_string, wait_for_output=True, remote_output_file_name=None,
                        working_directory=None, wait_timeout=30, wait_for_completion=True):
         """
-        Create a new process with the specified command string.
+        Create a new process on the remote machine with the specified command string.
 
-        :Example:
-
+        Example:
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         ...     print(lr_session.create_process(r'cmd.exe /c "ping.exe 192.168.1.1"'))
         Pinging 192.168.1.1 with 32 bytes of data:
         Reply from 192.168.1.1: bytes=32 time<1ms TTL=64
 
-        :param str command_string: command string used for the create process operation
-        :param bool wait_for_output: Block on output from the new process (execute in foreground). This will also set
-         wait_for_completion (below).
-        :param str remote_output_file_name: The remote output file name used for process output
-        :param str working_directory: The working directory of the create process operation
-        :param int wait_timeout: Time out used for this live response command
-        :param bool wait_for_completion: Wait until the process is completed before returning
-        :return: returns the output of the command string
-        :rtype: str
+        Args:
+            command_string (str): Command string used for the create process operation.
+            wait_for_output (bool): True to block on output from the new process (execute in foreground).
+                This will also set wait_for_completion (below).
+            remote_output_file_name (str): The remote output file name used for process output.
+            working_directory (str): The working directory of the create process operation.
+            wait_timeout (int): Timeout used for this command.
+            wait_for_completion (bool): True to wait until the process is completed before returning.
+
+        Returns:
+            str: The output of the process.
         """
         # process is:
         # - create a temporary file name
@@ -345,11 +426,10 @@ class CbLRSessionBase(object):
             return None
 
     def list_processes(self):
-        """
-        List currently running processes
+        r"""
+        List currently running processes on the remote machine.
 
-        :Example:
-
+        Example:
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         ...     print(lr_session.list_processes()[0])
         {u'command_line': u'',
@@ -362,8 +442,8 @@ class CbLRSessionBase(object):
          u'sid': u's-1-5-18',
          u'username': u'NT AUTHORITY\\SYSTEM'}
 
-        :return: returns a list of running processes
-        :rtype: list
+        Returns:
+            list: A list of dicts describing the processes.
         """
         data = {"name": "process list"}
         resp = self._lr_post_command(data).json()
@@ -378,11 +458,10 @@ class CbLRSessionBase(object):
     #  "values" is a list containing a dictionary for each registry value in the key
     #  "sub_keys" is a list containing one entry for each sub_key
     def list_registry_keys_and_values(self, regkey):
-        """
-        Enumerate subkeys and values of the specified registry key.
+        r"""
+        Enumerate subkeys and values of the specified registry key on the remote machine.
 
-        :Example:
-
+        Example:
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         >>>   pprint.pprint(lr_session.list_registry_keys_and_values('HKLM\\SYSTEM\\CurrentControlSet\\services\\ACPI'))
         {'sub_keys': [u'Parameters', u'Enum'],
@@ -411,9 +490,12 @@ class CbLRSessionBase(object):
                      u'value_name': u'Tag',
                      u'value_type': u'REG_DWORD'}]}
 
-        :param str regkey: The registry key to enumerate
-        :return: returns a dictionary with 2 keys (sub_keys and values)
-        :rtype: dict
+        Args:
+            regkey (str): The registry key to enumerate.
+
+        Returns:
+            dict: A dictionary with two keys, 'sub_keys' (a list of subkey names) and 'values' (a list of dicts
+                containing value data, name, and type).
         """
         data = {"name": "reg enum key", "object": regkey}
         resp = self._lr_post_command(data).json()
@@ -426,11 +508,13 @@ class CbLRSessionBase(object):
     # returns a list containing a dictionary for each registry value in the key
     def list_registry_keys(self, regkey):
         """
-        Enumerate all registry values from the specified registry key.
+        Enumerate all registry values from the specified registry key on the remote machine.
 
-        :param regkey: The registry key to enumearte
-        :return: returns a list of values
-        :rtype: list
+        Args:
+            regkey (str): The registry key to enumerate.
+
+        Returns:
+            list: List of values for the registry key.
         """
         data = {"name": "reg enum key", "object": regkey}
         resp = self._lr_post_command(data).json()
@@ -440,18 +524,19 @@ class CbLRSessionBase(object):
 
     # returns a dictionary with the registry value
     def get_registry_value(self, regkey):
-        """
-        Returns the associated value of the specified registry key
+        r"""
+        Return the associated value of the specified registry key on the remote machine.
 
-        :Example:
-
+        Example:
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         >>>     pprint.pprint(lr_session.get_registry_value('HKLM\\SYSTEM\\CurrentControlSet\\services\\ACPI\\Start'))
         {u'value_data': 0, u'value_name': u'Start', u'value_type': u'REG_DWORD'}
 
-        :param str regkey: The registry key to retrieve
-        :return: Returns a dictionary with keys of: value_data, value_name, value_type
-        :rtype: dict
+        Args:
+            regkey (str): The registry key to retrieve.
+
+        Returns:
+            dict: A dictionary with keys of: value_data, value_name, value_type.
         """
         data = {"name": "reg query value", "object": regkey}
         resp = self._lr_post_command(data).json()
@@ -460,19 +545,18 @@ class CbLRSessionBase(object):
         return self._poll_command(command_id).get("value", {})
 
     def set_registry_value(self, regkey, value, overwrite=True, value_type=None):
-        """
-        Set a registry value of the specified registry key
+        r"""
+        Set a registry value on the specified registry key on the remote machine.
 
-        :Example:
-
+        Example:
         >>> with c.select(Sensor, 1).lr_session() as lr_session:
         ...     lr_session.set_registry_value('HKLM\\\\SYSTEM\\\\CurrentControlSet\\\\services\\\\ACPI\\\\testvalue', 1)
 
-        :param str regkey: They registry key to set
-        :param obj value: The value data
-        :param bool overwrite: Overwrite value if True
-        :param str value_type: The type of value.  Examples: REG_DWORD, REG_MULTI_SZ, REG_SZ
-        :return: None
+        Args:
+            regkey (str): The registry key to set.
+            value (object): The value data.
+            overwrite (bool): If True, any existing value will be overwritten.
+            value_type (str): The type of value.  Examples: REG_DWORD, REG_MULTI_SZ, REG_SZ
         """
         if value_type is None:
             if type(value) == int:
@@ -493,10 +577,10 @@ class CbLRSessionBase(object):
 
     def create_registry_key(self, regkey):
         """
-        Create a new registry
+        Create a new registry key on the remote machine.
 
-        :param str regkey: The registry key to create
-        :return: None
+        Args:
+            regkey (str): The registry key to create.
         """
         data = {"name": "reg create key", "object": regkey}
         resp = self._lr_post_command(data).json()
@@ -505,10 +589,10 @@ class CbLRSessionBase(object):
 
     def delete_registry_key(self, regkey):
         """
-        Delete a registry key
+        Delete a registry key on the remote machine.
 
-        :param str regkey: The registry key to delete
-        :return: None
+        Args:
+            regkey (str): The registry key to delete.
         """
         data = {"name": "reg delete key", "object": regkey}
         resp = self._lr_post_command(data).json()
@@ -517,10 +601,10 @@ class CbLRSessionBase(object):
 
     def delete_registry_value(self, regkey):
         """
-        Delete a registry value
+        Delete a registry value on the remote machine.
 
-        :param str regkey: the registry value to delete
-        :return: None
+        Args:
+            regkey (str): The registry value to delete.
         """
         data = {"name": "reg delete value", "object": regkey}
         resp = self._lr_post_command(data).json()
@@ -531,12 +615,30 @@ class CbLRSessionBase(object):
     # Physical memory capture
     #
     def memdump(self, local_filename, remote_filename=None, compress=False):
+        """
+        Perform a memory dump operation on the remote machine.
+
+        Args:
+            local_filename (str): Name of the file the memory dump will be transferred to on the local machine.
+            remote_filename (str): Name of the file the memory dump will be stored in on the remote machine.
+            compress (bool): True to compress the file on the remote system.
+        """
         dump_object = self.start_memdump(remote_filename=remote_filename, compress=compress)
         dump_object.wait()
         dump_object.get(local_filename)
         dump_object.delete()
 
     def start_memdump(self, remote_filename=None, compress=True):
+        """
+        Start a memory dump operation on the remote machine.
+
+        Args:
+            remote_filename (str): Name of the file the memory dump will be stored in on the remote machine.
+            compress (bool): True to compress the file on the remote system.
+
+        Returns:
+            LiveResponseMemdump: Controlling object for the memory dump operation.
+        """
         if not remote_filename:
             remote_filename = self._random_file_name()
 
@@ -602,7 +704,17 @@ class CbLRSessionBase(object):
 
 
 class LiveResponseMemdump(object):
+    """Object managing a memory dump on a remote machine."""
+
     def __init__(self, lr_session, memdump_id, remote_filename):
+        """
+        Initialize the LiveResponseMemdump.
+
+        Args:
+            lr_session (Session): The Live Response session to the machine doing the memory dump.
+            memdump_id (str): The ID of the memory dump being performed.
+            remote_filename (str): The file name the memory dump will be stored in on the remote machine.
+        """
         self.lr_session = lr_session
         self.memdump_id = memdump_id
         self.remote_filename = remote_filename
@@ -610,6 +722,12 @@ class LiveResponseMemdump(object):
         self._error = None
 
     def get(self, local_filename):
+        """
+        Retrieve the remote memory dump to a local file.
+
+        Args:
+            local_filename (str): Filename locally that will receive the memory dump.
+        """
         if not self._done:
             self.wait()
         if self._error:
@@ -619,20 +737,42 @@ class LiveResponseMemdump(object):
         shutil.copyfileobj(src, dst)
 
     def wait(self):
+        """Wait for the remote memory dump to complete."""
         self.lr_session._poll_command(self.memdump_id, timeout=3600, delay=5)
         self._done = True
 
     def delete(self):
+        """Delete the memory dump file."""
         self.lr_session.delete_file(self.remote_filename)
 
 
 def jobrunner(callable, cb, sensor_id):
+    """
+    Wrap a callable object with a live response session.
+
+    Args:
+        callable (object): The object to be wrapped.
+        cb (BaseAPI): The CBAPI object reference.
+        sensor_id (int): The sensor ID to use to get the session.
+
+    Returns:
+        object: The wrapped object.
+    """
     with cb.select(Sensor, sensor_id).lr_session() as sess:
         return callable(sess)
 
 
 class WorkItem(object):
+    """Work item for scheduling."""
+
     def __init__(self, fn, sensor_id):
+        """
+        Initialize the WorkItem.
+
+        Args:
+            fn (func): The function to be called to do the actual work.
+            sensor_id (object): The sensor ID or Sensor object the work item is directed for.
+        """
         self.fn = fn
         if isinstance(sensor_id, Sensor):
             self.sensor_id = sensor_id.id
@@ -643,19 +783,47 @@ class WorkItem(object):
 
 
 class CompletionNotification(object):
+    """The notification that an operation is complete."""
+
     def __init__(self, sensor_id):
+        """
+        Initialize the CompletionNotification.
+
+        Args:
+            sensor_id (int): The sensor ID this notification is for.
+        """
         self.sensor_id = sensor_id
 
 
 class WorkerStatus(object):
+    """Holds the status of an individual worker."""
+
     def __init__(self, sensor_id, status="ready", exception=None):
+        """
+        Initialize the WorkerStatus.
+
+        Args:
+            sensor_id (int): The sensor ID this status is for.
+            status (str): The current status value.
+            exception (Exception): Any exception that happened.
+        """
         self.sensor_id = sensor_id
         self.status = status
         self.exception = exception
 
 
 class JobWorker(threading.Thread):
+    """Thread object that executes individual Live Response jobs."""
+
     def __init__(self, cb, sensor_id, result_queue):
+        """
+        Initialize the JobWorker.
+
+        Args:
+            cb (BaseAPI): The CBAPI object reference.
+            sensor_id (int): The ID of the sensor being used.
+            result_queue (Queue): The queue where results are placed.
+        """
         super(JobWorker, self).__init__()
         self.cb = cb
         self.sensor_id = sensor_id
@@ -664,6 +832,7 @@ class JobWorker(threading.Thread):
         self.result_queue = result_queue
 
     def run(self):
+        """Execute the job worker."""
         try:
             self.lr_session = self.cb.live_response.request_session(self.sensor_id)
             self.result_queue.put(WorkerStatus(self.sensor_id, status="ready"))
@@ -685,6 +854,12 @@ class JobWorker(threading.Thread):
             self.result_queue.put(WorkerStatus(self.sensor_id, status="exiting"))
 
     def run_job(self, work_item):
+        """
+        Execute an individual WorkItem.
+
+        Args:
+            work_item (WorkItem): The work item to execute.
+        """
         try:
             work_item.future.set_result(work_item.fn(self.lr_session))
         except Exception as e:
@@ -692,9 +867,18 @@ class JobWorker(threading.Thread):
 
 
 class LiveResponseJobScheduler(threading.Thread):
+    """Thread that schedules Live Response jobs."""
+
     daemon = True
 
     def __init__(self, cb, max_workers=10):
+        """
+        Initialize the LiveResponseJobScheduler.
+
+        Args:
+            cb (BaseAPI): The CBAPI object reference.
+            max_workers (int): Maximum number of JobWorker threads to use.
+        """
         super(LiveResponseJobScheduler, self).__init__()
         self._cb = cb
         self._job_workers = {}
@@ -704,6 +888,7 @@ class LiveResponseJobScheduler(threading.Thread):
         self.schedule_queue = Queue()
 
     def run(self):
+        """Execute the job scheduler."""
         log.debug("Starting Live Response Job Scheduler")
 
         while True:
@@ -786,6 +971,12 @@ class LiveResponseJobScheduler(threading.Thread):
             del self._unscheduled_jobs[k]
 
     def submit_job(self, work_item):
+        """
+        Submit a new job to be processed.
+
+        Args:
+            work_item (WorkItem): New job to be processed.
+        """
         self.schedule_queue.put(work_item)
 
     def _spawn_new_workers(self):
@@ -797,7 +988,9 @@ class LiveResponseJobScheduler(threading.Thread):
         sensors = [s for s in self._cb.select(Sensor) if s.id in self._unscheduled_jobs
                    and s.id not in self._job_workers
                    and s.status == "Online"]
-        sensors_to_schedule = sorted(sensors, key=lambda x: x.next_checkin_time)[:schedule_max]
+        sensors_to_schedule = sorted(sensors, key=lambda x: (
+            int(x.num_storefiles_bytes) + int(x.num_eventlog_bytes), x.next_checkin_time
+            ))[:schedule_max]
 
         log.debug("Spawning new workers to handle these sensors: {0}".format(sensors_to_schedule))
         for sensor in sensors_to_schedule:
@@ -807,10 +1000,20 @@ class LiveResponseJobScheduler(threading.Thread):
 
 
 class CbLRManagerBase(object):
+    """Live Response manager object."""
+
     cblr_base = ""                        # override in subclass for each product
     cblr_session_cls = NotImplemented     # override in subclass for each product
 
     def __init__(self, cb, timeout=30, keepalive_sessions=False):
+        """
+        Initialize the CbLRManagerBase object.
+
+        Args:
+            cb (BaseAPI): The CBAPI object reference.
+            timeout (int): Timeout to use for requesus.
+            keepalive_sessions (bool): If True, "ping" sessions occasionally to ensure they stay alive.
+        """
         self._timeout = timeout
         self._cb = cb
         self._sessions = {}
@@ -825,6 +1028,16 @@ class CbLRManagerBase(object):
         self._job_scheduler = None
 
     def submit_job(self, job, sensor):
+        """
+        Submit a new job to be executed as a Live Response.
+
+        Args:
+            job (object): The job to be scheduled.
+            sensor (int): ID of the sensor to use for job execution.
+
+        Returns:
+            Future: A reference to the running job.
+        """
         if self._job_scheduler is None:
             # spawn the scheduler thread
             self._job_scheduler = LiveResponseJobScheduler(self._cb)
@@ -861,6 +1074,15 @@ class CbLRManagerBase(object):
                     del self._sessions[sensor_id]
 
     def request_session(self, sensor_id):
+        """
+        Initiate a new Live Response session.
+
+        Args:
+            sensor_id (int): The sensor ID to use.
+
+        Returns:
+            CbLRSessionBase: The new Live Response session.
+        """
         if self._keepalive_sessions:
             with self._session_lock:
                 if sensor_id in self._sessions:
@@ -877,6 +1099,13 @@ class CbLRManagerBase(object):
         return session
 
     def close_session(self, sensor_id, session_id):
+        """
+        Close the specified Live Response session.
+
+        Args:
+            sensor_id (int): ID of the sensor.
+            session_id (int): ID of the session.
+        """
         if self._keepalive_sessions:
             with self._session_lock:
                 try:
@@ -892,15 +1121,48 @@ class CbLRManagerBase(object):
 
 
 class GetFileJob(object):
+    """Object that retrieves a file via Live Response."""
+
     def __init__(self, file_name):
+        """
+        Initialize the GetFileJob.
+
+        Args:
+            file_name (str): The name of the file to be fetched.
+        """
         self._file_name = file_name
 
     def run(self, session):
+        """
+        Execute the file transfer.
+
+        Args:
+            session (CbLRSessionBase): The Live Response session being used.
+
+        Returns:
+            TBD
+        """
         return session.get_file(self._file_name)
 
 
 # TODO: adjust the polling interval and also provide a callback function to report progress
 def poll_status(cb, url, desired_status="complete", timeout=None, delay=None):
+    """
+    Poll the status of a Live Response query.
+
+    Args:
+        cb (BaseAPI): The CBAPI object reference.
+        url (str): The URL to poll.
+        desired_status (str): The status we're looking for.
+        timeout (int): The timeout value in seconds.
+        delay (float): The delay between attempts in seconds.
+
+    Returns:
+        object: The result of the Live Response query that has the desired status.
+
+    Raises:
+        LiveResponseError: If an error response was encountered.
+    """
     start_time = time.time()
     status = None
 

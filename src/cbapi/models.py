@@ -144,7 +144,7 @@ class EpochDateTimeFieldDescriptor(FieldDescriptor):
 
     def __get__(self, instance, instance_type=None):
         d = super(EpochDateTimeFieldDescriptor, self).__get__(instance, instance_type)
-        if type(d) is float or isinstance(type(d), integer_types):
+        if type(d) is float or type(d) in integer_types:
             epoch_seconds = d / self.multiplier
             return datetime.utcfromtimestamp(epoch_seconds)
         else:

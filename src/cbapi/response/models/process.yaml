@@ -58,7 +58,6 @@ properties:
     format: int32
   group:
     type: string
-    type: string
   netconn_count:
     type: integer
     format: int32

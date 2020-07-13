@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""Base model objects for the CBAPI."""
+
 from __future__ import absolute_import
 
 from functools import wraps
@@ -14,14 +16,28 @@ log = logging.getLogger(__name__)
 
 
 class CreatableModelMixin(object):
+    """TBD."""
+
     pass
 
 
 # TODO: this doesn't exactly do what I want... this needs to be cleaned up before release
 def immutable(cls):
+    """Decorate a model object in such a way that allows it to be specified as "immutable"."""
     cls.__frozen = False
 
     def frozensetattr(self, key, value):
+        """
+        Set an attribute on this object, but disallow it if the object is frozen.
+
+        Args:
+            self (object): The object being changed by this attribute setting operation.
+            key (str): The attribute being changed.
+            value (object): The new value being set for the attribute.
+
+        Returns:
+            TBD
+        """
         if self.__frozen and not hasattr(self, key):
             print("Class {} is frozen. Cannot set {} = {}"
                   .format(cls.__name__, key, value))
@@ -29,6 +45,15 @@ def immutable(cls):
             object.__setattr__(self, key, value)
 
     def init_decorator(func):
+        """
+        Initialize the decorator on a function.
+
+        Args:
+            func (func): Function to be wrapped by this decorator.
+
+        Returns:
+            func: The wrapped function.
+        """
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             func(self, *args, **kwargs)
@@ -43,7 +68,18 @@ def immutable(cls):
 
 @python_2_unicode_compatible
 class BaseModel(object):
+    """The base "model" class for all objects that the CBAPI works with."""
+
     def __init__(self, cb, model_unique_id=None, initial_data=None, force_init=False):
+        """
+        Initialize the BaseModel object.
+
+        Args:
+            cb (BaseAPI): Reference to the CBAPI object.
+            model_unique_id (object): Unique ID for the model object.
+            initial_data (dict): Initial data for the model object.
+            force_init (bool): True to force the object to be re-initialized from the server.
+        """
         self._cb = cb
         if model_unique_id is not None:
             self._model_unique_id = str(model_unique_id)
@@ -78,13 +114,22 @@ class BaseModel(object):
 
     @classmethod
     def new_object(cls, cb, item):
+        """
+        Create a new instance of the object from item data.
+
+        Args:
+            cb (BaseAPI): Reference to the CBAPI object.
+            item (dict): Item data, as retrieved from the server.
+
+        Returns:
+            object: New instance of the object.
+        """
         # TODO: do we ever need to evaluate item['unique_id'] which is the id + segment id?
         # TODO: is there a better way to handle this? (see how this is called from Query._search())
         return cb.select(cls, item['id'], initial_data=item)
 
     def refresh(self):
-        """Refresh the object from the Carbon Black server.
-        """
+        """Refresh the object from the Carbon Black server."""
         self._retrieve_cb_info()
 
     def _retrieve_cb_info(self, query_parameters=None):
@@ -106,20 +151,37 @@ class BaseModel(object):
 
     @property
     def webui_link(self):
-        """Returns a link associated with this object in the Carbon Black user interface.
+        """
+        Return a link associated with this object in the Carbon Black user interface.
 
-        :returns: URL that can be used to view the object in the Carbon Black web user interface or None if the Model
-        does not support generating a Web user interface URL
+        Returns:
+            str: URL that can be used to view the object in the Carbon Black web user interface, or None if the Model
+                does not support generating a Web user interface URL
         """
         return None
 
     def __dir__(self):
+        """
+        Fetch a list of all attribute names defined for this object.
+
+        Returns:
+            list: A list of strings, each of which represents an attribute name on the object.
+        """
         if not self._full_init:
             self._retrieve_cb_info()
 
         return list(set().union(self.__dict__.keys(), self._info.keys()))
 
     def __getattr__(self, attrname):
+        """
+        Return the value of an attribute on this object.
+
+        Args:
+            attrname (str): Name of the attribute to return.
+
+        Returns:
+            object: The attribute value.
+        """
         try:
             object.__getattribute__(self, "_base_initialized")
         except AttributeError:
@@ -144,12 +206,28 @@ class BaseModel(object):
         return default
 
     def get(self, attrname, default_val=None):
+        """
+        Return the value of an attribute on this object.
+
+        Args:
+            attrname (str): Name of the attribute to be returned.
+            default_val (object): The default value to be returned if the attribute is undefined.
+
+        Returns:
+            object: The attribute value, which may be default_val.
+        """
         try:
-            return self._attribute(attrname)
+            return self._attribute(attrname, default_val)
         except AttributeError:
             return default_val
 
     def __str__(self):
+        """
+        Return a representation of this object as a string.
+
+        Returns:
+            str: A representation of this object as a string.
+        """
         ret = '{0:s}.{1:s}:\n'.format(self.__class__.__module__, self.__class__.__name__)
         if self.webui_link:
             ret += "-> available via web UI at %s\n" % self.webui_link
@@ -160,17 +238,35 @@ class BaseModel(object):
         return ret
 
     def __repr__(self):
+        """
+        Return a representation of this object as a string.
+
+        Returns:
+            str: A representation of this object as a string.
+        """
         return "<%s.%s: id %s> @ %s" % (self.__class__.__module__, self.__class__.__name__, self._model_unique_id,
                                         self._cb.session.server)
 
     @property
     def original_document(self):
+        """
+        Return the original document associated with this object.
+
+        Returns:
+            object: Original document associated with this object.
+        """
         if not self._full_init:
             self._retrieve_cb_info()
 
         return self._info
 
     def to_html(self):
+        """
+        Return a representation of this object as HTML.
+
+        Returns:
+            str: HTML representation of the object.
+        """
         ret = u"<h3>%s</h3>" % self.__class__.__name__
         ret += u"<table><tr><th>Key</th><th>Value</th></tr>\n"
         for a in self._stat_titles:
@@ -186,7 +282,17 @@ class BaseModel(object):
 
 
 class MutableModel(BaseModel):
+    """A model object that implements mutability, the ability to change its values."""
+
     def __init__(self, cb, model_unique_id, initial_data=None):
+        """
+        Initialize the MutableModel.
+
+        Args:
+            cb (BaseAPI): Reference to the CBAPI object.
+            model_unique_id (object): Unique ID for the model object.
+            initial_data (dict): Initial data for the model object.
+        """
         super(MutableModel, self).__init__(cb, model_unique_id, initial_data)
         self._dirty_attributes = {}
         self._mutable_initialized = True
@@ -199,6 +305,16 @@ class MutableModel(BaseModel):
             return val
 
     def __setattr__(self, attrname, val):
+        """
+        Set an attribute on the model object.
+
+        Args:
+            attrname (str): Name of the attribute to be set.
+            val (object): Value of the object to be set.
+
+        Returns:
+            TBD
+        """
         try:
             object.__getattribute__(self, "_mutable_initialized")
         except AttributeError:
@@ -238,8 +354,11 @@ class MutableModel(BaseModel):
             super(MutableModel, self).__setattr__(attrname, val)
 
     def is_dirty(self):
-        """Returns True if this object has unsaved changes. Use :py:meth:`MutableModel.save` to upload the changes to
-        the Carbon Black server."""
+        """
+        Return True if this object has unsaved changes.
+
+        Use MutableModel.save to upload the changes to the Carbon Black server.
+        """
         return len(self._dirty_attributes) > 0
 
     def _update_object(self):
@@ -283,6 +402,7 @@ class MutableModel(BaseModel):
         return self._model_unique_id
 
     def refresh(self):
+        """Refresh the contents of this obejct from the server."""
         super(MutableModel, self).refresh()
         self._dirty_attributes = {}
 
@@ -300,9 +420,11 @@ class MutableModel(BaseModel):
             raise ServerError(ret.status_code, message, result="Did not delete {0:s}.".format(str(self)))
 
     def save(self):
-        """Save changes to this object to the Carbon Black server.
+        """
+        Save changes to this object to the Carbon Black server.
 
-        :raises ServerError: if an error was returned by the Carbon Black server
+        Raises:
+            ServerError: If an error was returned by the Carbon Black server.
         """
         if not self.is_dirty():
             return
@@ -310,6 +432,7 @@ class MutableModel(BaseModel):
         return self._update_object()
 
     def reset(self):
+        """Reset all changes made to this object."""
         for k, v in iteritems(self._dirty_attributes):
             self._info[k] = v
 
@@ -317,6 +440,7 @@ class MutableModel(BaseModel):
 
     # TODO: How do we delete this object from our LRU cache?
     def delete(self):
+        """Delete this object."""
         return self._delete_object()
 
     def _join(self, join_cls, field_name):
