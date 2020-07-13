@@ -24,6 +24,8 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         self._time_filter = {}
         self._sortcriteria = {}
         self._bulkupdate_url = "/appservices/v6/orgs/{0}/alerts/workflow/_criteria"
+        self._count_valid = False
+        self._total_results = 0
 
     def _update_criteria(self, key, newlist):
         """

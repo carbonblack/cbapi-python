@@ -261,7 +261,7 @@ class IterableQueryMixin:
         return res[0]
 
     def __len__(self):
-        return 0
+        return self._count()
 
     def __getitem__(self, item):
         return None
