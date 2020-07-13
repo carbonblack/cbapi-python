@@ -299,6 +299,9 @@ class Query(PaginatedQuery):
         if args.get('query', False):
             args['q'] = args['query']
 
+        # v2 search sort key does not work with v1 validation
+        args.pop('sort', None)
+
         validated = self._cb.get_object(url, query_parameters=args)
 
         if not validated.get("valid"):
@@ -366,8 +369,7 @@ class AsyncProcessQuery(Query):
         self._query_token = None
         self._timeout = 0
         self._timed_out = False
-        self._sort_by = "backend_timestamp"  # Requires default to prevent unstable fetching of results
-        self._sort_direction = "ASC"
+        self._sort = []
 
     def sort_by(self, key, direction="ASC"):
         """Sets the sorting behavior on a query's results.
@@ -380,11 +382,18 @@ class AsyncProcessQuery(Query):
         :param direction: the sort order, either "ASC" or "DESC"
         :rtype: :py:class:`AsyncProcessQuery`
         """
-        self._sort_by = key
-        self._sort_direction = direction
+        found = False
 
-        # Append to search_job query
-        self._default_args['sort'] = '{} {}'.format(key, direction)
+        for sort_item in self._sort:
+            if sort_item['field'] == key:
+                sort_item['order'] = direction
+                found = True
+
+        if not found:
+            self._sort.append({'field': key, 'order': direction})
+
+        self._default_args['sort'] = self._sort
+
         return self
 
     def timeout(self, msecs):
