@@ -148,6 +148,7 @@ class PSCQueryBase:
     def __init__(self, doc_class, cb):
         self._doc_class = doc_class
         self._cb = cb
+        self._count_valid = False
 
 
 class QueryBuilderSupportMixin:
@@ -261,7 +262,7 @@ class IterableQueryMixin:
         return res[0]
 
     def __len__(self):
-        return 0
+        return self._count()
 
     def __getitem__(self, item):
         return None

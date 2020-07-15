@@ -2,13 +2,34 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.7.0 - Released July 14, 2020
+------------------------------------
+
+Updates
+
+* General
+    * Updates to pool defaults in base API.
+    * Changes to exception handling to better discriminate ConnectionErrors and queries with invalid syntax.
+    * Various minor bug fixes throughout.
+* Carbon Black Cloud
+    * Bug fixes to query implementation.
+    * Live Response: Account for sensor queue depth when submitting jobs.
+* CB Defense
+    * Added examples for Dell BIOS verification.
+* CB ThreatHunter
+    * Bug fixes to query implementation.
+    * Update process and event searches to v2.
+    * examples/create_feed: Make report optional during feed creation
+    * examples/process_exporter: Add headers to CSV file writer
+    * examples/threat_intelligence: Simplify report validation, add severity conversion to percent
+
 CbAPI 1.6.2 - Released April 08, 2020
 -------------------------------------
 
 Updates
 
 * CB Response
-  * Changes to align with limits placed on the sensor update function in CB Response 7.1.0. Release notes are available on User Exchange, the ID is `CB 28683 <https://community.carbonblack.com/t5/Documentation-Downloads/CB-Response-7-1-0-Server-Release-Notes/ta-p/88027>`_.
+    * Changes to align with limits placed on the sensor update function in CB Response 7.1.0. Release notes are available on User Exchange, the ID is `CB 28683 <https://community.carbonblack.com/t5/Documentation-Downloads/CB-Response-7-1-0-Server-Release-Notes/ta-p/88027>`_.
 
 CbAPI 1.6.1 - Released January 13, 2020
 ---------------------------------------
