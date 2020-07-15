@@ -469,7 +469,7 @@ class AsyncProcessQuery(Query):
 
         return self._total_results
 
-    def _search(self, start=0, rows=0):
+    def _search(self, start=0, rows=10000):
         if not self._query_token:
             self._submit()
 
