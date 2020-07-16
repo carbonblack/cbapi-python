@@ -415,6 +415,7 @@ class AsyncProcessQuery(Query):
             raise ApiError("Query already submitted: token {0}".format(self._query_token))
 
         args = self._get_query_parameters()
+        args['rows'] = 10000
         self._validate(args)
 
         url = "/api/investigate/v2/orgs/{}/processes/search_jobs".format(self._cb.credentials.org_key)
