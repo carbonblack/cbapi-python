@@ -17,7 +17,7 @@ import logging
 import time
 
 from cbapi.utils import convert_query_params
-from ..errors import InvalidObjectError, ApiError, TimeoutError
+from ..errors import InvalidObjectError, ApiError, TimeoutError, MoreThanOneResultError
 from ..oldmodels import BaseModel, immutable
 
 from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
@@ -279,9 +279,20 @@ class Alert(MutableBaseModel):
 
     def __init__(self, cb, alert_id, initial_data=None):
         super(Alert, self).__init__(cb, alert_id, initial_data)
+        if alert_id is not None and initial_data is None:
+            self.refresh()
 
-    def _refresh(self):
-        # there is no GET method for an Alert.
+    def refresh(self):
+        url = '{}?cb.fq.unique_id={}'.format(self.urlobject, self.unique_id)
+        resp = self._cb.get_object(url)
+        result = resp.get("results", [])
+        if len(result) > 1:
+            raise MoreThanOneResultError("More than one Alert matched the unique_id")
+        elif len(result) == 0:
+            raise ObjectNotFoundError("Alert could not be found by unique_id")
+        else:
+            self._info = result[0]
+        self._last_refresh_time = time.time()
         return True
 
     @property
