@@ -17,7 +17,7 @@ import logging
 import time
 
 from cbapi.utils import convert_query_params
-from ..errors import InvalidObjectError, ApiError, TimeoutError
+from ..errors import InvalidObjectError, ApiError, TimeoutError, MoreThanOneResultError
 from ..oldmodels import BaseModel, immutable
 
 from ..models import NewBaseModel, MutableBaseModel, CreatableModelMixin
