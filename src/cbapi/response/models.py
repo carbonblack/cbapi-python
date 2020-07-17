@@ -283,8 +283,6 @@ class Alert(MutableBaseModel):
             self.refresh()
 
     def refresh(self):
-        # there is no GET method for an Alert.
-        # /api/v1/alert?cb.fq.unique_id=963d7168-8bb0-46fb-ba1f-e72e505f7056
         url = '{}?cb.fq.unique_id={}'.format(self.urlobject, self.unique_id)
         resp = self._cb.get_object(url)
         result = resp.get("results", [])
