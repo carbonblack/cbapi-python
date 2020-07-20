@@ -88,10 +88,10 @@ Major Features
     Easily create Live Response sessions, initiate commands on remote hosts, and pull down data as
     necessary to make your Incident Response process much more efficient and automated.
 
-- **Consistent API accross VMware Carbon Black platforms**
+- **Consistent API across VMware Carbon Black platforms**
     CBAPI supports Carbon Black EDR, Carbon Black App Control, and Carbon Black Cloud Endpoint Standard customers from a single API layer. Even better,
     the object model is the same for all three, and if you know one API, you can easily transition to another. CBAPI
-    manages the differences between the three REST APIs behind a single, consistent Python-like interface.
+    manages the differences among the three REST APIs behind a single, consistent Python-like interface.
 
 - **Enhanced Performance**
     CBAPI now provides a built in caching layer to reduce the query load on the Carbon Black server. This is especially
@@ -233,7 +233,7 @@ Get started with CBAPI here. For detailed information on the objects and methods
 API Documentation
 -----------------
 
-Once you have read the User Guide, youc an view `examples on GitHub <https://github.com/carbonblack/cbapi-python/tree/master/examples>`_
+Once you have read the User Guide, you can view `examples on GitHub <https://github.com/carbonblack/cbapi-python/tree/master/examples>`_
 or try writing code of your own. You can use the full API documentation below to see all the methods available in CBAPI 
 and unlock the full functionality of the SDK.
 
