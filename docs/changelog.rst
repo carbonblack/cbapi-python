@@ -2,6 +2,19 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.7.1 - Released July 22, 2020
+------------------------------------
+
+Updates
+
+* General
+    * Documentation updates to indicate changed product names
+* Carbon Black Cloud
+    * Process Search v2 rows defaults to 10k to match UI behavior
+* CB Response
+    * Add support for fetching alert by ID
+
+
 CbAPI 1.7.0 - Released July 14, 2020
 ------------------------------------
 
