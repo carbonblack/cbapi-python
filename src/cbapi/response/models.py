@@ -294,6 +294,21 @@ class Alert(MutableBaseModel):
             self._info = result[0]
         self._last_refresh_time = time.time()
         return True
+    
+    def set_ignored(self, ignored_flag=True):
+        payload = {"updates": {"is_ignored": ignored_flag, "requested_status": "False Positive"}}
+        payload["alert_ids"] = [self.unique_id]
+        return self._cb.post_object("/api/v1/alerts", payload)
+
+    def assign(self, target):
+        payload = {"assigned_to": target, "requested_status": "In Progress"}
+        payload["alert_ids"] = [self.unique_id]
+        return self._cb.post_object("/api/v1/alerts", payload)
+
+    def change_status(self, new_status):
+        payload = {"requested_status": new_status}
+        payload["alert_ids"] = [self.unique_id]
+        return self._cb.post_object("/api/v1/alerts", payload)
 
     @property
     def process(self):
