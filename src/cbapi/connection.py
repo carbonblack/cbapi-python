@@ -360,7 +360,7 @@ class BaseAPI(object):
             else:
                 credentials = {"url": url, "token": token}
 
-            for k in ("ssl_verify",):
+            for k in ("ssl_verify", "proxy", "ssl_cert_file"):
                 if k in kwargs:
                     credentials[k] = kwargs.pop(k)
             self.credentials = Credentials(credentials)
