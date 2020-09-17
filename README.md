@@ -1,6 +1,6 @@
 # Python bindings for Carbon Black REST API
 
-**Latest Version: 1.7.1**
+**Latest Version: 1.7.2**
 
 These are the new Python bindings for the Carbon Black Enterprise Response and Enterprise Protection REST APIs.
 To learn more about the REST APIs, visit the Carbon Black Developer Network Website at https://developer.carbonblack.com.

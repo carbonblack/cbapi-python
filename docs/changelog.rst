@@ -2,6 +2,15 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.7.2 - Released July 22, 2020
+------------------------------------
+
+Updates
+
+* General
+    * Allow passing in proxy configuration as direct parameters during class instantiation of base API.
+
+
 CbAPI 1.7.1 - Released July 22, 2020
 ------------------------------------
 
