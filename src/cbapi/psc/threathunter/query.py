@@ -267,8 +267,11 @@ class Query(PaginatedQuery):
             "device_group",
             "device_internal_ip",
             "device_os",
+            "device_policy",
             "process_effective_reputation",
-            "process_reputation,ttp"
+            "process_reputation",
+            "process_start_time",
+            "ttp"
         ]
 
         return args
