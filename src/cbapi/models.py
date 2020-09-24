@@ -35,8 +35,9 @@ class CbMetaModel(type):
         swagger_meta_file = clsdict.pop("swagger_meta_file", None)
         model_data = {}
         if swagger_meta_file:
-            model_data = yaml.safe_load(
-                open(os.path.join(mcs.model_base_directory, swagger_meta_file), 'rb').read())
+            with open(os.path.join(mcs.model_base_directory, swagger_meta_file), 'rb') as f:
+                model_data = yaml.safe_load(f.read())
+
 
         clsdict["__doc__"] = "Represents a %s object in the Carbon Black server.\n\n" % (name,)
         for field_name, field_info in iteritems(model_data.get("properties", {})):
