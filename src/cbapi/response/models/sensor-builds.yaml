@@ -1,0 +1,29 @@
+type: "object"
+properties:
+  Windows:
+    type: "array"
+    description: 'Sensor versions for Windows'
+    items:
+      type: "object"
+      properties:
+        version_string:
+          type: "string"
+          description: "Sensor build version"
+  Linux:
+    type: "array"
+    description: 'Sensor versions for Linux'
+    items:
+      type: "object"
+      properties:
+        version_string:
+          type: "string"
+          description: "Sensor build version"
+  OSX:
+    type: "array"
+    description: 'Sensor versions for OSX'
+    items:
+      type: "object"
+      properties:
+        version_string:
+          type: "string"
+          description: "Sensor build version"
