@@ -947,7 +947,6 @@ class SensorBuilds(MutableBaseModel):
         self._info = {'Windows': [], 'Linux': [], 'OSX': []}
         return True
 
-
 class BuildsQuery(SimpleQuery):
 
     def __init__(self, doc_class, cb):
