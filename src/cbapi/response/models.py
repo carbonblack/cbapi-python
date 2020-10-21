@@ -295,9 +295,9 @@ class Alert(MutableBaseModel):
         self._last_refresh_time = time.time()
         return True
 
-    def set_ignored(self, ignored_flag=True):
+    def set_ignored(self, ignored_flag=True, status="False Positive"):
         """Ignore all future Alerts from the Report that triggered this Alert."""
-        payload = {"set_ignored": ignored_flag, "requested_status": "False Positive" if ignored_flag else "Unresolved"}
+        payload = {"set_ignored": ignored_flag, "requested_status": status}
         payload["alert_ids"] = [self.unique_id]
         return self._cb.post_object("/api/v1/alerts", payload)
 
@@ -310,9 +310,9 @@ class Alert(MutableBaseModel):
         allowed_statuses = ["In Progress", "Unresolved", "Resolved", "False Positive"]
         if new_status not in allowed_statuses:
             raise ApiError("Alert status must be one of {0}".format(allowed_statuses))
-        payload = {"requested_status": new_status}
-        payload["alert_ids"] = [self.unique_id]
-        return self._cb.post_object("/api/v1/alerts", payload)
+        payload = {"status": new_status}
+        payload["unique_id"] = self.unique_id
+        return self._cb.post_object("/api/v1/alert/{0}".format(self.unique_id), payload)
 
     @property
     def process(self):
