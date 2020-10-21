@@ -254,8 +254,9 @@ class AlertQuery(Query):
 
         return None
 
-    def set_ignored(self, ignored_flag=True):
-        payload = {"updates": {"is_ignored": ignored_flag, "requested_status": "False Positive"}}
+    def set_ignored(self, ignored_flag=True, status="False Positive"):
+        """Ignore all future Alerts from the Report that triggered this Alert."""
+        payload = {"set_ignored": ignored_flag, "requested_status": status}
         return self._bulk_update(payload)
 
     def assign(self, target):
@@ -263,6 +264,9 @@ class AlertQuery(Query):
         return self._bulk_update(payload)
 
     def change_status(self, new_status):
+        allowed_statuses = ["In Progress", "Unresolved", "Resolved", "False Positive"]
+        if new_status not in allowed_statuses:
+            raise ApiError("Alert status must be one of {0}".format(allowed_statuses))
         payload = {"requested_status": new_status}
         return self._bulk_update(payload)
 
