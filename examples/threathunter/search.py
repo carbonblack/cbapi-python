@@ -15,7 +15,7 @@ def main():
     parser.add_argument("-c", help="show children for query results", action="store_true", default=False)
     parser.add_argument("-p", help="show parents for query results", action="store_true", default=False)
     parser.add_argument("-t", help="show tree for query results", action="store_true", default=False)
-    parser.add_argument("-S", type=str, help="sory by this field", required=False)
+    parser.add_argument("-S", type=str, help="sort by this field", required=False)
     parser.add_argument("-D", help="return results in descending order", action="store_true")
 
     args = parser.parse_args()
