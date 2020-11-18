@@ -51,7 +51,7 @@ class CbDefenseAPI(CbPSCBaseAPI):
 
     def get_auditlogs(self):
         """Retrieve queued audit logs from the Carbon Black Cloud Endpoint Standard server.
-
+            Note that this can only be used with a 'API' key generated in the CBC console.
         :returns: list of dictionary objects representing the audit logs, or an empty list if none available.
         """
         res = self.get_object("/integrationServices/v3/auditlogs")
