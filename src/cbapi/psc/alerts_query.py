@@ -365,6 +365,7 @@ class BaseAlertSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQuery
         """
         request = {"criteria": self._build_criteria()}
         request["query"] = self._query_builder._collapse()
+        request["rows"] = 100
         if from_row > 0:
             request["start"] = from_row
         if max_rows >= 0:
