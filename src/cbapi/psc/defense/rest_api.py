@@ -24,6 +24,7 @@ class CbDefenseAPI(CbPSCBaseAPI):
     >>> from cbapi import CbDefenseAPI
     >>> cb = CbDefenseAPI(profile="production")
     """
+
     def __init__(self, *args, **kwargs):
         super(CbDefenseAPI, self).__init__(*args, **kwargs)
 
@@ -46,6 +47,14 @@ class CbDefenseAPI(CbPSCBaseAPI):
         :returns: list of dictionary objects representing the notifications, or an empty list if none available.
         """
         res = self.get_object("/integrationServices/v3/notification")
+        return res.get("notifications", [])
+
+    def get_auditlogs(self):
+        """Retrieve queued audit logs from the Carbon Black Cloud Endpoint Standard server.
+            Note that this can only be used with a 'API' key generated in the CBC console.
+        :returns: list of dictionary objects representing the audit logs, or an empty list if none available.
+        """
+        res = self.get_object("/integrationServices/v3/auditlogs")
         return res.get("notifications", [])
 
 
@@ -71,6 +80,7 @@ class Query(PaginatedQuery):
         - You can chain where clauses together to create AND queries; only objects that match all ``where`` clauses
           will be returned.
     """
+
     def __init__(self, doc_class, cb, query=None):
         super(Query, self).__init__(doc_class, cb, None)
         if query:
@@ -164,7 +174,7 @@ class Query(PaginatedQuery):
                     still_querying = False
                     break
 
-            args['start'] = current + 1     # as of 6/2017, the indexing on the Cb Defense backend is still 1-based
+            args['start'] = current + 1  # as of 6/2017, the indexing on the Cb Defense backend is still 1-based
 
             if current >= self._total_results:
                 break
