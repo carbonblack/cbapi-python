@@ -54,6 +54,17 @@ properties:
     type: "string"
     description: "The version of the sensor in this group, default Manual"
     default: "Manual"
+  sensor_version_windows:
+    type: "string"
+    description: "The version of the sensor for Windows hosts in this group, default Manual"
+    default: "Manual"
+  sensor_version_osx:
+    type: "string"
+    description: "The version of the sensor for OSX hosts in this group, default Manual"
+    default: "Manual"
+  sensor_version_linux:
+    type: "string"
+    description: "The version of the sensor for Linux hosts in this group, default Manual"
   datastore_server:
     type: "string"
     description: "Datastore server address if different from sensorbackend server, default null"

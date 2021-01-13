@@ -907,7 +907,7 @@ class Sensor(MutableBaseModel):
 
 class SensorGroup(MutableBaseModel, CreatableModelMixin):
     swagger_meta_file = "response/models/group-modify.yaml"
-    urlobject = '/api/group'
+    urlobject = '/api/v2/group'
 
     @classmethod
     def _query_implementation(cls, cb):
@@ -936,6 +936,53 @@ class SensorGroup(MutableBaseModel, CreatableModelMixin):
     @site.setter
     def site(self, new_site):
         self.site_id = new_site.id
+
+class SensorBuilds(MutableBaseModel):
+    swagger_meta_file = "response/models/sensor-builds.yaml"
+    urlobject = '/api/v2/builds'
+
+    def __init__(self, cb, initial_data=None):
+        super(SensorBuilds, self).__init__(cb)
+        if initial_data is not None:
+            temp_list = []
+            for b in initial_data['Windows']:
+                temp_list.append(b['version_string'])
+            self.Windows = temp_list
+            temp_list = []
+            for v in initial_data['Linux']:
+                temp_list.append(v['version_string'])
+            self.Linux = temp_list
+            temp_list = []
+            for v in initial_data['OSX']:
+                temp_list.append(v['version_string'])
+            self.OSX = temp_list
+
+    @classmethod
+    def new_object(self, cb, initial_data):
+        o = self(cb, initial_data)
+        return o
+
+    @classmethod
+    def _query_implementation(self, cb):
+        return BuildsQuery(self, cb)
+
+    def _refresh(self):
+        self._info = {'Windows': [], 'Linux': [], 'OSX': []}
+        return True
+
+class BuildsQuery(SimpleQuery):
+
+    def __init__(self, doc_class, cb):
+        super(BuildsQuery, self).__init__(doc_class, cb)
+
+    @property
+    def results(self):
+        if not self._full_init:
+            api_results = self._cb.get_object(self._urlobject, default={})
+            self._results = self._doc_class.new_object(self._cb, api_results)
+            self._full_init = True
+
+        return self._results
 
 
 class SensorQuery(SimpleQuery):
