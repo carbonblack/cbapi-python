@@ -4,7 +4,7 @@
 
 _**Notice**: The Carbon Black Cloud portion of CBAPI has moved to https://github.com/carbonblack/carbon-black-cloud-sdk-python. Any future development and bug fixes for Carbon Black Cloud APIs will be made there. Carbon Black EDR and App Control will remain supported at CBAPI_
 
-These are the new Python bindings for the Carbon Black Enterprise Response and Enterprise Protection REST APIs.
+These are the Python bindings for the Carbon Black Enterprise Response and Enterprise Protection REST APIs.
 To learn more about the REST APIs, visit the Carbon Black Developer Network Website at https://developer.carbonblack.com.
 
 Please visit https://cbapi.readthedocs.io for detailed documentation on this API. Additionally, we have a slideshow
