@@ -2,6 +2,29 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.7.3 - Released January 15, 2021
+------------------------------------
+
+Updates
+
+* General
+    * Fix resource warnings regarding unclosed file object
+    * Notice added to readme for Carbon Black Cloud features moving to Carbon Black Cloud SDK repo
+* Carbon Black Cloud
+     * Increase default rows of alerts to 100
+     * Add get_auditlogs function to API object
+* CB Threathunter
+    * Fix typo in process query
+    * Bump lxml from 4.4.1 to 4.6.2 for Threat Intelligence example
+* CB Response
+    * Add Sensor Builds
+    * Alert.set_ignored() and AlertQuery.set_ignored():
+        * Added a docstring to specify what happens with this method
+        * Modified the payload keys based on manual testing
+    * Alert.change_status() and AlertQuery.change_status():
+        * Added a status check to ensure it's a valid status
+
+
 CbAPI 1.7.2 - Released July 22, 2020
 ------------------------------------
 
