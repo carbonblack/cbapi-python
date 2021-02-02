@@ -2427,7 +2427,7 @@ class Process(TaggedModel):
                 log.debug("Unable to parse process GUID %s, marking invalid" % self.id)
                 self.valid_process = False
 
-    def walk_parents(self, callback, max_depth=0, depth=0):
+    def walk_parents(self, callback, max_depth=0, depth=0, **kwargs):
         """
         Walk up the execution chain while calling the specified callback function at each depth.
 
@@ -2458,15 +2458,15 @@ class Process(TaggedModel):
         try:
             parent_proc = self.parent
             if parent_proc and parent_proc.get("process_pid", -1) != -1:
-                callback(parent_proc, depth=depth)
+                callback(parent_proc, depth=depth, **kwargs)
             else:
                 return
         except ObjectNotFoundError:
             return
         else:
-            parent_proc.walk_parents(callback, max_depth=max_depth, depth=depth+1)
+            parent_proc.walk_parents(callback, max_depth=max_depth, depth=depth+1, **kwargs)
 
-    def walk_children(self, callback, max_depth=0, depth=0):
+    def walk_children(self, callback, max_depth=0, depth=0, **kwargs):
         """
         Walk down the execution chain while calling the specified callback function at each depth.
 
@@ -2501,11 +2501,11 @@ class Process(TaggedModel):
             if not cpevent.terminated:
                 try:
                     proc = cpevent.process
-                    callback(proc, depth=depth)
+                    callback(proc, depth=depth, **kwargs)
                 except ObjectNotFoundError:
                     continue
                 else:
-                    proc.walk_children(callback, max_depth=max_depth, depth=depth+1)
+                    proc.walk_children(callback, max_depth=max_depth, depth=depth+1, **kwargs)
 
     @property
     def parent_md5(self):
