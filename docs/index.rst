@@ -191,6 +191,11 @@ configuration file format specified above.
 The  optional `CBAPI_SSL_VERIFY` envar can be used to control SSL validation(True/False or 0/1), which will default to ON when
 not explicitly set by the user.
 
+For environments where complex outbound network filters and proxy configurations are used (eg. anything other than
+an unauthenticated or basic password authenticated proxy) a prepared `requests.Session` object may be supplied as a
+`proxy_session` parameter. This session will then be used for all communication with the API. Construction of such a
+`Session` is beyond the scope of this document, consult your local network/security administrators for assistance.
+
 Backwards & Forwards Compatibility
 ----------------------------------
 

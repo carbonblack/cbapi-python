@@ -143,7 +143,7 @@ class CbAPISessionAdapter(HTTPAdapter):
 class Connection(object):
     """Object that encapsulates the HTTP connection to the CB server."""
 
-    def __init__(self, credentials, integration_name=None, timeout=None, max_retries=None, **pool_kwargs):
+    def __init__(self, credentials, integration_name=None, timeout=None, max_retries=None, proxy_session=None, **pool_kwargs):
         """
         Initialize the Connection object.
 
@@ -184,7 +184,10 @@ class Connection(object):
 
         self.token = credentials.token
         self.token_header = {'X-Auth-Token': self.token, 'User-Agent': user_agent}
-        self.session = requests.Session()
+        if proxy_session:
+            self.session = proxy_session
+        else:
+            self.session = requests.Session()
 
         self._timeout = timeout
 
@@ -371,12 +374,13 @@ class BaseAPI(object):
 
         timeout = kwargs.pop("timeout", DEFAULT_POOL_TIMEOUT)
         max_retries = kwargs.pop("max_retries", DEFAULT_RETRIES)
+        proxy_session = kwargs.pop("proxy_session", None)
         pool_connections = kwargs.pop("pool_connections", 1)
         pool_maxsize = kwargs.pop("pool_maxsize", DEFAULT_POOLSIZE)
         pool_block = kwargs.pop("pool_block", DEFAULT_POOLBLOCK)
 
         self.session = Connection(self.credentials, integration_name=integration_name, timeout=timeout,
-                                  max_retries=max_retries, pool_connections=pool_connections,
+                                  max_retries=max_retries, proxy_session=proxy_session, pool_connections=pool_connections,
                                   pool_maxsize=pool_maxsize, pool_block=pool_block)
 
     def raise_unless_json(self, ret, expected):
