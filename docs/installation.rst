@@ -39,8 +39,7 @@ https://www.python.org/ftp/python/3.6.4/python-3.6.4-amd64.exe.
    :alt: Windows installation options showing "Add python.exe to path"
    :align: right
 
-Ensure that the "Add Python to PATH" option is
-checked.
+Ensure that the "Add Python to PATH" option is checked.
 
 If for some reason you do not have pip installed, follow the instructions at this
 `handy guide <http://docs.python-guide.org/en/latest/starting/installation/>`_.
@@ -75,4 +74,3 @@ Once you have a copy of the source, you can install it in "development" mode int
 This will link the version of cbapi-python you checked out into your Python site-packages directory. Any changes you
 make to the checked out version of cbapi will be reflected in your local Python installation. This is a good choice
 if you are thinking of changing or developing on cbapi itself.
-

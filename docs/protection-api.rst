@@ -3,9 +3,6 @@
 Carbon Black App Control (CB Protection) API
 ===========================================
 
-This page documents the public interfaces exposed by cbapi when communicating with a Carbon Black App Control (Enterprise
-Protection) server.
-
 Main Interface
 --------------
 

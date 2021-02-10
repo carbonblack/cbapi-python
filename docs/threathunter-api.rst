@@ -1,17 +1,16 @@
 .. _threathunter_api:
 
-CB ThreatHunter API
-===================
+VMware Carbon Black Cloud Enterprise EDR API
+============================================
 
 This page documents the public interfaces exposed by cbapi when communicating with a
-Carbon Black Cloud ThreatHunter server.
+VMware Carbon Black Cloud Enterprise EDR server.
 
 Main Interface
 --------------
 
-To use cbapi with Carbon Black ThreatHunter, you use CbThreatHunterAPI objects.
-These objects expose two main methods to access data on the
-ThreatHunter server: ``select`` and ``create``.
+To use cbapi with Enterprise EDR, you use CbThreatHunterAPI objects.
+These objects expose two main methods to access data on the Enterprise EDR server: ``select`` and ``create``.
 
 .. autoclass:: cbapi.psc.threathunter.rest_api.CbThreatHunterAPI
     :members:
@@ -20,7 +19,7 @@ ThreatHunter server: ``select`` and ``create``.
 Queries
 -------
 
-The ThreatHunter API uses QueryBuilder instances to construct structured
+The Enterprise EDR API uses QueryBuilder instances to construct structured
 or unstructured (i.e., raw string) queries. You can either construct these
 instances manually, or allow ``CbThreatHunterAPI.select()`` to do it for you:
 

@@ -1,15 +1,14 @@
 .. _psc_api:
 
-CB PSC API
-==========
+VMware Carbon Black Cloud API
+=============================
 
-This page documents the public interfaces exposed by cbapi when communicating with
-the Carbon Black Predictive Security Cloud (PSC).
+This page documents the public interfaces exposed by cbapi when communicating with the VMware Carbon Black Cloud.
 
 Main Interface
 --------------
 
-To use cbapi with the Carbon Black PSC, you use CbPSCBaseAPI objects.
+To use cbapi with the VMware Carbon Black Cloud, you use CbPSCBaseAPI objects.
 
 .. autoclass:: cbapi.psc.rest_api.CbPSCBaseAPI
     :members:
@@ -18,7 +17,7 @@ To use cbapi with the Carbon Black PSC, you use CbPSCBaseAPI objects.
 Device API
 ----------
 
-The PSC can be used to enumerate devices within your organization, and change their
+The Carbon Black Cloud can be used to enumerate devices within your organization, and change their
 status via a control request.
 
 You can use the select() method on the CbPSCBaseAPI to create a query object for
@@ -45,12 +44,11 @@ Selects all devices running Linux from the current organization.
 Alerts API
 ----------
 
-Using the API, you can search for alerts within your organization, and dismiss or
-undismiss them, either individually or in bulk.
+Using the API, you can search for alerts within your organization, and dismiss or undismiss them, either individually
+or in bulk.
 
-You can use the select() method on the CbPSCBaseAPI to create a query object for
-BaseAlert objects, which can be used to locate a list of alerts.  You can also
-search for more specialized alert types:
+You can use the select() method on the CbPSCBaseAPI to create a query object for BaseAlert objects, which can be used
+to locate a list of alerts.  You can also search for more specialized alert types:
 
 * CBAnalyticsAlert - Alerts from CB Analytics
 * VMwareAlert - Alerts from VMware

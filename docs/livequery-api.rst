@@ -1,10 +1,9 @@
 .. _livequery_api:
 
 CB LiveQuery API
-===================
+================
 
-This page documents the public interfaces exposed by cbapi when communicating with
-Carbon Black LiveQuery devices.
+This page documents the public interfaces exposed by cbapi when communicating with Carbon Black LiveQuery devices.
 
 Main Interface
 --------------
@@ -20,9 +19,8 @@ The LiveQuery API is used in two stages: run submission and result retrieval.
 Queries
 -------
 
-The LiveQuery API uses QueryBuilder instances to construct structured
-or unstructured (i.e., raw string) queries. You can either construct these
-instances manually, or allow ``CbLiveQueryAPI.select()`` to do it for you:
+The LiveQuery API uses QueryBuilder instances to construct structured or unstructured (i.e., raw string) queries.
+You can either construct these instances manually, or allow ``CbLiveQueryAPI.select()`` to do it for you:
 
 .. autoclass:: cbapi.psc.livequery.query.QueryBuilder
     :members:

@@ -116,7 +116,7 @@ Major Features
 API Credentials
 ---------------
 
-CBAPI version 0.9.0 enforces the use of credential files. 
+CBAPI version 0.9.0 enforces the use of credential files.
 
 In order to perform any queries via the API, you will need to get the API token for your CB user. See the documentation
 on the Developer Network website on how to acquire the API token for
@@ -130,13 +130,15 @@ Once you acquire your API token, place it in one of the default credentials file
 * ``~/.carbonblack/``
 * ``/current_working_directory/.carbonblack/``
 
-For distinction between credentials of different Carbon Black products, use the following naming convention for your credentials files:
+For distinction between credentials of different Carbon Black products, use the following naming convention for your
+credentials files:
 
 * ``credentials.psc`` for Carbon Black Cloud Endpoint Standard, Audit & Remediation, and Enterprise EDR (CB Defense, CB LiveOps, and CB ThreatHunter)
 * ``credentials.response`` for Carbon Black EDR (CB Response)
 * ``credentials.protection`` for Carbon Black App Control (CB Protection)
 
-For example, if you use a Carbon Black Cloud product, you should have created a credentials file in one of these locations:
+For example, if you use a Carbon Black Cloud product, you should have created a credentials file in one of these
+locations:
 
 * ``/etc/carbonblack/credentials.psc``
 * ``~/.carbonblack/credentials.psc``
@@ -188,8 +190,8 @@ The latest CBAPI for Python supports specifying API credentials in the following
 The `CBAPI_URL` envar holds the FQDN of the target, an EDR (CbR), CBD, or CbD/Carbon Black Cloud server specified just as they are in the
 configuration file format specified above.
 
-The  optional `CBAPI_SSL_VERIFY` envar can be used to control SSL validation(True/False or 0/1), which will default to ON when
-not explicitly set by the user.
+The  optional `CBAPI_SSL_VERIFY` envar can be used to control SSL validation(True/False or 0/1), which will default to
+ON when not explicitly set by the user.
 
 For environments where complex outbound network filters and proxy configurations are used (eg. anything other than
 an unauthenticated or basic password authenticated proxy) a prepared `requests.Session` object may be supplied as a
@@ -239,7 +241,7 @@ API Documentation
 -----------------
 
 Once you have read the User Guide, you can view `examples on GitHub <https://github.com/carbonblack/cbapi-python/tree/master/examples>`_
-or try writing code of your own. You can use the full API documentation below to see all the methods available in CBAPI 
+or try writing code of your own. You can use the full API documentation below to see all the methods available in CBAPI
 and unlock the full functionality of the SDK.
 
 .. toctree::

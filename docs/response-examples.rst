@@ -1,10 +1,6 @@
 EDR (CB Response) API Examples
 ==============================
 
-Now that we've covered the basics, let's step through a few examples using the EDR (CB Response) API. In these examples,
-we will assume the following boilerplate code to enable logging and establish a connection to the "default"
-EDR (CB Response) server in our credential file::
-
     >>> import logging
     >>> root = logging.getLogger()
     >>> root.addHandler(logging.StreamHandler())
@@ -246,7 +242,7 @@ the command name ``cmd.exe``. Just add the ``.group_by("id")`` filter to your qu
 Feed and Watchlist Maintenance
 ------------------------------
 
-The cbapi provides several helper functions to assist in creating watchlists and
+The cbapi provides several helper functions to assist in creating watchlists and feeds.
 
 Watchlists are simply saved Queries that are automatically run on the EDR (CB Response) server on a periodic basis. Results
 of the watchlist are tagged in the database and optionally trigger alerts. Therefore, a cbapi Query can easily be
@@ -295,9 +291,10 @@ The cbapi provides helper functions to manage alerts and threat reports in bulk.
 the ThreatReport and Alert Model Objects provide a few bulk operations to help manage large numbers of Threat Reports
 and Alerts, respectively.
 
-To mark a large number of Threat Reports as false positives, create a query that matches the Reports you're interested in.
-For example, if every Report from the Feed named "SOC" that contains the word "FUZZYWOMBAT" in the report title should be
-considered a false positive (and no longer trigger Alerts), you can write the following code to do so::
+To mark a large number of Threat Reports as false positives, create a query that matches the Reports you're
+interested in.  For example, if every Report from the Feed named "SOC" that contains the word "FUZZYWOMBAT" in the
+report title should be considered a false positive (and no longer trigger Alerts), you can write the following code
+to do so::
 
     >>> feed = c.select(Feed).where("name:SOC").one()
     >>> report_query = feed.reports.where("title:FUZZYWOMBAT")
@@ -429,4 +426,3 @@ How about moving a sensor to a new Sensor Group::
     Sending HTTP PUT /api/v1/sensor/3 with {"boot_id": "2", "build_id": 2, "build_version_string": "005.002.000.60922", ...
     HTTP PUT /api/v1/sensor/3 took 0.087s (response 204)
     HTTP GET /api/v1/sensor/3 took 0.030s (response 200)
-
