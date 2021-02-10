@@ -4,24 +4,25 @@ Getting Started
 First, let's make sure that your API authentication tokens have been imported into cbapi. Once that's done, then read
 on for the key concepts that will explain how to interact with Carbon Black APIs via cbapi.
 
-Feel free to follow along with this document or watch the `Development Environment Setup video <https://developer.carbonblack.com/guide/enterprise-response/development-environment-video/>`_
+Feel free to follow along with this document or watch the
+`Development Environment Setup video <https://developer.carbonblack.com/guide/enterprise-response/development-environment-video/>`_
 on the Developer Network website.
 
 API Authentication
 ------------------
 
-CB Response and CB Protection use a per-user API secret token to authenticate requests via the API. The API token
-confers the same permissions and authorization as the user it is associated with, so protect the API token with the
-same care as a password.
+VMware Carbon Black EDR and App Control use a per-user API secret token to authenticate requests via the API. The API
+token confers the same permissions and authorization as the user it is associated with, so protect the API token with
+the same care as a password.
 
 To learn how to obtain the API token for a user, see the Developer Network website: there you will find instructions
-for obtaining an API token for `CB Response <https://developer.carbonblack.com/reference/enterprise-response/authentication/>`_
-and `CB Protection <https://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_.
+for obtaining an API token for `EDR <https://developer.carbonblack.com/reference/enterprise-response/authentication/>`_
+and `App Control <https://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_.
 
 Once you have the API token, cbapi helps keep your credentials secret by enforcing the use of a credential file. To
 encourage sharing of scripts across the community while at the same time protecting the security of our customers,
 cbapi strongly discourages embedding credentials in individual scripts. Instead, you can place credentials for several
-CB Response or CB Protection servers inside the API credential file and select which "profile" you would like to use
+EDR or App Control servers inside the API credential file and select which "profile" you would like to use
 at runtime.
 
 To create the initial credential file, a simple-to-use script is provided. Just run the ``cbapi-response``,
@@ -36,7 +37,8 @@ Alternatively, if you're using Windows (change ``c:\python27`` if Python is inst
 This configuration script will walk you through entering your API credentials and will save them to your current user's
 credential file location, which is located in the ``.carbonblack`` directory in your user's home directory.
 
-If using cbapi-psc, you will also be asked to provide an org key. An org key is required to access the Carbon Black Cloud, and can be found in the console under Settings -> API Keys.
+If using cbapi-psc, you will also be asked to provide an org key. An org key is required to access the Carbon Black
+Cloud, and can be found in the console under Settings -> API Keys.
 
 Your First Query
 ----------------

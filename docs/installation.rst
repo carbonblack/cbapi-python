@@ -1,11 +1,12 @@
 Installation
 ============
 
-Before installing cbapi, make sure that you have access to a working CB Response or CB Protection server. The server
-can be either on-premise or in the cloud. CB Response clusters are also supported. Once you have access to a working
-can use the standard Python packaging tools to install cbapi on your local machine.
+Before installing cbapi, make sure that you have access to a working VMWare Carbon Black EDR or App Control server.
+The server can be either on-premise or in the cloud. EDR clusters are also supported. Once you have access to a working
+server, you can use the standard Python packaging tools to install cbapi on your local machine.
 
-Feel free to follow along with this document or watch the `Development Environment Setup video <https://developer.carbonblack.com/guide/enterprise-response/development-environment-video/>`_
+Feel free to follow along with this document or watch the
+`Development Environment Setup video <https://developer.carbonblack.com/guide/enterprise-response/development-environment-video/>`_
 on the Developer Network website.
 
 If you already have Python installed, you can skip right down to "Using Pip".
@@ -40,8 +41,7 @@ https://www.python.org/ftp/python/3.6.4/python-3.6.4-amd64.exe.
    :alt: Windows installation options showing "Add python.exe to path"
    :align: right
 
-Ensure that the "Add Python to PATH" option is
-checked.
+Ensure that the "Add Python to PATH" option is checked.
 
 If for some reason you do not have pip installed, follow the instructions at this
 `handy guide <http://docs.python-guide.org/en/latest/starting/installation/>`_.

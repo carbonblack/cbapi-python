@@ -1,7 +1,7 @@
 CbAPI and Live Response
 =======================
 
-Working with the CB Live Response REST API directly can be difficult. Thankfully, just like the rest of Carbon
+Working with the Live Response REST API directly can be difficult. Thankfully, just like the rest of Carbon
 Black's REST APIs, cbapi provides Pythonic APIs to make working with the Live Response API much easier.
 
 In addition to easy-to-use APIs to call into Live Response, cbapi also provides a "job-based" interface that allows

@@ -5,7 +5,7 @@ There are a few critical concepts that will make understanding and using the cba
 explained below, and also covered in a slide deck presented at the Carbon Black regional User Exchanges in 2016.
 You can see the slide deck `here <https://speakerdeck.com/cbdevnet/carbon-black-python-api-summer-2016>`_.
 
-At a high level, the cbapi tries to represent data in CB Response or CB Protection as Python objects. If you've worked
+At a high level, the cbapi tries to represent data in EDR or App Control as Python objects. If you've worked
 with SQL Object-relational Mapping (ORM) frameworks before, then this structure may seem familiar -- cbapi was
 designed to operate much like an ORM such as SQLAlchemy or Ruby's ActiveRecord. If you haven't worked with one of these
 libraries, don't worry! The concepts will become clear after a little practice.
@@ -14,9 +14,9 @@ Model Objects
 -------------
 
 Everything in cbapi is represented in terms of "Model Objects". A Model Object in cbapi represents a single instance
-of a specific type of data in CB Response or Protection. For example, a process document from CB Response (as seen
+of a specific type of data in EDR or App Control. For example, a process document from EDR (as seen
 on an Analyze Process page in the Web UI) is represented as a :py:mod:`cbapi.response.models.Process` Model Object.
-Similarly, a file instance in CB Protection is represented as a  :py:mod:`cbapi.protection.models.FileInstance`
+Similarly, a file instance in App Control is represented as a  :py:mod:`cbapi.protection.models.FileInstance`
 Model Object.
 
 Once you have an instance of a Model Object, you can access all of the data contained within as Python properties.
@@ -27,7 +27,7 @@ in the ``cmdline`` property), you would write the code::
 
 This would automatically retrieve the ``cmdline`` attribute of the process and print it out to your screen.
 
-The data in CB Response and Protection may change rapidly, and so a comprehensive list of valid properties is difficult
+The data in EDR and App Control may change rapidly, and so a comprehensive list of valid properties is difficult
 to keep up-to-date. Therefore, if you are curious what properties are available on a specific Model Object, you can
 print that Model Object to the screen. It will dump all of the available properties and their current values. For
 example::
@@ -56,15 +56,15 @@ method to retrieve the property, and return a default value if the property does
 
 In summary, Model Objects contain all the data associated with a specific type of API call. In this example, the
 :py:mod:`cbapi.response.models.Binary` Model Object reflects all the data available via the
-``/api/v1/binary`` API route on a CB Response server.
+``/api/v1/binary`` API route on an EDR server.
 
 Joining Model Objects
 ---------------------
 
 Many times, there are relationships between different Model Objects. To make navigating these relationships easy,
-cbapi provides special properties to "join" Model Objects together. For example, a :py:mod:`cbapi.response.models.Process`
-Model Object can reference the :py:mod:`cbapi.response.models.Sensor` or :py:mod:`cbapi.response.models.Binary`
-associated with this Process.
+cbapi provides special properties to "join" Model Objects together. For example, a
+:py:mod:`cbapi.response.models.Process` Model Object can reference the :py:mod:`cbapi.response.models.Sensor` or
+:py:mod:`cbapi.response.models.Binary` associated with this Process.
 
 In this case, special "join" properties are provided for you. When you use one of these properties, cbapi will
 automatically retrieve the associated Model Object, if necessary.
@@ -90,13 +90,13 @@ Queries
 
 Now that we've covered how to get data out of a specific Model Object, we now need to learn how to obtain Model
 Objects in the first place! To do this, we have to create and execute a Query. cbapi Queries use the same query
-syntax accepted by CB Response or Protection's APIs, and add a few little helpful features along the way.
+syntax accepted by EDR or App Control's APIs, and add a few little helpful features along the way.
 
 To create a query in cbapi, use the ``.select()`` method on the CbResponseAPI or CbProtectionAPI object. Pass the
 Model Object type as a parameter to the ``.select()`` call and optionally add filtering criteria with ``.where()``
 clauses.
 
-Let's start with a simple query for CB Response::
+Let's start with a simple query for EDR::
 
     >>> from cbapi.response import *
     >>> cb = CbResponseAPI()
@@ -152,15 +152,15 @@ will throw a :py:mod:`MoreThanOneResultError` exception if there are zero or mor
 second method is ``.first()``, which will return the first result from the result set, or None if there are no results.
 
 Every time you access a Query object, it will perform a REST API query to the Carbon Black server. For large result
-sets, the results are retrieved in batches- by default, 100 results per API request on CB Response and 1,000 results
-per API request on CB Protection. The search queries themselves are not cached, but the resulting Model Objects are.
+sets, the results are retrieved in batches- by default, 100 results per API request on EDR and 1,000 results
+per API request on App Control. The search queries themselves are not cached, but the resulting Model Objects are.
 
 Retrieving Objects by ID
 ------------------------
 
 Every Model Object (and in fact any object addressable via the REST API) has a unique ID associated with it. If you
-already have a unique ID for a given Model Object, for example, a Process GUID for CB Response, or a Computer ID
-for CB Protection, you can ask cbapi to give you the associated Model Object for that ID by passing that ID to the
+already have a unique ID for a given Model Object, for example, a Process GUID for EDR, or a Computer ID
+for App Control, you can ask cbapi to give you the associated Model Object for that ID by passing that ID to the
 ``.select()`` call. For example::
 
     >>> binary = cb.select(Binary, "CA4FAFFA957C71C006B59E29DFE3EB8B")
@@ -178,16 +178,16 @@ object and if it does not exist, cbapi will throw a :py:mod:`ObjectNotFoundError
 Creating New Objects
 --------------------
 
-The CB Response and Protection REST APIs provide the ability to insert new data under certain circumstances. For
-example, the CB Response REST API allows you to insert a new banned hash into its database. Model Objects that
+The EDR and App Control REST APIs provide the ability to insert new data under certain circumstances. For
+example, the EDR REST API allows you to insert a new banned hash into its database. Model Objects that
 represent these data types can be "created" in cbapi by using the ``create()`` method::
 
     >>> bh = cb.create(BannedHash)
 
 If you attempt to create a Model Object that cannot be created, you will receive a :py:mod:`ApiError` exception.
 
-Once a Model Object is created, it's blank (it has no data). You will need to set the required properties and then call the
-``.save()`` method::
+Once a Model Object is created, it's blank (it has no data). You will need to set the required properties and then call
+the ``.save()`` method::
 
     >>> bh = cb.create(BannedHash)
     >>> bh.text = "Banned from API"
@@ -199,7 +199,7 @@ exception with a list of the properties that are required and not currently set.
 
 Once the ``.save()`` method is called, the appropriate REST API call is made to create the object. The Model Object
 is then updated to the current state returned by the API, which may include additional data properties initialized
-by CB Response or Protection.
+by EDR or App Control.
 
 Modifying Existing Objects
 --------------------------

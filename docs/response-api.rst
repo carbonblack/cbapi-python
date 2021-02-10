@@ -1,16 +1,16 @@
 .. _response_api:
 
-CB Response API
-===============
+VMware Carbon Black EDR API
+===========================
 
-This page documents the public interfaces exposed by cbapi when communicating with a Carbon Black Enterprise
-Response server.
+This page documents the public interfaces exposed by cbapi when communicating with a VMware Carbon Black EDR server.
 
 Main Interface
 --------------
 
-To use cbapi with Carbon Black Response, you will be using the CbResponseAPI.
-The CbResponseAPI object then exposes two main methods to access data on the Carbon Black server: ``select`` and ``create``.
+To use cbapi with EDR, you will be using the CbResponseAPI.
+The CbResponseAPI object then exposes two main methods to access data on the Carbon Black server:
+``select`` and ``create``.
 
 .. autoclass:: cbapi.response.rest_api.CbResponseAPI
     :members:

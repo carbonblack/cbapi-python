@@ -8,9 +8,10 @@ cbapi: Carbon Black API for Python
 
 Release v\ |release|.
 
-cbapi provides a straightforward interface to the Carbon Black products: CB Protection, Response, and Defense.
-This library provides a Pythonic layer to access the raw power of the REST APIs of all CB products, making it trivial
-to do the easy stuff and handling all of the "sharp corners" behind the scenes for you. Take a look::
+cbapi provides a straightforward interface to the VMware Carbon Black products: App Control, EDR, and Cloud Endpoint
+Standard.  This library provides a Pythonic layer to access the raw power of the REST APIs of all VMware Carbon Black
+products, making it trivial to do the easy stuff and handling all of the "sharp corners" behind the scenes for you.
+Take a look::
 
    >>> from cbapi.response import CbResponseAPI, Process, Binary, Sensor
    >>> #
@@ -39,7 +40,7 @@ to do the easy stuff and handling all of the "sharp corners" behind the scenes f
    ...     s.network_isolation_enabled = True
    ...     s.save()
 
-If you're more a CB Protection fellow, then you're in luck as well::
+If you're more an App Control fellow, then you're in luck as well::
 
    >>> from cbapi.protection.models import FileInstance
    >>> from cbapi.protection import CbProtectionAPI
@@ -62,7 +63,7 @@ If you're more a CB Protection fellow, then you're in luck as well::
    >>> fi.computer.policyId = 3
    >>> fi.computer.save()
 
-As of version 1.2, cbapi now provides support for CB Defense too!
+As of version 1.2, cbapi now provides support for Cloud Endpoint Standard too!
 
    >>> from cbapi.psc.defense import *
    >>> #
@@ -85,19 +86,19 @@ Major Features
 --------------
 
 - **Enhanced Live Response API**
-    The new cbapi now provides a robust interface to the CB Response Live Response capability.
+    The new cbapi now provides a robust interface to the EDR Live Response capability.
     Easily create Live Response sessions, initiate commands on remote hosts, and pull down data as
     necessary to make your Incident Response process much more efficient and automated.
 
-- **Consistent API for CB Response, Protection and Defense platforms**
-    We now support CB Response, Protection and Defense users in the same API layer. Even better,
+- **Consistent API for EDR, App Control and Cloud Endpoint Standard platforms**
+    We now support EDR, App Control and Cloud Endpoint Standard users in the same API layer. Even better,
     the object model is the same for both; if you know one API you can easily transition to the other. cbapi
     hides all the differences between the three REST APIs behind a single, consistent Python-like interface.
 
 - **Enhanced Performance**
     cbapi now provides a built in caching layer to reduce the query load on the Carbon Black server. This is especially
     useful when taking advantage of cbapi's new "joining" features. You can transparently access, for example, the
-    binary associated with a given process in CB Response. Since many processes may be associated
+    binary associated with a given process in EDR. Since many processes may be associated
     with the same binary, it does not make sense to repeatedly request the same binary information from the server
     over and over again. Therefore cbapi now caches this information to avoid unnecessary requests.
 
@@ -111,7 +112,7 @@ Major Features
 
 - **Better support for multiple CB servers**
     cbapi now introduces the concept of Credential Profiles; named collections of URL, API keys, and optional proxy
-    configuration for connecting to any number of CB Protection, Defense, or Response servers.
+    configuration for connecting to any number of App Control, Cloud Endpoint Standard, or EDR servers.
 
 
 API Credentials
@@ -121,9 +122,9 @@ The new cbapi as of version 0.9.0 enforces the use of credential files.
 
 In order to perform any queries via the API, you will need to get the API token for your CB user. See the documentation
 on the Developer Network website on how to acquire the API token for
-`CB Response <http://developer.carbonblack.com/reference/enterprise-response/authentication/>`_,
-`CB Protection <http://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_, or
-`CB Defense <http://developer.carbonblack.com/reference/cb-defense/authentication/>`_.
+`EDR <http://developer.carbonblack.com/reference/enterprise-response/authentication/>`_,
+`App Control <http://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_, or
+`Cloud Endpoint Standard <http://developer.carbonblack.com/reference/cb-defense/authentication/>`_.
 
 Once you acquire your API token, place it in one of the default credentials file locations:
 
@@ -131,13 +132,15 @@ Once you acquire your API token, place it in one of the default credentials file
 * ``~/.carbonblack/``
 * ``/current_working_directory/.carbonblack/``
 
-For distinction between credentials of different Carbon Black products, use the following naming convention for your credentials files:
+For distinction between credentials of different Carbon Black products, use the following naming convention for your
+credentials files:
 
-* ``credentials.psc`` for CB Defense, CB ThreatHunter, and CB LiveOps
-* ``credentials.response`` for CB Response
-* ``credentials.protection`` for CB Protection
+* ``credentials.psc`` for Cloud Endpoint Standard, Enterprise EDR, and Audit and Remediation
+* ``credentials.response`` for EDR
+* ``credentials.protection`` for App Control
 
-For example, if you use a Carbon Black Cloud product, you should have created a credentials file in one of these locations:
+For example, if you use a Carbon Black Cloud product, you should have created a credentials file in one of these
+locations:
 
 * ``/etc/carbonblack/credentials.psc``
 * ``~/.carbonblack/credentials.psc``
@@ -170,10 +173,11 @@ The possible options for each credential profile are:
   different tokens for each.
 * **ssl_verify**: True or False; controls whether the SSL/TLS certificate presented by the server is validated against
   the local trusted CA store.
-* **org_key**: The organization key. This is required to access the Carbon Black Cloud, and can be found in the console. The format is ``123ABC45``.
+* **org_key**: The organization key. This is required to access the Carbon Black Cloud, and can be found in the
+  console. The format is ``123ABC45``.
 * **proxy**: A proxy specification that will be used when connecting to the CB server. The format is:
-  ``http://myusername:mypassword@proxy.company.com:8001/`` where the hostname of the proxy is ``proxy.company.com``, port
-  8001, and using username/password ``myusername`` and ``mypassword`` respectively.
+  ``http://myusername:mypassword@proxy.company.com:8001/`` where the hostname of the proxy is ``proxy.company.com``,
+  port 8001, and using username/password ``myusername`` and ``mypassword`` respectively.
 * **ignore_system_proxy**: If you have a system-wide proxy specified, setting this to True will force cbapi to bypass
   the proxy and directly connect to the CB server.
 
@@ -184,13 +188,14 @@ Environment Variable Support
 
 The latest cbapi for python supports specifying API credentials in the following three environment variables:
 
-`CBAPI_TOKEN` the envar for holding the CbR/CbP api token or the ConnectorId/APIKEY combination for CB Defense/Carbon Black Cloud.
+`CBAPI_TOKEN` the envar for holding the EDR/AppC API token or the ConnectorId/APIKEY combination for Cloud Endpoint
+Standard.
 
-The `CBAPI_URL` envar holds the FQDN of the target, a CbR , CBD, or CbD/Carbon Black Cloud server specified just as they are in the
-configuration file format specified above.
+The `CBAPI_URL` envar holds the FQDN of the target, a EDR, AppC, or Cloud Endpoint Standard server specified just as
+they are in the configuration file format specified above.
 
-The  optional `CBAPI_SSL_VERIFY` envar can be used to control SSL validation(True/False or 0/1), which will default to ON when
-not explicitly set by the user.
+The  optional `CBAPI_SSL_VERIFY` envar can be used to control SSL validation(True/False or 0/1), which will default to
+ON when not explicitly set by the user.
 
 Backwards & Forwards Compatibility
 ----------------------------------
@@ -207,8 +212,8 @@ legacy scripts cannot run under Python 3.
 Once cbapi 1.0.0 is released, the old :py:mod:`cbapi.legacy.CbApi` will be deprecated and removed entirely no earlier
 than January 2017.
 New scripts should use the :py:mod:`cbapi.response.rest_api.CbResponseAPI`
-(for CB Response), :py:mod:`cbapi.protection.rest_api.CbProtectionAPI`
-(for CB Protection), or :py:mod:`cbapi.defense.rest_api.CbDefenseAPI` API entry points.
+(for EDR), :py:mod:`cbapi.protection.rest_api.CbProtectionAPI`
+(for App Control), or :py:mod:`cbapi.defense.rest_api.CbDefenseAPI` API entry points.
 
 The API is frozen as of version 1.0; afterward, any changes in the 1.x version branch
 will be additions/bug fixes only. Breaking changes to the API will increment the major version number (2.x).
