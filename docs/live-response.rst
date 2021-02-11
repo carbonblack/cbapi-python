@@ -92,4 +92,3 @@ back from the endpoint, and submit the ``.run()`` method to the Live Response Jo
 
 Your script resumes execution immediately after the call to ``.submit_job()``. The job(s) that you've submitted will
 be executed in a set of background threads managed by cbapi.
-

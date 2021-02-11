@@ -11,15 +11,15 @@ log = logging.getLogger(__name__)
 
 
 class CbProtectionAPI(BaseAPI):
-    """The main entry point into the Carbon Black Enterprise Protection API.
+    """The main entry point into the Carbon Black App Control API.
 
     :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server.
         Uses the profile named 'default' when not specified.
 
     Usage::
 
-    >>> from cbapi import CbEnterpriseProtectionAPI
-    >>> cb = CbEnterpriseProtectionAPI(profile="production")
+    >>> from cbapi import CbProtectionAPI
+    >>> cb = CbProtectionAPI(profile="production")
     """
     def __init__(self, *args, **kwargs):
         super(CbProtectionAPI, self).__init__(product_name="protection", *args, **kwargs)
@@ -76,11 +76,11 @@ class CbEnterpriseProtectionAPI(CbProtectionAPI):
 
 
 class Query(PaginatedQuery):
-    """Represents a prepared query to the Carbon Black Enterprise Protection server.
+    """Represents a prepared query to the Carbon Black App Control server.
 
-    This object is returned as part of a :py:meth:`CbEnterpriseProtectionAPI.select`
+    This object is returned as part of a :py:meth:`CbProtectionAPI.select`
     operation on models requested from the Carbon Black
-    Enterprise Protection server. You should not have to create this class yourself.
+    App Control server. You should not have to create this class yourself.
 
     The query is not executed on the server until it's accessed, either as an iterator (where it will generate values
     on demand as they're requested) or as a list (where it will retrieve the entire result set and save to a list).
@@ -88,12 +88,12 @@ class Query(PaginatedQuery):
     the query.
 
     The syntax for query :py:meth:where and :py:meth:sort methods can be found in the
-    `Enterprise Protection API reference`_ posted on the Carbon Black Developer Network website.
+    `App Control REST API reference`_ posted on the Carbon Black Developer Network website.
 
     Examples::
 
-    >>> from cbapi.protection import CbEnterpriseProtectionAPI, Computer
-    >>> cb = CbEnterpriseProtectionAPI()
+    >>> from cbapi.protection import CbProtectionAPI, Computer
+    >>> cb = CbProtectionAPI()
     >>> query = cb.select(Computer)                     # returns a Query object matching all Computers
     >>> query = query.where("ipAddress:10.201.2.*")     # add a filter to this Query
     >>> query = query.sort("processorSpeed DESC")       # sort by computer processor speed, descending
@@ -108,7 +108,7 @@ class Query(PaginatedQuery):
         - You can chain where clauses together to create AND queries; only objects that match all ``where`` clauses
           will be returned.
 
-    .. _Enterprise Protection API reference:
+    .. _App Control REST API reference:
         https://developer.carbonblack.com/reference/enterprise-protection/8.0/rest-api/
     """
     def __init__(self, doc_class, cb, query=None):
@@ -134,11 +134,11 @@ class Query(PaginatedQuery):
     def where(self, q):
         """Add a filter to this query.
 
-        :param str q: Query string - see the `Enterprise Protection API reference`_.
+        :param str q: Query string - see the `App Control REST API reference`_.
         :return: Query object
         :rtype: :py:class:`Query`
 
-        .. _Enterprise Protection API reference:
+        .. _App Control REST API reference:
             https://developer.carbonblack.com/reference/enterprise-protection/8.0/rest-api/
         """
         nq = self._clone()
@@ -148,11 +148,11 @@ class Query(PaginatedQuery):
     def and_(self, q):
         """Add a filter to this query. Equivalent to calling :py:meth:`where` on this object.
 
-        :param str q: Query string - see the `Enterprise Protection API reference`_.
+        :param str q: Query string - see the `App Control REST API reference`_.
         :return: Query object
         :rtype: :py:class:`Query`
 
-        .. _Enterprise Protection API reference:
+        .. _App Control REST API reference:
             https://developer.carbonblack.com/reference/enterprise-protection/8.0/rest-api/
         """
         return self.where(q)
@@ -160,11 +160,11 @@ class Query(PaginatedQuery):
     def sort(self, new_sort):
         """Set the sort order for this query.
 
-        :param str new_sort: Sort order - see the `Enterprise Protection API reference`_.
+        :param str new_sort: Sort order - see the `App Control REST API reference`_.
         :return: Query object
         :rtype: :py:class:`Query`
 
-        .. _Enterprise Protection API reference:
+        .. _App Control REST API reference:
             https://developer.carbonblack.com/reference/enterprise-protection/8.0/rest-api/
         """
         new_sort = new_sort.strip()

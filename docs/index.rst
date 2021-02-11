@@ -13,7 +13,7 @@ This library provides a Pythonic layer to access the raw power of the REST APIs 
 
    >>> from cbapi.response import CbResponseAPI, Process, Binary, Sensor
    >>> #
-   >>> # Create our CbAPI object
+   >>> # Create our EDR API object
    >>> #
    >>> c = CbResponseAPI()
    >>> #
@@ -43,7 +43,7 @@ If you're a Carbon Black App Control customer (formerly CB Protection), you may 
    >>> from cbapi.protection.models import FileInstance
    >>> from cbapi.protection import CbProtectionAPI
    >>> #
-   >>> # Create our CB Protection API object
+   >>> # Create our App Control API object
    >>> #
    >>> p = CbProtectionAPI()
    >>> #
@@ -65,7 +65,7 @@ As of version 1.2, CBAPI also supports Carbon Black Cloud Endpoint Standard (for
 
    >>> from cbapi.psc.defense import *
    >>> #
-   >>> # Create our CB Defense API object
+   >>> # Create our Cloud Endpoint Standard API object
    >>> #
    >>> p = CbDefenseAPI()
    >>> #
