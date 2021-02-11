@@ -53,7 +53,7 @@ class Query(PaginatedQuery):
     """Represents a prepared query to the Cloud Endpoint Standard server.
 
     This object is returned as part of a :py:meth:`CbDefenseAPI.select`
-    operation on models requested from the Cloud Endpoint Standardserver. You should not have to create
+    operation on models requested from the Cloud Endpoint Standard server. You should not have to create
     this class yourself.
 
     The query is not executed on the server until it's accessed, either as an iterator (where it will generate values
