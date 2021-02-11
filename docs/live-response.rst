@@ -30,7 +30,7 @@ Since the Live Response API is synchronous, the script will not continue until e
 established and the file contents are retrieved, or an exception occurs (in this case, either a timeout error or
 an error reading the file).
 
-As seen in the example above, the ``.lr_session()`` method is context-aware. CB Response has a limited number of
+As seen in the example above, the ``.lr_session()`` method is context-aware. EDR has a limited number of
 concurrent Live Response session slots (by default, only ten). By wrapping the ``.lr_session()`` call within a
 ``with`` context, the session is automatically closed at the end of the block and frees that slot for another
 concurrent Live Response session in another script or user context.

@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class CbResponseAPI(BaseAPI):
-    """The main entry point into the Carbon Black Enterprise Response API.
+    """The main entry point into the Carbon Black EDR API.
     Note that calling this will automatically connect to the Carbon Black server in order to verify
     connectivity and get the server version.
 
@@ -30,8 +30,8 @@ class CbResponseAPI(BaseAPI):
 
     Usage::
 
-    >>> from cbapi import CbEnterpriseResponseAPI
-    >>> cb = CbEnterpriseResponseAPI(profile="production")
+    >>> from cbapi import CbResponseAPI
+    >>> cb = CbResponseAPI(profile="production")
     """
     def __init__(self, *args, **kwargs):
         timeout = kwargs.pop("timeout", 120)   # set default timeout period to two minutes, 2x the default nginx timeout
@@ -66,7 +66,7 @@ class CbResponseAPI(BaseAPI):
         return self._lr_scheduler
 
     def info(self):
-        """Retrieve basic version information from the Carbon Black Enterprise Response server.
+        """Retrieve basic version information from the Carbon Black DER server.
 
         :return: Dictionary with information retrieved from the ``/api/info`` API route
         :rtype: dict
@@ -75,7 +75,7 @@ class CbResponseAPI(BaseAPI):
         return r.json()
 
     def dashboard_statistics(self):
-        """Retrieve dashboard statistics from the Carbon Black Enterprise Response server.
+        """Retrieve dashboard statistics from the Carbon Black EDR server.
 
         :return: Dictionary with information retrieved from the ``/api/v1/dashboard/statistics`` API route
         :rtype: dict
@@ -84,7 +84,7 @@ class CbResponseAPI(BaseAPI):
         return r.json()
 
     def license_request(self):
-        """Retrieve license request block from the Carbon Black Enterprise Response server.
+        """Retrieve license request block from the Carbon Black EDR server.
 
         :return: License request block
         :rtype: str
@@ -93,7 +93,7 @@ class CbResponseAPI(BaseAPI):
         return r.json().get("license_request_block", "")
 
     def update_license(self, license_block):
-        """Upload new license to the Carbon Black Enterprise Response server.
+        """Upload new license to the Carbon Black EDR server.
 
         :param str license_block: Licence block provided by Carbon Black support
         :raises ServerError: if the license is not accepted by the Carbon Black server
@@ -108,14 +108,13 @@ class CbResponseAPI(BaseAPI):
             return Query(cls, self, **kwargs)
 
     def from_ui(self, uri):
-        """Retrieve a Carbon Black Enterprise Response object based on URL from the Carbon Black Enterprise Response
-        web user interface.
+        """Retrieve a Carbon Black EDR object based on URL from the Carbon Black EDR web user interface.
 
         For example, calling this function with
         ``https://server/#/analyze/00000001-0000-0554-01d1-3bc4553b8c9f/1`` as the ``uri`` argument will return a new
         :py:class: cbapi.response.models.Process class initialized with the process GUID from the URL.
 
-        :param str uri: Web browser URL from the Cb web interface
+        :param str uri: Web browser URL from the CB web interface
         :return: the appropriate model object for the URL provided
         :raises ApiError: if the URL does not correspond to a recognized model object
         """
@@ -166,7 +165,7 @@ class CbResponseAPI(BaseAPI):
         return self.live_response.request_session(sensor_id)
 
     def create_new_partition(self):
-        """Create a new Solr time partition for event storage. Available in Cb Response 6.1 and above.
+        """Create a new Solr time partition for event storage. Available in Carbon Black EDR 6.1 and above.
         This will force roll-over current hot partition into warm partition (by renaming it to a time-stamped name)
         and create a new hot partition ("writer").
 

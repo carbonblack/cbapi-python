@@ -15,7 +15,7 @@ Take a look::
 
    >>> from cbapi.response import CbResponseAPI, Process, Binary, Sensor
    >>> #
-   >>> # Create our CbAPI object
+   >>> # Create our EDR API object
    >>> #
    >>> c = CbResponseAPI()
    >>> #
@@ -45,7 +45,7 @@ If you're more an App Control fellow, then you're in luck as well::
    >>> from cbapi.protection.models import FileInstance
    >>> from cbapi.protection import CbProtectionAPI
    >>> #
-   >>> # Create our CB Protection API object
+   >>> # Create our App Control API object
    >>> #
    >>> p = CbProtectionAPI()
    >>> #
@@ -67,7 +67,7 @@ As of version 1.2, cbapi now provides support for Cloud Endpoint Standard too!
 
    >>> from cbapi.psc.defense import *
    >>> #
-   >>> # Create our CB Defense API object
+   >>> # Create our Cloud Endpoint Standard API object
    >>> #
    >>> p = CbDefenseAPI()
    >>> #

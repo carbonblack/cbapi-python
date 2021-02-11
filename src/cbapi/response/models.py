@@ -679,21 +679,21 @@ class Sensor(MutableBaseModel):
     @property
     def registration_time(self):
         """
-        Returns the time the sensor registered with the Cb Response Server
+        Returns the time the sensor registered with the EDR Server
         """
         return convert_from_cb(getattr(self, 'registration_time', -1))
 
     @property
     def sid(self):
         """
-        Security Identifier being used by the Cb Response Sensor
+        Security Identifier being used by the EDR Sensor
         """
         return getattr(self, 'computer_sid')
 
     @property
     def webui_link(self):
         """
-        Returns the Cb Response Web UI link associated with this Sensor
+        Returns the Carbon Black EDR Web UI link associated with this Sensor
         """
         return '{0:s}/#/host/{1}'.format(self._cb.url, self._model_unique_id)
 
@@ -701,7 +701,7 @@ class Sensor(MutableBaseModel):
     @property
     def queued_stats(self):
         """
-        Returns a list of status and size of the queued event logs from the associated Cb Response Sensor
+        Returns a list of status and size of the queued event logs from the associated EDR Sensor
 
         :example:
 
@@ -720,14 +720,14 @@ class Sensor(MutableBaseModel):
     @property
     def activity_stats(self):
         """
-        Returns a list of activity statistics from the associated Cb Response Sensor
+        Returns a list of activity statistics from the associated EDR Sensor
         """
         return self._cb.get_object("{0}/activity".format(self._build_api_request_uri()), default=[])
 
     @property
     def resource_status(self):
         """
-        Returns a list of memory statistics used by the Cb Response Sensor
+        Returns a list of memory statistics used by the EDR Sensor
         """
         return self._cb.get_object("{0}/resourcestatus".format(self._build_api_request_uri()), default=[])
 
@@ -747,9 +747,9 @@ class Sensor(MutableBaseModel):
 
     def flush_events(self):
         """
-        Performs a flush of events for this Cb Response Sensor
+        Performs a flush of events for this EDR Sensor
 
-        :warning: This may cause a significant amount of network traffic from this sensor to the Cb Response Server
+        :warning: This may cause a significant amount of network traffic from this sensor to the EDR Server
         """
 
         # Note that Cb Response 6 requires the date/time stamp to be sent in RFC822 format (not ISO 8601).
@@ -761,7 +761,7 @@ class Sensor(MutableBaseModel):
         """
         Restarts the Carbon Black sensor (*not* the underlying endpoint operating system).
 
-        This simply sets the flag to ask the sensor to restart the next time it checks into the Cb Response server,
+        This simply sets the flag to ask the sensor to restart the next time it checks into the EDR server,
         it does not wait for the sensor to restart.
         """
         self.restart_queued = True
@@ -769,7 +769,7 @@ class Sensor(MutableBaseModel):
 
     def isolate(self, timeout=None):
         """
-        Turn on network isolation for this Cb Response Sensor.
+        Turn on network isolation for this EDR Sensor.
 
         This function will block and only return when the isolation is complete, or if a timeout is reached. By default,
         there is no timeout. You can specify a timeout period (in seconds) in the "timeout" parameter to this
@@ -794,7 +794,7 @@ class Sensor(MutableBaseModel):
 
     def unisolate(self, timeout=None):
         """
-        Turn off network isolation for this Cb Response Sensor.
+        Turn off network isolation for this EDR Sensor.
 
         This function will block and only return when the isolation is removed, or if a timeout is reached. By default,
         there is no timeout. You can specify a timeout period (in seconds) in the "timeout" parameter to this
@@ -1433,8 +1433,8 @@ class ProcessQuery(WatchlistEnabledQuery):
         """Set the group-by field name for this query. Typically, you will want to set this to 'id' if you only want
         one result per process.
 
-        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
-        to a Cb Response 5.x server will simply result in a no-op.
+        This method is only available for EDR servers 6.0 and above. Calling this on a Query object connected
+        to a EDR 5.x server will simply result in a no-op.
 
         :param str field_name: Field name to group the result set by.
         :return: Query object
@@ -1451,8 +1451,8 @@ class ProcessQuery(WatchlistEnabledQuery):
     def max_children(self, num_children):
         """Sets the number of children to fetch with the process
 
-        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
-        to a Cb Response 5.x server will simply result in a no-op.
+        This method is only available for EDR servers 6.0 and above. Calling this on a Query object connected
+        to a EDR 5.x server will simply result in a no-op.
 
         :default: 15
         :param int num_children: Number of children to fetch with process
@@ -1482,8 +1482,8 @@ class ProcessQuery(WatchlistEnabledQuery):
 
         This option will limit the number of Solr cores that need to be searched for events that match the query.
 
-        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
-        to a Cb Response 5.x server will simply result in a no-op.
+        This method is only available for EDR servers 6.0 and above. Calling this on a Query object connected
+        to a EDR 5.x server will simply result in a no-op.
 
         :param str v: Timestamp (either string or datetime object).
         :return: Query object
@@ -1508,8 +1508,8 @@ class ProcessQuery(WatchlistEnabledQuery):
 
         This option will limit the number of Solr cores that need to be searched for events that match the query.
 
-        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
-        to a Cb Response 5.x server will simply result in a no-op.
+        This method is only available for EDR servers 6.0 and above. Calling this on a Query object connected
+        to a EDR 5.x server will simply result in a no-op.
 
         :param str v: Timestamp (either string or datetime object).
         :return: Query object
@@ -1534,8 +1534,8 @@ class ProcessQuery(WatchlistEnabledQuery):
 
         This option will limit the number of Solr cores that need to be searched for events that match the query.
 
-        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
-        to a Cb Response 5.x server will simply result in a no-op.
+        This method is only available for EDR servers 6.0 and above. Calling this on a Query object connected
+        to a EDR 5.x server will simply result in a no-op.
 
         :param str v: Timestamp (either string or datetime object).
         :return: Query object
@@ -1560,8 +1560,8 @@ class ProcessQuery(WatchlistEnabledQuery):
 
         This option will limit the number of Solr cores that need to be searched for events that match the query.
 
-        This method is only available for Cb Response servers 6.0 and above. Calling this on a Query object connected
-        to a Cb Response 5.x server will simply result in a no-op.
+        This method is only available for EDR servers 6.0 and above. Calling this on a Query object connected
+        to a EDR 5.x server will simply result in a no-op.
 
         :param str v: Timestamp (either string or datetime object).
         :return: Query object
@@ -1672,7 +1672,7 @@ class Binary(TaggedModel):
     @property
     def webui_link(self):
         """
-        Returns the Cb Response Web UI link associated with this Binary object
+        Returns the Carbon Black EDR Web UI link associated with this Binary object
         """
         return '{0:s}/#binary/{1:s}'.format(self._cb.url, self.md5sum)
 
@@ -1861,7 +1861,7 @@ class Binary(TaggedModel):
     @property
     def banned(self):
         """
-        Returns *BannedHash* object if this Binary's hash has been whitelisted (Banned), otherwise returns *False*
+        Returns *BannedHash* object if this Binary's hash has been banned, otherwise returns *False*
         """
         try:
             bh = self._cb.select(BannedHash, self.md5sum.lower())
@@ -2429,7 +2429,7 @@ class Process(TaggedModel):
     @property
     def parent_md5(self):
         """
-        Workaround since parent_md5 silently disappeared in ~Cb Response 6.x
+        Workaround since parent_md5 silently disappeared in EDR 6.x
         """
         return self.parent.process_md5
 
@@ -2752,7 +2752,7 @@ class Process(TaggedModel):
     @property
     def comms_ip(self):
         """
-        Returns ascii representation of the ip address used to communicate with the Cb Response Server
+        Returns ascii representation of the ip address used to communicate with the EDR Server
         """
         try:
             ip_address = socket.inet_ntoa(struct.pack('>i', self._attribute('comms_ip', 0)))
@@ -2764,7 +2764,7 @@ class Process(TaggedModel):
     @property
     def interface_ip(self):
         """
-        Returns ascii representation of the ip address of the interface used to communicate with the Cb Response server.
+        Returns ascii representation of the ip address of the interface used to communicate with the EDR server.
         If using NAT, this will be the "internal" IP address of the sensor.
         """
         try:
@@ -2843,7 +2843,7 @@ class Process(TaggedModel):
     @property
     def webui_link(self):
         """
-        Returns the Cb Response Web UI link associated with this process
+        Returns the Carbon Black EDR Web UI link associated with this process
         """
         if not self.suppressed_process:
             return '%s/#analyze/%s/%s' % (self._cb.url, self.id, self.current_segment)

@@ -12,8 +12,8 @@ log = logging.getLogger(__name__)
 
 class QueryBuilder(object):
     """
-    Provides a flexible interface for building prepared queries for the CB
-    ThreatHunter backend.
+    Provides a flexible interface for building prepared queries for the Carbon Black
+    Enterprise EDR backend.
 
     This object can be instantiated directly, or can be managed implicitly
     through the :py:meth:`CbThreatHunterAPI.select` API.
@@ -157,10 +157,10 @@ class QueryBuilder(object):
 
 
 class Query(PaginatedQuery):
-    """Represents a prepared query to the Cb ThreatHunter backend.
+    """Represents a prepared query to the Carbon Black Enterprise EDR backend.
 
     This object is returned as part of a :py:meth:`CbThreatHunterPI.select`
-    operation on models requested from the Cb ThreatHunter backend. You should not have to create this class yourself.
+    operation on models requested from the Enterprise EDR backend. You should not have to create this class yourself.
 
     The query is not executed on the server until it's accessed, either as an iterator (where it will generate values
     on demand as they're requested) or as a list (where it will retrieve the entire result set and save to a list).

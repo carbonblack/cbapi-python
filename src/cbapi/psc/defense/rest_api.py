@@ -14,7 +14,7 @@ def convert_to_kv_pairs(q):
 
 
 class CbDefenseAPI(CbPSCBaseAPI):
-    """The main entry point into the Cb Defense API.
+    """The main entry point into the Carbon Black Cloud Endpoint Standard Defense API.
 
     :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server.
         Uses the profile named 'default' when not specified.
@@ -31,8 +31,8 @@ class CbDefenseAPI(CbPSCBaseAPI):
         return Query(cls, self, query_string)
 
     def notification_listener(self, interval=60):
-        """Generator to continually poll the Cb Defense server for notifications (alerts). Note that this can only
-        be used with a 'SIEM' key generated in the Cb Defense console.
+        """Generator to continually poll the Cloud Endpoint Standard server for notifications (alerts). Note that
+        this can only be used with a 'SIEM' key generated in the Carbon Black Cloud console.
         """
         while True:
             for notification in self.get_notifications():
@@ -40,8 +40,8 @@ class CbDefenseAPI(CbPSCBaseAPI):
             time.sleep(interval)
 
     def get_notifications(self):
-        """Retrieve queued notifications (alerts) from the Cb Defense server. Note that this can only be used
-        with a 'SIEM' key generated in the Cb Defense console.
+        """Retrieve queued notifications (alerts) from the Cloud Endpoint Standard server. Note that this can only be
+        used with a 'SIEM' key generated in the Carbon Black Cloud console.
 
         :returns: list of dictionary objects representing the notifications, or an empty list if none available.
         """
@@ -50,10 +50,11 @@ class CbDefenseAPI(CbPSCBaseAPI):
 
 
 class Query(PaginatedQuery):
-    """Represents a prepared query to the Cb Defense server.
+    """Represents a prepared query to the Cloud Endpoint Standard server.
 
     This object is returned as part of a :py:meth:`CbDefenseAPI.select`
-    operation on models requested from the Cb Defense server. You should not have to create this class yourself.
+    operation on models requested from the Cloud Endpoint Standardserver. You should not have to create
+    this class yourself.
 
     The query is not executed on the server until it's accessed, either as an iterator (where it will generate values
     on demand as they're requested) or as a list (where it will retrieve the entire result set and save to a list).
