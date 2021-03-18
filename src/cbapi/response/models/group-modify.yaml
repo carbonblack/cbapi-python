@@ -2,6 +2,7 @@ type: "object"
 required:
   - name
   - site_id
+  - sensorbackend_server
 properties:
   id:
     type: "integer"
@@ -50,10 +51,6 @@ properties:
     format: "int32"
     description: "Set the tamper level, default 0"
     default: "0"
-  sensor_version:
-    type: "string"
-    description: "The version of the sensor in this group, default Manual"
-    default: "Manual"
   sensor_version_windows:
     type: "string"
     description: "The version of the sensor for Windows hosts in this group, default Manual"
@@ -78,6 +75,10 @@ properties:
     type: "boolean"
     description: "Enable/Disable banning, default true"
     default: "true"
+  collect_amsi:
+    type: "boolean"
+    description: "Enable/Disable amsi collection, default true"
+    default: "false"
   collect_emet_events:
     type: "boolean"
     description: "Enable/Disable emet events collection, default true"
@@ -130,6 +131,9 @@ properties:
     type: "boolean"
     description: "Enable/Disable filter known dll, default false"
     default: "false"
+  number_of_hosts:
+    type: "integer"
+    description: "Number of hosts"
   process_filter_level:
     type: "integer"
     format: "int32"
@@ -155,6 +159,62 @@ properties:
     format: "int32"
     description: "Percent of the storefile, default 1"
     default: "1"
+  server_cert_id:
+    type: "integer"
+    description: "Server certificate ID to use"
+    default: "2"
+  isolation_exclusions:
+    type: "array"
+    description: "isolation exclusions"
+    items:
+      title: "modIsolationExclusions"
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "id of exclusion"
+        group_id:
+          type: "integer"
+          description: "ID of groupy to add exclusions to"
+        name:
+          type: "string"
+          description: "name of exclusions"
+        ip_address:
+          type: "string"
+          description: "IP address of exclusion"
+        enabled:
+          type: "boolean"
+          description: "status of exclusion"
+        uploader_id:
+          type: "integer"
+          description: "id of uploader"
+        added_time:
+          type: "string"
+          format: "iso-date-time"
+          description: "time when added"
+        changed_time:
+          type: "string"
+          format: "iso-date-time"
+          description: "time when changed"
+        uploader_username:
+          type: "string"
+          description: "username of uploader"
+  event_exclusions:
+    type: "array"
+    description: "Configured set of events to exclude from event collection for a group of sensors"
+    items:
+      type: "object"
+      properties:
+        eventsToIgnore:
+          type: "array"
+          description: "Set of event strings, one or more of 'crossproc', 'filemod', 'filemod-non-binary', 'modload', 'netconn', 'process-info' or 'regmod'"
+          items:
+            type: "string"
+        paths:
+          type: "array"
+          description: 'Set of path strings (e.g. "c:\\Windows\\system32\\regsvr32.exe")'
+          items:
+            type: "string"
   vdi_enabled:
     type: "boolean"
     description: "Enable/Disable vdi, default false"

@@ -297,6 +297,7 @@ class Alert(MutableBaseModel):
         else:
             self._info = result[0]
         self._last_refresh_time = time.time()
+        self._full_init = True
         return True
 
     def set_ignored(self, ignored_flag=True, status="False Positive"):
@@ -907,7 +908,7 @@ class Sensor(MutableBaseModel):
 
 class SensorGroup(MutableBaseModel, CreatableModelMixin):
     swagger_meta_file = "response/models/group-modify.yaml"
-    urlobject = '/api/v2/group'
+    urlobject = '/api/v3/group'
 
     @classmethod
     def _query_implementation(cls, cb):

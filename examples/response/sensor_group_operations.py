@@ -26,7 +26,9 @@ def list_sensors(cb, parser, args):
     print("  {0:40}{1:18}{2}".format("Hostname", "IP Address", "Last Checkin Time"))
     for sensor in group.sensors:
         ipaddrs = [iface.ipaddr for iface in sensor.network_interfaces if iface.ipaddr not in ("127.0.0.1", "0.0.0.0")]
-        print("  {0:40}{1:18}{2}".format(sensor.hostname, ipaddrs[0], sensor.last_checkin_time))
+        print("  {0:40}{1:18}{2}".format(sensor.hostname,
+                                         ipaddrs[0] if len(ipaddrs) else '',
+                                         sensor.last_checkin_time))
 
 
 def add_sensor_group(cb, parser, args):
@@ -48,6 +50,7 @@ def add_sensor_group(cb, parser, args):
 
     g.name = args.new_group_name
     g.site = site
+    g.sensorbackend_server = args.sensorbackend_server
 
     try:
         g.save()
@@ -101,6 +104,8 @@ def main():
     site_group = add_command.add_mutually_exclusive_group(required=False)
     site_group.add_argument("-s", "--site", action="store", help="Site name", dest="site_name")
     site_group.add_argument("-i", "--site-id", action="store", help="Site ID", dest="site_id")
+    add_command.add_argument("-b", "--sensorbackend-server", action="store", help="Sensor backend server", required=True,
+                             dest="sensorbackend_server")
 
     del_command = commands.add_parser("delete", help="Delete sensor groups")
     del_sensor_group_specifier = del_command.add_mutually_exclusive_group(required=True)
