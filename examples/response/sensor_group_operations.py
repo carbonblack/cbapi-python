@@ -51,6 +51,7 @@ def add_sensor_group(cb, parser, args):
     g.name = args.new_group_name
     g.site = site
     g.sensorbackend_server = args.sensorbackend_server
+    g.sensor_version_windows = g.sensor_version_linux = g.sensor_version_osx = 'Manual'
 
     try:
         g.save()
