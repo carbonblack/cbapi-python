@@ -371,7 +371,7 @@ pulls the most common process names for our sample host::
 
     >>> def print_facet_histogram(facets):
     ...     for entry in facets:
-    ...         print("%15s: %5s%% %s" % (entry["name"][:15], entry["ratio"], u"\u25A0"*(int(entry["percent"])/2)))
+    ...         print("%15s: %5s%% %s" % (entry["name"][:15], entry["ratio"], u"\u25A0"*int((entry["percent"])/2)))
     ...
 
     >>> facet_query = cb.select(Process).where("hostname:WIN-IA9NQ1GN8OI").and_("username:bit9rad")
