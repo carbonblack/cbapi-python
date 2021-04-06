@@ -2160,6 +2160,22 @@ class ProcessV1Parser(object):
 
         return CbCrossProcEvent(self.process_model, timestamp, seq, new_crossproc)
 
+    def parse_processblock(self, seq, processblock):
+        processblock_json = json.loads(processblock)
+        new_processblock = {}
+        timestamp = processblock_json.get("timestamp", None)
+        new_processblock["type"] = processblock_json.get("block_type", None)
+        new_processblock["event"] = processblock_json.get("block_event", None)
+        new_processblock["result"] = processblock_json.get("block_result", None)
+        new_processblock["error"] = processblock_json.get("block_error", None)
+        new_processblock["md5"] = processblock_json.get("blocked_md5", None)
+        new_processblock["path"] = processblock_json.get("blocked_path", None)
+        new_processblock["cmdline"] = processblock_json.get("blocked_cmdline", None)
+        new_processblock["uid"] = processblock_json.get("blocked_uid", None)
+        new_processblock["username"] = processblock_json.get("blocked_username", None)
+
+        return CbProcessBlockEvent(self.process_model, timestamp, seq, new_processblock)
+        
 
 class ProcessV2Parser(ProcessV1Parser):
     def __init__(self, process_model):
@@ -2541,7 +2557,7 @@ class Process(TaggedModel):
 
     def require_events(self):
         event_key_list = ['filemod_complete', 'regmod_complete', 'modload_complete', 'netconn_complete',
-                          'crossproc_complete', 'childproc_complete']
+                          'crossproc_complete', 'childproc_complete', 'processblock_complete']
 
         if not self.valid_process or self.suppressed_process:
             return
@@ -2578,6 +2594,18 @@ class Process(TaggedModel):
         self._events_loaded = False
         self._segments = []
         super(Process, self).refresh()
+
+    @property
+    def processblocks(self):
+        """
+        Generator that returns :py:class:`CbProcessBlockEvent` objects associated with this process
+        """
+        self.require_events()
+
+        i = 0
+        for raw_processblock in self._events.get(self.current_segment, {}).get('processblock_complete', []):
+            yield self._event_parser.parse_processblock(i, raw_processblock)
+            i += 1
 
     @property
     def segment(self):
@@ -3000,7 +3028,8 @@ class Process(TaggedModel):
                 'modload_count': 'modload_complete',
                 'netconn_count': 'netconn_complete',
                 'crossproc_count': 'crossproc_complete',
-                'childproc_count': 'childproc_complete'
+                'childproc_count': 'childproc_complete',
+                'processblock_count': 'processblock_complete'
                 }
 
         if not self.valid_process or self.suppressed_process:
@@ -3098,6 +3127,28 @@ class Process(TaggedModel):
             i = 0
             for raw_filemod in self._events.get('all', {}).get('filemod_complete', []):
                 yield self._event_parser.parse_filemod(i, raw_filemod)
+                i += 1
+
+    def all_processblocks(self):
+        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+            self.get_segments()
+            segments = self._segments
+
+            i = 0
+            for segment in segments:
+                self.current_segment = segment
+                self.require_events()
+
+                for raw_processblock in self._events.get(self.current_segment, {}).get('processblock_complete', []):
+                    yield self._event_parser.parse_processblock(i, raw_processblock)
+                    i += 1
+        else:
+            if not self.all_events_loaded:
+                self.require_all_events()
+
+            i = 0
+            for raw_processblock in self._events.get('all', {}).get('processblock_complete', []):
+                yield self._event_parser.parse_processblock(i, raw_processblock)
                 i += 1
 
     def all_regmods(self):
@@ -3265,6 +3316,13 @@ class CbNetConnEvent(CbEvent):
         self.stat_titles.extend(['domain', 'remote_ip', 'remote_port', 'proto', 'direction'])
         if version == 2:
             self.stat_titles.extend(['local_ip', 'local_port', 'proxy_ip', 'proxy_port'])
+
+
+class CbProcessBlockEvent(CbEvent):
+    def __init__(self, parent_process, timestamp, sequence, event_data):
+        super(CbProcessBlockEvent, self).__init__(parent_process, timestamp, sequence, event_data)
+        self.event_type = u'Cb Process Block event'
+        self.stat_titles.extend(['type', 'event', 'result', 'error', 'md5', 'path', 'uid', 'username'])
 
 
 class CbChildProcEvent(CbEvent):
