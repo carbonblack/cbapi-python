@@ -8,12 +8,12 @@ CbAPI 1.7.4 - Released April 7, 2021
 Updates
 
 * General
-  * Fix example code in the documentation for Facets
+    * Fix example code in the documentation for Facets
 * CB Response
-  * Add missing fields for SensorGroup class and fix example script to properly create SensorGroup
-  * Fix example script sensor_group_operations.py to list groups without ipaddresses
-  * Fix alert.save()
-  * Allow blocked processes to be accessed through the Process (processblocks)
+    * Add missing fields for SensorGroup class and fix example script to properly create SensorGroup
+    * Fix example script sensor_group_operations.py to list groups without ipaddresses
+    * Fix alert.save()
+    * Allow blocked processes to be accessed through the Process (processblocks)
 
 
 CbAPI 1.7.3 - Released January 15, 2021
