@@ -152,6 +152,7 @@ class Connection(object):
             integration_name (str): The integration name being used.
             timeout (int): The timeout value to use for HTTP requests on this connection.
             max_retries (int): The maximum number of times to retry a request.
+            proxy_session (requests.Session) custom session to be used
             **pool_kwargs: Additional arguments to be used to initialize connection pooling.
 
         Raises:
@@ -186,8 +187,10 @@ class Connection(object):
         self.token_header = {'X-Auth-Token': self.token, 'User-Agent': user_agent}
         if proxy_session:
             self.session = proxy_session
+            credentials.use_custom_proxy_session = True
         else:
             self.session = requests.Session()
+            credentials.use_custom_proxy_session = False
 
         self._timeout = timeout
 
@@ -207,7 +210,10 @@ class Connection(object):
         self.session.mount(self.server, tls_adapter)
 
         self.proxies = {}
-        if credentials.ignore_system_proxy:         # see https://github.com/kennethreitz/requests/issues/879
+        if credentials.use_custom_proxy_session:
+            # get the custom session proxies
+            self.proxies = self.session.proxies
+        elif credentials.ignore_system_proxy:           # see https://github.com/kennethreitz/requests/issues/879
             # Unfortunately, requests will look for any proxy-related environment variables and use those anyway. The
             # only way to solve this without side effects, is passing in empty strings for 'http' and 'https':
             self.proxies = {
