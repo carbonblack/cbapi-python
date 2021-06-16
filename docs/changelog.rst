@@ -2,6 +2,14 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.7.5 - Released June 16, 2021
+------------------------------------
+
+Updates
+
+* General
+  * Allow the CbAPI to accept a pre-configured Session object to be used for access, to get around unusual configuration requirements.
+
 CbAPI 1.7.4 - Released April 7, 2021
 ------------------------------------
 
