@@ -8,7 +8,7 @@ cbapi: Carbon Black API for Python
 
 Release v\ |release|.
 
-CBAPI provides a straightforward interface to the VMware Carbon Black products: Carbon Black EDR, Carbon Black App Control, and Carbon Black Cloud Endpoint Standard (formerly CB Response, CB Protection, and CB Defense).
+CBAPI provides a straightforward interface to the VMware Carbon Black products: Carbon Black EDR, Carbon Black App Control, and Carbon Black Cloud Endpoint Standard(formerly CB Response, CB Protection, and CB Defense).
 This library provides a Pythonic layer to access the raw power of the REST APIs of all Carbon Black products, making it easier to query data from any platform or on-premise APIs, combine data from multiple API calls, manage all API credentials in one place, and manipulate data as Python objects. Take a look::
 
    >>> from cbapi.response import CbResponseAPI, Process, Binary, Sensor
@@ -183,9 +183,9 @@ Environment Variable Support
 
 The latest CBAPI for Python supports specifying API credentials in the following three environment variables:
 
-`CBAPI_TOKEN` the envar for holding the CbR/CbP api token or the ConnectorId/APIKEY combination for Endpoint Standard (CB Defense)/Carbon Black Cloud.
+`CBAPI_TOKEN` the envar for holding the EDR (CbR) or App Control (CbP) api token or the ConnectorId/APIKEY combination for Endpoint Standard (CB Defense)/Carbon Black Cloud.
 
-The `CBAPI_URL` envar holds the FQDN of the target, a CbR , CBD, or CbD/Carbon Black Cloud server specified just as they are in the
+The `CBAPI_URL` envar holds the FQDN of the target, an EDR (CbR), CBD, or CbD/Carbon Black Cloud server specified just as they are in the
 configuration file format specified above.
 
 The  optional `CBAPI_SSL_VERIFY` envar can be used to control SSL validation(True/False or 0/1), which will default to ON when
@@ -211,8 +211,8 @@ legacy scripts cannot run under Python 3.
 Once CBAPI 1.0.0 is released, the old :py:mod:`cbapi.legacy.CbApi` will be deprecated and removed entirely no earlier
 than January 2017.
 New scripts should use the :py:mod:`cbapi.response.rest_api.CbResponseAPI`
-(for Carbon Black EDR, or CB Response), :py:mod:`cbapi.protection.rest_api.CbProtectionAPI`
-(for Carbon Black App Control, or CB Protection), or :py:mod:`cbapi.defense.rest_api.CbDefenseAPI` API entry points.
+(for Carbon Black EDR (CB Response)), :py:mod:`cbapi.protection.rest_api.CbProtectionAPI`
+(for Carbon Black App Control (CB Protection)), or :py:mod:`cbapi.defense.rest_api.CbDefenseAPI` API entry points.
 
 The API is frozen as of version 1.0; any changes in the 1.x version branch
 will be additions/bug fixes only. Breaking changes to the API will increment the major version number (2.x).
