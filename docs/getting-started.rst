@@ -10,18 +10,18 @@ on the Developer Network website.
 API Authentication
 ------------------
 
-CB Response and CB Protection use a per-user API secret token to authenticate requests via the API. The API token
+EDR (CB Response) and App Control (CB Protection) use a per-user API secret token to authenticate requests via the API. The API token
 confers the same permissions and authorization as the user it is associated with, so protect the API token with the
 same care as a password.
 
 To learn how to obtain the API token for a user, see the Developer Network website: there you will find instructions
-for obtaining an API token for `CB Response <https://developer.carbonblack.com/reference/enterprise-response/authentication/>`_
-and `CB Protection <https://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_.
+for obtaining an API token for `EDR (CB Response) <https://developer.carbonblack.com/reference/enterprise-response/authentication/>`_
+and `App Control (CB Protection) <https://developer.carbonblack.com/reference/enterprise-protection/authentication/>`_.
 
 Once you have the API token, cbapi helps keep your credentials secret by enforcing the use of a credential file. To
 encourage sharing of scripts across the community while at the same time protecting the security of our customers,
 cbapi strongly discourages embedding credentials in individual scripts. Instead, you can place credentials for several
-CB Response or CB Protection servers inside the API credential file and select which "profile" you would like to use
+EDR (CB Response) or App Control (CB Protection) servers inside the API credential file and select which "profile" you would like to use
 at runtime.
 
 To create the initial credential file, a simple-to-use script is provided. Just run the ``cbapi-response``,

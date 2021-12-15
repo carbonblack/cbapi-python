@@ -1,15 +1,15 @@
 .. _protection_api:
 
-CB Protection API
-=================
+Carbon Black App Control (CB Protection) API
+===========================================
 
-This page documents the public interfaces exposed by cbapi when communicating with a Carbon Black Enterprise
-Protection server.
+This page documents the public interfaces exposed by cbapi when communicating with a Carbon Black App Control (Enterprise
+Protection) server.
 
 Main Interface
 --------------
 
-To use cbapi with Carbon Black Protection, you will be using the CbProtectionAPI.
+To use cbapi with Carbon Black App Control (CB Protection), you will be using the CbProtectionAPI.
 The CbProtectionAPI object then exposes two main methods to select data on the Carbon Black server:
 
 .. autoclass:: cbapi.protection.rest_api.CbProtectionAPI

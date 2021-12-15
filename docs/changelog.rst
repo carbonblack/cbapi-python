@@ -8,7 +8,7 @@ CbAPI 1.7.5 - Released June 16, 2021
 Updates
 
 * General
-  * Allow the CbAPI to accept a pre-configured Session object to be used for access, to get around unusual configuration requirements.
+    * Allow the CbAPI to accept a pre-configured Session object to be used for access, to get around unusual configuration requirements.
 
 CbAPI 1.7.4 - Released April 7, 2021
 ------------------------------------
@@ -17,7 +17,7 @@ Updates
 
 * General
     * Fix example code in the documentation for Facets
-* CB Response
+* EDR (CB Response)
     * Add missing fields for SensorGroup class and fix example script to properly create SensorGroup
     * Fix example script sensor_group_operations.py to list groups without ipaddresses
     * Fix alert.save()
@@ -38,7 +38,7 @@ Updates
 * CB Threathunter
     * Fix typo in process query
     * Bump lxml from 4.4.1 to 4.6.2 for Threat Intelligence example
-* CB Response
+* EDR (CB Response)
     * Add Sensor Builds
     * Alert.set_ignored() and AlertQuery.set_ignored():
         * Added a docstring to specify what happens with this method
@@ -65,7 +65,7 @@ Updates
     * Documentation updates to indicate changed product names
 * Carbon Black Cloud
     * Process Search v2 rows defaults to 10k to match UI behavior
-* CB Response
+* EDR (CB Response)
     * Add support for fetching alert by ID
 
 
@@ -358,7 +358,7 @@ CB Response:
   You can also use the special segment "0" to retrieve process events across all segments.
 * Fix ``cmdline_filters`` in the ``IngressFilter`` model object.
 
-CB Protection:
+App Control (CB Protection):
 
 * Tamper Protection can now be set and cleared in the ``Computer`` model object.
 
@@ -378,7 +378,7 @@ Security fix:
 Bug fixes:
 
 * Add rule filename parameter to CB Defense ``policy_operations.py`` script's ``add-rule`` command.
-* Add support for ``tamperProtectionActive`` attribute to CB Protection's ``Computer`` object.
+* Add support for ``tamperProtectionActive`` attribute to App Control's (CB Protection) ``Computer`` object.
 * Work around CB Response issue- the ``/api/v1/sensor`` route incorrectly returns an HTTP 500 if no sensors match the
   provided query. CbAPI now catches this exception and will instead return an empty set back to the caller.
 
@@ -401,7 +401,7 @@ Security changes:
 
 * Add the ability to "pin" a specific server certificate to a credential profile.
 
-  * You can now force TLS certificate verification on self-signed, on-premise installations of CB Response or Protection
+  * You can now force TLS certificate verification on self-signed, on-premise installations of EDR (CB Response) or App Control (Protection)
     through the ``ssl_cert_file`` option in the credential profile.
   * To "pin" a server certificate, save the PEM-formatted server certificate to a file, and put the full path to that
     PEM file in the ``ssl_cert_file`` option of that server's credential profile.
