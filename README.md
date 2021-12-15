@@ -20,7 +20,7 @@ Please visit https://cbapi.readthedocs.io for detailed documentation on this API
 
 ## Requirements
 
-The cbapi is designed to work on Python 2.6.6 and above (including 3.x). If you're just starting out,
+The cbapi package is designed to work on Python 2.6.6 and above (including 3.x). If you're just starting out,
 we recommend using the latest version of Python 3.6.x or above.
 
 All requirements are installed as part of `pip install`.

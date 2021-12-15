@@ -2,12 +2,6 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
-Updates Dec 13, 2021
-------------------------------------
-
-Updates to documentation for product names and terminology.  No coding changes.
-
-
 CbAPI 1.7.5 - Released June 16, 2021
 ------------------------------------
 
