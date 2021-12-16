@@ -7,7 +7,7 @@ from cbapi.six.moves import urllib
 from distutils.version import LooseVersion
 from ..connection import BaseAPI
 from .models import Process, Binary, Watchlist, Investigation, Alert, ThreatReport, StoragePartition
-from ..errors import UnauthorizedError, ApiError
+from ..errors import UnauthorizedError, ApiError, ClientError
 from .cblr import LiveResponseSessionManager
 from .query import Query
 
@@ -49,10 +49,19 @@ class CbResponseAPI(BaseAPI):
             raise ApiError("CbEnterpriseResponseAPI only supports Cb servers version >= 5.0.0")
 
         self._has_legacy_partitions = False
-        if self.cb_server_version >= LooseVersion('6.0'):
-            legacy_partitions = [p for p in self.select(StoragePartition) if p.info.get("isLegacy", False)]
-            if legacy_partitions:
-                self._has_legacy_partitions = True
+        try:
+            if self.cb_server_version >= LooseVersion('6.0'):
+                legacy_partitions = [p for p in self.select(StoragePartition) if p.info.get("isLegacy", False)]
+                if legacy_partitions:
+                    self._has_legacy_partitions = True
+        except ClientError as ce:
+            # If we get a 403 on this endpoint, ignore during init,
+            # as we will not be able to work with StoragePartitions regardless
+            # https://github.com/carbonblack/cbapi-python/issues/303
+            if ce.error_code == 403:
+                pass
+            else:
+                raise ce  # no intervention
 
         self._lr_scheduler = None
 
