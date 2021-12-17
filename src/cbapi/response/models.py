@@ -658,7 +658,7 @@ class Sensor(MutableBaseModel):
         #     return SensorPaginatedQuery(cls, cb)
         # else:
         #     return SensorQuery(cls, cb)
-        return SensorQuery(cls, cb)
+	return SensorPaginatedQuery(cls, cb)
 
     @property
     def group(self):
