@@ -2,6 +2,17 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.7.65- Planned Release Dec 17, 2021
+------------------------------------
+
+Bug Fixes
+ * Removed the requirement for an admin token to connect
+ * Added sensor paginated query
+
+General
+ * Updated version of lxml library
+
+
 CbAPI 1.7.5 - Released June 16, 2021
 ------------------------------------
 
