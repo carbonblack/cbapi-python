@@ -3,9 +3,6 @@
 EDR (CB Response) API
 ===============
 
-This page documents the public interfaces exposed by cbapi when communicating with a Carbon Black EDR (Enterprise
-Response) server.
-
 Main Interface
 --------------
 
@@ -77,6 +74,3 @@ Process Operations
 .. automethod:: cbapi.live_response_api.CbLRSessionBase.kill_process
 .. automethod:: cbapi.live_response_api.CbLRSessionBase.create_process
 .. automethod:: cbapi.live_response_api.CbLRSessionBase.list_processes
-
-
-

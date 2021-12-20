@@ -4,7 +4,8 @@ Getting Started
 First, let's make sure that your API authentication tokens have been imported into cbapi. Once that's done, then read
 on for the key concepts that will explain how to interact with Carbon Black APIs via cbapi.
 
-Feel free to follow along with this document or watch the `Development Environment Setup video <https://developer.carbonblack.com/guide/enterprise-response/development-environment-video/>`_
+Feel free to follow along with this document or watch the
+`Development Environment Setup video <https://developer.carbonblack.com/guide/enterprise-response/development-environment-video/>`_
 on the Developer Network website.
 
 API Authentication
@@ -36,7 +37,8 @@ Alternatively, if you're using Windows (change ``c:\python27`` if Python is inst
 This configuration script will walk you through entering your API credentials and will save them to your current user's
 credential file location, which is located in the ``.carbonblack`` directory in your user's home directory.
 
-If using cbapi-psc, you will also be asked to provide an org key. An org key is required to access the Carbon Black Cloud, and can be found in the console under Settings -> API Keys.
+If using cbapi-psc, you will also be asked to provide an org key. An org key is required to access the Carbon Black
+Cloud, and can be found in the console under Settings -> API Keys.
 
 Your First Query
 ----------------

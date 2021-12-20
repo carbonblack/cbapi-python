@@ -254,7 +254,7 @@ class Feed(FeedModel):
         self._reports = [Report(cb, initial_data=report, feed_id=feed_id) for report in reports]
 
     def save(self, public=False):
-        """Saves this feed on the ThreatHunter server.
+        """Saves this feed on the Enterprise EDR server.
 
         :param public:  Whether to make the feed publicly available
         :return: The saved feed
@@ -294,7 +294,7 @@ class Feed(FeedModel):
             report.validate()
 
     def delete(self):
-        """Deletes this feed from the ThreatHunter server.
+        """Deletes this feed from the Enterprise EDR server.
 
         :raise InvalidObjectError: if `id` is missing
         """
@@ -501,7 +501,7 @@ class Report(FeedModel):
         return self
 
     def delete(self):
-        """Deletes this report from the ThreatHunter server.
+        """Deletes this report from the Enterprise EDR server.
 
         >>> report.delete()
 
@@ -822,7 +822,7 @@ class Watchlist(FeedModel):
                                         force_init=False, full_doc=True)
 
     def save(self):
-        """Saves this watchlist on the ThreatHunter server.
+        """Saves this watchlist on the Enterprise EDR server.
 
         :return: The saved watchlist
         :rtype: :py:class:`Watchlist`
@@ -888,7 +888,7 @@ class Watchlist(FeedModel):
         return (classifier_dict["key"], classifier_dict["value"])
 
     def delete(self):
-        """Deletes this watchlist from the ThreatHunter server.
+        """Deletes this watchlist from the Enterprise EDR server.
 
         :raise InvalidObjectError: if `id` is missing
         """

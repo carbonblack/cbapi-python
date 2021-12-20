@@ -2,7 +2,7 @@ cybox==2.1.0.18
 dataclasses>=0.6
 cabby==0.1.20
 stix==1.2.0.7
-lxml==4.6.3
+lxml==4.6.5
 urllib3>=1.24.2
 cbapi>=1.5.6
 python_dateutil==2.8.1

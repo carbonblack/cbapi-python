@@ -11,11 +11,11 @@ log = logging.getLogger(__name__)
 
 
 class Query(PaginatedQuery):
-    """Represents a prepared query to the Carbon Black Enterprise Response server.
+    """Represents a prepared query to the Carbon Black EDR server.
 
-    This object is returned as part of a :py:meth:`CbEnterpriseResponseAPI.select`
+    This object is returned as part of a :py:meth:`CbResponseAPI.select`
     operation on Process and Binary objects from the Carbon Black
-    Enterprise Response server. You should not have to create this class yourself.
+    EDR server. You should not have to create this class yourself.
 
     The query is not executed on the server until it's accessed, either as an iterator (where it will generate values
     on demand as they're requested) or as a list (where it will retrieve the entire result set and save to a list).
@@ -28,7 +28,7 @@ class Query(PaginatedQuery):
 
     Examples::
 
-    >>> cb = CbEnterpriseResponseAPI()
+    >>> cb = CbResponseAPI()
     >>> query = cb.select(Process)                      # returns a Query object matching all Processes
     >>> query = query.where("process_name:notepad.exe") # add a filter to this Query
     >>> query = query.sort("last_update desc")          # sort by last update time, most recent first

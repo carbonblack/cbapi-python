@@ -62,9 +62,9 @@ Joining Model Objects
 ---------------------
 
 Many times, there are relationships between different Model Objects. To make navigating these relationships easy,
-cbapi provides special properties to "join" Model Objects together. For example, a :py:mod:`cbapi.response.models.Process`
-Model Object can reference the :py:mod:`cbapi.response.models.Sensor` or :py:mod:`cbapi.response.models.Binary`
-associated with this Process.
+cbapi provides special properties to "join" Model Objects together. For example, a
+:py:mod:`cbapi.response.models.Process` Model Object can reference the :py:mod:`cbapi.response.models.Sensor` or
+:py:mod:`cbapi.response.models.Binary` associated with this Process.
 
 In this case, special "join" properties are provided for you. When you use one of these properties, cbapi will
 automatically retrieve the associated Model Object, if necessary.
@@ -186,8 +186,8 @@ represent these data types can be "created" in cbapi by using the ``create()`` m
 
 If you attempt to create a Model Object that cannot be created, you will receive a :py:mod:`ApiError` exception.
 
-Once a Model Object is created, it's blank (it has no data). You will need to set the required properties and then call the
-``.save()`` method::
+Once a Model Object is created, it's blank (it has no data). You will need to set the required properties and then call
+the ``.save()`` method::
 
     >>> bh = cb.create(BannedHash)
     >>> bh.text = "Banned from API"
