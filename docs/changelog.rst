@@ -2,7 +2,7 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
-CbAPI 1.7.6- Release Dec 188888888, 2021
+CbAPI 1.7.6 - Release Dec 20, 2021
 ------------------------------------
 
 Bug Fixes
