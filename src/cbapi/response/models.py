@@ -590,6 +590,8 @@ class SensorPaginatedQuery(PaginatedQuery):
         else:
             args = {}
 
+        args.update({"sort.col":"computer_name", "sort.dir":"asc"})
+
         args['start'] = start
 
         if rows:
