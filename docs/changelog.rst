@@ -2,6 +2,13 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.7.7 - Release Jan 28, 2022
+------------------------------------
+
+Bug Fixes
+ * Changed the sort order for EDR sensor searches from 'last_checkin_time' (default when none provided explicitly) to 'hostname' to make the sort stable as sensors checkin during paging
+
+
 CbAPI 1.7.6 - Release Dec 20, 2021
 ------------------------------------
 
