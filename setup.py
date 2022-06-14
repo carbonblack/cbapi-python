@@ -18,7 +18,7 @@ packages = [
 
 install_requires = [
     'requests',
-    'attrdict',
+    'attrdict3',
     'cachetools',
     'pyyaml',
     'pika',
