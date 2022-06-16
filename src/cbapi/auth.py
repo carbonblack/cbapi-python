@@ -1,6 +1,6 @@
 from cbapi.six.moves.configparser import RawConfigParser
 import os
-import attrdict
+from cbapi import attrdict
 import logging
 import cbapi.six as six
 
