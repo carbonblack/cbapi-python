@@ -50,13 +50,18 @@ def export_watchlists(cb, args):
             if not confirm(watchlist.name):
                 continue
 
+        watchlist_actions = cb.get_object('/api/v1/watchlist/{0}/action_type'.format(watchlist.id))
+        
         exported_watchlists.append(
             {
+                "Created": str(watchlist.date_added),
                 "Name": watchlist.name,
                 "URL": watchlist.search_query,
                 "Type": watchlist.index_type,
                 "SearchString": watchlist.query,
-                "Description": "Please fill in if you intend to share this."
+                "Description": watchlist.description,
+                "Actions": watchlist_actions,
+                "Enabled": watchlist.enabled
             }
         )
 
