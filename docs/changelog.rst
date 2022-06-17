@@ -2,6 +2,12 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.7.8 - Release Jun 17, 2022
+------------------------------------
+
+Bug Fixes
+ * Vendor the `attrdict` module because of `ImportError` for Python3.10
+
 CbAPI 1.7.7 - Release Jan 28, 2022
 ------------------------------------
 
