@@ -1,6 +1,6 @@
 # Python bindings for Carbon Black REST API
 
-**Latest Version: 1.7.7**
+**Latest Version: 1.7.8**
 
 _**Notice**:_ 
 * The Carbon Black Cloud portion of CBAPI has moved to https://github.com/carbonblack/carbon-black-cloud-sdk-python. Any future development and bug fixes for Carbon Black Cloud APIs will be made there. Carbon Black EDR and App Control will remain supported at CBAPI
