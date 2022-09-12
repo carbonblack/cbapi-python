@@ -985,9 +985,21 @@ class LiveResponseJobScheduler(threading.Thread):
 
         schedule_max = self._max_workers - len(self._job_workers)
 
-        sensors = [s for s in self._cb.select(Sensor) if s.id in self._unscheduled_jobs
-                   and s.id not in self._job_workers
-                   and s.status == "Online"]
+        sensors = []
+
+        for sensor_id in self._unscheduled_jobs:
+            sensor = self._cb.select(Sensor, sensor_id)
+            if sensor_id in self._job_workers:
+                log.debug("Skipping sensor {} already has a worker created".format(sensor_id))
+            elif sensor.status == "Online":
+                sensors.append()
+            else:
+                log.warn("Sensor {} could not be found or is not Online".format(sensor_id))
+
+        # Non performant original code
+        # sensors = [s for s in self._cb.select(Sensor) if s.id in self._unscheduled_jobs
+        #            and s.id not in self._job_workers
+        #            and s.status == "Online"]
         sensors_to_schedule = sorted(sensors, key=lambda x: (
             int(x.num_storefiles_bytes) + int(x.num_eventlog_bytes), x.next_checkin_time
             ))[:schedule_max]
