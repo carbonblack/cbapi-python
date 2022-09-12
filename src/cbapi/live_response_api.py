@@ -992,7 +992,7 @@ class LiveResponseJobScheduler(threading.Thread):
             if sensor_id in self._job_workers:
                 log.debug("Skipping sensor {} already has a worker created".format(sensor_id))
             elif sensor.status == "Online":
-                sensors.append()
+                sensors.append(sensor)
             else:
                 log.warn("Sensor {} could not be found or is not Online".format(sensor_id))
 
