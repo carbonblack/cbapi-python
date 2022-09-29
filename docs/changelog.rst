@@ -2,6 +2,12 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.7.9 - Release Sept 29, 2022
+------------------------------------
+
+Bug Fixes
+ * Adjust Live Response Worker creation for EDR sensors to optimize for sensor specific jobs
+
 CbAPI 1.7.8 - Release Jun 17, 2022
 ------------------------------------
 
