@@ -3,7 +3,11 @@
 from ..oldmodels import BaseModel, immutable, MutableModel
 from ..models import MutableBaseModel, CreatableModelMixin, NewBaseModel
 from contextlib import closing
-from distutils.version import LooseVersion
+import sys
+if sys.version_info <= (3, 6):
+    from distutils.version import LooseVersion as parse
+else:
+    from packaging.version import parse
 
 from zipfile import ZipFile
 import cbapi.six as six
@@ -146,7 +150,7 @@ class DriftReport(NewBaseModel):
 
     @classmethod
     def _minimum_server_version(cls):
-        return LooseVersion("8.0")
+        return parse("8.0")
 
 
 class DriftReportContents(NewBaseModel):
@@ -154,7 +158,7 @@ class DriftReportContents(NewBaseModel):
 
     @classmethod
     def _minimum_server_version(cls):
-        return LooseVersion("8.0")
+        return parse("8.0")
 
 
 class Event(NewBaseModel):
@@ -280,7 +284,7 @@ class GrantedUserPolicyPermission(NewBaseModel):
 
     @classmethod
     def _minimum_server_version(cls):
-        return LooseVersion("8.0")
+        return parse("8.0")
 
 
 @immutable
@@ -374,7 +378,7 @@ class PublisherCertificate(NewBaseModel):
 
     @classmethod
     def _minimum_server_version(cls):
-        return LooseVersion("8.0")
+        return parse("8.0")
 
 
 class ScriptRule(MutableBaseModel):
@@ -382,7 +386,7 @@ class ScriptRule(MutableBaseModel):
 
     @classmethod
     def _minimum_server_version(cls):
-        return LooseVersion("8.0")
+        return parse("8.0")
 
 
 @immutable
@@ -413,7 +417,7 @@ class TrustedDirectory(MutableBaseModel):
 
     @classmethod
     def _minimum_server_version(cls):
-        return LooseVersion("8.0")
+        return parse("8.0")
 
 
 class TrustedUser(MutableBaseModel, CreatableModelMixin):
@@ -422,7 +426,7 @@ class TrustedUser(MutableBaseModel, CreatableModelMixin):
 
     @classmethod
     def _minimum_server_version(cls):
-        return LooseVersion("8.0")
+        return parse("8.0")
 
 
 class User(MutableBaseModel, CreatableModelMixin):
@@ -431,7 +435,7 @@ class User(MutableBaseModel, CreatableModelMixin):
 
     @classmethod
     def _minimum_server_version(cls):
-        return LooseVersion("8.0")
+        return parse("8.0")
 
 
 class UserGroup(MutableBaseModel, CreatableModelMixin):
@@ -440,4 +444,4 @@ class UserGroup(MutableBaseModel, CreatableModelMixin):
 
     @classmethod
     def _minimum_server_version(cls):
-        return LooseVersion("8.0")
+        return parse("8.0")

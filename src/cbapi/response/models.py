@@ -3,7 +3,11 @@ from __future__ import absolute_import
 
 import copy
 import json
-from distutils.version import LooseVersion
+import sys
+if sys.version_info <= (3, 6):
+    from distutils.version import LooseVersion as parse
+else:
+    from packaging.version import parse
 from collections import namedtuple, defaultdict
 import base64
 from datetime import datetime, timedelta
@@ -656,7 +660,7 @@ class Sensor(MutableBaseModel):
     def _query_implementation(cls, cb):
         # ** Disable the paginated query implementation for now **
 
-        # if cb.cb_server_version >= LooseVersion("5.2.0"):
+        # if cb.cb_server_version >= parse("5.2.0"):
         #     return SensorPaginatedQuery(cls, cb)
         # else:
         #     return SensorQuery(cls, cb)
@@ -869,7 +873,7 @@ class Sensor(MutableBaseModel):
 
         if "event_log_flush_time" in self._dirty_attributes and self._info.get("event_log_flush_time",
                                                                                None) is not None:
-            if self._cb.cb_server_version > LooseVersion("6.0.0"):
+            if self._cb.cb_server_version > parse("6.0.0"):
                 # since the date/time stamp just needs to be far in the future, we just fake a GMT timezone.
                 try:
                     self._info["event_log_flush_time"] = self.event_log_flush_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
@@ -1070,7 +1074,7 @@ class User(MutableBaseModel, CreatableModelMixin):
         return info
 
     def _update_object(self):
-        if self._cb.cb_server_version < LooseVersion("6.1.0") or self._info.get("id", None) is None:
+        if self._cb.cb_server_version < parse("6.1.0") or self._info.get("id", None) is None:
             # only include IDs of the teams and not the entire dictionary
             # - applies to Cb Response server < 6.0 as well as Cb Response servers >= 6.0 where the user hasn't
             #   been created yet.
@@ -1394,7 +1398,7 @@ class ThreatReport(MutableBaseModel):
 
     @classmethod
     def _query_implementation(cls, cb):
-        if cb.cb_server_version >= LooseVersion('5.1.0'):
+        if cb.cb_server_version >= parse('5.1.0'):
             return ThreatReportQuery(cls, cb)
         else:
             return Query(cls, cb)
@@ -1524,7 +1528,7 @@ class ProcessQuery(WatchlistEnabledQuery):
         :return: Query object
         :rtype: :py:class:`ProcessQuery`
         """
-        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+        if self._cb.cb_server_version >= parse('6.0.0'):
             nq = self._clone()
             nq._default_args["cb.group"] = field_name
             return nq
@@ -1573,7 +1577,7 @@ class ProcessQuery(WatchlistEnabledQuery):
         :return: Query object
         :rtype: :py:class:`ProcessQuery`
         """
-        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+        if self._cb.cb_server_version >= parse('6.0.0'):
             nq = self._clone()
             try:
                 v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -1599,7 +1603,7 @@ class ProcessQuery(WatchlistEnabledQuery):
         :return: Query object
         :rtype: :py:class:`ProcessQuery`
         """
-        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+        if self._cb.cb_server_version >= parse('6.0.0'):
             nq = self._clone()
             try:
                 v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -1625,7 +1629,7 @@ class ProcessQuery(WatchlistEnabledQuery):
         :return: Query object
         :rtype: :py:class:`ProcessQuery`
         """
-        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+        if self._cb.cb_server_version >= parse('6.0.0'):
             nq = self._clone()
             try:
                 v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -1651,7 +1655,7 @@ class ProcessQuery(WatchlistEnabledQuery):
         :return: Query object
         :rtype: :py:class:`ProcessQuery`
         """
-        if self._cb.cb_server_version >= LooseVersion('6.0.0'):
+        if self._cb.cb_server_version >= parse('6.0.0'):
             nq = self._clone()
             try:
                 v = v.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -2285,7 +2289,7 @@ class Process(TaggedModel):
             # new 5.x process IDs are hex strings with optional segment IDs.
             if len(procguid) == 45:
                 return procguid[:36], int(procguid[38:], 16)
-            elif len(procguid) == 49 and self._cb.cb_server_version >= LooseVersion('6.0.0'):
+            elif len(procguid) == 49 and self._cb.cb_server_version >= parse('6.0.0'):
                 return procguid[:36], int(procguid[38:], 16)
             else:
                 return None, None
@@ -2309,7 +2313,7 @@ class Process(TaggedModel):
         self.__children_info = None
         self.__sibling_info = None
 
-        if cb.cb_server_version < LooseVersion('6.0.0'):
+        if cb.cb_server_version < parse('6.0.0'):
             self._default_segment = 1
         else:
             self._default_segment = 0
@@ -2322,7 +2326,7 @@ class Process(TaggedModel):
             if len(procguid) == 45:
                 self.id = procguid[:36]
                 self.current_segment = int(procguid[38:], 16)
-            elif len(procguid) == 49 and cb.cb_server_version >= LooseVersion('6.0.0'):
+            elif len(procguid) == 49 and cb.cb_server_version >= parse('6.0.0'):
                 self.id = procguid[:36]
                 self.current_segment = int(procguid[38:], 16)
             else:
@@ -2339,14 +2343,14 @@ class Process(TaggedModel):
 
         self._process_summary_api = 'v1'
 
-        if cb.cb_server_version >= LooseVersion('6.0.0'):
+        if cb.cb_server_version >= parse('6.0.0'):
             self._process_summary_api = 'v2'
             self._process_event_api = 'v4'
             self._event_parser = ProcessV4Parser(self)
-        elif cb.cb_server_version >= LooseVersion('5.2.0'):
+        elif cb.cb_server_version >= parse('5.2.0'):
             self._process_event_api = 'v3'
             self._event_parser = ProcessV3Parser(self)
-        elif cb.cb_server_version >= LooseVersion('5.1.0'):
+        elif cb.cb_server_version >= parse('5.1.0'):
             # CbER 5.1.0 introduced an extended event API
             self._process_event_api = 'v2'
             self._event_parser = ProcessV2Parser(self)
@@ -2755,7 +2759,7 @@ class Process(TaggedModel):
 
     def get_segments(self):
         if not self._segments:
-            if self._cb.cb_server_version < LooseVersion('6.0.0'):
+            if self._cb.cb_server_version < parse('6.0.0'):
                 log.debug("using process_id search for cb response server < 6.0")
                 segment_query = Query(Process, self._cb, query="process_id:{0}".format(self.id)).sort("")
                 proclist = sorted([res["segment_id"] for res in segment_query._search()])
@@ -3066,7 +3070,7 @@ class Process(TaggedModel):
         self.all_events_loaded = True
 
     def all_childprocs(self):
-        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+        if self._cb.cb_server_version < parse('6.0.0'):
             self.get_segments()
             segments = self._segments
 
@@ -3088,7 +3092,7 @@ class Process(TaggedModel):
                 i += 1
 
     def all_modloads(self):
-        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+        if self._cb.cb_server_version < parse('6.0.0'):
             self.get_segments()
             segments = self._segments
 
@@ -3110,7 +3114,7 @@ class Process(TaggedModel):
                 i += 1
 
     def all_filemods(self):
-        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+        if self._cb.cb_server_version < parse('6.0.0'):
             self.get_segments()
             segments = self._segments
 
@@ -3132,7 +3136,7 @@ class Process(TaggedModel):
                 i += 1
 
     def all_processblocks(self):
-        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+        if self._cb.cb_server_version < parse('6.0.0'):
             self.get_segments()
             segments = self._segments
 
@@ -3154,7 +3158,7 @@ class Process(TaggedModel):
                 i += 1
 
     def all_regmods(self):
-        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+        if self._cb.cb_server_version < parse('6.0.0'):
             self.get_segments()
             segments = self._segments
 
@@ -3176,7 +3180,7 @@ class Process(TaggedModel):
                 i += 1
 
     def all_crossprocs(self):
-        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+        if self._cb.cb_server_version < parse('6.0.0'):
             self.get_segments()
             segments = self._segments
 
@@ -3198,7 +3202,7 @@ class Process(TaggedModel):
                 i += 1
 
     def all_netconns(self):
-        if self._cb.cb_server_version < LooseVersion('6.0.0'):
+        if self._cb.cb_server_version < parse('6.0.0'):
             self.get_segments()
             segments = self._segments
 

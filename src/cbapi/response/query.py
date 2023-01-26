@@ -1,7 +1,11 @@
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
 from cbapi.six.moves import urllib
-from distutils.version import LooseVersion
+import sys
+if sys.version_info <= (3, 6):
+    from distutils.version import LooseVersion as parse
+else:
+    from packaging.version import parse
 from ..errors import ApiError
 import copy
 
@@ -56,7 +60,7 @@ class Query(PaginatedQuery):
 
         # FIX: Cb Response server version 5.1.0-3 throws an exception after returning HTTP 504 when facet=false in the
         # HTTP request. Work around this by only setting facet=false on 5.1.1 and above server versions.
-        if self._cb.cb_server_version >= LooseVersion('5.1.1'):
+        if self._cb.cb_server_version >= parse('5.1.1'):
             self._default_args["facet"] = "false"
 
     def _clone(self):
