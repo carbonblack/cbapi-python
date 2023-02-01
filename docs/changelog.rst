@@ -2,6 +2,12 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+CbAPI 1.7.10 - Release Feb 1, 2023
+------------------------------------
+
+Bug Fixes
+ * Update CbAPI to use packaging instead of distutils for python3.7+
+
 CbAPI 1.7.9 - Release Sept 29, 2022
 ------------------------------------
 
