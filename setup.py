@@ -37,7 +37,8 @@ if sys.version_info < (2, 7):
     install_requires.extend(['simplejson', 'total-ordering', 'ordereddict'])
 if sys.version_info < (3, 0):
     install_requires.extend(['futures'])
-
+if sys.version_info > (3, 6):
+    install_requires.extend(['packaging'])
 setup(
     name='cbapi',
     version='1.7.9',

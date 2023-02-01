@@ -1,7 +1,11 @@
 from ..utils import convert_query_params
 from ..query import PaginatedQuery
 from ..errors import UnauthorizedError, ApiError
-from distutils.version import LooseVersion
+import sys
+if sys.version_info <= (3, 6):
+    from distutils.version import LooseVersion as parse
+else:
+    from packaging.version import parse
 
 
 from cbapi.connection import BaseAPI
@@ -32,7 +36,7 @@ class CbProtectionAPI(BaseAPI):
 
         log.debug('Connected to Cb server version %s at %s'
                   % (self._server_info['ParityServerVersion'], self.session.server))
-        self.cb_server_version = LooseVersion(self._server_info['ParityServerVersion'])
+        self.cb_server_version = parse(self._server_info['ParityServerVersion'])
 
     def _perform_query(self, cls, **kwargs):
         if hasattr(cls, "_query_implementation"):
