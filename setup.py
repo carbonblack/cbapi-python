@@ -41,7 +41,7 @@ if sys.version_info > (3, 6):
     install_requires.extend(['packaging'])
 setup(
     name='cbapi',
-    version='1.7.9',
+    version='1.7.10',
     url='https://github.com/carbonblack/cbapi-python',
     license='MIT',
     author='Carbon Black',
