@@ -41,3 +41,6 @@ properties:
   email:
     type: string
     description: ''
+  current_password:
+    type: string
+    description: ''
