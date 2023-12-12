@@ -207,9 +207,10 @@ Modifying Existing Objects
 The same ``.save()`` method can be used to modify existing Model Objects if the REST API provides that capability.
 If you attempt to modify a Model Object that cannot be changed, you will receive a :py:mod:`ApiError` exception.
 
-For example, if you want to change the "jgarman" user's password to "cbisawesome"::
+For example, if you want to change the "jgarman" user's password from the "cb" to "cbisawesome"::
 
     >>> user = cb.select(User, "jgarman")
+    >>> user.current_password = "cb"
     >>> user.password = "cbisawesome"
     >>> user.save()
 
