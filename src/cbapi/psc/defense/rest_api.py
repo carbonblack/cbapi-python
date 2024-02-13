@@ -17,7 +17,7 @@ class CbDefenseAPI(CbPSCBaseAPI):
     """THIS SDK IS DEPRECATED FOR CARBON BLACK CLOUD
 
     Please see
-    <https://developer.carbonblack.com/reference/carbon-black-cloud/integrations/python-sdk>`_
+    `Carbon Black Cloud Python SDK on the Developer Network <https://developer.carbonblack.com/reference/carbon-black-cloud/integrations/python-sdk>`_
     for details on the replacement Carbon Black Cloud Python SDK.
 
     The main entry point into the Carbon Black Cloud Endpoint Standard Defense API.

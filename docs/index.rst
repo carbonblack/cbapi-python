@@ -228,7 +228,6 @@ and unlock the full functionality of the SDK.
 
    response-api
    protection-api
-   livequery-api
    exceptions
 
 Indices and tables
