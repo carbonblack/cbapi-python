@@ -1,0 +1,7 @@
+# Defining the exact version will make sure things don't break
+sphinx==6.2.1
+sphinx-copybutton==0.4.0
+sphinx-rtd-theme==1.2.2
+sphinxcontrib-apidoc
+sphinx-copybutton==0.4.0
+pygments
