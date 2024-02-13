@@ -14,3 +14,12 @@ Once you have done so, you should be able to run any example script with the com
 
 Executing any script with the `--help` argument should give you a detailed message about the arguments that can
 be supplied to the script when it is executed.
+
+**Note:**
+Users of Carbon Black Cloud must transition to the Carbon Black Cloud Python SDK.
+
+Please see
+<https://developer.carbonblack.com/reference/carbon-black-cloud/integrations/python-sdk>`_
+for details.
+
+CBAPI is not maintained for Carbon Black Cloud.

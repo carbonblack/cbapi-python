@@ -14,7 +14,13 @@ def convert_to_kv_pairs(q):
 
 
 class CbDefenseAPI(CbPSCBaseAPI):
-    """The main entry point into the Carbon Black Cloud Endpoint Standard Defense API.
+    """THIS SDK IS DEPRECATED FOR CARBON BLACK CLOUD
+
+    Please see
+    <https://developer.carbonblack.com/reference/carbon-black-cloud/integrations/python-sdk>`_
+    for details on the replacement Carbon Black Cloud Python SDK.
+
+    The main entry point into the Carbon Black Cloud Endpoint Standard Defense API.
 
     :param str profile: (optional) Use the credentials in the named profile when connecting to the Carbon Black server.
         Uses the profile named 'default' when not specified.
@@ -41,7 +47,7 @@ class CbDefenseAPI(CbPSCBaseAPI):
             time.sleep(interval)
 
     def get_notifications(self):
-        """Retrieve queued notifications (alerts) from the Cloud Endpoint Standard server. Note that this can only be
+        """DEPRECATED: Retrieve queued notifications (alerts) from the Cloud Endpoint Standard server. Note that this can only be
         used with a 'SIEM' key generated in the Carbon Black Cloud console.
 
         :returns: list of dictionary objects representing the notifications, or an empty list if none available.
@@ -50,7 +56,7 @@ class CbDefenseAPI(CbPSCBaseAPI):
         return res.get("notifications", [])
 
     def get_auditlogs(self):
-        """Retrieve queued audit logs from the Carbon Black Cloud Endpoint Standard server.
+        """DEPRECATED: Retrieve queued audit logs from the Carbon Black Cloud Endpoint Standard server.
             Note that this can only be used with a 'API' key generated in the CBC console.
         :returns: list of dictionary objects representing the audit logs, or an empty list if none available.
         """
