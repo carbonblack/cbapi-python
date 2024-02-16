@@ -2,6 +2,16 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
+Documentation - Release Feb 14, 2023
+------------------------------------
+
+Updates
+ * Removed references to and documentation about Carbon Black Cloud.  CBAPI (this SDK) is not maintained for Carbon Black Cloud.
+
+   Users of Carbon Black Cloud must transition to the Carbon Black Cloud Python SDK. Please see
+   `Carbon Black Cloud Python SDK on the Developer Network <https://developer.carbonblack.com/reference/carbon-black-cloud/integrations/python-sdk>`_
+   for details.
+
 CbAPI 1.7.10 - Release Feb 1, 2023
 ------------------------------------
 

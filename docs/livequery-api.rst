@@ -1,47 +1,12 @@
 .. _livequery_api:
 
-CB LiveQuery API
-================
+CB LiveQuery API - DEPRECATED
+=============================
 
-This page documents the public interfaces exposed by cbapi when communicating with Carbon Black LiveQuery devices.
+Users of Carbon Black Cloud must transition to the Carbon Black Cloud Python SDK.
 
-Main Interface
---------------
+Please see
+`Carbon Black Cloud Python SDK on the Developer Network <https://developer.carbonblack.com/reference/carbon-black-cloud/integrations/python-sdk>`_
+for details.
 
-To use cbapi with Carbon Black LiveQuery, you use CbLiveQueryAPI objects.
-
-The LiveQuery API is used in two stages: run submission and result retrieval.
-
-.. autoclass:: cbapi.psc.livequery.rest_api.CbLiveQueryAPI
-    :members:
-    :inherited-members:
-
-Queries
--------
-
-The LiveQuery API uses QueryBuilder instances to construct structured or unstructured (i.e., raw string) queries.
-You can either construct these instances manually, or allow ``CbLiveQueryAPI.select()`` to do it for you:
-
-.. autoclass:: cbapi.psc.livequery.query.QueryBuilder
-    :members:
-    :inherited-members:
-
-.. autoclass:: cbapi.psc.livequery.query.RunQuery
-    :members:
-    :inherited-members:
-
-.. autoclass:: cbapi.psc.livequery.models.ResultQuery
-    :members:
-    :inherited-members:
-
-Models
-------
-
-.. autoclass:: cbapi.psc.livequery.models.Run
-    :members:
-    :inherited-members:
-
-.. autoclass:: cbapi.psc.livequery.models.Result
-    :members:
-    :inherited-members:
-
+CBAPI is not maintained for Carbon Black Cloud.

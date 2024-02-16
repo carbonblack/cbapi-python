@@ -1,33 +1,12 @@
 .. _defense_api:
 
-Cloud Endpoint Standard API
-===========================
+Cloud Endpoint Standard API - DEPRECATED
+========================================
 
-This page documents the public interfaces exposed by cbapi when communicating with a Cloud Endpoint Standard server.
+Users of Carbon Black Cloud must transition to the Carbon Black Cloud Python SDK.
 
-Main Interface
---------------
+Please see
+`Carbon Black Cloud Python SDK on the Developer Network <https://developer.carbonblack.com/reference/carbon-black-cloud/integrations/python-sdk>`_
+for details.
 
-To use cbapi with VMware Carbon Black Cloud Endpoint Standard, you will be using the CBDefenseAPI.
-The CBDefenseAPI object then exposes two main methods to select data on the Carbon Black server:
-
-.. autoclass:: cbapi.psc.defense.rest_api.CbDefenseAPI
-    :members:
-    :inherited-members:
-
-    .. :automethod:: select
-    .. :automethod:: create
-
-Queries
--------
-
-.. autoclass:: cbapi.psc.defense.rest_api.Query
-    :members:
-
-
-Models
-------
-
-.. automodule:: cbapi.psc.defense.models
-    :members:
-    :undoc-members:
+CBAPI is not maintained for Carbon Black Cloud.

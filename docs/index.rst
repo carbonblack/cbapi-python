@@ -228,10 +228,6 @@ and unlock the full functionality of the SDK.
 
    response-api
    protection-api
-   defense-api
-   threathunter-api
-   psc-api
-   livequery-api
    exceptions
 
 Indices and tables
