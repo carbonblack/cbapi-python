@@ -2,7 +2,7 @@ CbAPI Changelog
 ===============
 .. top-of-changelog (DO NOT REMOVE THIS COMMENT)
 
-Documentation - Release Feb 14, 2023
+Documentation - Release Feb 14, 2024
 ------------------------------------
 
 Updates
