@@ -22,6 +22,12 @@ properties:
     type: "integer"
     description: "Site id to add group to"
     default: "1"
+  address_resolution_hint:
+    type: string
+    enum:
+      - 'ipv4'
+      - 'ipv6'
+      - ''
   team_access:
     type: "array"
     description: "Team access array"
