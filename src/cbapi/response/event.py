@@ -225,7 +225,7 @@ class RabbitMQEventSource(threading.Thread):
         different parameters. In this case, we'll close the connection
         to shutdown the object.
 
-        :param pika.channel.Channel: The closed channel
+        :param channel: The closed channel
         :param int reply_code: The numeric reason the channel was closed
         :param str reply_text: The text reason the channel was closed
 
@@ -413,8 +413,8 @@ class RabbitMQEventSource(threading.Thread):
         is the message that was sent.
 
         :param pika.channel.Channel unused_channel: The channel object
-        :param pika.Spec.Basic.Deliver: basic_deliver method
-        :param pika.Spec.BasicProperties: properties
+        :param pika.Spec.Basic.Deliver basic_deliver: basic_deliver method
+        :param pika.Spec.BasicProperties properties: properties
         :param str|unicode body: The message body
 
         """

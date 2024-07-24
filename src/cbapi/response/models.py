@@ -772,20 +772,6 @@ class Sensor(MutableBaseModel):
         """
         return self._cb.get_object("{0}/resourcestatus".format(self._build_api_request_uri()), default=[])
 
-    def lr_session(self):
-        """
-        Retrieve a Live Response session object for this Sensor.
-
-        :return: Live Response session object
-        :rtype: :py:class:`cbapi.live_response_api.LiveResponseSession`
-        :raises ApiError: if there is an error establishing a Live Response session for this Sensor
-
-        """
-        if not getattr(self, "supports_cblr", False):
-            raise ApiError("Sensor does not support Cb Live Response")
-
-        return self._cb._request_lr_session(self._model_unique_id)
-
     def flush_events(self):
         """
         Performs a flush of events for this EDR Sensor

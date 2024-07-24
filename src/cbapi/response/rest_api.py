@@ -12,7 +12,6 @@ else:
 from ..connection import BaseAPI
 from .models import Process, Binary, Watchlist, Investigation, Alert, ThreatReport, StoragePartition
 from ..errors import UnauthorizedError, ApiError, ClientError
-from .cblr import LiveResponseSessionManager
 from .query import Query
 
 
@@ -68,15 +67,6 @@ class CbResponseAPI(BaseAPI):
                 raise ce  # no intervention
 
         self._lr_scheduler = None
-
-    @property
-    def live_response(self):
-        if self._lr_scheduler is None:
-            if not self.server_info.get("cblrEnabled", False):
-                raise ApiError("Cb server does not support Live Response")
-            self._lr_scheduler = LiveResponseSessionManager(self)
-
-        return self._lr_scheduler
 
     def info(self):
         """Retrieve basic version information from the Carbon Black DER server.
@@ -173,9 +163,6 @@ class CbResponseAPI(BaseAPI):
             return self
         else:
             raise ApiError("Unknown URL endpoint: %s" % uri)
-
-    def _request_lr_session(self, sensor_id):
-        return self.live_response.request_session(sensor_id)
 
     def create_new_partition(self):
         """Create a new Solr time partition for event storage. Available in Carbon Black EDR 6.1 and above.
