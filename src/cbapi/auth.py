@@ -78,7 +78,7 @@ class EnvarCredentialStore(object):
 
 class FileCredentialStore(object):
     def __init__(self, product_name, **kwargs):
-        if product_name not in ("response", "protection", "psc"):
+        if product_name not in ("response", "protection"):
             raise CredentialError("Product name {0:s} not valid".format(product_name))
 
         self.credential_search_path = [
