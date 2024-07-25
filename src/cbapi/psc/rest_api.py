@@ -1,6 +1,5 @@
 from cbapi.connection import BaseAPI
 from cbapi.errors import ApiError, ServerError
-from .cblr import LiveResponseSessionManager
 import logging
 
 log = logging.getLogger(__name__)
@@ -26,17 +25,6 @@ class CbPSCBaseAPI(BaseAPI):
             return cls._query_implementation(self)
         else:
             raise ApiError("All PSC models should provide _query_implementation")
-
-    # ---- LiveOps
-
-    @property
-    def live_response(self):
-        if self._lr_scheduler is None:
-            self._lr_scheduler = LiveResponseSessionManager(self)
-        return self._lr_scheduler
-
-    def _request_lr_session(self, sensor_id):
-        return self.live_response.request_session(sensor_id)
 
     # ---- Device API
 

@@ -64,7 +64,7 @@ class DeviceSearchQuery(PSCQueryBase, QueryBuilderSupportMixin, IterableQueryMix
         Restricts the devices that this query is performed on to the specified
         device IDs.
 
-        :param ad_group_ids: list of ints
+        :param device_ids: list of ints
         :return: This instance
         """
         if not all(isinstance(device_id, int) for device_id in device_ids):
