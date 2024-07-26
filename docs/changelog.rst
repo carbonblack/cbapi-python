@@ -12,6 +12,13 @@ Updates
    `Carbon Black Cloud Python SDK on the Developer Network <https://developer.carbonblack.com/reference/carbon-black-cloud/integrations/python-sdk>`_
    for details.
 
+CbAPI 2.0.0 - Release July 29, 2024
+------------------------------------
+
+Breaking Changes
+ * Removing psc functionalities.
+
+
 CbAPI 1.7.10 - Release Feb 1, 2023
 ------------------------------------
 

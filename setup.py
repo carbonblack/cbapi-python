@@ -9,11 +9,7 @@ packages = [
     'cbapi',
     'cbapi.protection',
     'cbapi.response',
-    'cbapi.cache',
-    'cbapi.psc',
-    'cbapi.psc.defense',
-    'cbapi.psc.threathunter',
-    'cbapi.psc.livequery'
+    'cbapi.cache'
 ]
 
 install_requires = [
@@ -41,7 +37,7 @@ if sys.version_info > (3, 6):
     install_requires.extend(['packaging'])
 setup(
     name='cbapi',
-    version='1.7.10',
+    version='2.0.0',
     url='https://github.com/carbonblack/cbapi-python',
     license='MIT',
     author='Carbon Black',
@@ -61,5 +57,5 @@ setup(
         'Programming Language :: Python',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
-    scripts=['bin/cbapi-response', 'bin/cbapi-protection', 'bin/cbapi-defense', 'bin/cbapi', 'bin/cbapi-psc']
+    scripts=['bin/cbapi-response', 'bin/cbapi-protection', 'bin/cbapi']
 )
